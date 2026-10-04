@@ -1,11 +1,14 @@
-# Wren build section 6: the pitchfork object, assembly (hidden skin removed, centred), materials + palette + glow gate,
+# Wren build section 6: the pitchfork object (HAS_FORK), assembly (hidden skin removed, centred), materials + palette + glow gate,
 # UVs (hair in its own strip), report, the preview exit, the bake (normal + AO from the subdivided MPFB high + parts), the
 # per-region AO lift, the improved save.
-Vf_, Ff_, Rf_, FKL = VP.pitchfork(FORK)
+Vf_, Ff_, Rf_, FKL = VP.pitchfork(FORK)   # (always: its landmarks define the right hand's carry frame in s7 / s8)
 FORK_T = np.array([FORK_REST[0], FORK_REST[1], 0.0])      # rest: upright, butt on the floor
-add_part("pitchfork", Vf_ + FORK_T, Ff_, Rf_, w="rigid:pitchfork", obj="fork")
-FORK_INFO = {"total_len": round(float(FKL["top"]), 4), "x_height": round(float(FKL["top"]) / (Z_TOP - SOLE_T), 3),
-             "grip_at_m": round(FORK["grip_at"] * FORK["len"], 4), "rest_butt": FORK_T.round(4).tolist()}
+if HAS_FORK:
+    add_part("pitchfork", Vf_ + FORK_T, Ff_, Rf_, w="rigid:pitchfork", obj="fork")
+    FORK_INFO = {"total_len": round(float(FKL["top"]), 4), "x_height": round(float(FKL["top"]) / (Z_TOP - SOLE_T), 3),
+                 "grip_at_m": round(FORK["grip_at"] * FORK["len"], 4), "rest_butt": FORK_T.round(4).tolist()}
+else:
+    FORK_INFO = {"has_fork": False, "rule": "review-log 2026-10-03: no prop until a weapon is designed (HAS_FORK)"}
 REG = ["skin", "skin_shadow", "lips", "mouth", "liner", "brow", "eye_sclera", "eye_iris", "eye_pupil", "hair", "hair_shade",
        "hair_tie", "shirt", "sleeve_roll", "vest", "trousers", "trousers_shade", "wrap", "wrap_lace", "boot", "boot_cuff",
        "boot_sole", "strap", "brass", "brass_dark", "rope", "rope_dark", "pouch", "pouch_flap", "cloak", "cloak_worn",
@@ -101,9 +104,17 @@ allV = np.vstack([p["V"] for p in ISL])
 lo0, hi0 = allV.min(0), allV.max(0)
 SHIFT = np.array([(lo0[0] + hi0[0]) / 2, (lo0[1] + hi0[1]) / 2, 0.0])
 report["centre_shift"] = SHIFT.round(6).tolist()
+# the v6.1 assembly centre (body + parts + the fork's footprint, whether or not the fork is built): the frame the approved
+# walk was tuned in -- its WALK_FOOT_X narrows the stance about THAT frame's x = 0 (s8 WALK_X0), so dropping the fork
+# (which re-centres the model on the body: feet_origin) leaves every walk key where the artist approved it
+_allV61 = allV if HAS_FORK else np.vstack([allV, Vf_ + FORK_T])
+_lo61, _hi61 = _allV61.min(0), _allV61.max(0)
+SHIFT_V61 = np.array([(_lo61[0] + _hi61[0]) / 2, (_lo61[1] + _hi61[1]) / 2, 0.0])
+report["centre_shift_v61_frame"] = SHIFT_V61.round(6).tolist()
 report["min_z_before_shift"] = round(float(lo0[2]), 6)
-OBJ = {"main": {"V": [], "F": [], "R": [], "RANGE": {}, "FRANGE": {}, "n": 0},
-       "fork": {"V": [], "F": [], "R": [], "RANGE": {}, "FRANGE": {}, "n": 0}}
+OBJ = {"main": {"V": [], "F": [], "R": [], "RANGE": {}, "FRANGE": {}, "n": 0}}
+if HAS_FORK:
+    OBJ["fork"] = {"V": [], "F": [], "R": [], "RANGE": {}, "FRANGE": {}, "n": 0}
 for p in ISL:
     o = OBJ[p["obj"]]
     o["RANGE"][p["name"]] = (o["n"], o["n"] + len(p["V"]))
@@ -115,7 +126,8 @@ for p in ISL:
 for o in OBJ.values():
     o["V"] = np.vstack(o["V"])
 assert set(OBJ["main"]["R"]) <= set(REG), sorted(set(OBJ["main"]["R"]) - set(REG))
-assert set(OBJ["fork"]["R"]) <= set(REG_F), sorted(set(OBJ["fork"]["R"]) - set(REG_F))
+if HAS_FORK:
+    assert set(OBJ["fork"]["R"]) <= set(REG_F), sorted(set(OBJ["fork"]["R"]) - set(REG_F))
 
 
 def make_mat(name):
@@ -161,7 +173,7 @@ def glow_tiers(pal):
 
 
 MAT_BODY = make_mat(UNIT + "_body")
-MAT_FORK = make_mat(UNIT + "_pitchfork")
+MAT_FORK = make_mat(UNIT + "_pitchfork") if HAS_FORK else None
 pal_default = PAL.load(UNIT, "default")
 report["glow_tiers"] = {"default": glow_tiers(pal_default)}
 assert report["glow_tiers"]["default"]["grade_pass"] and report["glow_tiers"]["default"]["hue_pass"], report["glow_tiers"]
@@ -169,11 +181,14 @@ low = new_obj(UNIT, OBJ["main"]["V"], OBJ["main"]["F"])
 low.data.materials.append(MAT_BODY)
 rid = np.array([REG.index(r) for r in OBJ["main"]["R"]], dtype=np.int32)
 PAL.store_regions(low.data, REG, rid, np.ones(len(rid)))
-fko = new_obj(UNIT + "_pitchfork", OBJ["fork"]["V"], OBJ["fork"]["F"])
-fko.data.materials.append(MAT_FORK)
-rid_f = np.array([REG_F.index(r) for r in OBJ["fork"]["R"]], dtype=np.int32)
-PAL.store_regions(fko.data, REG_F, rid_f, np.ones(len(rid_f)))
-report["regions_faces"] = repaint([low, fko], pal_default)
+fko = None                                         # (HAS_FORK False: no prop object; MESHES = every exported mesh)
+if HAS_FORK:
+    fko = new_obj(UNIT + "_pitchfork", OBJ["fork"]["V"], OBJ["fork"]["F"])
+    fko.data.materials.append(MAT_FORK)
+    rid_f = np.array([REG_F.index(r) for r in OBJ["fork"]["R"]], dtype=np.int32)
+    PAL.store_regions(fko.data, REG_F, rid_f, np.ones(len(rid_f)))
+MESHES = [low] + ([fko] if fko is not None else [])
+report["regions_faces"] = repaint(MESHES, pal_default)
 me = low.data
 fa = np.empty(len(me.polygons)); me.polygons.foreach_get("area", fa)
 report["regions_area_share"] = {n: round(float(fa[rid == j].sum() / fa.sum()), 4) for j, n in enumerate(REG)}
@@ -221,7 +236,7 @@ def uv_share():
         q = uvd[ls[k]:ls[k] + lt[k]]
         a[k] = 0.5 * abs(float(np.dot(q[:, 0], np.roll(q[:, 1], -1)) - np.dot(q[:, 1], np.roll(q[:, 0], -1))))
     return uvd, lt, ls, a
-for ob_ in (low, fko):
+for ob_ in MESHES:
     ob_.data.shade_flat()
     bpy.context.view_layer.objects.active = ob_
     for o in scene.objects:
@@ -298,7 +313,7 @@ for ob_ in (low, fko):
     report["uv_hair_strip"] = {"strip_u_from": round(1.0 - HAIR_UV_STRIP, 4), "hair_faces": int(_hairf.sum()),
                                "hair_uv_u_min": round(float(uvd_[_hairf[lpf_], 0].min()), 4),
                                "nonhair_uv_u_max": round(float(uvd_[~_hairf[lpf_], 0].max()), 4)}
-tris_main = tri_count_F(OBJ["main"]["F"]); tris_fk = tri_count_F(OBJ["fork"]["F"])
+tris_main = tri_count_F(OBJ["main"]["F"]); tris_fk = tri_count_F(OBJ["fork"]["F"]) if HAS_FORK else 0
 _groups = {}
 for p in PARTS:
     g_ = p["name"].split(".")[0]
@@ -306,10 +321,11 @@ for p in PARTS:
 report["tris"] = {"total": tris_main + tris_fk, "main": tris_main, "pitchfork": tris_fk, "body": tri_count_F(CF),
                   "hair_locks": sum(tri_count_F(p["F"]) for p in PARTS if p["name"].startswith("lock")), **_groups}
 report["tier_rationale"] = ("HERO role: window [%d, %d]. The MPFB body (face, hands, fingers for the grip) + a real hair mass "
-                            "+ a patched two-tone cloak with hood + cowl + boots + the outfit pieces + a detailed pitchfork." % tuple(TRI_BUDGET))
+                            "+ a patched two-tone cloak with hood + cowl + boots + the outfit pieces" % tuple(TRI_BUDGET) +
+                            (" + a detailed pitchfork." if HAS_FORK else "; no prop (HAS_FORK False)."))
 report["open_edges"] = {p["name"]: VP.open_edges(p["F"]) for p in PARTS if VP.open_edges(p["F"])}
 report["open_edges_rule"] = "every part is a closed solid (listed here only if not); the body is the MPFB skin"
-allV2 = np.vstack([OBJ["main"]["V"], OBJ["fork"]["V"]])
+allV2 = np.vstack([o_["V"] for o_ in OBJ.values()])
 lo_a, hi_a = allV2.min(0), allV2.max(0)
 Hh = float(hi_a[2] - lo_a[2]); fp = float(max(hi_a[0] - lo_a[0], hi_a[1] - lo_a[1]))
 k_fit = min(CELL_MAX_H / Hh, CELL_MAX_FP / fp)
@@ -320,7 +336,7 @@ report["measure"] = {"bbox": [lo_a.round(4).tolist(), hi_a.round(4).tolist()], "
 report["parts"] = {"boots": BOOT_INFO, "puff": PUFF_INFO, "skirt": SKIRT_INFO, "rope": ROPE_INFO, "bracer": BRACER_INFO,
                    "pendant": PENDANT_INFO, "cloak": CLOAK_INFO, "pitchfork": FORK_INFO, "locks": LOCK_INFO}
 report["hair"] = HAIR_INFO
-for ob_ in (low, fko):
+for ob_ in MESHES:
     ob_["conquest_unit"] = UNIT
 low["conquest_character_id"] = CHAR_ID
 low["conquest_tier"] = "hero"
@@ -334,7 +350,8 @@ low["conquest_facing_rule"] = report["facing"]["rule"]
 low["conquest_source"] = "from scratch on an MPFB2 base: the artist's sheet design/reference/wren-character-sheet.webp"
 low["conquest_scale_policy"] = "natural proportions in metres; game scales at import (cell fit report-only)"
 low["conquest_emission_channel"] = "Glow colour attribute (2nd colour set, glTF COLOR_1) -> Emission Color; Col -> Base Color"
-fko["conquest_toggle"] = "the pitchfork is its own node + bone 'pitchfork' (child of hand_r): hide or swap it"
+if fko is not None:
+    fko["conquest_toggle"] = "the pitchfork is its own node + bone 'pitchfork' (child of hand_r): hide or swap it"
 
 
 def box(pts, pad):
@@ -357,9 +374,9 @@ FOCUS = {"face": box([EYE["L"]["c"] - SHIFT, EYE["R"]["c"] - SHIFT, np.array([0,
          "bracer": box(part_pts("bracer", "bracergem"), 0.02),
          "boots": box(part_pts("bootfoot", "bootcuff", "sole"), 0.03),
          "torso": box([SHO["L"] - SHIFT, SHO["R"] - SHIFT, np.array([0, 0, Z_SASH - 0.2]) - SHIFT], 0.05),
-         "fork_head": box([FORK_T - SHIFT + np.array([0, 0, FORK["collar"][0] * FORK["len"] - 0.05]),
-                           FORK_T - SHIFT + np.array([0, 0, FKL["top"] + 0.01])], 0.05),
-         "fork_full": box(np.vstack([OBJ["fork"]["V"]]), 0.03),
+         **({"fork_head": box([FORK_T - SHIFT + np.array([0, 0, FORK["collar"][0] * FORK["len"] - 0.05]),
+                               FORK_T - SHIFT + np.array([0, 0, FKL["top"] + 0.01])], 0.05),
+             "fork_full": box(np.vstack([OBJ["fork"]["V"]]), 0.03)} if HAS_FORK else {}),
          "eyes": box([EYE["L"]["c"] - SHIFT + np.array([0.022, 0, 0.018]), EYE["R"]["c"] - SHIFT - np.array([0.022, 0, 0.012])], 0.004),
          "brows": box([EYE["L"]["c"] - SHIFT + np.array([0.026, 0, 0.030]), EYE["R"]["c"] - SHIFT - np.array([0.026, 0, 0.006])], 0.004),
          "mouth": box([np.array([-0.026, Y_LIP, Z_SLIT - 0.016]) - SHIFT, np.array([0.026, Y_LIP + 0.012, Z_SLIT + 0.014]) - SHIFT], 0.002)}
@@ -443,7 +460,8 @@ img_ao.colorspace_settings.name = "Non-Color"; img_ao.generated_color = (1.0, 0.
 nt = MAT_BODY.node_tree
 tn = nt.nodes.new("ShaderNodeTexImage"); tn.image = img_n; tn.location = (-900, -600)
 ta = nt.nodes.new("ShaderNodeTexImage"); ta.image = img_ao; ta.location = (-900, 0)
-fko.hide_render = True
+if fko is not None:
+    fko.hide_render = True
 low.visible_camera = low.visible_diffuse = low.visible_glossy = low.visible_shadow = False
 low.visible_transmission = low.visible_volume_scatter = False
 me.shade_smooth()
@@ -1048,7 +1066,8 @@ scene.render.engine = "BLENDER_EEVEE"
 for ob_ in (HIGHB, HIGHP):
     m_ = ob_.data
     bpy.data.objects.remove(ob_, do_unlink=True); bpy.data.meshes.remove(m_)
-fko.hide_render = False
+if fko is not None:
+    fko.hide_render = False
 low.visible_camera = low.visible_diffuse = low.visible_glossy = low.visible_shadow = True
 low.visible_transmission = low.visible_volume_scatter = True
 print("BAKE", json.dumps({k: v for k, v in bstats.items() if k != "pixel_sha"}))
@@ -1256,7 +1275,7 @@ report["v61_round"] = {
               "seam_width_mm": (report.get("mouth_placement") or {}).get("seam_width_mm"), "line_w_mm": MOUTH_LINE[0] * 1000},
     "placement": report.get("mouth_placement"), "tris_total": report["tris"]["total"]}
 print("V61_ROUND", json.dumps(report["v61_round"]))
-DIG["geometry_colour_uv"] = geometry_digest([low, fko])
+DIG["geometry_colour_uv"] = geometry_digest(MESHES)
 report["digest_geometry_colour_uv"] = DIG["geometry_colour_uv"]
 report["palette"] = {"default": PAL.table(pal_default), "files": pal_default["files"],
                      "provenance": "the sheet's six palette chips + direct samples off the figures / detail panels"}

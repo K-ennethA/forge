@@ -76,7 +76,7 @@
    }
   },
   "sole_lift": 0.0582,
-  "seconds": 1.4
+  "seconds": 0.8
  },
  "lip_seal": {
   "rule": "front rays deeper than 2.5 mm behind the lip front = the gap; half the gap closed from each lip, falloff 9.0 mm, overlap 0.30 mm",
@@ -890,7 +890,7 @@
    "mline": 173
   },
   "degenerate_faces_dissolved": 240,
-  "seconds": 45.9,
+  "seconds": 33.1,
   "body_tris_after_cuts": 30330
  },
  "liner_proof": {
@@ -1009,6 +1009,11 @@
   "tris_removed": 10166
  },
  "centre_shift": [
+  0.014383,
+  -0.004556,
+  0.0
+ ],
+ "centre_shift_v61_frame": [
   -0.017431,
   -0.004556,
   0.0
@@ -1077,13 +1082,6 @@
    "hair_tip": 400,
    "hair_inner": 1538,
    "hair_crevice": 464
-  },
-  "wren_pitchfork": {
-   "wood": 227,
-   "wood_dark": 183,
-   "grip": 168,
-   "grip_dark": 64,
-   "ferrule": 40
   }
  },
  "regions_area_share": {
@@ -1139,12 +1137,12 @@
  "facing": {
   "rule": "head centre (between the eyes, at the skull's mid depth) -> nose tip (midline)",
   "anchor": [
-   0.0174,
+   -0.0144,
    -0.0524,
    1.5785
   ],
   "landmark": [
-   0.0174,
+   -0.0144,
    -0.1749,
    1.5382
   ],
@@ -1163,12 +1161,12 @@
  },
  "face_uv": {
   "linear_texel_density_vs_rest": {
-   "v1_rule": 0.993,
+   "v1_rule": 0.989,
    "v2": 4.5
   },
-  "uv_share_pct": 9.452,
-  "texels_per_mm_face": 1.952,
-  "texels_per_mm_rest": 0.434
+  "uv_share_pct": 9.542,
+  "texels_per_mm_face": 1.961,
+  "texels_per_mm_rest": 0.436
  },
  "uv_hair_strip": {
   "strip_u_from": 0.86,
@@ -1177,9 +1175,9 @@
   "nonhair_uv_u_max": 0.8453
  },
  "tris": {
-  "total": 48853,
+  "total": 47541,
   "main": 47541,
-  "pitchfork": 1312,
+  "pitchfork": 0,
   "body": 20164,
   "hair_locks": 6432,
   "eye": 1556,
@@ -1218,7 +1216,7 @@
   "lock": 6432,
   "hairtie": 80
  },
- "tier_rationale": "HERO role: window [30000, 50000]. The MPFB body (face, hands, fingers for the grip) + a real hair mass + a patched two-tone cloak with hood + cowl + boots + the outfit pieces + a detailed pitchfork.",
+ "tier_rationale": "HERO role: window [30000, 50000]. The MPFB body (face, hands, fingers for the grip) + a real hair mass + a patched two-tone cloak with hood + cowl + boots + the outfit pieces; no prop (HAS_FORK False).",
  "open_edges": {
   "hair_cap": 195
  },
@@ -1226,23 +1224,23 @@
  "measure": {
   "bbox": [
    [
-    -0.4986,
+    -0.4667,
     -0.2656,
     0.0
    ],
    [
-    0.4986,
+    0.4667,
     0.2656,
     1.7506
    ]
   ],
   "height": 1.7506,
-  "width_x": 0.9971,
+  "width_x": 0.9335,
   "depth_y": 0.5312,
   "export_cell_fit_report_only": {
    "scale": 1.02823,
    "height_m": 1.8,
-   "footprint_m": 1.0253
+   "footprint_m": 0.9599
   }
  },
  "parts": {
@@ -1359,14 +1357,8 @@
    "seconds": 0.8
   },
   "pitchfork": {
-   "total_len": 1.7446,
-   "x_height": 1.038,
-   "grip_at_m": 1.1136,
-   "rest_butt": [
-    -0.44,
-    -0.02,
-    0.0
-   ]
+   "has_fork": false,
+   "rule": "review-log 2026-10-03: no prop until a weapon is designed (HAS_FORK)"
   },
   "locks": {
    "lock.fringe.0": {
@@ -3425,7 +3417,7 @@
    "hair_inner": 1538,
    "hair_crevice": 464
   },
-  "seconds": 3.8,
+  "seconds": 3.5,
   "fringe_tips_mm": [
    [
     -62.0,
@@ -3498,13 +3490,13 @@
    "result": [
     "FINISHED"
    ],
-   "seconds": 7.5
+   "seconds": 6.5
   },
   "AO": {
    "result": [
     "FINISHED"
    ],
-   "seconds": 13.1
+   "seconds": 10.6
   },
   "cage_extrusion": 0.012,
   "low_to_high_skin_m": {
@@ -3532,18 +3524,18 @@
    "rule": "lower-lid faces from 0.5 mm inside to 2.0 mm outside the lid edge, within 100 deg of straight down, tilted more than 50 deg from the view axis",
    "rim_faces_left_out": 283
   },
-  "normal_baked_texels_pct": 90.89,
-  "normal_detail_fraction_dev_gt_0.05": 0.726,
-  "ao_baked_texels_pct": 98.81,
-  "ao_mean": 0.4313,
+  "normal_baked_texels_pct": 90.74,
+  "normal_detail_fraction_dev_gt_0.05": 0.7257,
+  "ao_baked_texels_pct": 99.51,
+  "ao_mean": 0.4305,
   "ao_p05": 0.0,
   "pixel_sha": {
-   "normal": "19d18d49851b8bc1",
-   "ao": "143a84d13fc85acb"
+   "normal": "9dbd009c7377aa0a",
+   "ao": "6c0a5245a136045e"
   },
   "normal_skin_only": {
    "rule": "normal texels outside the (dilated) skin-region UV triangles set flat",
-   "skin_texels_pct": 13.49
+   "skin_texels_pct": 13.58
   },
   "mouth_proxy_v6": {
    "sigma_mm": 4.0,
@@ -3568,22 +3560,22 @@
    "zone_triangles": {
     "candidates": 1400,
     "visible": 904,
-    "with_texel_centres": 844
+    "with_texel_centres": 839
    },
-   "protected_texels(other islands)": 1382096,
-   "texels_written": 26577,
-   "texels_changed": 26567,
+   "protected_texels(other islands)": 1343308,
+   "texels_written": 26805,
+   "texels_changed": 26794,
    "facet_vs_proxy_deg_core_p50_p90_max": [
-    2.39,
-    7.49,
-    45.54
+    2.37,
+    7.51,
+    44.65
    ],
    "decode_vs_proxy_deg_core_p50_p99_max": [
-    0.319,
-    22.535,
-    71.085
+    0.315,
+    19.826,
+    45.516
    ],
-   "seconds": 3.0
+   "seconds": 2.6
   },
   "hair_proxy_bake": {
    "enabled": true,
@@ -3596,7 +3588,7 @@
     "smoothing_passes": 80,
     "pad_m": 0.003,
     "centre": [
-     0.0173,
+     -0.0145,
      -0.047,
      1.5674
     ],
@@ -3624,10 +3616,10 @@
     "carry_vs_intended_deg_p50_p90_p99_max": [
      0.0024,
      0.0045,
-     0.0074,
+     0.0073,
      0.7851
     ],
-    "nonhair_corner_vs_face_deg_max": 0.081572,
+    "nonhair_corner_vs_face_deg_max": 0.083356,
     "hair_edges": 9017,
     "facet_dihedral_deg_p50_p90": [
      13.05,
@@ -3657,10 +3649,10 @@
       8.26
      ]
     },
-    "digest": "42b1a490e96c7e2c"
+    "digest": "1328e889bba76209"
    }
   },
-  "seconds": 32.2,
+  "seconds": 27.4,
   "hair_strip": {
    "rule": "hair faces packed into u > 0.86; normal texels there flat, AO texels white",
    "raw_ao_in_hair_strip_p05": 0.0,
@@ -3684,7 +3676,7 @@
    },
    "raw_p05": 0.0,
    "lifted_p05": 0.42,
-   "lifted_mean": 0.7513
+   "lifted_mean": 0.7504
   }
  },
  "material": {
@@ -4026,17 +4018,17 @@
    ],
    "tris_per_cm2": 6.53,
    "linear_texel_density_vs_rest": {
-    "v1_rule": 0.993,
+    "v1_rule": 0.989,
     "v2": 4.5
    },
-   "uv_share_pct": 9.452,
-   "texels_per_mm_face": 1.952,
-   "texels_per_mm_rest": 0.434,
+   "uv_share_pct": 9.542,
+   "texels_per_mm_face": 1.961,
+   "texels_per_mm_rest": 0.436,
    "normal_ref": "flat"
   },
   "tris_total": {
    "v1": 49662,
-   "live": 48853
+   "live": 47541
   },
   "body_untouched_rule": "every change is head / neck skin: targets are face dials, the seal / cuts / harvest are head-gated"
  },
@@ -4298,7 +4290,7 @@
   },
   "tris_total": {
    "v2": 48137,
-   "v3": 48853
+   "v3": 47541
   },
   "body_untouched_rule": "every change is head skin (eye scale gated to the orbit), the eyeballs, or the hair parts"
  },
@@ -4798,7 +4790,7 @@
   },
   "tris_total": {
    "v3": 48766,
-   "v4": 48853
+   "v4": 47541
   }
  },
  "v5_round": {
@@ -5066,7 +5058,7 @@
   },
   "tris_total": {
    "v4": 48428,
-   "v5": 48853
+   "v5": 47541
   }
  },
  "v6_round": {
@@ -5222,22 +5214,22 @@
     "zone_triangles": {
      "candidates": 1400,
      "visible": 904,
-     "with_texel_centres": 844
+     "with_texel_centres": 839
     },
-    "protected_texels(other islands)": 1382096,
-    "texels_written": 26577,
-    "texels_changed": 26567,
+    "protected_texels(other islands)": 1343308,
+    "texels_written": 26805,
+    "texels_changed": 26794,
     "facet_vs_proxy_deg_core_p50_p90_max": [
-     2.39,
-     7.49,
-     45.54
+     2.37,
+     7.51,
+     44.65
     ],
     "decode_vs_proxy_deg_core_p50_p99_max": [
-     0.319,
-     22.535,
-     71.085
+     0.315,
+     19.826,
+     45.516
     ],
-    "seconds": 3.0
+    "seconds": 2.6
    },
    "ao_floor": {
     "floor": 1.0,
@@ -5251,7 +5243,7 @@
   "note": "the delivered-mesh / rendered numbers are the probes': renders/wren/wren_v6_mprobe.json (vs wren_v5_mprobe.json) and wren_v6_face_probe.json (vs wren_v5_face_probe.json)",
   "tris_total": {
    "v5.1": 48208,
-   "v6": 48853
+   "v6": 47541
   }
  },
  "v61_round": {
@@ -5329,9 +5321,9 @@
    "w_eyes": 0.74,
    "seam_level_mm": 2.23
   },
-  "tris_total": 48853
+  "tris_total": 47541
  },
- "digest_geometry_colour_uv": "656deb68b2d01036",
+ "digest_geometry_colour_uv": "1270e0bb085e733b",
  "palette": {
   "default": {
    "skin": {

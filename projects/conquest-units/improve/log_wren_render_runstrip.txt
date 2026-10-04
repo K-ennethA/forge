@@ -1,0 +1,74 @@
+00:01.984  blend            | Read blend: "C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\rigged\wren.blend"
+00:04.969  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\wren\run_strip\wren_run_side_00.png'
+00:05.859  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\wren\run_strip\wren_run_side_01.png'
+00:06.484  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\wren\run_strip\wren_run_side_02.png'
+00:07.547  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\wren\run_strip\wren_run_side_03.png'
+00:08.437  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\wren\run_strip\wren_run_side_04.png'
+00:08.875  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\wren\run_strip\wren_run_side_05.png'
+00:09.469  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\wren\run_strip\wren_run_side_06.png'
+00:09.734  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\wren\run_strip\wren_run_side_07.png'
+00:10.250  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\wren\run_strip\wren_run_side_08.png'
+00:10.594  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\wren\run_strip\wren_run_side_09.png'
+00:10.922  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\wren\run_strip\wren_run_side_10.png'
+00:11.250  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\wren\run_strip\wren_run_side_11.png'
+00:11.469  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\wren\run_strip\wren_run_side_r_00.png'
+00:11.687  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\wren\run_strip\wren_run_side_r_01.png'
+00:11.937  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\wren\run_strip\wren_run_side_r_02.png'
+00:12.125  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\wren\run_strip\wren_run_side_r_03.png'
+00:12.328  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\wren\run_strip\wren_run_side_r_04.png'
+00:12.578  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\wren\run_strip\wren_run_side_r_05.png'
+00:12.719  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\wren\run_strip\wren_run_side_r_06.png'
+00:13.015  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\wren\run_strip\wren_run_side_r_07.png'
+00:13.234  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\wren\run_strip\wren_run_side_r_08.png'
+00:13.422  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\wren\run_strip\wren_run_side_r_09.png'
+00:13.687  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\wren\run_strip\wren_run_side_r_10.png'
+00:13.890  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\wren\run_strip\wren_run_side_r_11.png'
+00:14.109  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\wren\run_strip\wren_run_threequarter_r_00.png'
+00:14.265  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\wren\run_strip\wren_run_threequarter_r_01.png'
+00:14.406  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\wren\run_strip\wren_run_threequarter_r_02.png'
+00:14.562  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\wren\run_strip\wren_run_threequarter_r_03.png'
+00:14.719  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\wren\run_strip\wren_run_threequarter_r_04.png'
+00:14.890  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\wren\run_strip\wren_run_threequarter_r_05.png'
+00:15.078  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\wren\run_strip\wren_run_threequarter_r_06.png'
+00:15.234  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\wren\run_strip\wren_run_threequarter_r_07.png'
+00:15.375  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\wren\run_strip\wren_run_threequarter_r_08.png'
+00:15.578  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\wren\run_strip\wren_run_threequarter_r_09.png'
+00:15.781  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\wren\run_strip\wren_run_threequarter_r_10.png'
+00:15.922  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\wren\run_strip\wren_run_threequarter_r_11.png'
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\wren\run_strip\wren_run_side_00.png frame 1
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\wren\run_strip\wren_run_side_01.png frame 2
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\wren\run_strip\wren_run_side_02.png frame 3
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\wren\run_strip\wren_run_side_03.png frame 4
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\wren\run_strip\wren_run_side_04.png frame 5
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\wren\run_strip\wren_run_side_05.png frame 6
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\wren\run_strip\wren_run_side_06.png frame 7
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\wren\run_strip\wren_run_side_07.png frame 8
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\wren\run_strip\wren_run_side_08.png frame 9
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\wren\run_strip\wren_run_side_09.png frame 10
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\wren\run_strip\wren_run_side_10.png frame 11
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\wren\run_strip\wren_run_side_11.png frame 12
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\wren\run_strip\wren_run_side_r_00.png frame 1
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\wren\run_strip\wren_run_side_r_01.png frame 2
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\wren\run_strip\wren_run_side_r_02.png frame 3
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\wren\run_strip\wren_run_side_r_03.png frame 4
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\wren\run_strip\wren_run_side_r_04.png frame 5
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\wren\run_strip\wren_run_side_r_05.png frame 6
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\wren\run_strip\wren_run_side_r_06.png frame 7
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\wren\run_strip\wren_run_side_r_07.png frame 8
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\wren\run_strip\wren_run_side_r_08.png frame 9
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\wren\run_strip\wren_run_side_r_09.png frame 10
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\wren\run_strip\wren_run_side_r_10.png frame 11
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\wren\run_strip\wren_run_side_r_11.png frame 12
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\wren\run_strip\wren_run_threequarter_r_00.png frame 1
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\wren\run_strip\wren_run_threequarter_r_01.png frame 2
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\wren\run_strip\wren_run_threequarter_r_02.png frame 3
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\wren\run_strip\wren_run_threequarter_r_03.png frame 4
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\wren\run_strip\wren_run_threequarter_r_04.png frame 5
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\wren\run_strip\wren_run_threequarter_r_05.png frame 6
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\wren\run_strip\wren_run_threequarter_r_06.png frame 7
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\wren\run_strip\wren_run_threequarter_r_07.png frame 8
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\wren\run_strip\wren_run_threequarter_r_08.png frame 9
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\wren\run_strip\wren_run_threequarter_r_09.png frame 10
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\wren\run_strip\wren_run_threequarter_r_10.png frame 11
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\wren\run_strip\wren_run_threequarter_r_11.png frame 12
+Blender 5.0.1 (hash a3db93c5b259 built 2025-12-16 01:32:30)

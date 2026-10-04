@@ -27,7 +27,19 @@
   Trunk weights leave a rope spike + a pouch floating at the rest hands (renders/wren/wren_s7fix_walk6_before_after.png);
   v6.1 hides it by gluing them to the forearm / thumb_02_l (the pouch rides the hand to the chest in the run). Next: s3
   profile against the trunk (touches the LOCKED outfit look: the pouch moves onto the hip -- artist call), then retune.
-- **Key knobs:** HAIR_NORMAL_CARRIER, EYE_SCALE, LIP_* / MOUTH_* (seal, smirk, smooth, proxy), RIBBON_* /
+- **Pitchfork DROPPED (2026-10-03, review-log "can we drop the pitchfork from wren", pending commit):** knob HAS_FORK
+  (wren_build.py) = False -> no fork mesh / node / material, no 'pitchfork' bone (94 -> 93 bones, 93 -> 92 deform), no grip
+  transform or conquest_pitchfork_grip prop, fork gates + report fields removed (seam_fork_mm, min_z_fork, fork_butt_z_range,
+  grip_relation_max_dev, fork_shaft_* / fork_to_*), fork renders retired from wren_run.ps1. Tris 48853 -> 47541 (fork = 1312).
+  The right ARM keeps the approved carry path (FORK / FORK_* / ROLL search still define the empty hand's frame); only the 15
+  right finger rotation channels changed per clip (= the left hand's pose: idle / walk RELAX_CURL + thumb (4, 8), run
+  RUN_HAND). The model is RE-CENTRED on the body (feet_origin: SHIFT x -0.0174 -> +0.0144, the whole mesh moves 31.8 mm in
+  x in the game frame); every other key equals v6.1 to float32 noise (<= 1.8e-7 quat, <= 1.1e-7 m), not byte-identical; the
+  walk's WALK_FOOT_X narrows about the v6.1 frame (s6 SHIFT_V61 / s8 WALK_X0) so the walk legs stay put. --set HAS_FORK=True
+  reproduces build digest c9215939245d39b5 exactly. Before/after: renders/wren/wren_nofork_{idle,walk,run}_before_after.png.
+  OPEN ARTIST CALL: empty-handed, the carry path reads as a raised open hand at the chest in the walk (and a hand at the
+  waist in the idle); a free right-arm swing (mirror of the left) is the natural follow-up but changes the approved arm path.
+- **Key knobs:** HAS_FORK, HAIR_NORMAL_CARRIER, EYE_SCALE, LIP_* / MOUTH_* (seal, smirk, smooth, proxy), RIBBON_* /
   LAYER_* (hair), HAIR_INTERIOR_R, NEAREST_TIE. All top-of-file in wren_build.py.
 - **Unit gates beyond the contract:** face probe (under-eye/mouth numbers), mouth
   probe (second-feature traces), hair diag (interpenetration/kinks), HAIRSTABLE,
@@ -39,7 +51,8 @@
   muzzle side-to-side wrap (open artist question).
 - **Open artist questions:** smirk strength/side; under-lip shading absent (confirm);
   hair paint tiers vs one-tone; lock count increase; back-lock length; winter
-  angel-ring tint; run: arm pump amplitude (capped by the cloak drape), cloak trail, fork carry (upright vs charging).
+  angel-ring tint; run: arm pump amplitude (capped by the cloak drape), cloak trail; the empty right arm (keep the carry
+  path vs a free swing); the weapon design (HAS_FORK machinery re-usable).
 - **Stale items fixed 2026-10-03:** s8 conquest_look string follows HAIR_NORMAL_CARRIER; wren_run.ps1 reads the hair-normal
   bake pair only when this build wrote it; wren_render.py '--hair-normal-flat' retired.
 

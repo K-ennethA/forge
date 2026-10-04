@@ -107,7 +107,7 @@
     "median": 0.124
    },
    "lid_line_mm": {
-    "max": 0.467,
+    "max": 0.466,
     "p90": 0.249
    },
    "regions_in_band": {
@@ -205,7 +205,7 @@
      "+16.5": 0.17,
      "+17.0": 0.2,
      "+17.5": 0.24,
-     "+18.0": 0.23,
+     "+18.0": 0.24,
      "+18.5": 0.21,
      "+19.0": 0.22,
      "+19.5": 0.41,
@@ -213,16 +213,16 @@
      "+20.5": 0.95,
      "+21.0": 1.18
     },
-    "p90": 0.537,
+    "p90": 0.536,
     "columns": 71
    },
    "flatness_mm": {
-    "max": 0.52,
+    "max": 0.521,
     "p90": 0.418,
     "median": 0.124
    },
    "lid_line_mm": {
-    "max": 0.52,
+    "max": 0.521,
     "p90": 0.292
    },
    "regions_in_band": {
@@ -256,14 +256,14 @@
   "columns": {
    "x+0": {
     "seam_dz_mm": -1.5,
-    "upper_fwd_raw_mm": 1.341,
+    "upper_fwd_raw_mm": 1.342,
     "upper_proud_detrended_mm": 0.035,
     "seam_recess_mm": 0.005,
     "relief_max_mm": 0.249
    },
    "x+4": {
     "seam_dz_mm": -1.5,
-    "upper_fwd_raw_mm": 1.557,
+    "upper_fwd_raw_mm": 1.558,
     "upper_proud_detrended_mm": 0.143,
     "seam_recess_mm": 0.035,
     "relief_max_mm": 0.227
@@ -292,13 +292,13 @@
    "x+20": {
     "seam_dz_mm": -1.5,
     "upper_fwd_raw_mm": 1.674,
-    "upper_proud_detrended_mm": 0.06,
+    "upper_proud_detrended_mm": 0.061,
     "seam_recess_mm": 0.018,
     "relief_max_mm": 0.102
    },
    "x+24": {
     "seam_dz_mm": -1.5,
-    "upper_fwd_raw_mm": 1.825,
+    "upper_fwd_raw_mm": 1.824,
     "upper_proud_detrended_mm": 0.053,
     "seam_recess_mm": 0.02,
     "relief_max_mm": 0.049

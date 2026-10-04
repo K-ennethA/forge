@@ -6,9 +6,16 @@
   "max_influences": 4,
   "unweighted": 0,
   "sum_dev_max": 3.3306690738754696e-16,
-  "seconds": 0.5,
-  "pitchfork_object": "every pitchfork vertex 1.0 on 'pitchfork' (child of hand_r)",
-  "rule": "body: MPFB game_engine weights (Root -> pelvis); boot shafts / cuffs, trouser blouse, sash wraps, sleeve rolls, bracer + straps, cord: the MPFB weights of the nearest skin point (barycentric); boot foot shells / soles / straps: foot, blending to ball ahead of the ball line; rivets / buckles (foot) / knot / pouch / crystals / clasp: rigid at their centroid's skin weights; tunic tails: pelvis at the top blending to the skin under the hem (<= 55 %); cowl: the skin weights with head / half the neck moved to spine_03; eyes / cap / back + crown locks / cowlick / tail tie: head; fringe / side / tail locks: head until their chain takes over, then rigkit.vine_weights; ties: pelvis -> tie.0/1; cloak + hood + stitches: across-hat between the 5 chains x along-hat down each"
+  "seconds": 0.4,
+  "pitchfork_object": "none (HAS_FORK False)",
+  "rule": "body: MPFB game_engine weights (Root -> pelvis); boot shafts / cuffs, trouser blouse, sash wraps, sleeve rolls, bracer + straps, cord: the MPFB weights of the nearest skin point (barycentric); boot foot shells / soles / straps: foot, blending to ball ahead of the ball line; rivets / buckles (foot) / knot / pouch / crystals / clasp: rigid at their centroid's skin weights; tunic tails: pelvis at the top blending to the skin under the hem (<= 55 %); cowl: the skin weights with head / half the neck moved to spine_03; eyes / cap / back + crown locks / cowlick / tail tie: head; fringe / side / tail locks: head until their chain takes over, then rigkit.vine_weights; ties: pelvis -> tie.0/1; cloak + hood + stitches: across-hat between the 5 chains x along-hat down each. 2026-10-03 weight-source knobs (all OFF = v6.1): TORSO_HUNG parts copy from the TRUNK faces only (no arm-chain source); the cloak's forearm coupling fades elbow -> wrist (CLOAK_FOREARM, per side) and its side panels at the sash line hang part from the hip (CLOAK_HIP)",
+  "weight_sources": {
+   "torso_hung_parts": [],
+   "torso_hung_arm_chain_weight_max": null,
+   "cloak_verts_forearm_hand_weight": 310,
+   "cloak_verts_left_arm_weight": 299,
+   "cloak_left_arm_weight_max": 1.0
+  }
  },
  "follow_through": {
   "params": {
@@ -279,7 +286,7 @@
     }
    }
   },
-  "seconds": 0.3
+  "seconds": 0.2
  },
  "clips": {
   "idle": {
@@ -291,15 +298,8 @@
    "seconds": 4.0,
    "cyclic": true,
    "seam_main_mm": 0.0,
-   "seam_fork_mm": 0.0,
    "min_z_main": -0.0,
-   "min_z_fork": 3e-05,
-   "fork_butt_z_range": [
-    0.002,
-    0.0022
-   ],
    "root_offset_max": 0.0,
-   "grip_relation_max_dev": 3.6e-07,
    "right_wrist_bend_max_deg": 44.21,
    "ik_unreachable_max_m": {
     "L": 0.0,
@@ -313,17 +313,7 @@
     "cloak_crossings_legs": 0,
     "cloak_crossings_torso_outfit": 0,
     "hair_into_skin_verts_max": 0,
-    "fork_shaft_through_cloak": 0,
-    "fork_shaft_through_body": 0,
-    "fork_to_cloak_min_m": 0.0437,
-    "fork_to_legs_min_m": 0.1918,
-    "cloak_to_legs_min_m": 0.0695,
-    "fork_to_mesh_min_m": 0.1052,
-    "fork_to_mesh_worst": {
-     "frame": 73,
-     "axis_m_from_butt": 1.375,
-     "part": "cowl"
-    }
+    "cloak_to_legs_min_m": 0.0695
    },
    "seam_joints": {
     "pose_delta_deg_max": 0.0,
@@ -365,15 +355,8 @@
    "seconds": 1.0833,
    "cyclic": true,
    "seam_main_mm": 0.0,
-   "seam_fork_mm": 0.0,
    "min_z_main": -0.0,
-   "min_z_fork": 0.08921,
-   "fork_butt_z_range": [
-    0.0909,
-    0.155
-   ],
    "root_offset_max": 0.0,
-   "grip_relation_max_dev": 3e-07,
    "right_wrist_bend_max_deg": 47.66,
    "ik_unreachable_max_m": {
     "L": 0.0,
@@ -387,17 +370,7 @@
     "cloak_crossings_legs": 0,
     "cloak_crossings_torso_outfit": 0,
     "hair_into_skin_verts_max": 0,
-    "fork_shaft_through_cloak": 0,
-    "fork_shaft_through_body": 0,
-    "fork_to_cloak_min_m": 0.0436,
-    "fork_to_legs_min_m": 0.0806,
-    "cloak_to_legs_min_m": 0.1086,
-    "fork_to_mesh_min_m": 0.0806,
-    "fork_to_mesh_worst": {
-     "frame": 10,
-     "axis_m_from_butt": 0.138,
-     "part": "bootcuff.R"
-    }
+    "cloak_to_legs_min_m": 0.1086
    },
    "seam_joints": {
     "pose_delta_deg_max": 0.0,
@@ -457,15 +430,8 @@
    "seconds": 0.5,
    "cyclic": true,
    "seam_main_mm": 0.0,
-   "seam_fork_mm": 0.0,
    "min_z_main": -0.0,
-   "min_z_fork": 0.0361,
-   "fork_butt_z_range": [
-    0.0381,
-    0.0893
-   ],
    "root_offset_max": 0.0,
-   "grip_relation_max_dev": 3e-07,
    "right_wrist_bend_max_deg": 43.92,
    "ik_unreachable_max_m": {
     "L": 0.0,
@@ -479,19 +445,9 @@
     "cloak_crossings_legs": 0,
     "cloak_crossings_torso_outfit": 24,
     "hair_into_skin_verts_max": 0,
-    "fork_shaft_through_cloak": 0,
-    "fork_shaft_through_body": 0,
-    "fork_to_cloak_min_m": 0.0492,
-    "fork_to_legs_min_m": 0.0652,
     "cloak_to_legs_min_m": 0.0884,
-    "fork_to_mesh_min_m": 0.0652,
     "cloak_crossings_worst_frame": {
      "torso_outfit": 3
-    },
-    "fork_to_mesh_worst": {
-     "frame": 7,
-     "axis_m_from_butt": 0.373,
-     "part": "puff.R"
     }
    },
    "seam_joints": {
@@ -601,12 +557,12 @@
    "parent": "root",
    "deform": true,
    "head": [
-    0.0174,
+    -0.0144,
     -0.0013,
     0.9235
    ],
    "tail": [
-    0.0174,
+    -0.0144,
     0.0287,
     1.0072
    ]
@@ -616,12 +572,12 @@
    "parent": "pelvis",
    "deform": true,
    "head": [
-    0.0174,
+    -0.0144,
     0.0287,
     1.0072
    ],
    "tail": [
-    0.0174,
+    -0.0144,
     0.0203,
     1.0667
    ]
@@ -631,12 +587,12 @@
    "parent": "spine_01",
    "deform": true,
    "head": [
-    0.0174,
+    -0.0144,
     0.0203,
     1.0667
    ],
    "tail": [
-    0.0174,
+    -0.0144,
     0.025,
     1.1224
    ]
@@ -646,12 +602,12 @@
    "parent": "spine_02",
    "deform": true,
    "head": [
-    0.0174,
+    -0.0144,
     0.025,
     1.1224
    ],
    "tail": [
-    0.0174,
+    -0.0144,
     0.0577,
     1.2602
    ]
@@ -661,12 +617,12 @@
    "parent": "spine_03",
    "deform": true,
    "head": [
-    0.0392,
+    0.0074,
     -0.0214,
     1.3761
    ],
    "tail": [
-    0.2032,
+    0.1714,
     -0.0126,
     1.3408
    ]
@@ -676,12 +632,12 @@
    "parent": "clavicle_l",
    "deform": true,
    "head": [
-    0.2032,
+    0.1714,
     -0.0126,
     1.3408
    ],
    "tail": [
-    0.281,
+    0.2491,
     -0.0124,
     1.1247
    ]
@@ -691,12 +647,12 @@
    "parent": "upperarm_l",
    "deform": true,
    "head": [
-    0.281,
+    0.2491,
     -0.0124,
     1.1247
    ],
    "tail": [
-    0.361,
+    0.3291,
     -0.0989,
     0.9219
    ]
@@ -706,12 +662,12 @@
    "parent": "lowerarm_l",
    "deform": true,
    "head": [
-    0.361,
+    0.3291,
     -0.0989,
     0.9219
    ],
    "tail": [
-    0.3691,
+    0.3373,
     -0.1164,
     0.8956
    ]
@@ -721,12 +677,12 @@
    "parent": "hand_l",
    "deform": true,
    "head": [
-    0.3827,
+    0.3509,
     -0.1672,
     0.8452
    ],
    "tail": [
-    0.3825,
+    0.3507,
     -0.1814,
     0.8238
    ]
@@ -736,12 +692,12 @@
    "parent": "index_01_l",
    "deform": true,
    "head": [
-    0.3825,
+    0.3507,
     -0.1814,
     0.8238
    ],
    "tail": [
-    0.378,
+    0.3461,
     -0.1924,
     0.8041
    ]
@@ -751,12 +707,12 @@
    "parent": "index_02_l",
    "deform": true,
    "head": [
-    0.378,
+    0.3461,
     -0.1924,
     0.8041
    ],
    "tail": [
-    0.3687,
+    0.3369,
     -0.2038,
     0.7825
    ]
@@ -766,12 +722,12 @@
    "parent": "hand_l",
    "deform": true,
    "head": [
-    0.3902,
+    0.3584,
     -0.1439,
     0.8363
    ],
    "tail": [
-    0.3892,
+    0.3574,
     -0.154,
     0.8043
    ]
@@ -781,12 +737,12 @@
    "parent": "middle_01_l",
    "deform": true,
    "head": [
-    0.3892,
+    0.3574,
     -0.154,
     0.8043
    ],
    "tail": [
-    0.3846,
+    0.3528,
     -0.163,
     0.7793
    ]
@@ -796,12 +752,12 @@
    "parent": "middle_02_l",
    "deform": true,
    "head": [
-    0.3846,
+    0.3528,
     -0.163,
     0.7793
    ],
    "tail": [
-    0.3773,
+    0.3454,
     -0.1707,
     0.7551
    ]
@@ -811,12 +767,12 @@
    "parent": "hand_l",
    "deform": true,
    "head": [
-    0.3859,
+    0.3541,
     -0.1037,
     0.8318
    ],
    "tail": [
-    0.3846,
+    0.3528,
     -0.1042,
     0.8109
    ]
@@ -826,12 +782,12 @@
    "parent": "pinky_01_l",
    "deform": true,
    "head": [
-    0.3846,
+    0.3528,
     -0.1042,
     0.8109
    ],
    "tail": [
-    0.381,
+    0.3492,
     -0.1051,
     0.796
    ]
@@ -841,12 +797,12 @@
    "parent": "pinky_02_l",
    "deform": true,
    "head": [
-    0.381,
+    0.3492,
     -0.1051,
     0.796
    ],
    "tail": [
-    0.3764,
+    0.3446,
     -0.1059,
     0.777
    ]
@@ -856,12 +812,12 @@
    "parent": "hand_l",
    "deform": true,
    "head": [
-    0.3913,
+    0.3595,
     -0.1241,
     0.8333
    ],
    "tail": [
-    0.3913,
+    0.3594,
     -0.1281,
     0.804
    ]
@@ -871,12 +827,12 @@
    "parent": "ring_01_l",
    "deform": true,
    "head": [
-    0.3913,
+    0.3594,
     -0.1281,
     0.804
    ],
    "tail": [
-    0.3883,
+    0.3564,
     -0.133,
     0.7803
    ]
@@ -886,12 +842,12 @@
    "parent": "ring_02_l",
    "deform": true,
    "head": [
-    0.3883,
+    0.3564,
     -0.133,
     0.7803
    ],
    "tail": [
-    0.3819,
+    0.3501,
     -0.1362,
     0.7551
    ]
@@ -901,12 +857,12 @@
    "parent": "hand_l",
    "deform": true,
    "head": [
-    0.3666,
+    0.3348,
     -0.1373,
     0.8997
    ],
    "tail": [
-    0.3467,
+    0.3149,
     -0.1596,
     0.8924
    ]
@@ -916,12 +872,12 @@
    "parent": "thumb_01_l",
    "deform": true,
    "head": [
-    0.3467,
+    0.3149,
     -0.1596,
     0.8924
    ],
    "tail": [
-    0.3344,
+    0.3026,
     -0.1882,
     0.8743
    ]
@@ -931,12 +887,12 @@
    "parent": "thumb_02_l",
    "deform": true,
    "head": [
-    0.3344,
+    0.3026,
     -0.1882,
     0.8743
    ],
    "tail": [
-    0.3255,
+    0.2937,
     -0.2039,
     0.8538
    ]
@@ -946,12 +902,12 @@
    "parent": "spine_03",
    "deform": true,
    "head": [
-    -0.0043,
+    -0.0361,
     -0.0214,
     1.3761
    ],
    "tail": [
-    -0.1683,
+    -0.2002,
     -0.0126,
     1.3408
    ]
@@ -961,12 +917,12 @@
    "parent": "clavicle_r",
    "deform": true,
    "head": [
-    -0.1683,
+    -0.2002,
     -0.0126,
     1.3408
    ],
    "tail": [
-    -0.2461,
+    -0.2779,
     -0.0124,
     1.1247
    ]
@@ -976,12 +932,12 @@
    "parent": "upperarm_r",
    "deform": true,
    "head": [
-    -0.2461,
+    -0.2779,
     -0.0124,
     1.1247
    ],
    "tail": [
-    -0.3261,
+    -0.3579,
     -0.0989,
     0.9219
    ]
@@ -991,12 +947,12 @@
    "parent": "lowerarm_r",
    "deform": true,
    "head": [
-    -0.3261,
+    -0.3579,
     -0.0989,
     0.9219
    ],
    "tail": [
-    -0.3343,
+    -0.3661,
     -0.1164,
     0.8956
    ]
@@ -1006,12 +962,12 @@
    "parent": "hand_r",
    "deform": true,
    "head": [
-    -0.3479,
+    -0.3797,
     -0.1672,
     0.8452
    ],
    "tail": [
-    -0.3477,
+    -0.3795,
     -0.1814,
     0.8238
    ]
@@ -1021,12 +977,12 @@
    "parent": "index_01_r",
    "deform": true,
    "head": [
-    -0.3477,
+    -0.3795,
     -0.1814,
     0.8238
    ],
    "tail": [
-    -0.3431,
+    -0.3749,
     -0.1924,
     0.8041
    ]
@@ -1036,12 +992,12 @@
    "parent": "index_02_r",
    "deform": true,
    "head": [
-    -0.3431,
+    -0.3749,
     -0.1924,
     0.8041
    ],
    "tail": [
-    -0.3338,
+    -0.3656,
     -0.2038,
     0.7825
    ]
@@ -1051,12 +1007,12 @@
    "parent": "hand_r",
    "deform": true,
    "head": [
-    -0.3554,
+    -0.3872,
     -0.1439,
     0.8363
    ],
    "tail": [
-    -0.3543,
+    -0.3861,
     -0.154,
     0.8043
    ]
@@ -1066,12 +1022,12 @@
    "parent": "middle_01_r",
    "deform": true,
    "head": [
-    -0.3543,
+    -0.3861,
     -0.154,
     0.8043
    ],
    "tail": [
-    -0.3498,
+    -0.3816,
     -0.163,
     0.7793
    ]
@@ -1081,12 +1037,12 @@
    "parent": "middle_02_r",
    "deform": true,
    "head": [
-    -0.3498,
+    -0.3816,
     -0.163,
     0.7793
    ],
    "tail": [
-    -0.3424,
+    -0.3742,
     -0.1707,
     0.7551
    ]
@@ -1096,12 +1052,12 @@
    "parent": "hand_r",
    "deform": true,
    "head": [
-    -0.351,
+    -0.3828,
     -0.1037,
     0.8318
    ],
    "tail": [
-    -0.3498,
+    -0.3816,
     -0.1042,
     0.8109
    ]
@@ -1111,12 +1067,12 @@
    "parent": "pinky_01_r",
    "deform": true,
    "head": [
-    -0.3498,
+    -0.3816,
     -0.1042,
     0.8109
    ],
    "tail": [
-    -0.3462,
+    -0.378,
     -0.1051,
     0.796
    ]
@@ -1126,12 +1082,12 @@
    "parent": "pinky_02_r",
    "deform": true,
    "head": [
-    -0.3462,
+    -0.378,
     -0.1051,
     0.796
    ],
    "tail": [
-    -0.3415,
+    -0.3733,
     -0.1059,
     0.777
    ]
@@ -1141,12 +1097,12 @@
    "parent": "hand_r",
    "deform": true,
    "head": [
-    -0.3564,
+    -0.3882,
     -0.1241,
     0.8333
    ],
    "tail": [
-    -0.3564,
+    -0.3882,
     -0.1281,
     0.804
    ]
@@ -1156,12 +1112,12 @@
    "parent": "ring_01_r",
    "deform": true,
    "head": [
-    -0.3564,
+    -0.3882,
     -0.1281,
     0.804
    ],
    "tail": [
-    -0.3534,
+    -0.3852,
     -0.133,
     0.7803
    ]
@@ -1171,12 +1127,12 @@
    "parent": "ring_02_r",
    "deform": true,
    "head": [
-    -0.3534,
+    -0.3852,
     -0.133,
     0.7803
    ],
    "tail": [
-    -0.347,
+    -0.3788,
     -0.1362,
     0.7551
    ]
@@ -1186,12 +1142,12 @@
    "parent": "hand_r",
    "deform": true,
    "head": [
-    -0.3318,
+    -0.3636,
     -0.1373,
     0.8997
    ],
    "tail": [
-    -0.3118,
+    -0.3436,
     -0.1596,
     0.8924
    ]
@@ -1201,12 +1157,12 @@
    "parent": "thumb_01_r",
    "deform": true,
    "head": [
-    -0.3118,
+    -0.3436,
     -0.1596,
     0.8924
    ],
    "tail": [
-    -0.2996,
+    -0.3314,
     -0.1882,
     0.8743
    ]
@@ -1216,29 +1172,14 @@
    "parent": "thumb_02_r",
    "deform": true,
    "head": [
-    -0.2996,
+    -0.3314,
     -0.1882,
     0.8743
    ],
    "tail": [
-    -0.2907,
+    -0.3225,
     -0.2039,
     0.8538
-   ]
-  },
-  {
-   "name": "pitchfork",
-   "parent": "hand_r",
-   "deform": true,
-   "head": [
-    -0.4226,
-    -0.0154,
-    1.1136
-   ],
-   "tail": [
-    -0.4226,
-    -0.0154,
-    1.4136
    ]
   },
   {
@@ -1246,12 +1187,12 @@
    "parent": "spine_03",
    "deform": true,
    "head": [
-    0.0174,
+    -0.0144,
     -0.008,
     1.4429
    ],
    "tail": [
-    0.0174,
+    -0.0144,
     -0.0472,
     1.532
    ]
@@ -1261,12 +1202,12 @@
    "parent": "neck_01",
    "deform": true,
    "head": [
-    0.0174,
+    -0.0144,
     -0.0472,
     1.532
    ],
    "tail": [
-    0.0174,
+    -0.0144,
     -0.0474,
     1.693
    ]
@@ -1276,12 +1217,12 @@
    "parent": "head",
    "deform": true,
    "head": [
-    0.0484,
+    0.0166,
     -0.166,
     1.6482
    ],
    "tail": [
-    0.0406,
+    0.0088,
     -0.1683,
     1.6276
    ]
@@ -1291,12 +1232,12 @@
    "parent": "hair_fringe.C.0",
    "deform": true,
    "head": [
-    0.0406,
+    0.0088,
     -0.1683,
     1.6276
    ],
    "tail": [
-    0.0326,
+    0.0008,
     -0.1668,
     1.6068
    ]
@@ -1306,12 +1247,12 @@
    "parent": "hair_fringe.C.1",
    "deform": true,
    "head": [
-    0.0326,
+    0.0008,
     -0.1668,
     1.6068
    ],
    "tail": [
-    0.0244,
+    -0.0074,
     -0.164,
     1.5862
    ]
@@ -1321,12 +1262,12 @@
    "parent": "head",
    "deform": true,
    "head": [
-    0.0587,
+    0.0269,
     -0.1565,
     1.6419
    ],
    "tail": [
-    0.059,
+    0.0272,
     -0.1533,
     1.6282
    ]
@@ -1336,12 +1277,12 @@
    "parent": "hair_fringe.L.0",
    "deform": true,
    "head": [
-    0.059,
+    0.0272,
     -0.1533,
     1.6282
    ],
    "tail": [
-    0.062,
+    0.0302,
     -0.1517,
     1.6145
    ]
@@ -1351,12 +1292,12 @@
    "parent": "hair_fringe.L.1",
    "deform": true,
    "head": [
-    0.062,
+    0.0302,
     -0.1517,
     1.6145
    ],
    "tail": [
-    0.066,
+    0.0342,
     -0.1516,
     1.6007
    ]
@@ -1366,12 +1307,12 @@
    "parent": "head",
    "deform": true,
    "head": [
-    -0.0082,
+    -0.04,
     -0.1557,
     1.6487
    ],
    "tail": [
-    -0.0173,
+    -0.0491,
     -0.1555,
     1.6318
    ]
@@ -1381,12 +1322,12 @@
    "parent": "hair_fringe.R.0",
    "deform": true,
    "head": [
-    -0.0173,
+    -0.0491,
     -0.1555,
     1.6318
    ],
    "tail": [
-    -0.023,
+    -0.0548,
     -0.1537,
     1.6134
    ]
@@ -1396,12 +1337,12 @@
    "parent": "hair_fringe.R.1",
    "deform": true,
    "head": [
-    -0.023,
+    -0.0548,
     -0.1537,
     1.6134
    ],
    "tail": [
-    -0.0269,
+    -0.0588,
     -0.1512,
     1.5947
    ]
@@ -1411,12 +1352,12 @@
    "parent": "head",
    "deform": true,
    "head": [
-    0.1186,
+    0.0868,
     -0.0543,
     1.6032
    ],
    "tail": [
-    0.1204,
+    0.0886,
     -0.0549,
     1.5944
    ]
@@ -1426,12 +1367,12 @@
    "parent": "hair_side.L.0",
    "deform": true,
    "head": [
-    0.1204,
+    0.0886,
     -0.0549,
     1.5944
    ],
    "tail": [
-    0.1229,
+    0.0911,
     -0.057,
     1.5862
    ]
@@ -1441,12 +1382,12 @@
    "parent": "hair_side.L.1",
    "deform": true,
    "head": [
-    0.1229,
+    0.0911,
     -0.057,
     1.5862
    ],
    "tail": [
-    0.1271,
+    0.0953,
     -0.0595,
     1.5786
    ]
@@ -1456,12 +1397,12 @@
    "parent": "head",
    "deform": true,
    "head": [
-    -0.0812,
+    -0.113,
     -0.0565,
     1.6193
    ],
    "tail": [
-    -0.0843,
+    -0.1162,
     -0.0563,
     1.6055
    ]
@@ -1471,12 +1412,12 @@
    "parent": "hair_side.R.0",
    "deform": true,
    "head": [
-    -0.0843,
+    -0.1162,
     -0.0563,
     1.6055
    ],
    "tail": [
-    -0.0877,
+    -0.1195,
     -0.0569,
     1.5918
    ]
@@ -1486,12 +1427,12 @@
    "parent": "hair_side.R.1",
    "deform": true,
    "head": [
-    -0.0877,
+    -0.1195,
     -0.0569,
     1.5918
    ],
    "tail": [
-    -0.0918,
+    -0.1236,
     -0.0591,
     1.5784
    ]
@@ -1501,12 +1442,12 @@
    "parent": "head",
    "deform": true,
    "head": [
-    0.0155,
+    -0.0163,
     0.0269,
     1.522
    ],
    "tail": [
-    0.0174,
+    -0.0144,
     0.0425,
     1.5018
    ]
@@ -1516,12 +1457,12 @@
    "parent": "hair_tail.0",
    "deform": true,
    "head": [
-    0.0174,
+    -0.0144,
     0.0425,
     1.5018
    ],
    "tail": [
-    0.017,
+    -0.0148,
     0.0491,
     1.4764
    ]
@@ -1531,12 +1472,12 @@
    "parent": "hair_tail.1",
    "deform": true,
    "head": [
-    0.017,
+    -0.0148,
     0.0491,
     1.4764
    ],
    "tail": [
-    0.0171,
+    -0.0147,
     0.0587,
     1.4522
    ]
@@ -1546,12 +1487,12 @@
    "parent": "spine_03",
    "deform": true,
    "head": [
-    -0.1638,
+    -0.1956,
     -0.0618,
     1.3928
    ],
    "tail": [
-    -0.2351,
+    -0.2669,
     0.0367,
     1.226
    ]
@@ -1561,12 +1502,12 @@
    "parent": "cape.0.0",
    "deform": true,
    "head": [
-    -0.2351,
+    -0.2669,
     0.0367,
     1.226
    ],
    "tail": [
-    -0.2242,
+    -0.256,
     0.0542,
     0.989
    ]
@@ -1576,12 +1517,12 @@
    "parent": "cape.0.1",
    "deform": true,
    "head": [
-    -0.2242,
+    -0.256,
     0.0542,
     0.989
    ],
    "tail": [
-    -0.2554,
+    -0.2872,
     0.0573,
     0.7425
    ]
@@ -1591,12 +1532,12 @@
    "parent": "cape.0.2",
    "deform": true,
    "head": [
-    -0.2554,
+    -0.2872,
     0.0573,
     0.7425
    ],
    "tail": [
-    -0.3039,
+    -0.3358,
     0.0631,
     0.4996
    ]
@@ -1606,12 +1547,12 @@
    "parent": "spine_03",
    "deform": true,
    "head": [
-    -0.0563,
+    -0.0881,
     0.06,
     1.4149
    ],
    "tail": [
-    -0.0613,
+    -0.0931,
     0.1071,
     1.1951
    ]
@@ -1621,12 +1562,12 @@
    "parent": "cape.1.0",
    "deform": true,
    "head": [
-    -0.0613,
+    -0.0931,
     0.1071,
     1.1951
    ],
    "tail": [
-    -0.0927,
+    -0.1245,
     0.1498,
     0.9723
    ]
@@ -1636,12 +1577,12 @@
    "parent": "cape.1.1",
    "deform": true,
    "head": [
-    -0.0927,
+    -0.1245,
     0.1498,
     0.9723
    ],
    "tail": [
-    -0.1311,
+    -0.1629,
     0.1992,
     0.7445
    ]
@@ -1651,12 +1592,12 @@
    "parent": "cape.1.2",
    "deform": true,
    "head": [
-    -0.1311,
+    -0.1629,
     0.1992,
     0.7445
    ],
    "tail": [
-    -0.159,
+    -0.1908,
     0.2163,
     0.5097
    ]
@@ -1666,12 +1607,12 @@
    "parent": "spine_03",
    "deform": true,
    "head": [
-    0.0267,
+    -0.0052,
     0.0527,
     1.4375
    ],
    "tail": [
-    0.0284,
+    -0.0034,
     0.1016,
     1.1992
    ]
@@ -1681,12 +1622,12 @@
    "parent": "cape.2.0",
    "deform": true,
    "head": [
-    0.0284,
+    -0.0034,
     0.1016,
     1.1992
    ],
    "tail": [
-    0.0349,
+    0.0031,
     0.1571,
     0.9702
    ]
@@ -1696,12 +1637,12 @@
    "parent": "cape.2.1",
    "deform": true,
    "head": [
-    0.0349,
+    0.0031,
     0.1571,
     0.9702
    ],
    "tail": [
-    0.0418,
+    0.01,
     0.2135,
     0.7324
    ]
@@ -1711,12 +1652,12 @@
    "parent": "cape.2.2",
    "deform": true,
    "head": [
-    0.0418,
+    0.01,
     0.2135,
     0.7324
    ],
    "tail": [
-    0.0467,
+    0.0149,
     0.2493,
     0.4895
    ]
@@ -1726,12 +1667,12 @@
    "parent": "spine_03",
    "deform": true,
    "head": [
-    0.1398,
+    0.1079,
     0.0654,
     1.4087
    ],
    "tail": [
-    0.1216,
+    0.0898,
     0.1127,
     1.1828
    ]
@@ -1741,12 +1682,12 @@
    "parent": "cape.3.0",
    "deform": true,
    "head": [
-    0.1216,
+    0.0898,
     0.1127,
     1.1828
    ],
    "tail": [
-    0.1532,
+    0.1214,
     0.1453,
     0.9513
    ]
@@ -1756,12 +1697,12 @@
    "parent": "cape.3.1",
    "deform": true,
    "head": [
-    0.1532,
+    0.1214,
     0.1453,
     0.9513
    ],
    "tail": [
-    0.1963,
+    0.1645,
     0.1879,
     0.72
    ]
@@ -1771,12 +1712,12 @@
    "parent": "cape.3.2",
    "deform": true,
    "head": [
-    0.1963,
+    0.1645,
     0.1879,
     0.72
    ],
    "tail": [
-    0.2199,
+    0.1881,
     0.2084,
     0.4823
    ]
@@ -1786,12 +1727,12 @@
    "parent": "spine_03",
    "deform": true,
    "head": [
-    0.1325,
+    0.1007,
     -0.069,
     1.3928
    ],
    "tail": [
-    0.3039,
+    0.2721,
     -0.0107,
     1.2388
    ]
@@ -1801,12 +1742,12 @@
    "parent": "cape.4.0",
    "deform": true,
    "head": [
-    0.3039,
+    0.2721,
     -0.0107,
     1.2388
    ],
    "tail": [
-    0.3184,
+    0.2866,
     0.0287,
     0.9947
    ]
@@ -1816,12 +1757,12 @@
    "parent": "cape.4.1",
    "deform": true,
    "head": [
-    0.3184,
+    0.2866,
     0.0287,
     0.9947
    ],
    "tail": [
-    0.3664,
+    0.3346,
     0.0262,
     0.7396
    ]
@@ -1831,12 +1772,12 @@
    "parent": "cape.4.2",
    "deform": true,
    "head": [
-    0.3664,
+    0.3346,
     0.0262,
     0.7396
    ],
    "tail": [
-    0.4149,
+    0.3831,
     0.0218,
     0.4847
    ]
@@ -1846,12 +1787,12 @@
    "parent": "pelvis",
    "deform": true,
    "head": [
-    0.1196,
+    0.0878,
     0.0078,
     0.924
    ],
    "tail": [
-    0.1591,
+    0.1273,
     -0.0369,
     0.511
    ]
@@ -1861,12 +1802,12 @@
    "parent": "thigh_l",
    "deform": true,
    "head": [
-    0.1591,
+    0.1273,
     -0.0369,
     0.511
    ],
    "tail": [
-    0.2109,
+    0.1791,
     -0.0106,
     0.0878
    ]
@@ -1876,12 +1817,12 @@
    "parent": "calf_l",
    "deform": true,
    "head": [
-    0.2109,
+    0.1791,
     -0.0106,
     0.0878
    ],
    "tail": [
-    0.2149,
+    0.1831,
     -0.1257,
     0.0293
    ]
@@ -1891,12 +1832,12 @@
    "parent": "foot_l",
    "deform": true,
    "head": [
-    0.2149,
+    0.1831,
     -0.1257,
     0.0293
    ],
    "tail": [
-    0.2111,
+    0.1793,
     -0.1921,
     0.0376
    ]
@@ -1906,12 +1847,12 @@
    "parent": "pelvis",
    "deform": true,
    "head": [
-    -0.0847,
+    -0.1166,
     0.0078,
     0.924
    ],
    "tail": [
-    -0.1242,
+    -0.156,
     -0.0369,
     0.511
    ]
@@ -1921,12 +1862,12 @@
    "parent": "thigh_r",
    "deform": true,
    "head": [
-    -0.1242,
+    -0.156,
     -0.0369,
     0.511
    ],
    "tail": [
-    -0.1761,
+    -0.2079,
     -0.0106,
     0.0878
    ]
@@ -1936,12 +1877,12 @@
    "parent": "calf_r",
    "deform": true,
    "head": [
-    -0.1761,
+    -0.2079,
     -0.0106,
     0.0878
    ],
    "tail": [
-    -0.1801,
+    -0.2119,
     -0.1257,
     0.0293
    ]
@@ -1951,12 +1892,12 @@
    "parent": "foot_r",
    "deform": true,
    "head": [
-    -0.1801,
+    -0.2119,
     -0.1257,
     0.0293
    ],
    "tail": [
-    -0.1762,
+    -0.2081,
     -0.1921,
     0.0376
    ]
@@ -1966,12 +1907,12 @@
    "parent": "pelvis",
    "deform": true,
    "head": [
-    0.0674,
+    0.0356,
     -0.1562,
     0.9582
    ],
    "tail": [
-    0.0724,
+    0.0406,
     -0.172,
     0.849
    ]
@@ -1981,47 +1922,21 @@
    "parent": "tie.0",
    "deform": true,
    "head": [
-    0.0724,
+    0.0406,
     -0.172,
     0.849
    ],
    "tail": [
-    0.0724,
+    0.0406,
     -0.1472,
     0.7382
    ]
   }
  ],
- "bone_count": 94,
- "deform_bone_count": 93,
+ "bone_count": 93,
+ "deform_bone_count": 92,
  "grip": {
-  "rule": "hammer grip: the shaft along the right hand's knuckle line, the tines out of the thumb / index side; the pitchfork bone is a child of hand_r and every clip keys it at the SAME hand-relative transform (grip_relation_max_dev); the hand+fork roll about the shaft is picked per clip (10-deg search, least wrist bend at t = 0); inside the grip the fork is turned about its own shaft (tine_roll_in_hand, one value) so the idle shows the tines face-on; the REST pose stands the fork upright beside the right hand, butt on the floor",
-  "G_hand_to_fork_rest4": [
-   [
-    -0.556619,
-    0.80858,
-    -0.190717,
-    -0.01804
-   ],
-   [
-    0.188611,
-    0.346568,
-    0.918867,
-    0.052512
-   ],
-   [
-    0.809074,
-    0.475488,
-    -0.345414,
-    0.011201
-   ],
-   [
-    0.0,
-    0.0,
-    0.0,
-    1.0
-   ]
-  ],
+  "rule": "no prop (HAS_FORK False, review-log 2026-10-03): the right arm keeps the approved carry path (the hand frame the fork grip drove, roll search unchanged); the right fingers take the clip's left-hand pose (idle / walk RELAX_CURL + thumb (4, 8), run RUN_HAND)",
   "fork_roll_search": {
    "idle": {
     "roll_deg": 280,
@@ -2034,17 +1949,11 @@
    "run": {
     "roll_deg": 270,
     "wrist_bend_deg_at_t0": 39.89
-   },
-   "tine_roll_in_hand": {
-    "deg": 80,
-    "idle_t0_tine_plane_to_front_deg": 0.4,
-    "walk_t0_tine_plane_to_front_deg": 6.0
    }
-  },
-  "grip_at_m_from_butt": 1.1136
+  }
  },
  "tris": {
-  "model": 48853,
+  "model": 47541,
   "outline_shells": 0,
   "budget": [
    30000,
@@ -2054,22 +1963,22 @@
  "digest": {
   "parts": {
    "hair_geometry": "a99447b48c4af4be",
-   "mouth_proxy_core": "66d3f1aa98e4dd4e",
-   "bake_normal": "19d18d49851b8bc1",
-   "bake_ao": "143a84d13fc85acb",
-   "ao_lifted": "a3ef9cbd3bd9876c",
-   "hair_custom_normals": "42b1a490e96c7e2c",
-   "geometry_colour_uv": "656deb68b2d01036",
-   "weights": "bd94f0edfe3d2c38",
-   "keys": "613d525212565896",
-   "clip_samples": "5781e0d65003bec5"
+   "mouth_proxy_core": "a525eff59f68880f",
+   "bake_normal": "9dbd009c7377aa0a",
+   "bake_ao": "6c0a5245a136045e",
+   "ao_lifted": "0196fdb2ee43ace8",
+   "hair_custom_normals": "1328e889bba76209",
+   "geometry_colour_uv": "1270e0bb085e733b",
+   "weights": "ad11dcffb6f57147",
+   "keys": "636714d0eef8795b",
+   "clip_samples": "b94d635f21d5ec45"
   },
-  "combined": "c9215939245d39b5"
+  "combined": "34642e3d202dc8f5"
  },
  "glb": {
   "path": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\rigged\\wren.glb",
-  "bytes": 12139800,
-  "seconds": 2.1,
+  "bytes": 11906656,
+  "seconds": 1.6,
   "carries": {
    "materials": [
     {
@@ -2080,12 +1989,6 @@
       "baseColorTexture",
       "normalTexture"
      ]
-    },
-    {
-     "name": "wren_pitchfork",
-     "alphaMode": "OPAQUE",
-     "doubleSided": false,
-     "textures": []
     }
    ],
    "primitives": [
@@ -2096,20 +1999,11 @@
       "COLOR_0",
       "COLOR_1"
      ]
-    },
-    {
-     "mesh": "wren_pitchfork",
-     "material": "wren_pitchfork",
-     "colour_sets": [
-      "COLOR_0",
-      "COLOR_1"
-     ]
     }
    ],
-   "nodes": 97,
+   "nodes": 95,
    "mesh_nodes": [
-    "wren",
-    "wren_pitchfork"
+    "wren"
    ],
    "animations": [
     "idle",
@@ -2118,10 +2012,10 @@
    ],
    "skins": 1,
    "joints": [
-    94
+    93
    ]
   },
-  "structure": "armature + skinned 'wren' (body, opaque) + skinned 'wren_pitchfork' (own node, bone 'pitchfork'); material Col x AO + normal map; natural scale (metres); report-only cell fit 1.02823"
+  "structure": "armature + skinned 'wren' (body, opaque) (no prop: HAS_FORK False); material Col x AO + normal map; natural scale (metres); report-only cell fit 1.02823"
  },
  "skins": {
   "default": {
@@ -2963,23 +2857,16 @@
      "hair_tip": 400,
      "hair_inner": 1538,
      "hair_crevice": 464
-    },
-    "wren_pitchfork": {
-     "wood": 227,
-     "wood_dark": 183,
-     "grip": 168,
-     "grip_dark": 64,
-     "ferrule": 40
     }
    },
-   "geometry_colour_uv_digest": "ea504e8890313cd3"
+   "geometry_colour_uv_digest": "03d054dc9ace7eb0"
   },
   "repaint_proof": {
    "rule": "a skin is a pure palette swap: same regions / faces / vertices; default restored",
-   "default_digest_before": "656deb68b2d01036",
-   "default_digest_after_restore": "656deb68b2d01036"
+   "default_digest_before": "1270e0bb085e733b",
+   "default_digest_after_restore": "1270e0bb085e733b"
   }
  },
  "improved_report": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\improved\\wren.json",
- "seconds": 132.3
+ "seconds": 99.5
 }

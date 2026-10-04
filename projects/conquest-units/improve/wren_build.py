@@ -1,7 +1,7 @@
 """Wren -- the Oakvale farm-boy HERO build (second humanoid Conquest unit, the vampwarrior lessons applied from the start).
 
     blender --background --factory-startup --python improve/wren_build.py -- \
-        [--preview <out.blend>]          (body + outfit + hair + pitchfork + regions + palette only: no bake, no rig)
+        [--preview <out.blend>]          (body + outfit + hair [+ pitchfork] + regions + palette only: no bake, no rig)
         [--digest-only <out.json>]       (the whole pipeline, saves NOTHING but the digest json: the twin determinism probe)
         [--hair-digest-only <out.json>]  (v5.1: sections 1-5 only, saves NOTHING but the exact hair digest: the hair-face
                                           decoupling probe -- run with a face --set, it must equal the build's hair_geometry)
@@ -72,6 +72,7 @@ LESSONS APPLIED FROM THE START (vampwarrior v1 -> v4.2, review-log 2026-09-26 en
   - authored shadow shapes (jaw / neck cast shadow, the fringe's zigzag shadow on the forehead), drawn brows + liner;
   - clips with damped-spring follow-through (periodic steady state), the swing-foot lift proof (zero toe dips), exact loops;
   - the pitchfork on its own bone (child of hand_r), the grip transform recorded, the roll auto-picked (least wrist bend);
+    2026-10-03: HAS_FORK = False (the artist dropped the fork: no prop until a weapon is designed) -- the machinery stays;
   - bake + twin digest tolerance gate.
 
 The build is split into section files executed in ONE namespace (wren_s1_body.py ... wren_s8_clips.py); every tunable
@@ -574,6 +575,14 @@ COWL = {"fold": ((0.0, 0.0), (0.004, 0.017), (0.013, 0.029), (0.027, 0.026), (0.
                                       #   rolling over and down onto the shoulders; front opening (deg), clearance, columns,
                                       #   fabric thickness, lumpiness (a tube read as a life-ring)
 CLASP_R = 0.019
+# ---- hand-held prop (house props law: own mesh / node, own bone under hand_r, a recorded grip)
+HAS_FORK = False                      # "carry the pitchfork" (review-log 2026-10-03 "can we drop the pitchfork from wren":
+                                      #   the hero carries NOTHING until a weapon is designed). False = no fork mesh, no
+                                      #   'pitchfork' bone / node / grip transform, no fork gates; the right ARM keeps the
+                                      #   approved carry path (the FORK / FORK_* / GRIP numbers below still define where the
+                                      #   empty hand goes, so the silhouette and timing stay as approved) and the right
+                                      #   FINGERS take the left hand's pose per clip. True = the v6.1 build exactly (the
+                                      #   machinery a future weapon re-uses).
 # ---- pitchfork (own object; its frame: +Z up the shaft, origin = the butt)
 FORK = {"len": 1.74, "shaft_r": (0.0160, 0.0142), "yoke_at": 0.79, "butt": (0.0, 0.050), "collar": (0.755, 0.79),
         "grip": (0.50, 0.745), "grip_rings": 24, "wrap_pitch": 0.021, "wrap_t": 0.0026, "ferrule_t": 0.0022,
@@ -691,7 +700,9 @@ AO_FLOOR_REGIONS = {"skin": ["skin", "skin_shadow", "lips", "brow"],
 HAIR_BONES, CAPE_BONES, CAPE_CHAINS = 3, 4, 5
 GRIP_CURL = (58.0, 72.0, 50.0)        # "grip": finger curl round the shaft, per joint (deg)
 GRIP_THUMB = (22.0, 30.0)
-RELAX_CURL = (12.0, 18.0, 12.0)
+RELAX_CURL = (12.0, 18.0, 12.0)       # (HAS_FORK False: both hands take the clip's left-hand curl -- RELAX_CURL + thumb
+                                      #   (4, 8) in idle / walk, RUN_HAND in the run)
+RUN_HAND = ((34.0, 52.0, 38.0), (18.0, 24.0))   # the run's free hand: a loose fist (curl per joint, thumb; deg)
 # ---- idle: earnest stance, leaning a little on the planted pitchfork at his right
 IDLE_N = 96                           # "idle loop": 4 s
 IDLE_BREATH_DEG = 1.4

@@ -10,7 +10,7 @@ views (comma list):
 --pose: evaluate at one frame of a clip (default: the rest pose).
 --strip <clip>:<n>: n frames evenly across the clip per view, one fixed camera per view (the clip's union extents);
   writes <out_prefix>_<view>_<k>.png (the run preview: wren_compose.py --run-preview assembles them).
-  side_r / threequarter_r = his right (the fork side).
+  side_r / threequarter_r = his right (the fork side when the build carries one: HAS_FORK).
 Cameras: front = on -Y looking +Y (the Conquest front), side = on +X (her left), back = on +Y.
 """
 import bpy, sys, os, math, json
@@ -94,7 +94,8 @@ if "--lock-ids" in argv:
             me_.color_attributes["Col"].data.foreach_set("color", col_.ravel())
             print("LOCK_IDS", o.name, len(names_))
 if "--hide-fork" in argv:
-    # v4: the hair close-ups from his right / behind are taken without the pitchfork (its shaft crosses those views)
+    # v4: the hair close-ups from his right / behind are taken without the pitchfork (its shaft crosses those views);
+    # a no-op on a HAS_FORK False build (no '_pitchfork' mesh)
     for o in scene.objects:
         if o.type == "MESH" and o.name.endswith("_pitchfork"):
             o.hide_render = True

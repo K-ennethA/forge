@@ -57,6 +57,7 @@ SHEET = os.path.join(ROOT, "design", "reference", "wren-character-sheet.webp")
 LAB = (235, 235, 235, 255)
 IMP = json.load(open(os.path.join(ROOT, "improved", "wren.json")))
 RIG = json.load(open(os.path.join(ROOT, "rigged", "wren.json")))
+HAS_FORK = any(b["name"] == "pitchfork" for b in RIG.get("bones", []))   # (2026-10-03: the build's HAS_FORK, read off the rig)
 PAL = json.load(open(os.path.join(ROOT, "palettes", "wren", "default.json")))
 SH = Image.open(SHEET).convert("RGB")
 V = "wren_v61"
@@ -152,7 +153,8 @@ if "--run-preview" in sys.argv:
     RR = (json.load(open(sys.argv[sys.argv.index("--rig") + 1])) if "--rig" in sys.argv else RIG)["clips"]["run"]
     OUTP = sys.argv[sys.argv.index("--out") + 1] if "--out" in sys.argv else os.path.join(R, "wren_run_preview.png")
     Nr = RR["period_frames"]
-    VIEWS = [("side", "side (his left)"), ("side_r", "side (his right: the fork)"), ("threequarter_r", "three-quarter (fork side)")]
+    VIEWS = [("side", "side (his left)"), ("side_r", "side (his right%s)" % (": the fork" if HAS_FORK else "")),
+             ("threequarter_r", "three-quarter (%s)" % ("fork side" if HAS_FORK else "his right"))]
     n = 0
     while os.path.exists("%s_side_%02d.png" % (pre, n)):
         n += 1
@@ -210,7 +212,9 @@ grid([[(crop("necklace"), "SHEET necklace"), (V + "_necklace.png", "pendant + co
       [(crop("cloak"), "SHEET cloak + brass boss"), (V + "_cloak.png", "cloak from behind: hood, patches, ragged hem"),
        (crop("patch"), "SHEET cloth patch"), (V + "_patches.png", "patches + cross stitches")],
       [(crop("staff"), "SHEET staff"), (V + "_fork_head.png", "pitchfork head (rest pose): tines, brass collar, wrap"),
-       (crop("chips"), "SHEET palette chips"), (V + "_fork_full.png", "pitchfork, full (idle f1, planted)")]],
+       (crop("chips"), "SHEET palette chips"), (V + "_fork_full.png", "pitchfork, full (idle f1, planted)")] if HAS_FORK else
+      [(crop("staff"), "SHEET staff: NOT carried\n(review-log 2026-10-03: no prop\nuntil a weapon is designed)"), (None, None),
+       (crop("chips"), "SHEET palette chips"), (None, None)]],
      360, 360, "Wren - detail panels vs the model", V + "_details_vs_sheet.png")
 
 # ---- hair (v7: the ribbon locks)
@@ -243,9 +247,11 @@ items = [(V + "_front.png", "front (idle f1)"), (V + "_threequarter.png", "three
 tiles = [label(fit(load(fn), T, T), lab) for fn, lab in items]
 Wc = 4 * T + 18
 sheets = []
-for clip, txt in (("idle", "idle: 8 frames / 4 s (leaning on the planted fork, weight shift, cloak / fringe follow-through)"),
-                  ("walk", "walk: 8 frames / %.2f s, %.0f steps/min (bounce, the fork carried, cloak / tail / ties lag)"
-                   % (RIG["clips"]["walk"]["seconds"], RIG["clips"]["walk"]["cadence_steps_per_min"]))):
+for clip, txt in (("idle", "idle: 8 frames / 4 s (%sweight shift, cloak / fringe follow-through)"
+                   % ("leaning on the planted fork, " if HAS_FORK else "")),
+                  ("walk", "walk: 8 frames / %.2f s, %.0f steps/min (bounce, %scloak / tail / ties lag)"
+                   % (RIG["clips"]["walk"]["seconds"], RIG["clips"]["walk"]["cadence_steps_per_min"],
+                      "the fork carried, " if HAS_FORK else ""))):
     s_ = load(V + "_%s_sheet.png" % clip)
     s_ = s_.resize((Wc, int(s_.height * Wc / s_.width)), Image.LANCZOS)
     sheets.append(label(s_, txt))

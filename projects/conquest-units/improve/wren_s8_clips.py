@@ -1,6 +1,9 @@
 # Wren build section 8: clips idle / walk / run (closed-form poses -> keyed FK; legs + the pitchfork arm by analytic IK), follow-through
 # as the periodic steady state of damped springs, the clip gates (zero foot slip / drift, zero toe dips, exact seams,
 # grip relation, cloak poke-through, the fork vs the cloak / body), the rigged save, the glb, the winter skin.
+# HAS_FORK False (review-log 2026-10-03): the right arm still follows the carry frame (the approved path: the same IK
+# targets, the same roll search), but no 'pitchfork' bone is keyed, the right fingers take the clip's left-hand pose
+# (right_hand()), and every fork gate / report field is left out.
 TAU = 2 * math.pi
 
 
@@ -136,8 +139,18 @@ def fork_arm(D, Dfk):
     pole = unit(np.array(FORK_ELBOW_POLE))            # the elbow out, down and a little FORWARD (back pushed it into the cloak)
     D["upperarm_r"], D["lowerarm_r"], reached, err = two_bone("upperarm_r", "lowerarm_r", "hand_r", Hs, wrist, pole)
     D["hand_r"] = Dh
-    D["pitchfork"] = Dfk @ AXROT
+    if HAS_FORK:
+        D["pitchfork"] = Dfk @ AXROT
     return err, float(np.linalg.norm(reached - wrist))
+
+
+def right_hand(D, curl, thumb):
+    """the right fingers: the grip round the shaft (HAS_FORK), else the clip's LEFT-hand pose (curl, thumb) -- the empty
+    hand's natural counterpart; only the 15 right finger bones change."""
+    if HAS_FORK:
+        fingers(D, "R", GRIP_CURL, GRIP_THUMB)
+    else:
+        fingers(D, "R", curl, thumb)
 
 
 def plant_legs(D, feet):
@@ -208,14 +221,16 @@ def pose_idle(t):
     Dfk = TRT(IDLE_BUTT + np.array([0.0, 0.0, FORK_BUTT_R * math.sin(tilt_)]), Rl, _butt_rest)
     info["arm_R"], info["wrist_R"] = fork_arm(D, Dfk)
     free_arm(D, "L", IDLE_LARM[0] + 1.0 * br, IDLE_LARM[1] + 1.5 * sway_h, IDLE_LARM[2])
-    fingers(D, "R", GRIP_CURL, GRIP_THUMB)
+    right_hand(D, RELAX_CURL, (4.0, 8.0))
     fingers(D, "L", RELAX_CURL, (4.0, 8.0))
-    info["fork_butt_z"] = float(xf(Dfk, _butt_rest)[2])
+    if HAS_FORK:
+        info["fork_butt_z"] = float(xf(Dfk, _butt_rest)[2])
     return D, info
 
 
 # ---- walk: in place; planted feet slide back at ground speed; a heel-first toes-up at the end of the swing; the fork
 # carried upright in the right hand at chest height
+WALK_X0 = float(SHIFT_V61[0] - SHIFT[0])                         # the approved walk's stance centre (s6 SHIFT_V61)
 WALK_SPEED = 2 * WALK_STEP_A / (WALK_STANCE * WALK_N / K.FPS)
 BALL_H = {s: float(HEADP["ball_" + s.lower()][2]) for s in "LR"}
 
@@ -225,7 +240,7 @@ def foot_walk(s, t):
     u = (t - t0) % 1.0
     sg = 1.0 if s == "L" else -1.0
     C0 = LEGS[s]["C0"]
-    x = C0[0] * WALK_FOOT_X
+    x = WALK_X0 + (C0[0] - WALK_X0) * WALK_FOOT_X    # (about the v6.1 frame's x = 0: = C0[0] x WALK_FOOT_X when HAS_FORK)
     Yc = C0[1]
     beta = WALK_STANCE
     if u < beta:
@@ -299,11 +314,12 @@ def pose_walk(t):
     Dfk = TRT(grip, Rfk, FORK_GRIP_REST)
     info["arm_R"], info["wrist_R"] = fork_arm(D, Dfk)
     free_arm(D, "L", WALK_LARM[0], WALK_LARM[1] * c1, WALK_LARM[2], lag_bend=7.0 * math.cos(TAU * t - 0.6) + 7.0)
-    fingers(D, "R", GRIP_CURL, GRIP_THUMB)
+    right_hand(D, RELAX_CURL, (4.0, 8.0))
     fingers(D, "L", RELAX_CURL, (4.0, 8.0))
     info["stance"] = st
     info["pelvis_dz"] = dz
-    info["fork_butt_z"] = float(xf(Dfk, _butt_rest)[2])
+    if HAS_FORK:
+        info["fork_butt_z"] = float(xf(Dfk, _butt_rest)[2])
     return D, info
 
 
@@ -481,11 +497,12 @@ def pose_run(t):
     w_lb = math.cos(TAU * (t - RUN_PH["arm_L"] - 1.0 / RUN_N))
     la = RUN_LARM
     free_arm(D, "L", la[0], la[1] - la[2] * w_l, la[3], lag_bend=la[4] * w_lb)
-    fingers(D, "R", GRIP_CURL, GRIP_THUMB)
-    fingers(D, "L", (34.0, 52.0, 38.0), (18.0, 24.0))
+    right_hand(D, *RUN_HAND)
+    fingers(D, "L", *RUN_HAND)
     info["stance"] = st
     info["pelvis_dz"] = dz
-    info["fork_butt_z"] = float(xf(Dfk, _butt_rest)[2])
+    if HAS_FORK:
+        info["fork_butt_z"] = float(xf(Dfk, _butt_rest)[2])
     return D, info
 
 
@@ -513,16 +530,17 @@ def tine_face(D_):
     return abs(float(Rf_[0, 0])) / max(math.hypot(float(Rf_[0, 0]), float(Rf_[1, 0])), 1e-9)
 
 
-_best_tr = None
-for tr_ in range(0, 180, 2):
-    set_tine_roll(float(tr_))
-    fc_ = tine_face(pose_idle(0.0)[0])
-    if _best_tr is None or fc_ > _best_tr[1] + 1e-9:
-        _best_tr = (tr_, fc_)
-set_tine_roll(float(_best_tr[0]))
-ROLL_SEARCH["tine_roll_in_hand"] = {"deg": _best_tr[0], "idle_t0_tine_plane_to_front_deg":
-                                    round(math.degrees(math.acos(min(1.0, _best_tr[1]))), 1),
-                                    "walk_t0_tine_plane_to_front_deg": round(math.degrees(math.acos(min(1.0, tine_face(pose_walk(0.0)[0])))), 1)}
+if HAS_FORK:
+    _best_tr = None
+    for tr_ in range(0, 180, 2):
+        set_tine_roll(float(tr_))
+        fc_ = tine_face(pose_idle(0.0)[0])
+        if _best_tr is None or fc_ > _best_tr[1] + 1e-9:
+            _best_tr = (tr_, fc_)
+    set_tine_roll(float(_best_tr[0]))
+    ROLL_SEARCH["tine_roll_in_hand"] = {"deg": _best_tr[0], "idle_t0_tine_plane_to_front_deg":
+                                        round(math.degrees(math.acos(min(1.0, _best_tr[1]))), 1),
+                                        "walk_t0_tine_plane_to_front_deg": round(math.degrees(math.acos(min(1.0, tine_face(pose_walk(0.0)[0])))), 1)}
 print("ROLL", json.dumps(ROLL_SEARCH))
 CLIP_N = {"idle": IDLE_N, "walk": WALK_N, "run": RUN_N}        # (insertion order = key / export order: idle, walk untouched)
 POSE = {"idle": pose_idle, "walk": pose_walk, "run": pose_run}
@@ -683,7 +701,8 @@ for cn, N in CLIP_N.items():
         for k_, v_ in info.items():
             if isinstance(v_, float) and k_ not in ("fork_butt_z", "pelvis_dz"):
                 ik_worst[(cn, k_)] = max(ik_worst.get((cn, k_), 0.0), abs(v_))
-        butt.setdefault(cn, []).append(info["fork_butt_z"])
+        if HAS_FORK:
+            butt.setdefault(cn, []).append(info["fork_butt_z"])
         KEYQ.setdefault(cn, []).append([])
         for n in ORDER:
             Bm = np.eye(4) if n == "root" else basis(D, n)
@@ -721,7 +740,6 @@ def eval_coords(ob):
 from mathutils.kdtree import KDTree  # noqa: E402
 
 RM = OBJ["main"]["RANGE"]
-RF = OBJ["fork"]["RANGE"]
 
 
 def rng(name, R_=RM):
@@ -746,11 +764,12 @@ CLOAK_TRIS = [list(f) for f in OBJ["main"]["F"][_clf[0]:_clf[1]]]
 CLOAK_TRIS = [[f[0], f[k], f[k + 1]] for f in CLOAK_TRIS for k in range(1, len(f) - 1)]
 _bf = OBJ["main"]["FRANGE"]["body"]
 _rhand = {"hand_r"} | {"%s_%02d_r" % (f_, k_) for f_ in ("index", "middle", "ring", "pinky", "thumb") for k_ in (1, 2, 3)}
-BODY_TRIS = [list(f) for f in OBJ["main"]["F"][_bf[0]:_bf[1]] if not all(domM[i] in _rhand for i in f)]   # the gripping hand excluded
-BODY_TRIS = [[f[0], f[k], f[k + 1]] for f in BODY_TRIS for k in range(1, len(f) - 1)]
-V0m = OBJ["main"]["V"]; V0f = OBJ["fork"]["V"]
-# the fork's shaft axis samples (rest): butt -> tine tops along +Z
-FORK_AXIS = np.array([_butt_rest + np.array([0.0, 0.0, z]) for z in np.linspace(0.02, FORK["yoke_at"] * FORK["len"], 24)])
+if HAS_FORK:
+    BODY_TRIS = [list(f) for f in OBJ["main"]["F"][_bf[0]:_bf[1]] if not all(domM[i] in _rhand for i in f)]   # the gripping hand excluded
+    BODY_TRIS = [[f[0], f[k], f[k + 1]] for f in BODY_TRIS for k in range(1, len(f) - 1)]
+    # the fork's shaft axis samples (rest): butt -> tine tops along +Z
+    FORK_AXIS = np.array([_butt_rest + np.array([0.0, 0.0, z]) for z in np.linspace(0.02, FORK["yoke_at"] * FORK["len"], 24)])
+V0m = OBJ["main"]["V"]
 CONTACT = {}
 for s in "LR":
     so = rng("sole." + s)
@@ -765,8 +784,9 @@ BOOT_IDS = {s: np.concatenate([rng(n) for n in RM if n.split(".")[0] in BOOT_PAR
             for s in "LR"}
 # (every clip) the fork's shaft vs EVERY main-mesh vertex but the gripping hand + its forearm (the clearance number for
 # body + outfit + cloak + boots + hair together)
-_rfa = _rhand | {"lowerarm_r"}
-FORK_FREE_IDS = np.nonzero(np.array([d not in _rfa for d in domM]))[0]
+if HAS_FORK:
+    _rfa = _rhand | {"lowerarm_r"}
+    FORK_FREE_IDS = np.nonzero(np.array([d not in _rfa for d in domM]))[0]
 
 
 def group_edges(ids, extra_parts=()):
@@ -866,7 +886,7 @@ HAIR_SKIN_REST, HAIR_SKIN_REST_PARTS = hair_into_skin(OBJ["main"]["V"], True)
 print("HAIRSKIN_REST", HAIR_SKIN_REST, json.dumps(HAIR_SKIN_REST_PARTS))
 samples = []
 clip_rep = {}
-grip_rel = np.linalg.inv(REST4["hand_r"]) @ G @ AXROT @ REST4["pitchfork"]
+grip_rel = np.linalg.inv(REST4["hand_r"]) @ G @ AXROT @ REST4["pitchfork"] if HAS_FORK else None
 for cn, N in CLIP_N.items():
     K.assign_action(rig, ACTS[cn])
     first = last = firstf = lastf = None
@@ -877,19 +897,26 @@ for cn, N in CLIP_N.items():
     gate["hair_into_skin_verts_max"] = 0
     gate.update({"fork_shaft_through_cloak": 0,
             "fork_shaft_through_body": 0, "fork_to_cloak_min_m": 1e9, "fork_to_legs_min_m": 1e9, "cloak_to_legs_min_m": 1e9,
-            "fork_to_mesh_min_m": 1e9})
+            "fork_to_mesh_min_m": 1e9} if HAS_FORK else {"cloak_to_legs_min_m": 1e9})
     for f in range(1, N + 2):
         scene.frame_set(f)
-        C = eval_coords(low); Fk = eval_coords(fko)
-        samples.append(C[::9]); samples.append(Fk[::5])
+        C = eval_coords(low)
+        samples.append(C[::9])
+        if HAS_FORK:
+            Fk = eval_coords(fko)
+            samples.append(Fk[::5])
+            minz_f = min(minz_f, float(Fk[:, 2].min()))
+            Mh = np.array(rig.pose.bones["hand_r"].matrix); Mf = np.array(rig.pose.bones["pitchfork"].matrix)
+            grip_dev = max(grip_dev, float(np.abs(np.linalg.inv(Mh) @ Mf - grip_rel).max()))
+        else:
+            Fk = None
+            Mh = np.array(rig.pose.bones["hand_r"].matrix)
         if f == 1:
             first, firstf = C, Fk
         if f == N + 1:
             last, lastf = C, Fk
-        minz = min(minz, float(C[:, 2].min())); minz_f = min(minz_f, float(Fk[:, 2].min()))
+        minz = min(minz, float(C[:, 2].min()))
         root_off = max(root_off, (rig.matrix_world @ rig.pose.bones["root"].head).length)
-        Mh = np.array(rig.pose.bones["hand_r"].matrix); Mf = np.array(rig.pose.bones["pitchfork"].matrix)
-        grip_dev = max(grip_dev, float(np.abs(np.linalg.inv(Mh) @ Mf - grip_rel).max()))
         Ml = np.array(rig.pose.bones["lowerarm_r"].matrix)
         Rw = (np.linalg.inv(Ml) @ Mh)[:3, :3] @ np.linalg.inv((np.linalg.inv(REST4["lowerarm_r"]) @ REST4["hand_r"])[:3, :3])
         wrist_max = max(wrist_max, math.degrees(math.acos(float(np.clip((np.trace(Rw) - 1) / 2, -1, 1)))))
@@ -904,48 +931,55 @@ for cn, N in CLIP_N.items():
                 if _nc > gate["cloak_crossings_" + g_]:
                     gate["cloak_crossings_" + g_] = _nc
                     gate.setdefault("cloak_crossings_worst_frame", {})[g_] = f
-            Mfk = np.array(rig.pose.bones["pitchfork"].matrix) @ np.linalg.inv(REST4["pitchfork"])
-            ax_p = np.array([xf(Mfk, p) for p in FORK_AXIS])
-            bvh_b = BVHTree.FromPolygons(C.tolist(), BODY_TRIS)
-            for i in range(len(ax_p) - 1):
-                d = ax_p[i + 1] - ax_p[i]; L = float(np.linalg.norm(d))
-                if bvh_c.ray_cast(Vector(ax_p[i]), Vector(d / L), L)[0] is not None:
-                    gate["fork_shaft_through_cloak"] += 1
-                if bvh_b.ray_cast(Vector(ax_p[i]), Vector(d / L), L)[0] is not None:
-                    gate["fork_shaft_through_body"] += 1
+            if HAS_FORK:
+                Mfk = np.array(rig.pose.bones["pitchfork"].matrix) @ np.linalg.inv(REST4["pitchfork"])
+                ax_p = np.array([xf(Mfk, p) for p in FORK_AXIS])
+                bvh_b = BVHTree.FromPolygons(C.tolist(), BODY_TRIS)
+                for i in range(len(ax_p) - 1):
+                    d = ax_p[i + 1] - ax_p[i]; L = float(np.linalg.norm(d))
+                    if bvh_c.ray_cast(Vector(ax_p[i]), Vector(d / L), L)[0] is not None:
+                        gate["fork_shaft_through_cloak"] += 1
+                    if bvh_b.ray_cast(Vector(ax_p[i]), Vector(d / L), L)[0] is not None:
+                        gate["fork_shaft_through_body"] += 1
             kc = KDTree(len(CLOAK_TRIS)); cv_ = np.unique(np.array(CLOAK_TRIS).ravel())
             kc = KDTree(len(cv_))
             for i, vi in enumerate(cv_):
                 kc.insert(C[vi], i)
             kc.balance()
-            gate["fork_to_cloak_min_m"] = min(gate["fork_to_cloak_min_m"], float(min(kc.find(p)[2] for p in ax_p)))
+            if HAS_FORK:
+                gate["fork_to_cloak_min_m"] = min(gate["fork_to_cloak_min_m"], float(min(kc.find(p)[2] for p in ax_p)))
             _hn, _hp = hair_into_skin(C, True)
             if _hn > gate["hair_into_skin_verts_max"]:
                 gate["hair_into_skin_verts_max"], gate["hair_into_skin_worst"] = _hn, dict(_hp, frame=f)
             gate["cloak_to_legs_min_m"] = min(gate["cloak_to_legs_min_m"], float(min(kc.find(p)[2] for p in C[LEG_IDS[::4]])))
-            kl = KDTree(len(LEG_IDS))
-            for i, vi in enumerate(LEG_IDS):
-                kl.insert(C[vi], i)
-            kl.balance()
-            gate["fork_to_legs_min_m"] = min(gate["fork_to_legs_min_m"], float(min(kl.find(p)[2] for p in ax_p)))
-            km = KDTree(len(FORK_FREE_IDS))
-            for i, vi in enumerate(FORK_FREE_IDS):
-                km.insert(C[vi], i)
-            km.balance()
-            _fm = min((km.find(p)[2], i) for i, p in enumerate(ax_p))
-            if _fm[0] < gate["fork_to_mesh_min_m"]:
-                gate["fork_to_mesh_min_m"] = float(_fm[0])
-                gate["fork_to_mesh_worst"] = {"frame": f, "axis_m_from_butt": round(float(np.linalg.norm(FORK_AXIS[_fm[1]] - _butt_rest)), 3),
-                                              "part": _PART_OF.get(int(FORK_FREE_IDS[km.find(ax_p[_fm[1]])[1]]), "?")}
+            if HAS_FORK:
+                kl = KDTree(len(LEG_IDS))
+                for i, vi in enumerate(LEG_IDS):
+                    kl.insert(C[vi], i)
+                kl.balance()
+                gate["fork_to_legs_min_m"] = min(gate["fork_to_legs_min_m"], float(min(kl.find(p)[2] for p in ax_p)))
+                km = KDTree(len(FORK_FREE_IDS))
+                for i, vi in enumerate(FORK_FREE_IDS):
+                    km.insert(C[vi], i)
+                km.balance()
+                _fm = min((km.find(p)[2], i) for i, p in enumerate(ax_p))
+                if _fm[0] < gate["fork_to_mesh_min_m"]:
+                    gate["fork_to_mesh_min_m"] = float(_fm[0])
+                    gate["fork_to_mesh_worst"] = {"frame": f, "axis_m_from_butt": round(float(np.linalg.norm(FORK_AXIS[_fm[1]] - _butt_rest)), 3),
+                                                  "part": _PART_OF.get(int(FORK_FREE_IDS[km.find(ax_p[_fm[1]])[1]]), "?")}
     row = {"frames": [1, N + 1], "period_frames": N, "seconds": round(N / K.FPS, 4), "cyclic": True,
-           "seam_main_mm": round(float(np.linalg.norm(first - last, axis=1).max()) * 1000, 6),
-           "seam_fork_mm": round(float(np.linalg.norm(firstf - lastf, axis=1).max()) * 1000, 6),
-           "min_z_main": round(minz, 5), "min_z_fork": round(minz_f, 5),
-           "fork_butt_z_range": [round(min(butt[cn]), 4), round(max(butt[cn]), 4)],
-           "root_offset_max": round(root_off, 8), "grip_relation_max_dev": round(grip_dev, 8),
-           "right_wrist_bend_max_deg": round(wrist_max, 2),
-           "ik_unreachable_max_m": {k[1]: round(v, 5) for k, v in ik_worst.items() if k[0] == cn},
-           "gates": {k: (round(v, 4) if isinstance(v, float) else v) for k, v in gate.items()}}
+           "seam_main_mm": round(float(np.linalg.norm(first - last, axis=1).max()) * 1000, 6)}
+    if HAS_FORK:
+        row["seam_fork_mm"] = round(float(np.linalg.norm(firstf - lastf, axis=1).max()) * 1000, 6)
+    row["min_z_main"] = round(minz, 5)
+    if HAS_FORK:
+        row.update({"min_z_fork": round(minz_f, 5), "fork_butt_z_range": [round(min(butt[cn]), 4), round(max(butt[cn]), 4)]})
+    row["root_offset_max"] = round(root_off, 8)
+    if HAS_FORK:
+        row["grip_relation_max_dev"] = round(grip_dev, 8)
+    row.update({"right_wrist_bend_max_deg": round(wrist_max, 2),
+                "ik_unreachable_max_m": {k[1]: round(v, 5) for k, v in ik_worst.items() if k[0] == cn},
+                "gates": {k: (round(v, 4) if isinstance(v, float) else v) for k, v in gate.items()}})
     row["seam_joints"] = seam_joints(cn, N)
     tips = {s: np.array(v) for s, v in tips.items()}; heels = {s: np.array(v) for s, v in heels.items()}
     if cn == "walk":
@@ -1027,10 +1061,12 @@ rep["hair_into_skin"] = {"rule": "chain-driven clump vertices (fringe / side / t
                          "pass": all(clip_rep[cn]["gates"]["hair_into_skin_verts_max"] <= HAIR_SKIN_REST for cn in clip_rep)}
 print("HAIRSKIN", json.dumps(rep["hair_into_skin"]))
 K.assign_action(rig, ACTS["idle"]); scene.frame_set(1)
-C1 = eval_coords(low); F1 = eval_coords(fko)
-FOCUS["fork_full"] = box(F1, 0.03)
-_tt_ = F1[np.argsort(-F1[:, 2])[:40]]
-FOCUS["fork_head_idle"] = box(np.vstack([_tt_, _tt_ - np.array([0.0, 0.0, 0.38])]), 0.05)   # ("fork_head" stays the rest-pose box)
+C1 = eval_coords(low)
+if HAS_FORK:
+    F1 = eval_coords(fko)
+    FOCUS["fork_full"] = box(F1, 0.03)
+    _tt_ = F1[np.argsort(-F1[:, 2])[:40]]
+    FOCUS["fork_head_idle"] = box(np.vstack([_tt_, _tt_ - np.array([0.0, 0.0, 0.38])]), 0.05)   # ("fork_head" stays the rest-pose box)
 _eyes1 = C1[np.concatenate([rng("eye.L"), rng("eye.R")])]
 FOCUS["eyes"] = [(_eyes1.min(0) - np.array([0.012, 0.0, 0.004])).tolist(), (_eyes1.max(0) + np.array([0.012, 0.0, 0.016])).tolist()]
 # v3: the v2-equivalent eyes frame (same centre, the extents shrunk by the eyeball growth) so v2 | v3 compare at one scale
@@ -1057,24 +1093,33 @@ rep["bones"] = [{"name": b.name, "parent": b.parent.name if b.parent else None, 
                  "head": [round(v, 4) for v in b.head_local], "tail": [round(v, 4) for v in b.tail_local]} for b in arm_data.bones]
 rep["bone_count"] = len(arm_data.bones)
 rep["deform_bone_count"] = len(DEFORM)
-rep["grip"] = {"rule": "hammer grip: the shaft along the right hand's knuckle line, the tines out of the thumb / index side; "
+if HAS_FORK:
+  rep["grip"] = {"rule": "hammer grip: the shaft along the right hand's knuckle line, the tines out of the thumb / index side; "
                        "the pitchfork bone is a child of hand_r and every clip keys it at the SAME hand-relative transform "
                        "(grip_relation_max_dev); the hand+fork roll about the shaft is picked per clip (10-deg search, least wrist bend "
                        "at t = 0); inside the grip the fork is turned about its own shaft (tine_roll_in_hand, one value) so the idle "
                        "shows the tines face-on; the REST pose stands the fork upright beside the right hand, butt on the floor",
                "G_hand_to_fork_rest4": grip_rel.round(6).tolist(), "fork_roll_search": ROLL_SEARCH,
                "grip_at_m_from_butt": round(FORK["grip_at"] * FORK["len"], 4)}
+else:
+    rep["grip"] = {"rule": "no prop (HAS_FORK False, review-log 2026-10-03): the right arm keeps the approved carry path (the "
+                           "hand frame the fork grip drove, roll search unchanged); the right fingers take the clip's left-hand "
+                           "pose (idle / walk RELAX_CURL + thumb (4, 8), run RUN_HAND)", "fork_roll_search": ROLL_SEARCH}
 rep["tris"] = {"model": report["tris"]["total"], "outline_shells": 0, "budget": TRI_BUDGET}
 print("TRIS", json.dumps(rep["tris"]))
 rig["conquest_rig"] = ("wren: root (contract) > MPFB2 game_engine skeleton (pelvis, spine_01-03, neck_01, head, clavicle / upperarm / "
                        "lowerarm / hand + 15 finger bones per side, thigh / calf / foot / ball) + hair_fringe / hair_side.L/R / "
-                       "hair_tail .0-2 (head children), tie.0-1 (pelvis child), cape.0-4.0-3 (spine_03 children) + pitchfork "
-                       "(hand_r child)")
+                       "hair_tail .0-2 (head children), tie.0-1 (pelvis child), cape.0-4.0-3 (spine_03 children)" +
+                       (" + pitchfork (hand_r child)" if HAS_FORK else ""))
 low["conquest_clips"] = list(CLIP_N)
-low["conquest_clip_status"] = ("idle (leaning a little on the planted pitchfork, breath, eased weight shift, chin-up look) + walk "
-                               "(boyish quick stride with a contact bounce, the fork carried upright, chest / head overlap) + run "
-                               "(young hero sprint: forward lean, high knee drive, flight phase, full left-arm pump, the fork charged "
-                               "forward); cloak / fringe / side hair / nape tail / sash ties follow-through (damped-spring lag); "
+low["conquest_clip_status"] = (("idle (leaning a little on the planted pitchfork, breath, eased weight shift, chin-up look) + walk "
+                                "(boyish quick stride with a contact bounce, the fork carried upright, chest / head overlap) + run "
+                                "(young hero sprint: forward lean, high knee drive, flight phase, full left-arm pump, the fork charged "
+                                "forward)") if HAS_FORK else
+                               ("idle (breath, eased weight shift, chin-up look) + walk (boyish quick stride with a contact bounce, "
+                                "chest / head overlap) + run (young hero sprint: forward lean, high knee drive, flight phase, full "
+                                "left-arm pump); empty-handed: the right arm keeps the approved carry path")) + \
+                              ("; cloak / fringe / side hair / nape tail / sash ties follow-through (damped-spring lag); "
                                "no attack / hit / death")
 low["conquest_look"] = ("shaded: Col x baked AO, baked normal map; the hair " +
                         ("faces smooth-shaded with CUSTOM SPLIT NORMALS (the smooth-proxy normals leaned toward each lock's own "
@@ -1084,7 +1129,8 @@ low["conquest_look"] = ("shaded: Col x baked AO, baked normal map; the hair " +
                         "; no outline shells, no cel bands; the stylisation is DRAWN into the palette regions (shadow shapes, "
                         "brows, lash band, iris shade + highlight, hair tiers: roots / angel ring / tips / dark inner cap)")
 low["conquest_locomotion"] = "biped in flat boots: rest pose on the floor per contract (soles z 0), clips in place"
-low["conquest_pitchfork_grip"] = json.dumps(grip_rel.round(6).tolist())
+if HAS_FORK:
+    low["conquest_pitchfork_grip"] = json.dumps(grip_rel.round(6).tolist())
 for m in list(bpy.data.materials):
     if m.users == 0:
         bpy.data.materials.remove(m)
@@ -1104,7 +1150,7 @@ bpy.ops.wm.save_as_mainfile(filepath=OUT_RIGGED, copy=True, compress=True, relat
 
 # =========================================================================== glb + skins
 for o in scene.objects:
-    o.select_set(o in (rig, low, fko))
+    o.select_set(o is rig or o in MESHES)
 bpy.context.view_layer.objects.active = rig
 K.assign_action(rig, ACTS["idle"])
 t_ = time.time()
@@ -1132,9 +1178,10 @@ def glb_carries(path):
 
 
 rep["glb"] = {"path": OUT_GLB, "bytes": os.path.getsize(OUT_GLB), "seconds": round(time.time() - t_, 1), "carries": glb_carries(OUT_GLB),
-              "structure": "armature + skinned 'wren' (body, opaque) + skinned 'wren_pitchfork' (own node, bone 'pitchfork'); "
-                           "material Col x AO + normal map; natural scale (metres); report-only cell fit %.5f" % k_fit}
-ALLM = [low, fko]
+              "structure": "armature + skinned 'wren' (body, opaque)" +
+                           (" + skinned 'wren_pitchfork' (own node, bone 'pitchfork')" if HAS_FORK else " (no prop: HAS_FORK False)") +
+                           "; material Col x AO + normal map; natural scale (metres); report-only cell fit %.5f" % k_fit}
+ALLM = list(MESHES)
 geo0 = geometry_digest(ALLM)
 rep["skins"] = {"default": {"file": OUT_RIGGED, "palette": PAL.table(pal_default), "glow_tiers": report["glow_tiers"]["default"]}}
 pal_w = PAL.load(UNIT, "winter")

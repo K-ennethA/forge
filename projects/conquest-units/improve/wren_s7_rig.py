@@ -1,5 +1,5 @@
 # Wren build section 7: the rig -- MPFB2 game_engine skeleton + follow-through chains (fringe, side hair L/R, nape tail,
-# the sash ties, five cloak chains) + the pitchfork bone (child of hand_r) -- and the skin weights (<= 4 influences).
+# the sash ties, five cloak chains) + the pitchfork bone (child of hand_r; HAS_FORK) -- and the skin weights (<= 4 influences).
 rep = {"unit": UNIT, "source": OUT_IMPROVED, "fps": K.FPS}
 scene.render.fps = K.FPS; scene.render.fps_base = 1.0
 
@@ -93,8 +93,9 @@ for k, uc in enumerate(CAPE_U):
     colp = np.array([Vcl[j * NUc + ci] for j in range(CLOAK_NV)])
     rs, Lc = VP.resample(colp, CAPE_BONES + 1)
     CHAIN_PTS["cape.%d" % k] = (rs, Lc, "spine_03")
-FORK_GRIP0 = FORK_T + FKL["grip_centre"]
-BONES.append(("pitchfork", S_(FORK_GRIP0), S_(FORK_GRIP0 + np.array([0, 0, 0.30])), "hand_r", None))
+FORK_GRIP0 = FORK_T + FKL["grip_centre"]           # (the right hand's carry frame: kept with or without the prop)
+if HAS_FORK:
+    BONES.append(("pitchfork", S_(FORK_GRIP0), S_(FORK_GRIP0 + np.array([0, 0, 0.30])), "hand_r", None))
 for ch, (pts, Lc, par) in sorted(CHAIN_PTS.items()):
     for k in range(len(pts) - 1):
         BONES.append(("%s.%d" % (ch, k), S_(pts[k]), S_(pts[k + 1]), par if k == 0 else "%s.%d" % (ch, k - 1), None))
@@ -277,12 +278,12 @@ def prune(W):
 
 t_ = time.time()
 WM = np.zeros((len(OBJ["main"]["V"]), len(DEFORM)))
-WF = np.zeros((len(OBJ["fork"]["V"]), len(DEFORM)))
+WF = np.zeros((len(OBJ["fork"]["V"]) if HAS_FORK else 0, len(DEFORM)))
 for p in ISL:
     a_, b_ = OBJ[p["obj"]]["RANGE"][p["name"]]
     (WM if p["obj"] == "main" else WF)[a_:b_] = part_weights(p)
-WM, WF = prune(WM), prune(WF)
-for ob_, W in ((low, WM), (fko, WF)):
+WM, WF = prune(WM), (prune(WF) if len(WF) else WF)
+for ob_, W in ((low, WM), (fko, WF))[:len(MESHES)]:
     ob_.vertex_groups.clear()
     for j, n in enumerate(DEFORM):
         nz = np.nonzero(W[:, j] > 0)[0]
@@ -299,7 +300,8 @@ DIG["weights"] = sha(np.vstack([WM, WF]))
 infl = (WM > 0).sum(1)
 rep["weights"] = {"max_influences": int(infl.max()), "unweighted": int((infl == 0).sum()),
                   "sum_dev_max": float(np.abs(WM.sum(1) - 1.0).max()), "seconds": round(time.time() - t_, 1),
-                  "pitchfork_object": "every pitchfork vertex 1.0 on 'pitchfork' (child of hand_r)",
+                  "pitchfork_object": ("every pitchfork vertex 1.0 on 'pitchfork' (child of hand_r)" if HAS_FORK else
+                                       "none (HAS_FORK False)"),
                   "rule": "body: MPFB game_engine weights (Root -> pelvis); boot shafts / cuffs, trouser blouse, sash wraps, "
                           "sleeve rolls, bracer + straps, cord: the MPFB weights of the nearest skin point (barycentric); "
                           "boot foot shells / soles / straps: foot, blending to ball ahead of the ball line; rivets / buckles "

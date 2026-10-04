@@ -4,6 +4,8 @@
 # comparison baseline (v2: wren_v2_*; v1: wren_* + wren_v1ref_*). + wren_v3_hairflat_* = the same views with the hair
 # strip's normals set flat in memory (the v2 hair shading on the v3 geometry: the one-volume A/B proof). [2026-10-03: that
 # '--hair-normal-flat' flag is retired from wren_render.py -- under HAIR_NORMAL_CARRIER "vertex" the strip is already flat.]
+# 2026-10-03 pitchfork dropped (review-log "can we drop the pitchfork from wren"; wren_build.py HAS_FORK = False): the
+# fork_full / fork_head renders are retired; the run strip's his-right views are no longer "the fork side".
 # 2026-10-03 run clip (review-log "young hero sprint"): + render_runstrip (wren_render.py --strip run:12, side / his-right
 # side / fork-side three-quarter, tiles in renders/wren/run_strip/) -> wren_compose.py --run-preview ->
 # renders/wren/wren_run_preview.png. The bake gate reads the hair-normal npy pair ONLY when this build wrote it (carrier
@@ -93,8 +95,9 @@ $vJobs = @(
   @("render_face",    @("--background",$RB,"--factory-startup","--python",$R,"--",$W,"portrait,face,eyes,eyes_v2frame,eye_close,brows,mouth,mouth_tq,mouth_side,nose,nose_tq,face_side,face_side90,undereye,undereye_tq","--pose","idle:1")),
   @("render_hair",    @("--background",$RB,"--factory-startup","--python",$R,"--",$W,"head_front,head_side,head_tq_back,head_back,hair_close,head_top","--pose","idle:1")),
   @("render_hair2",   @("--background",$RB,"--factory-startup","--python",$R,"--",$W,"hair_part,hair_sweep,hair_back_close","--pose","idle:1","--hide-fork")),
-  @("render_close",   @("--background",$RB,"--factory-startup","--python",$R,"--",$W,"cloak,cloak_tq,patches,necklace,bracer,bracer_front,fork_full,boots,boots_front,torso","--pose","idle:1")),
-  @("render_fork",    @("--background",$RB,"--factory-startup","--python",$R,"--",$W,"fork_head")),   # rest pose: the fork upright, tines face-on
+  @("render_close",   @("--background",$RB,"--factory-startup","--python",$R,"--",$W,"cloak,cloak_tq,patches,necklace,bracer,bracer_front,boots,boots_front,torso","--pose","idle:1")),
+  # (2026-10-03 HAS_FORK False: fork_full / fork_head views retired with the prop; with a prop back, re-add
+  #  "fork_full" to render_close and a render_fork job: "fork_head", rest pose)
   @("render_ortho",   @("--background",$RB,"--factory-startup","--python",$R,"--",$W,"ortho_front,ortho_side,ortho_back","--pose","idle:1")),
   @("render_winter",  @("--background",$RW,"--factory-startup","--python",$R,"--","`"$OUT\wren_v61_winter`"","front,threequarter,back,portrait,hair_close,head_tq_back","--pose","idle:1")),
   @("face_probe",     @("--background","`"$P\improved\wren.blend`"","--factory-startup","--python","`"$I\wren_face_probe.py`"","--","`"$OUT\wren_v61_face_probe`"")),
