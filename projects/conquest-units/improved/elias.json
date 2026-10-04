@@ -72,7 +72,7 @@
    }
   },
   "sole_lift": 0.024,
-  "seconds": 1.1
+  "seconds": 0.8
  },
  "lip_seal": {
   "rule": "front rays deeper than 2.5 mm behind the lip front = the gap; half the gap closed from each lip, falloff 9.0 mm, overlap 0.30 mm",
@@ -849,7 +849,7 @@
    "fline": 62
   },
   "degenerate_faces_dissolved": 496,
-  "seconds": 24.6,
+  "seconds": 24.0,
   "body_tris_after_cuts": 30702
  },
  "liner_proof": {
@@ -927,6 +927,18 @@
   "mouth_hidden_rule": "mouth-zone faces facing backward or 0.05-3.0 mm behind the front skin",
   "tris_removed": 13169
  },
+ "hand_decimation": {
+  "ratio": {
+   "L": 0.4,
+   "R": 0.6
+  },
+  "tris_before_L": 3167,
+  "tris_before_R": 3167,
+  "interior_verts_L": 1573,
+  "interior_verts_R": 1573,
+  "tris_after_L": 1265,
+  "tris_after_R": 1899
+ },
  "centre_shift": [
   -0.028898,
   0.036993,
@@ -948,7 +960,7 @@
  },
  "regions_faces": {
   "elias": {
-   "skin": 11072,
+   "skin": 7902,
    "skin_shadow": 38,
    "lips": 171,
    "mouth": 221,
@@ -1113,25 +1125,25 @@
  },
  "face_uv": {
   "linear_texel_density_vs_rest": {
-   "v1_rule": 0.983,
+   "v1_rule": 0.99,
    "v2": 4.5
   },
-  "uv_share_pct": 9.011,
-  "texels_per_mm_face": 1.904,
-  "texels_per_mm_rest": 0.423
+  "uv_share_pct": 8.629,
+  "texels_per_mm_face": 1.863,
+  "texels_per_mm_rest": 0.414
  },
  "uv_hair_strip": {
   "strip_u_from": 0.84,
   "hair_faces": 8370,
   "hair_uv_u_min": 0.8411,
-  "nonhair_uv_u_max": 0.8254
+  "nonhair_uv_u_max": 0.8253
  },
  "tris": {
-  "total": 51689,
-  "main": 49065,
+  "total": 48519,
+  "main": 45895,
   "staff": 1500,
   "book": 1124,
-  "body": 17533,
+  "body": 14363,
   "scalp_locks": 8924,
   "beard_mustache": 3832,
   "eye": 1556,
@@ -3742,7 +3754,7 @@
     "x_half_width_at_chin_minus_10": 50.7,
     "x_half_width_at_chin_minus_20": 45.6
    },
-   "seconds": 2.7,
+   "seconds": 2.9,
    "zone_visibility": {
     "beard_inner_faces": 1500,
     "area_cm2": 343.42,
@@ -4016,7 +4028,7 @@
    "hair_inner": 1540,
    "hair_crevice": 532
   },
-  "seconds": 10.0,
+  "seconds": 12.1,
   "crown": {
    "scalp_top_z": 1.744,
    "hair_top_z": 1.7849,
@@ -4175,17 +4187,17 @@
    "result": [
     "FINISHED"
    ],
-   "seconds": 6.9
+   "seconds": 6.4
   },
   "AO": {
    "result": [
     "FINISHED"
    ],
-   "seconds": 10.1
+   "seconds": 9.7
   },
   "cage_extrusion": 0.012,
   "low_to_high_skin_m": {
-   "p99": 0.00189,
+   "p99": 0.00198,
    "max": 0.01121
   },
   "resolution": {
@@ -4209,18 +4221,18 @@
    "rule": "lower-lid faces from 0.5 mm inside to 2.0 mm outside the lid edge, within 100 deg of straight down, tilted more than 50 deg from the view axis",
    "rim_faces_left_out": 400
   },
-  "normal_baked_texels_pct": 89.21,
-  "normal_detail_fraction_dev_gt_0.05": 0.7583,
-  "ao_baked_texels_pct": 99.3,
-  "ao_mean": 0.3842,
+  "normal_baked_texels_pct": 89.08,
+  "normal_detail_fraction_dev_gt_0.05": 0.7628,
+  "ao_baked_texels_pct": 99.55,
+  "ao_mean": 0.3802,
   "ao_p05": 0.0,
   "pixel_sha": {
-   "normal": "4be55c4d6b19b3cd",
-   "ao": "1628d143af26cf0c"
+   "normal": "6f1ca5a477fb2cbb",
+   "ao": "01901cc6cc26137d"
   },
   "normal_skin_only": {
    "rule": "normal texels outside the (dilated) skin-region UV triangles set flat",
-   "skin_texels_pct": 12.86
+   "skin_texels_pct": 12.38
   },
   "mouth_proxy_v6": {
    "sigma_mm": 4.0,
@@ -4245,20 +4257,20 @@
    "zone_triangles": {
     "candidates": 1533,
     "visible": 334,
-    "with_texel_centres": 305
+    "with_texel_centres": 301
    },
-   "protected_texels(other islands)": 1503275,
-   "texels_written": 5621,
-   "texels_changed": 5604,
+   "protected_texels(other islands)": 1416951,
+   "texels_written": 5442,
+   "texels_changed": 5419,
    "facet_vs_proxy_deg_core_p50_p90_max": [
-    6.05,
-    11.98,
-    59.21
+    6.2,
+    11.7,
+    53.85
    ],
    "decode_vs_proxy_deg_core_p50_p99_max": [
-    0.909,
-    15.7,
-    29.675
+    1.097,
+    23.133,
+    31.517
    ],
    "seconds": 2.2
   },
@@ -4352,10 +4364,10 @@
       9.57
      ]
     },
-    "digest": "4aceb706a2217f64"
+    "digest": "c2c31457635582b1"
    }
   },
-  "seconds": 28.1,
+  "seconds": 27.2,
   "hair_strip": {
    "rule": "hair faces packed into u > 0.84; normal texels there flat, AO texels white",
    "raw_ao_in_hair_strip_p05": 0.0,
@@ -4379,7 +4391,7 @@
    },
    "raw_p05": 0.0,
    "lifted_p05": 0.42,
-   "lifted_mean": 0.7486
+   "lifted_mean": 0.7445
   }
  },
  "material": {
@@ -4389,7 +4401,7 @@
   "cel_bands": "none (lesson: undone on vampwarrior)",
   "outline_shells": "none (lesson: undone on vampwarrior)"
  },
- "digest_geometry_colour_uv": "7b602a7014531f8f",
+ "digest_geometry_colour_uv": "91345ab29caa0157",
  "palette": {
   "default": {
    "skin": {

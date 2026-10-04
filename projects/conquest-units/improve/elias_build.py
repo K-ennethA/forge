@@ -458,6 +458,9 @@ HOLD_CURL = ((58.0, 72.0, 50.0), "wrap")   # "grip fingers": finger curl per joi
                                       #   HAND_POSES "grip") + the thumb: "wrap" = solved in s7 (closed over the fingers round
                                       #   the shaft), or Wren's 2- / 5-value thumb tuple (Wren's "grip" (22, 30) left the thumb
                                       #   standing 53 mm off the shaft)
+HAND_DECIMATE = {"L": 0.40, "R": 0.60}   # "hand detail" (v7.1 budget, Varden's glove pattern): each hand's interior vertices
+                                      #   collapse-decimated to this share of that hand's tris (the open left hand takes more;
+                                      #   the gripping right keeps its knuckle / finger silhouette); None = off (v7)
 # ---- book (own object + bone 'book', child of hand_l)
 BOOK = {"size": (0.165, 0.230, 0.048), "cover_t": 0.0045, "overhang": 0.003, "spine_bulge": 0.009, "crest_h": 0.120,
         "crest_w": 0.0028, "strap_w": 0.020}   # "tome": width / height / thickness, board thickness, overhang, spine bulge,

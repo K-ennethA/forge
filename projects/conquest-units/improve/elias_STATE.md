@@ -10,10 +10,13 @@
   -0.120 vs the right shoulder joint, grip_at 0.70 = 1.302 m), two-bone IK + roll search (roll 240, wrist 23.7 deg after
   HOLD_TWIST_SHARE 0.5 of a 35.9 deg twist), fingers HOLD_CURL (Wren grip), thumb "wrap" solved (-30, 30, -30, 60, 48); meshes LBS'd
   into the pose, 19 bones re-seated, model re-centred (+38.3 mm x); (4) s6: forearm / hand faces never in the under-coat harvest.
-- **Numbers (v7):** 51,689 tris = OVER the 50k hero ceiling by 1,689: v6's 49,749 was under only because the tent made the under-coat
-  harvest delete ~1,934 hand tris (ring / pinky fingers inside the mantle: holes). Twins byte-equal (glb 97d8e239ba080808,
-  11,362,512 B, digest c7c27810e99ad4d6). Checks: improved 5/7 (cell_fit report-only + tri_budget), rigged 7/11 (+ clip_names /
-  clip_loops by design).
+- **v7.1 HAND DENSITY (a1b0857 + this):** s6 HAND_DECIMATE {L 0.40, R 0.60} (Varden glove pattern): per hand the interior verts
+  (all incident faces hand-dominant + one region; wrist line / region borders exact) collapse-decimated, bake high keeps the full
+  hands, weights re-taken by transfer(). Hands 3,167 -> L 1,265 / R 1,899 tris. Grip numbers unchanged (bone-derived); mesh
+  fingertip pads 8.6-12.0 mm from the shaft axis (= v7, inside the ~14.5 mm shaft).
+- **Numbers (v7.1):** 48,519 tris (budget 50k: 1,481 left). glb 650059ead1a68a16, 10,526,796 B; glb + textures byte-equal across 3
+  builds (the float bake_normal digest jittered once: sub-8-bit, the known bake jitter). Checks: improved 6/7 (cell_fit report-
+  only), rigged 8/11 (+ clip_names / clip_loops by design) = the v6 exception set.
 - **LOCKED:** v5 scalp (HAIR_MASSES, palette hair family; SCALPDIGEST 9c9d60d59a0df692 must stay).
 - **v6 beard:** STRANDS OVER A THIN CORE. Core shell (BEARD_CORE: v4 column builder, 6 deg columns, 2.5-4.8 mm thick, hem 26 mm below
   the chin, rounded U, painted dark-inner below the chin) keeps the zone covered; 7 masses / 28 ribbon locks on top (BEARD_MASSES:
@@ -35,7 +38,7 @@
   thin edge-on slivers at the face outline; chains beard.L / .R carry 2 locks each (the other jaw locks only dip their tip below the
   leave line: rigid); beard tone sampled, close to the skin luminance. Rigged check: clip_names / clip_loops fail (no clips, by
   design); cell_fit report-only (staff).
-- **Open (v7):** tri budget decision (hand density lane ~3k tris per MPFB hand, or re-declare); capelet stays shoulder-hung
+- **Open (v7):** capelet stays shoulder-hung
   (704 verts arm-weighted, rides the raised upper arm). 
 - **Open artist questions:** the v6 beard read vs the sheet (clump size / count, point length 38 mm, cheek coverage height, mustache
   sweep density); beard tone vs skin; glasses lens + frame colour; staff scale / hold height (v7 grip 1.30 m; the sheet's fist sits near the shoulder); tome rest place; age lines; movement intent

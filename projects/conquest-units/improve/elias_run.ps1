@@ -18,6 +18,7 @@
 #   props / belt close-ups and the three HOLD views only (head + hair untouched: SCALPDIGEST / BEARDDIGEST prove it); no
 #   face probe / hair diag / head views; the strip = v6 | v7 | SHEET for front (the artist's screenshot), 3/4, the hold
 #   3/4 + side (the v6 hold_* stills were rendered from the v6 rig on its right-hand box before the rebuild)
+#   v7.1 (HAND_DECIMATE): same jobs; the strip = v7 | v7.1 for the three hold views + the open left hand (book)
 # Logs + probe outputs live in renders/elias/ (the lane allowlist). -SkipBuild re-runs 2 + 3 only.
 param([switch]$SkipBuild, [switch]$Twin)
 $B = "C:\Program Files\Blender Foundation\Blender 5.0\blender.exe"
@@ -64,7 +65,7 @@ if (-not $SkipBuild) {
 }
 $RB = "`"$P\rigged\elias.blend`""
 $R = "`"$I\elias_render.py`""
-$VER = "elias_v7"                     # (render / probe prefix; v6 stills stay as the comparison baseline)
+$VER = "elias_v7.1"                   # (render / probe prefix; v7.1 = the hand-density pass; v7 stills = the baseline)
 $W = "`"$OUT\$VER`""
 $G1 = "154,131,113"                   # v5: the one-tone = the SAMPLED hair (palette "hair"; v4's used the v1 grey 186,186,182)
 $ONE = (@("hair","hair_shade","hair_root","hair_ring","hair_tip","hair_inner","hair_crevice","hair_beard","hair_beard_shade",
@@ -81,12 +82,12 @@ foreach ($j in $vJobs) {
   $null = $pr.Handle; $vProcs += ,@($j[0], $pr)
 }
 foreach ($x in $vProcs) { $x[1].WaitForExit(); "$($x[0]) exit=$($x[1].ExitCode)" }
-$env:ELIAS_V = $VER; $env:ELIAS_BASE = "elias_v6"; $env:ELIAS_STRIP_REF = "1"; $env:ELIAS_STRIP_OUT = "hold_compare"
-$env:ELIAS_STRIP_VIEWS = "front:front (the artist's screenshot),threequarter:3/4,hold_tq:hold 3/4 (his right),hold_side:hold (his right side)"
+$env:ELIAS_V = $VER; $env:ELIAS_BASE = "elias_v7"; $env:ELIAS_STRIP_REF = "1"; $env:ELIAS_STRIP_OUT = "hand_compare"
+$env:ELIAS_STRIP_VIEWS = "hold:gripping hand,hold_tq:hold 3/4 (his right),hold_side:hold (his right side),book:open left hand + tome"
 & $VPY -P "$I\elias_compose.py" 2>&1 | Out-File -Encoding utf8 "$LOG\compose.txt"
 "compose exit=$LASTEXITCODE"
 (Get-Content "$LOG\compose.txt" | Select-String "^(SHEET|STRIP)").Line
-(Get-Content "$LOG\build.txt" | Select-String "^(TRIS|GRIP|HOLD|GLB|BEARD6|BEARDMASSES|BEARDLAYER|BEARDCOVER|HAIRCN|SCALPDIGEST|BEARDDIGEST|MASSES|HAIRCLEAR|CAPEXPOSE|HAIRPUSH)").Line | % { $_.Substring(0, [Math]::Min(400, $_.Length)) }
+(Get-Content "$LOG\build.txt" | Select-String "^(TRIS|GRIP|HOLD|HANDS|GLB|BEARD6|BEARDMASSES|BEARDLAYER|BEARDCOVER|HAIRCN|SCALPDIGEST|BEARDDIGEST|MASSES|HAIRCLEAR|CAPEXPOSE|HAIRPUSH)").Line | % { $_.Substring(0, [Math]::Min(400, $_.Length)) }
 (Get-Content "$LOG\check_improved.txt" | Select-String "checks, ").Line
 (Get-Content "$LOG\check_rigged.txt" | Select-String "checks, ").Line
 "ALL DONE total_wall_s=$([math]::Round(((Get-Date)-$T0).TotalSeconds,1))"

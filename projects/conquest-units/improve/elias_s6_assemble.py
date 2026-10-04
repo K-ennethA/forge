@@ -188,6 +188,55 @@ CV_all, CF_all, reg_all = CV, CF, reg                  # (kept for the bake high
 CV = CV[_usedv]; CW = CW[_usedv]
 CF = [[int(_rm[i]) for i in f] for f, k in zip(CF, _keep) if k]
 reg = reg[_keep]
+# v7.1 HAND DENSITY (budget; Varden's glove decimation pattern): the MPFB hands carry ~3k tris each. Per side, the hand's
+# INTERIOR vertices -- every face round them a hand face (all three vertices hand / finger dominant) of ONE region, so the
+# wrist line and every region border stay exact -- are collapse-decimated to HAND_DECIMATE[side] of that hand's tris
+# (the modifier's ratio is of the whole mesh); the bake high keeps the full hands (CV_all); weights re-taken by transfer().
+HAND_INFO = {"ratio": dict(HAND_DECIMATE) if HAND_DECIMATE else None}
+_HCHAIN = ("hand", "index", "middle", "ring", "pinky", "thumb")
+
+
+def _hand_faces(CV_, CF_, CW_, side):
+    dn_ = [MB[j] for j in np.argmax(CW_, 1)]
+    ish_ = np.array([n_.split("_")[0] in _HCHAIN and n_.endswith("_" + side.lower()) for n_ in dn_])
+    return np.array([bool(ish_[f].all()) for f in CF_])
+
+
+for _s in "LR":
+    _hf = _hand_faces(CV, CF, CW, _s)
+    HAND_INFO["tris_before_" + _s] = int(tri_count_F([f for f, h in zip(CF, _hf) if h]))
+if HAND_DECIMATE:
+    for _s in "LR":
+        _hf = _hand_faces(CV, CF, CW, _s)
+        _vreg = {}
+        _bad = set()
+        for f, h, r_ in zip(CF, _hf, reg):
+            for i in f:
+                if not h or _vreg.setdefault(i, r_) != r_:
+                    _bad.add(i)
+        _gv = sorted(set(i for f, h in zip(CF, _hf) if h for i in f) - _bad)
+        _tme = bpy.data.meshes.new("hand_tmp"); _tme.from_pydata(np.asarray(CV).tolist(), [], [list(map(int, f)) for f in CF]); _tme.update()
+        _tmp = bpy.data.objects.new("hand_tmp", _tme); scene.collection.objects.link(_tmp)
+        _ra = _tmp.data.attributes.new("rid", "INT", "FACE")
+        _ra.data.foreach_set("value", np.array([REG.index(r_) if r_ in REG else 0 for r_ in reg], dtype=np.int32))
+        _vg = _tmp.vertex_groups.new(name="g"); _vg.add(_gv, 1.0, "REPLACE")
+        _ntri_all = tri_count_F(CF); _ntri_h = HAND_INFO["tris_before_" + _s]
+        _dm = _tmp.modifiers.new("dec", "DECIMATE"); _dm.decimate_type = "COLLAPSE"
+        _dm.ratio = (_ntri_all - (1.0 - HAND_DECIMATE[_s]) * _ntri_h) / _ntri_all
+        _dm.vertex_group = "g"; _dm.use_collapse_triangulate = True
+        _dg = bpy.context.evaluated_depsgraph_get()
+        _me2 = bpy.data.meshes.new_from_object(_tmp.evaluated_get(_dg))
+        _cv2, _cf2 = mesh_arrays(_me2)
+        _rid2 = np.empty(len(_me2.polygons), dtype=np.int32); _me2.attributes["rid"].data.foreach_get("value", _rid2)
+        bpy.data.objects.remove(_tmp, do_unlink=True); bpy.data.meshes.remove(_me2); bpy.data.meshes.remove(_tme)
+        CV = np.asarray(_cv2, float); CF = [list(map(int, f)) for f in _cf2]; reg = np.array([REG[i] for i in _rid2], dtype=object)
+        CW = transfer(CV)
+        HAND_INFO["interior_verts_" + _s] = len(_gv)
+    for _s in "LR":
+        _hf = _hand_faces(CV, CF, CW, _s)
+        HAND_INFO["tris_after_" + _s] = int(tri_count_F([f for f, h in zip(CF, _hf) if h]))
+report["hand_decimation"] = HAND_INFO
+print("HANDS", json.dumps(HAND_INFO))
 ISL = [{"name": "body", "V": CV, "F": CF, "R": list(reg), "w": "body", "obj": "main"}] + PARTS
 allV = np.vstack([p["V"] for p in ISL])
 lo0, hi0 = allV.min(0), allV.max(0)

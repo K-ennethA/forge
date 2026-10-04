@@ -1406,7 +1406,7 @@
  ],
  "bone_count": 76,
  "tris": {
-  "model": 51689,
+  "model": 48519,
   "outline_shells": 0,
   "budget": [
    30000,
@@ -1417,20 +1417,20 @@
   "parts": {
    "hair_geometry": "546082d9661ee170",
    "mouth_proxy_core": "8722acbb7e64816d",
-   "bake_normal": "4be55c4d6b19b3cd",
-   "bake_ao": "1628d143af26cf0c",
-   "ao_lifted": "6aac82a60de57c91",
-   "hair_custom_normals": "4aceb706a2217f64",
-   "geometry_colour_uv": "7b602a7014531f8f",
-   "weights": "31a89aaaeb3c85d5",
+   "bake_normal": "6f1ca5a477fb2cbb",
+   "bake_ao": "01901cc6cc26137d",
+   "ao_lifted": "12271524df108e73",
+   "hair_custom_normals": "c2c31457635582b1",
+   "geometry_colour_uv": "91345ab29caa0157",
+   "weights": "f54bea6a1c5c9c0c",
    "hold": "9bedfe1fa3f7e339"
   },
-  "combined": "c7c27810e99ad4d6"
+  "combined": "7e512c14b4df4d79"
  },
  "glb": {
   "path": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\rigged\\elias.glb",
-  "bytes": 11362512,
-  "tris": 51689,
+  "bytes": 10526796,
+  "tris": 48519,
   "COLOR_0": true,
   "COLOR_1": true,
   "_GLOW": true,
@@ -1445,5 +1445,5 @@
   ]
  },
  "improved_report": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\improved\\elias.json",
- "seconds": 96.9
+ "seconds": 93.8
 }
