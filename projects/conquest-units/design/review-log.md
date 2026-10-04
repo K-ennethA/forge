@@ -1301,3 +1301,22 @@ inward). Required: regular upright stance, legs tracking straight
 (markup 2's vertical line), in idle AND carried through walk/run.
 Werewolf project's locomotion work is the motion reference.
 (3) Overworld pace: artist bumped (free preset 2.2/5.0 m/s).
+
+## 2026-10-04 — Compendium import of the 6; Elias staff/robe; Varden hair
+
+Artist (verbatim): "work with a conquest agent to import these with
+default values firefly, firesprite, magmoo, supaoctto, vampito,
+vampwarrior ... rebalancing and scaling can be done once theyre in
+the game, dont attach them to anything yet just surface them in the
+compendium" + "before the elias and varden go in, he is not holding
+his staff its just attached to his robe and his robe stretches and
+we never got the hair update on varden I believe".
+(1) THE 6 go into Conquest as roster entries with DEFAULT/placeholder
+values, clearly marked for rebalancing; referenced by NOTHING (no
+spawns/encounters/story) — compendium visibility only.
+(2) ELIAS defects before he ships (screenshot on file): the staff is
+not IN his hand — it floats attached beside the robe (grip not
+applied at rest); and the robe skirt STRETCHES (weight defect).
+(3) VARDEN never received the sheet-matched hair treatment — scalp
+rebuild per his saved sheet (swept-back tousled + head detail
+panel), mass-first, same as Elias's approved v5 scalp.
