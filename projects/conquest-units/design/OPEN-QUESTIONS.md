@@ -41,6 +41,19 @@ docs/lane-conventions.md. Per-unit facts: improve/<unit>_STATE.md.
 - V9 His _GLOW is all zero — the brooch's teal gem does NOT glow in-game (Elias's orb
   does). Should the gem get a glow tier in palettes/varden? One palette edit + re-export.
 
+## Shadow Assassin (v1 draft in flight; sheet 2026-10-05)
+- S1 Blade count: the sheet's front view arms one hand; back view silhouettes a blade at
+  each side. Default = ONE blade, right hand, hold baked into the bind pose (clipless
+  law); a second (left/sheathed) blade is a knob, not a rebuild.
+- S2 Sigil glow: purple runes on the blade + the back-cloak diamond sigil — subtle _GLOW
+  (Elias-orb tier, <=2.0 phone cap) is the default. Zero them, or brighter "shadow magic"?
+- S3 Movement intent before any clips (shadow-step concepts are on the sheet's bottom
+  strip): stalker crouch vs upright duelist idle? How does he enter/exit the smoke form?
+- S4 Height: sheet gives no number (age unknown). Default 1.80 m — between Wren and
+  Varden; the lithe read comes from the silhouette, not stature. Correct?
+- S5 Hood void: default = face fully occluded (dark wrap + shadow, zero face stack per
+  the sheet's "no face visible"). Confirm no eye-glint/emissive eyes wanted.
+
 ## Game-side (Conquest; all behind debug keys, defaults live)
 - G1 F7 look verdict: warm vs warm-neutralLUT vs new (WorldLook presets).
 - G2 F8 feel verdict: free preset speeds now 2.2/5.0 m/s (artist bumped); camera

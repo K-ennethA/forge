@@ -1320,3 +1320,29 @@ applied at rest); and the robe skirt STRETCHES (weight defect).
 (3) VARDEN never received the sheet-matched hair treatment — scalp
 rebuild per his saved sheet (swept-back tousled + head detail
 panel), mass-first, same as Elias's approved v5 scalp.
+
+## 2026-10-05 — NEW UNIT: Shadow Assassin (Varrick's ally) — sheet delivered, v1 draft ordered
+
+Artist (verbatim): "begin work on creating the model for this
+reference, follow guides for our previous work" — with the Shadow
+Assassin character sheet attached (front/side/back + head, necklace,
+belt, blade, cloak detail panels + shadow-ability concepts + 5-chip
+palette). Sheet saved: design/reference/shadow_assassin/
+shadow_assassin_sheet.webp (1536x1024, transcription-time save per
+the style guide's sheet law).
+Sheet facts binding for the build: hooded figure, NO FACE VISIBLE
+(dark void + face wrap under the hood — no eyes/mouth/face paint);
+layered tattered black/charcoal cloak + hood with gold trim, purple
+accents (scarf, gold diamond pendant, back-cloak diamond sigil,
+under-layer); leather shoulder plates, crossed chest straps with
+round gold brooch; belt with gold rings + pouches; tattered layered
+skirt over dark trousers; buckled boots; large curved dark blade(s)
+with purple sigils. Role: Varrick's ally, infiltration/assassination,
+shadow magic.
+(1) v1 DRAFT lane (two-speeds law): full house-style build minus the
+face stack (hood void replaces it), palette PIXEL-SAMPLED from the
+saved sheet, blade hold baked into the bind pose (clipless law), one
+comparison sheet vs the SHEET views.
+(2) Open artist questions filed under S-numbers in OPEN-QUESTIONS.md
+(blade count, sigil glow, movement intent — batched with the v1
+renders).

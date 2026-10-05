@@ -1,0 +1,18 @@
+palette exit=0
+build exit=0 wall_s=35.3
+render_full exit=0
+render_close exit=0
+render_ortho exit=0
+check_improved exit=1
+check_rigged exit=1
+compose exit=0
+STRIP C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\shadow_assassin\shadow_assassin_v1_sheet_compare.png (2484, 978)
+SHEET C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\shadow_assassin\shadow_assassin_v1_sheet.png (2130, 1824)
+GLOWGATE {"emission_scale_tiers": {"cloak_sigil": 0.12, "blade_sigil": 0.12}, "emission_strength": 2.0, "grade_pass": true, "accent_hue_deg": {"cloak_sigil": 296.9, "blade_sigil": 274.1}, "hue_pass": true, "glow_peak_linear": 0.12, "glow_x_strength_peak": 0.24}
+TRIS {"total": 38913, "main": 37069, "blade": 1844, "body": 8113, "bootfoot": 912, "sole": 304, "bootshaft": 896, "bootcuff": 512, "bootstrap": 768, "bootbuckle": 288, "kneeguard": 352, "kneestrap": 224, "facewrap": 3836, "scarf": 1728, "chest_strap": 1152, "skirtunder": 1440, "skirt": 1440, "belt": 528, "buckle": 240, "buckleinset": 48, "beltring": 320, "pouch": 576, "pouchflap": 216, "pouchstud": 192, "sash": 276, "sashchevron": 112, "bracer": 672, "bracertrim": 448, "bracerstrap": 448, "pendant": 24, "pendantgem": 32, "pendantbail": 80, "hood": 3232, "cloak": 2716, "cloaksigil": 528, "cloak
+HOLD {"grip_centre_m": [-0.3255, -0.1175, 0.952], "grip_z_m": 0.952, "fist_off_axis_mm": 0.0, "hand_roll_deg": 280.0, "grip_diag_deg": -10.0, "elbow_pole": [0.0, 1.0, 0.0], "wrist_bend_deg": 26.81, "wrist_bend_before_twist_split_deg": 30.08, "twist_deg": {"total": 15.89, "forearm": 7.94, "wrist_left": 7.94}, "elbow_flex_deg": 54.9, "upperarm_swing_deg": 27.2, "fingertip_bone_to_grip_surface_mm": {"index": 7.8, "middle": 5.5, "ring": 32.3, "pinky": 2.5, "thumb": 60.9}, "fingertip_pad_mesh_to_grip_surface_mm": {"index": 1.0, "middle": 1.0, "ring": 3.0, "pinky": 1.1, "thumb": 50.8}, "finger_mesh_
+GRIP {"hand_roll": 280.0, "wrist_bend": 26.81, "shortfall": 0.0, "pads_mm": {"index": 1.0, "middle": 1.0, "ring": 3.0, "pinky": 1.1, "thumb": 50.8}}
+GLB {"path": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\rigged\\shadow_assassin.glb", "bytes": 11401272, "sha256_16": "bc6b3c76ed1985bd", "tris": 38913, "COLOR_0": true, "COLOR_1": true, "_GLOW": true, "skins": 1, "joints": [54], "meshes": ["shadow_assassin", "shadow_assassin_blade"], "glow_audit": {"shadow_assassin": {"nonzero_regions": ["cloak_sigil"], "peak": 0.12, "nonzero_corners": 1128, "corners": 85867}, "shadow_assassin_blade": {"nonzero_regions": ["blade_sigil"], "peak": 0.12, "nonzero_corners": 2048, "corners": 3784}}}
+7 checks, 1 failed
+11 checks, 3 failed
+ALL DONE total_wall_s=41.5

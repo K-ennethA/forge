@@ -1,0 +1,2 @@
+﻿STRIP C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\shadow_assassin\shadow_assassin_v1_sheet_compare.png (2484, 978)
+SHEET C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\shadow_assassin\shadow_assassin_v1_sheet.png (2130, 1824)

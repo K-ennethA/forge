@@ -1,0 +1,1071 @@
+{
+ "unit": "shadow_assassin",
+ "source": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\improved\\shadow_assassin.blend",
+ "fps": 24,
+ "version": "v1 draft",
+ "clips": "none (S3: movement intent is an open artist question)",
+ "weights": {
+  "max_influences": 4,
+  "unweighted": 0,
+  "sum_dev_max": 2.220446049250313e-16,
+  "seconds": 0.5,
+  "rule": "body: MPFB game_engine weights; boots / bracers / knee guards / capes / shoulder plates: the nearest skin point's weights (tie-invariant); boot feet: foot -> ball; face wrap: head; scarf: skin with head + half the neck + any arm share moved to spine_03; hood: head / neck / trunk skin (arm chain never); cloak + sigil: trunk skin above the belt blending to the pelvis below; TORSO_HUNG (skirt, skirtunder, sash, sashchevron, belt, buckle, buckleinset, beltring, pouch, pouchflap, pouchstud, chest_strap, pendant, pendantgem, pendantbail, brooch, broochgem): TRUNK faces only (skirts / sash: pelvis -> trunk skin under the hem, <= 55 %); blade: 'blade' (child of hand_r)",
+  "census": {
+   "cloak+sigil": {
+    "verts": 1692,
+    "arm_verts": 0,
+    "arm_max": 0.0
+   },
+   "skirts+sash": {
+    "verts": 1640,
+    "arm_verts": 0,
+    "arm_max": 0.0
+   },
+   "belt+buckle+rings+pouches": {
+    "verts": 1080,
+    "arm_verts": 0,
+    "arm_max": 0.0
+   },
+   "chest straps+brooch+pendant": {
+    "verts": 768,
+    "arm_verts": 0,
+    "arm_max": 0.0
+   },
+   "hood": {
+    "verts": 1616,
+    "arm_verts": 0,
+    "arm_max": 0.0
+   },
+   "capes (shoulder-hung, report)": {
+    "verts": 1408,
+    "arm_verts": 1360,
+    "arm_max": 1.0
+   },
+   "shoulder plates (shoulder-hung, report)": {
+    "verts": 660,
+    "arm_verts": 660,
+    "arm_max": 1.0
+   }
+  }
+ },
+ "grip": {
+  "blade": {
+   "rule": "the BIND POSE holds the blade (the sheet FRONT view's reverse hold): the blade at BLADE_GRIP vs the right shoulder joint, leaned by BLADE_TILT; the right hand's knuckle line along the blade axis (blade out of the pinky side), its roll about that axis x the elbow poles searched (10 deg) for the least wrist bend, the arm by analytic two-bone IK, HOLD_TWIST_SHARE of the twist on the forearm, the fingers closed (HOLD_CURL), the thumb wrap solved; bone 'blade' is a child of hand_r",
+   "hand_r_to_blade_bone_rest4": [
+    [
+     -0.5826249718666077,
+     -0.7838339805603027,
+     0.21483199298381805,
+     -0.01881299912929535
+    ],
+    [
+     -0.1278800070285797,
+     -0.17262500524520874,
+     -0.9766510128974915,
+     0.05956000089645386
+    ],
+    [
+     0.8026180267333984,
+     -0.5964940190315247,
+     0.0003389999910723418,
+     0.00684100016951561
+    ],
+    [
+     0.0,
+     0.0,
+     0.0,
+     1.0
+    ]
+   ],
+   "hold": {
+    "grip_centre_m": [
+     -0.3255,
+     -0.1175,
+     0.952
+    ],
+    "grip_z_m": 0.952,
+    "fist_off_axis_mm": 0.0,
+    "hand_roll_deg": 280.0,
+    "grip_diag_deg": -10.0,
+    "elbow_pole": [
+     0.0,
+     1.0,
+     0.0
+    ],
+    "wrist_bend_deg": 26.81,
+    "wrist_bend_before_twist_split_deg": 30.08,
+    "twist_deg": {
+     "total": 15.89,
+     "forearm": 7.94,
+     "wrist_left": 7.94
+    },
+    "elbow_flex_deg": 54.9,
+    "upperarm_swing_deg": 27.2,
+    "fingertip_bone_to_grip_surface_mm": {
+     "index": 7.8,
+     "middle": 5.5,
+     "ring": 32.3,
+     "pinky": 2.5,
+     "thumb": 60.9
+    },
+    "fingertip_pad_mesh_to_grip_surface_mm": {
+     "index": 1.0,
+     "middle": 1.0,
+     "ring": 3.0,
+     "pinky": 1.1,
+     "thumb": 50.8
+    },
+    "finger_mesh_max_penetration_mm": {
+     "index": 0.0,
+     "middle": 0.0,
+     "ring": 0.0,
+     "pinky": 0.0,
+     "thumb": 0.0
+    },
+    "thumb": [
+     60.0,
+     60.0,
+     90.0,
+     90.0,
+     72.0
+    ],
+    "finger_curl_scales_knuckle_midtip": {
+     "index": [
+      1.5,
+      1.1
+     ],
+     "middle": [
+      1.1,
+      1.2
+     ],
+     "ring": [
+      1.7,
+      1.4
+     ],
+     "pinky": [
+      0.7,
+      1.2
+     ]
+    },
+    "thumb_closest_to_grip_surface_mm": 1.1,
+    "bones_reseated": 18,
+    "reseat_err": 7.656062785965645e-06,
+    "recentre_shift_m": [
+     0.0,
+     0.0,
+     0.0
+    ],
+    "reach_shortfall_m": 0.0,
+    "bend_by_roll_deg_at_that_pole": {
+     "0": 91.7,
+     "10": 101.7,
+     "20": 111.5,
+     "30": 121.2,
+     "40": 130.8,
+     "50": 140.3,
+     "60": 149.6,
+     "70": 158.6,
+     "80": 167.1,
+     "90": 175.5,
+     "100": 176.2,
+     "110": 167.9,
+     "120": 159.6,
+     "130": 151.4,
+     "140": 143.2,
+     "150": 135.1,
+     "160": 127.0,
+     "170": 119.0,
+     "180": 111.1,
+     "190": 103.3,
+     "200": 91.7,
+     "210": 81.8,
+     "220": 72.2,
+     "230": 62.8,
+     "240": 53.7,
+     "250": 45.3,
+     "260": 37.9,
+     "270": 32.4,
+     "280": 30.1,
+     "290": 31.7,
+     "300": 36.8,
+     "310": 44.1,
+     "320": 52.8,
+     "330": 62.1,
+     "340": 71.9,
+     "350": 81.8
+    }
+   },
+   "wrist_bend_deg": 26.81,
+   "hand_roll_deg": 280.0,
+   "reach_shortfall_m": 0.0
+  }
+ },
+ "bones": [
+  {
+   "name": "root",
+   "parent": null,
+   "deform": false,
+   "head": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "tail": [
+    0.0,
+    0.2,
+    0.0
+   ]
+  },
+  {
+   "name": "pelvis",
+   "parent": "root",
+   "deform": true,
+   "head": [
+    -0.0012,
+    -0.0436,
+    0.9749
+   ],
+   "tail": [
+    -0.0012,
+    -0.0111,
+    1.0616
+   ]
+  },
+  {
+   "name": "spine_01",
+   "parent": "pelvis",
+   "deform": true,
+   "head": [
+    -0.0012,
+    -0.0111,
+    1.0616
+   ],
+   "tail": [
+    -0.0012,
+    -0.0203,
+    1.1265
+   ]
+  },
+  {
+   "name": "spine_02",
+   "parent": "spine_01",
+   "deform": true,
+   "head": [
+    -0.0012,
+    -0.0203,
+    1.1265
+   ],
+   "tail": [
+    -0.0012,
+    -0.01,
+    1.187
+   ]
+  },
+  {
+   "name": "spine_03",
+   "parent": "spine_02",
+   "deform": true,
+   "head": [
+    -0.0012,
+    -0.01,
+    1.187
+   ],
+   "tail": [
+    -0.0012,
+    0.0115,
+    1.3259
+   ]
+  },
+  {
+   "name": "clavicle_l",
+   "parent": "spine_03",
+   "deform": true,
+   "head": [
+    0.0222,
+    -0.0637,
+    1.4616
+   ],
+   "tail": [
+    0.2031,
+    -0.0575,
+    1.432
+   ]
+  },
+  {
+   "name": "upperarm_l",
+   "parent": "clavicle_l",
+   "deform": true,
+   "head": [
+    0.2031,
+    -0.0575,
+    1.432
+   ],
+   "tail": [
+    0.2606,
+    -0.0563,
+    1.1845
+   ]
+  },
+  {
+   "name": "lowerarm_l",
+   "parent": "upperarm_l",
+   "deform": true,
+   "head": [
+    0.2606,
+    -0.0563,
+    1.1845
+   ],
+   "tail": [
+    0.3255,
+    -0.1559,
+    0.9454
+   ]
+  },
+  {
+   "name": "hand_l",
+   "parent": "lowerarm_l",
+   "deform": true,
+   "head": [
+    0.3255,
+    -0.1559,
+    0.9454
+   ],
+   "tail": [
+    0.3299,
+    -0.1751,
+    0.9151
+   ]
+  },
+  {
+   "name": "index_01_l",
+   "parent": "hand_l",
+   "deform": true,
+   "head": [
+    0.3395,
+    -0.2325,
+    0.8569
+   ],
+   "tail": [
+    0.3363,
+    -0.2483,
+    0.8331
+   ]
+  },
+  {
+   "name": "index_02_l",
+   "parent": "index_01_l",
+   "deform": true,
+   "head": [
+    0.3363,
+    -0.2483,
+    0.8331
+   ],
+   "tail": [
+    0.3284,
+    -0.2606,
+    0.8118
+   ]
+  },
+  {
+   "name": "index_03_l",
+   "parent": "index_02_l",
+   "deform": true,
+   "head": [
+    0.3284,
+    -0.2606,
+    0.8118
+   ],
+   "tail": [
+    0.3159,
+    -0.2736,
+    0.7886
+   ]
+  },
+  {
+   "name": "middle_01_l",
+   "parent": "hand_l",
+   "deform": true,
+   "head": [
+    0.3468,
+    -0.2064,
+    0.846
+   ],
+   "tail": [
+    0.341,
+    -0.2175,
+    0.8105
+   ]
+  },
+  {
+   "name": "middle_02_l",
+   "parent": "middle_01_l",
+   "deform": true,
+   "head": [
+    0.341,
+    -0.2175,
+    0.8105
+   ],
+   "tail": [
+    0.3333,
+    -0.2277,
+    0.7831
+   ]
+  },
+  {
+   "name": "middle_03_l",
+   "parent": "middle_02_l",
+   "deform": true,
+   "head": [
+    0.3333,
+    -0.2277,
+    0.7831
+   ],
+   "tail": [
+    0.3222,
+    -0.2363,
+    0.7569
+   ]
+  },
+  {
+   "name": "pinky_01_l",
+   "parent": "hand_l",
+   "deform": true,
+   "head": [
+    0.3416,
+    -0.1611,
+    0.8416
+   ],
+   "tail": [
+    0.3373,
+    -0.1615,
+    0.8185
+   ]
+  },
+  {
+   "name": "pinky_02_l",
+   "parent": "pinky_01_l",
+   "deform": true,
+   "head": [
+    0.3373,
+    -0.1615,
+    0.8185
+   ],
+   "tail": [
+    0.3316,
+    -0.1626,
+    0.8022
+   ]
+  },
+  {
+   "name": "pinky_03_l",
+   "parent": "pinky_02_l",
+   "deform": true,
+   "head": [
+    0.3316,
+    -0.1626,
+    0.8022
+   ],
+   "tail": [
+    0.3241,
+    -0.1635,
+    0.7816
+   ]
+  },
+  {
+   "name": "ring_01_l",
+   "parent": "hand_l",
+   "deform": true,
+   "head": [
+    0.3476,
+    -0.1841,
+    0.8425
+   ],
+   "tail": [
+    0.3438,
+    -0.1885,
+    0.8099
+   ]
+  },
+  {
+   "name": "ring_02_l",
+   "parent": "ring_01_l",
+   "deform": true,
+   "head": [
+    0.3438,
+    -0.1885,
+    0.8099
+   ],
+   "tail": [
+    0.3377,
+    -0.1941,
+    0.7838
+   ]
+  },
+  {
+   "name": "ring_03_l",
+   "parent": "ring_02_l",
+   "deform": true,
+   "head": [
+    0.3377,
+    -0.1941,
+    0.7838
+   ],
+   "tail": [
+    0.3275,
+    -0.1976,
+    0.7564
+   ]
+  },
+  {
+   "name": "thumb_01_l",
+   "parent": "hand_l",
+   "deform": true,
+   "head": [
+    0.3275,
+    -0.1986,
+    0.92
+   ],
+   "tail": [
+    0.3052,
+    -0.2237,
+    0.914
+   ]
+  },
+  {
+   "name": "thumb_02_l",
+   "parent": "thumb_01_l",
+   "deform": true,
+   "head": [
+    0.3052,
+    -0.2237,
+    0.914
+   ],
+   "tail": [
+    0.2891,
+    -0.2557,
+    0.8952
+   ]
+  },
+  {
+   "name": "thumb_03_l",
+   "parent": "thumb_02_l",
+   "deform": true,
+   "head": [
+    0.2891,
+    -0.2557,
+    0.8952
+   ],
+   "tail": [
+    0.2766,
+    -0.2735,
+    0.8736
+   ]
+  },
+  {
+   "name": "clavicle_r",
+   "parent": "spine_03",
+   "deform": true,
+   "head": [
+    -0.0246,
+    -0.0637,
+    1.4616
+   ],
+   "tail": [
+    -0.2055,
+    -0.0575,
+    1.432
+   ]
+  },
+  {
+   "name": "upperarm_r",
+   "parent": "clavicle_r",
+   "deform": true,
+   "head": [
+    -0.2055,
+    -0.0575,
+    1.432
+   ],
+   "tail": [
+    -0.2691,
+    0.0579,
+    1.2147
+   ]
+  },
+  {
+   "name": "lowerarm_r",
+   "parent": "upperarm_r",
+   "deform": true,
+   "head": [
+    -0.2691,
+    0.0579,
+    1.2147
+   ],
+   "tail": [
+    -0.3353,
+    -0.067,
+    0.9882
+   ]
+  },
+  {
+   "name": "hand_r",
+   "parent": "lowerarm_r",
+   "deform": true,
+   "head": [
+    -0.3353,
+    -0.067,
+    0.9882
+   ],
+   "tail": [
+    -0.3392,
+    -0.0996,
+    0.9731
+   ]
+  },
+  {
+   "name": "index_01_r",
+   "parent": "hand_r",
+   "deform": true,
+   "head": [
+    -0.3484,
+    -0.1794,
+    0.9553
+   ],
+   "tail": [
+    -0.3217,
+    -0.1877,
+    0.962
+   ]
+  },
+  {
+   "name": "index_02_r",
+   "parent": "index_01_r",
+   "deform": true,
+   "head": [
+    -0.3217,
+    -0.1877,
+    0.962
+   ],
+   "tail": [
+    -0.3186,
+    -0.1759,
+    0.9848
+   ]
+  },
+  {
+   "name": "index_03_r",
+   "parent": "index_02_r",
+   "deform": true,
+   "head": [
+    -0.3186,
+    -0.1759,
+    0.9848
+   ],
+   "tail": [
+    -0.3404,
+    -0.169,
+    1.0031
+   ]
+  },
+  {
+   "name": "middle_01_r",
+   "parent": "hand_r",
+   "deform": true,
+   "head": [
+    -0.3547,
+    -0.1635,
+    0.9316
+   ],
+   "tail": [
+    -0.3187,
+    -0.1735,
+    0.9269
+   ]
+  },
+  {
+   "name": "middle_02_r",
+   "parent": "middle_01_r",
+   "deform": true,
+   "head": [
+    -0.3187,
+    -0.1735,
+    0.9269
+   ],
+   "tail": [
+    -0.3117,
+    -0.1561,
+    0.9506
+   ]
+  },
+  {
+   "name": "middle_03_r",
+   "parent": "middle_02_r",
+   "deform": true,
+   "head": [
+    -0.3117,
+    -0.1561,
+    0.9506
+   ],
+   "tail": [
+    -0.3355,
+    -0.1459,
+    0.9652
+   ]
+  },
+  {
+   "name": "pinky_01_r",
+   "parent": "hand_r",
+   "deform": true,
+   "head": [
+    -0.3482,
+    -0.128,
+    0.9035
+   ],
+   "tail": [
+    -0.3298,
+    -0.1348,
+    0.8906
+   ]
+  },
+  {
+   "name": "pinky_02_r",
+   "parent": "pinky_01_r",
+   "deform": true,
+   "head": [
+    -0.3298,
+    -0.1348,
+    0.8906
+   ],
+   "tail": [
+    -0.3208,
+    -0.123,
+    0.8994
+   ]
+  },
+  {
+   "name": "pinky_03_r",
+   "parent": "pinky_02_r",
+   "deform": true,
+   "head": [
+    -0.3208,
+    -0.123,
+    0.8994
+   ],
+   "tail": [
+    -0.3312,
+    -0.1072,
+    0.9105
+   ]
+  },
+  {
+   "name": "ring_01_r",
+   "parent": "hand_r",
+   "deform": true,
+   "head": [
+    -0.3549,
+    -0.1468,
+    0.9165
+   ],
+   "tail": [
+    -0.3233,
+    -0.1383,
+    0.9215
+   ]
+  },
+  {
+   "name": "ring_02_r",
+   "parent": "ring_01_r",
+   "deform": true,
+   "head": [
+    -0.3233,
+    -0.1383,
+    0.9215
+   ],
+   "tail": [
+    -0.3386,
+    -0.1223,
+    0.9377
+   ]
+  },
+  {
+   "name": "ring_03_r",
+   "parent": "ring_02_r",
+   "deform": true,
+   "head": [
+    -0.3386,
+    -0.1223,
+    0.9377
+   ],
+   "tail": [
+    -0.366,
+    -0.1284,
+    0.9288
+   ]
+  },
+  {
+   "name": "thumb_01_r",
+   "parent": "hand_r",
+   "deform": true,
+   "head": [
+    -0.3375,
+    -0.1166,
+    0.9901
+   ],
+   "tail": [
+    -0.3397,
+    -0.0844,
+    1.0012
+   ]
+  },
+  {
+   "name": "thumb_02_r",
+   "parent": "thumb_01_r",
+   "deform": true,
+   "head": [
+    -0.3397,
+    -0.0844,
+    1.0012
+   ],
+   "tail": [
+    -0.3798,
+    -0.0796,
+    1.003
+   ]
+  },
+  {
+   "name": "thumb_03_r",
+   "parent": "thumb_02_r",
+   "deform": true,
+   "head": [
+    -0.3798,
+    -0.0796,
+    1.003
+   ],
+   "tail": [
+    -0.3919,
+    -0.0983,
+    0.982
+   ]
+  },
+  {
+   "name": "blade",
+   "parent": "hand_r",
+   "deform": true,
+   "head": [
+    -0.3255,
+    -0.1175,
+    0.952
+   ],
+   "tail": [
+    -0.3289,
+    -0.0487,
+    0.8538
+   ]
+  },
+  {
+   "name": "neck_01",
+   "parent": "spine_03",
+   "deform": true,
+   "head": [
+    -0.0012,
+    -0.0513,
+    1.5379
+   ],
+   "tail": [
+    -0.0012,
+    -0.0823,
+    1.631
+   ]
+  },
+  {
+   "name": "head",
+   "parent": "neck_01",
+   "deform": true,
+   "head": [
+    -0.0012,
+    -0.0823,
+    1.631
+   ],
+   "tail": [
+    -0.0012,
+    -0.0789,
+    1.8024
+   ]
+  },
+  {
+   "name": "thigh_l",
+   "parent": "pelvis",
+   "deform": true,
+   "head": [
+    0.1103,
+    -0.0329,
+    0.9664
+   ],
+   "tail": [
+    0.1652,
+    -0.0673,
+    0.5426
+   ]
+  },
+  {
+   "name": "calf_l",
+   "parent": "thigh_l",
+   "deform": true,
+   "head": [
+    0.1652,
+    -0.0673,
+    0.5426
+   ],
+   "tail": [
+    0.2283,
+    -0.0537,
+    0.0967
+   ]
+  },
+  {
+   "name": "foot_l",
+   "parent": "calf_l",
+   "deform": true,
+   "head": [
+    0.2283,
+    -0.0537,
+    0.0967
+   ],
+   "tail": [
+    0.2318,
+    -0.1826,
+    0.0324
+   ]
+  },
+  {
+   "name": "ball_l",
+   "parent": "foot_l",
+   "deform": true,
+   "head": [
+    0.2318,
+    -0.1826,
+    0.0324
+   ],
+   "tail": [
+    0.2276,
+    -0.255,
+    0.038
+   ]
+  },
+  {
+   "name": "thigh_r",
+   "parent": "pelvis",
+   "deform": true,
+   "head": [
+    -0.1127,
+    -0.0329,
+    0.9664
+   ],
+   "tail": [
+    -0.1676,
+    -0.0673,
+    0.5426
+   ]
+  },
+  {
+   "name": "calf_r",
+   "parent": "thigh_r",
+   "deform": true,
+   "head": [
+    -0.1676,
+    -0.0673,
+    0.5426
+   ],
+   "tail": [
+    -0.2307,
+    -0.0537,
+    0.0967
+   ]
+  },
+  {
+   "name": "foot_r",
+   "parent": "calf_r",
+   "deform": true,
+   "head": [
+    -0.2307,
+    -0.0537,
+    0.0967
+   ],
+   "tail": [
+    -0.2342,
+    -0.1826,
+    0.0324
+   ]
+  },
+  {
+   "name": "ball_r",
+   "parent": "foot_r",
+   "deform": true,
+   "head": [
+    -0.2342,
+    -0.1826,
+    0.0324
+   ],
+   "tail": [
+    -0.23,
+    -0.255,
+    0.038
+   ]
+  }
+ ],
+ "bone_count": 54,
+ "tris": {
+  "model": 38913,
+  "outline_shells": 0,
+  "budget": [
+   30000,
+   50000
+  ]
+ },
+ "digest": {
+  "parts": {
+   "bake_normal": "cf23d0fb1fd60057",
+   "bake_ao": "71dd71c74eb16a18",
+   "geometry_colour_uv": "aa23da188af07a27",
+   "weights": "4c2576ba316409fe",
+   "hold": "104d097144b6bdf5"
+  },
+  "combined": "8a45099cc37a6c8d"
+ },
+ "glb": {
+  "path": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\rigged\\shadow_assassin.glb",
+  "bytes": 11401272,
+  "sha256_16": "bc6b3c76ed1985bd",
+  "tris": 38913,
+  "COLOR_0": true,
+  "COLOR_1": true,
+  "_GLOW": true,
+  "skins": 1,
+  "joints": [
+   54
+  ],
+  "meshes": [
+   "shadow_assassin",
+   "shadow_assassin_blade"
+  ],
+  "glow_audit": {
+   "shadow_assassin": {
+    "nonzero_regions": [
+     "cloak_sigil"
+    ],
+    "peak": 0.12,
+    "nonzero_corners": 1128,
+    "corners": 85867
+   },
+   "shadow_assassin_blade": {
+    "nonzero_regions": [
+     "blade_sigil"
+    ],
+    "peak": 0.12,
+    "nonzero_corners": 2048,
+    "corners": 3784
+   }
+  }
+ },
+ "improved_report": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\improved\\shadow_assassin.json",
+ "seconds": 33.7
+}

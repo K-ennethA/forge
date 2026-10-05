@@ -1,0 +1,26 @@
+00:01.000  blend            | Read blend: "C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\rigged\shadow_assassin.blend"
+00:02.562  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\shadow_assassin\shadow_assassin_v1_head_front.png'
+00:02.843  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\shadow_assassin\shadow_assassin_v1_head_tq.png'
+00:03.078  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\shadow_assassin\shadow_assassin_v1_head_side.png'
+00:03.312  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\shadow_assassin\shadow_assassin_v1_blade.png'
+00:03.562  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\shadow_assassin\shadow_assassin_v1_blade_tq.png'
+00:03.750  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\shadow_assassin\shadow_assassin_v1_hold.png'
+00:03.937  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\shadow_assassin\shadow_assassin_v1_hold_tq.png'
+00:04.109  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\shadow_assassin\shadow_assassin_v1_hold_side.png'
+00:04.296  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\shadow_assassin\shadow_assassin_v1_belt.png'
+00:04.468  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\shadow_assassin\shadow_assassin_v1_chest.png'
+00:04.656  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\shadow_assassin\shadow_assassin_v1_back_sigil.png'
+00:04.843  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\shadow_assassin\shadow_assassin_v1_boots.png'
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\shadow_assassin\shadow_assassin_v1_head_front.png
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\shadow_assassin\shadow_assassin_v1_head_tq.png
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\shadow_assassin\shadow_assassin_v1_head_side.png
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\shadow_assassin\shadow_assassin_v1_blade.png
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\shadow_assassin\shadow_assassin_v1_blade_tq.png
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\shadow_assassin\shadow_assassin_v1_hold.png
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\shadow_assassin\shadow_assassin_v1_hold_tq.png
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\shadow_assassin\shadow_assassin_v1_hold_side.png
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\shadow_assassin\shadow_assassin_v1_belt.png
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\shadow_assassin\shadow_assassin_v1_chest.png
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\shadow_assassin\shadow_assassin_v1_back_sigil.png
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\shadow_assassin\shadow_assassin_v1_boots.png
+Blender 5.0.1 (hash a3db93c5b259 built 2025-12-16 01:32:30)
