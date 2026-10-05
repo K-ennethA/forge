@@ -52,6 +52,51 @@ smooth geometry).
   carrier is deprecated — it cannot represent ~27% of proxy normals). Hair faces
   are the ONLY flat_shaded exemption (checker enforces hair-prefixed regions).
 - Flow from a part/whorl per the sheet; follow-through chains on fringe/sides/tail.
+- MASS-FIRST HIERARCHY (law since Elias v5 / Varden v5, both approved-path): the scalp
+  is 4-7 PRIMARY MASSES silhouette-matched to the saved sheet's views (front/side/back
+  + head panel), each mass composed of ribbon locks with width spread >= 3:1 inside the
+  mass. Flow follows the style's natural origin (a part, the hairline for swept-back,
+  a whorl ONLY where the sheet shows one) — never uniform whorl-radiated ribbons.
+  SILHOUETTE IS JUDGED AGAINST THE SHEET IMAGE, never a text transcription (the Elias
+  bowl-hair failure); every sheet is saved under design/reference/<unit>/ at
+  transcription time and tones are PIXEL-SAMPLED from it, never eyeballed.
+
+## Beards (law since Varden v4 / Elias v6)
+- A beard is a CONFORMING VOLUME, never hanging strips over a painted zone.
+  SHORT CROP: one shell, thickness ramp, serrated jittered hem, painted multi-step
+  stubble fade into the skin (paint the fade, never cut it - geometry fades cost
+  ~1k tris/step). LONG: clumped strands over a thin core shell (core covers the zone
+  by construction and reads as dark inner beard), lobed rounded taper per the sheet,
+  mass-first widths like the scalp. Mustache joins as soft sweeps - no teeth/crevice
+  paint at mustache scale (reads as piano keys). The painted under-beard zone is NEVER
+  the visible surface (root width 0.8, edge-lift onto skin). Crop beards ride rigid;
+  long beards keep follow-through chains anchored to the hanging mass.
+
+## Rig + clips (laws from the Wren locomotion waves, 2026-10-04)
+- STANCE/IK: knee poles aim over each foot's own toes (never the turned rest-knee
+  direction); toe-out sign VERIFIED by render (a flipped sign knock-knees every clip);
+  ankle spacing tracks the hip half-span per clip (LEG_TRACK), not the rest A-stance.
+  Hip-knee-ankle must track vertical in front view (~<2deg) in idle AND locomotion.
+- HANDS: a HAND_POSES table (relaxed/loose_fist/fist/grip; 5-param thumb) + per-clip
+  per-hand CLIP_HANDS assignment. Out-of-combat clips are EMPTY-HANDED closed fists
+  (artist law); "grip" exists for combat clips only. Props stay own-bone with the
+  grip machinery behind a HAS_<PROP> knob so removal/re-add is one switch.
+- CLIPLESS UNITS: the BIND POSE is what the game shows - bake the prop hold (grip
+  applied, IK-solved arm, thumb wrap) into the bind pose, never leave the recorded
+  grip "evaluated only".
+- LOOP KEYS: clips export slide-to-zero (keys 0..N/24; a leading duplicate key = a
+  static hold every wrap). Gates boundary_motion_ok + GLBLOOP are mandatory — a
+  first-vs-last seam check alone misses doubled endpoints. Locomotion arm swings are
+  double-arm, opposite phase; pump amplitude is capped by the measured cloak-crossing
+  ceiling, not guessed.
+- GARMENT WEIGHTS: trunk-hung garments (sash, belt, pouches, straps, mantle, robe
+  skirt) NEVER source weights from arm-chain bones (TORSO_HUNG pattern) — and their
+  GEOMETRY is built against trunk-only BVHs: a whole-body scan catches the resting
+  hands and builds garments out to them (the Wren pouch / Elias belt disease), then
+  hides it by gluing to arm bones. Shoulder-hung (capelet) stays arm-coupled.
+- Hidden-geometry harvests must exclude forearm/hand faces (enclosed fingers read as
+  "hidden" and get deleted). Hand interiors are decimation budget (keep region
+  borders + wrist line; bake from full density).
 
 ## Pipeline invariants (all characters)
 - Tie-invariant nearest() for every BVH lookup that must be stable (NEAREST_TIE);

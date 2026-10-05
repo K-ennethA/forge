@@ -1,47 +1,78 @@
-# Conquest-units session handoff (written 2026-10-02 for a fresh orchestrator session)
+# Conquest-units session handoff (rewritten 2026-10-04; supersedes the 10-02 version)
 
-Everything below is also in git history; this is the fast-start index. Repo is current
-and mirrored at the commit carrying this file. No lanes are in flight.
+Repo current at the commit carrying this file; everything below is also in git history.
+No lanes in flight.
 
-## Read first (in order, ~4 files)
-1. docs/lane-conventions.md — the law (lane contract, context economy, BVH tie-break,
-   bake tolerance pattern, two speeds, edits-vs-rebuilds).
-2. design/character-style-guide.md — THE HOUSE STYLE (Wren = reference implementation).
-3. design/review-log.md — artist verbatim, binding; newest entries carry the queue.
-4. design/godot-import-notes.md — the 6 import-wave items.
-Per-unit facts: improve/<unit>_STATE.md where present (wren pilot); otherwise the unit's
-build script docstring + latest check jsons.
+## Read first (in order)
+1. docs/lane-conventions.md — the law (lane contract, context economy, two speeds,
+   edits-vs-rebuilds, measurement conventions).
+2. design/character-style-guide.md — THE HOUSE STYLE, now including: mass-first
+   sheet-matched hair, beard shells (crop + long), stance/IK laws, HAND_POSES,
+   loop-key gates, trunk-hung garment rules, clipless bind-pose law.
+3. design/OPEN-QUESTIONS.md — EVERY pending artist decision, numbered (W/E/V/G),
+   each with its live default and the exact knob/file. The artist hands these to
+   agents; an agent picking one up changes the knob, reruns the unit's runner,
+   renders, and reports.
+4. design/review-log.md — artist verbatim, binding; newest entries carry the queue.
+5. Per-unit: improve/<unit>_STATE.md (wren, elias, varden are rich; others thinner).
 
-## Immediate queue (artist-ordered, 2026-10-02)
-1. IMPORT WAVE: dispatch a Conquest-side audit agent first (READ-ONLY on
-   C:\Users\kenne\OneDrive\Desktop\git\Conquest): map game roster <-> the 16 built units
-   (rigged/*.glb), list wiring needs per godot-import-notes (glow shader, translucency
-   prepass, scales, yaws incl duskmaw's stale 180, skin delivery shape), and list game
-   characters with NO sheet and NO forge model (artist will supply designs). THEN the
-   import lane: additive work on a NEW branch in git/Conquest (never modify their source
-   assets; user merges). Werewolf drop-in contract is the pattern.
-2. NEW UNIT: Professor Elias — full sheet transcription in the review-log entry of
-   2026-10-02 (sheet image was inline-only; transcription is binding). Build per the
-   style guide from the first pass; hero tier; staff/book as own-bone props.
-3. Open artist verdicts: see each unit's STATE/questions in the review log (wren's in
-   wren_STATE.md; magmoo scale question; supaoctto emblem polish; firefly/firesprite
-   tuning knobs; geode/vampito/eldroot smalls).
+## State of the world (2026-10-04)
+- ALL 18 MODELS ARE IN THE GAME on Conquest branch feat/forge-unit-import (user
+  merges): 9 battle units on forge models, Wren as the overworld hero (male — never
+  "girl"; story hero), and 6 creatures + Elias + Varden as COMPENDIUM PLACEHOLDERS
+  (donor stats, empty moves/AI, CharacterSelect.EXCLUDED_IDS, "PLACEHOLDER" in the
+  description). Compendium = 20 entries.
+- Delivery pattern (copy it for any new unit): glb -> Conquest
+  game/characters/models/<biome>/<unit>_forge.glb + .import (root_scale =
+  min(1.8/h, 1.9/fp), import_script unit_glow_import.gd), roster .tres
+  (model_scene, model_scale 1.0, yaw 0), texture .imports pinned mipmaps-on.
+  Precedents: commits 287ff9f (the 6), 9a90d02 (elias), 01b5b2e (varden).
+- Glow: float _GLOW vertex attribute end-to-end (COLOR_1 clamps >1.0); Conquest's
+  addons/color1 recovers it as CUSTOM0 (morph-safe); emissive palette values <= 2.0
+  (phone cap). All 16 creature glbs + self-exporting builds emit it.
+- Game feel: F7 cycles look presets (warm grade etc.), F8 cycles overworld feel
+  (the user's own HeroMover "free" movement is now default; speeds 2.2/5.0 m/s).
+  Hero clips loop natively (OverworldActor runtime LOOP_LINEAR copies).
+- Wren locomotion is current: fists, knee 25deg, straight legs, double arm swing,
+  hip pouch, sprint ("young hero sprint"), true-period loop keys, no pitchfork
+  (HAS_FORK knob; weapons ONLY in combat scenarios — binding).
 
-## Deferred waves (artist-gated)
-- Attack/hit/death clips (designs recorded: vine-blade merge, magmoo puddle death,
-  firesprite casting). Werewolf delivery lane (werewolf project, separate contract).
-- Queued grown items: wren +45-lock hair density (needs ~2.5k harvest); wren
-  fringe-on-skin discontinuity; game-side toon shader prototype.
+## Operating facts (unchanged + new)
+- Units under projects/conquest-units/ (improve/ scripts+runners, improved/ +
+  rigged/ outputs, palettes/, renders/, source-copies/ READ-ONLY).
+- One-command runners improve/<unit>_run.ps1, headless only. Blender:
+  "C:\Program Files\Blender Foundation\Blender 5.0\blender.exe" --background
+  --factory-startup. Godot (headless gates):
+  C:\Users\kenne\Downloads\Godot_v4.6-stable_win64.exe\Godot_v4.6-stable_win64_console.exe.
+  Port 9876 = live scene, never. NEVER launch anything windowed; the user launches.
+- Orchestrator gates + commits scoped per lane; push backup master. NEVER double
+  quotes inside -m here-strings (PS arg parsing; burned repeatedly). OneDrive makes
+  big commits slow — background them.
+- Laws: never pay; agents never commit/spawn; WIP <= 2 implementation lanes,
+  disjoint files; implementation on Opus. Kiro CLI is a secondary agent pool for
+  mechanical/audit lanes (brief-file + one-line pointer dispatch; it throttles and
+  has a 1h background ceiling — keep long-verification lanes on Claude).
+- The CONQUEST working tree carries the user's own active work (story content,
+  HeroMover) — scope every git add precisely; never sweep.
+- The probe/test harness for glb questions lives at survey/color1_probe/
+  probe_project (drop a glb in, --import, dump script pattern).
 
-## Operating facts
-- Units all live under projects/conquest-units/ (improve/ scripts+runners, improved/ +
-  rigged/ outputs, palettes/, renders/, source-copies/ READ-ONLY byte copies).
-- Every unit has a one-command runner improve/<unit>_run.ps1 (hidden, headless,
-  twin-determinism + tolerance gates). Blender: "C:\Program Files\Blender Foundation\
-  Blender 5.0\blender.exe" --background --factory-startup. Port 9876 = live scene, never.
-- Commit style: orchestrator gates then commits scoped per lane; push backup master;
-  NEVER double quotes inside -m here-strings (breaks PS arg parsing - burned 3x).
-- Laws: never pay; nothing windowed (browser pane = orchestrator only); agents never
-  commit/spawn; WIP <= 2 lanes, disjoint files; implementation lanes on Opus.
-- Third-party references manifested in C:\forge-assets\thirdparty\MANIFEST.md
-  (Alicia Solid VRM = study-only).
+## Queue (artist-ordered)
+1. OPEN-QUESTIONS items as the artist hands them out (each is lane-ready).
+2. TOWN HOUSE FAMILY — the last big gameworld piece: 3-5 silhouette variants,
+   1-3k tris, beveled edges, vertex-AO, runtime tint; integration =
+   OverworldProps.prop() match (~:155). Spec: survey/conquest_town_assets_audit.md
+   + design/research/godot-world-feel.md (budget rec + dressing rules). Then
+   chapel/smithy, NPC archetypes.
+3. Deferred: attack/hit/death clips (movement intents mostly unasked — ask per
+   unit, batch with renders); skins delivery shape; vampwarrior toon + magmoo
+   translucency wiring (import-notes items 5/6); NPC stride data; werewolf
+   delivery lane (separate project contract).
+
+## Research on file (both actionable, partially mined)
+- design/research/hair-face-best-practices.md — remaining unapplied items: aging
+  rework (nasolabial stroke set + iris-by-age), lengthwise lock UVs + ramp,
+  post-resolve lock union (needs determinism trial), gameplay-size head panel on
+  sheets.
+- design/research/godot-world-feel.md — remaining: unit rim light, cloud shadows +
+  colored bounce, tilt-shift/vignette (behind quality setting).
