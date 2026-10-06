@@ -1126,23 +1126,49 @@ _lt_p = np.empty(_nt_, dtype=np.int64); me.loop_triangles.foreach_get("polygon_i
 _uvl = np.empty(len(me.loops) * 2); me.uv_layers.active.data.foreach_get("uv", _uvl); _uvl = _uvl.reshape(-1, 2)
 _ridf = np.array([REG.index(r) for r in OBJ["main"]["R"]])
 _flr = np.full((RA, RA), AO_FLOOR["default"])
-for cls_, regs_ in AO_FLOOR_REGIONS.items():
-    ids_ = [REG.index(r) for r in regs_]
-    for tri_ in np.nonzero(np.isin(_ridf[_lt_p], ids_))[0]:
-        P3 = _uvl[_lt_l[tri_]] * RA - 0.5
-        x0, y0 = np.floor(P3.min(0)).astype(int); x1, y1 = np.ceil(P3.max(0)).astype(int)
-        x0, y0 = max(x0, 0), max(y0, 0); x1, y1 = min(x1, RA - 1), min(y1, RA - 1)
-        if x1 < x0 or y1 < y0:
-            continue
+AO_FOOTPRINT = {"rule": "a floored triangle that owns no texel centre (a UV sliver thinner than a texel, or a UV-collapsed "
+                        "face) writes its floor to its bilinear footprint: the 2x2 texels around each point of it",
+                "class_tris": 0, "face_floor_tris": 0, "texels": 0}
+
+
+def floor_texels(P3):
+    """(gy, gx) texels a low triangle's AO floor is written to; P3 = its UV corners in texel space (centres at integers).
+    v1.2.1 (the chin tick): a triangle whose UV owns no texel centre -- skin face 12098 under her mouth, a lone smart-project
+    island 0.52 x 9.3 texels -- got NO floor (the centre test found nothing, the dilation had no seed), while the renderer
+    reads such a triangle entirely from the bilinear 2x2 around each of its points: unowned margin texels (raw AO ~0 under
+    the default 0.45 floor) printed as a dark tick inside the floored-white mouth zone. Triangles that own a centre keep the
+    centre rule unchanged."""
+    x0, y0 = np.floor(P3.min(0)).astype(int); x1, y1 = np.ceil(P3.max(0)).astype(int)
+    x0, y0 = max(x0, 0), max(y0, 0); x1, y1 = min(x1, RA - 1), min(y1, RA - 1)
+    if x1 < x0 or y1 < y0:
+        return None
+    a_, b_, c_ = P3
+    den_ = (b_[1] - c_[1]) * (a_[0] - c_[0]) + (c_[0] - b_[0]) * (a_[1] - c_[1])
+    if abs(den_) >= 1e-12:
         gx_, gy_ = np.meshgrid(np.arange(x0, x1 + 1), np.arange(y0, y1 + 1))
-        a_, b_, c_ = P3
-        den_ = (b_[1] - c_[1]) * (a_[0] - c_[0]) + (c_[0] - b_[0]) * (a_[1] - c_[1])
-        if abs(den_) < 1e-12:
-            continue
         w0 = ((b_[1] - c_[1]) * (gx_ - c_[0]) + (c_[0] - b_[0]) * (gy_ - c_[1])) / den_
         w1 = ((c_[1] - a_[1]) * (gx_ - c_[0]) + (a_[0] - c_[0]) * (gy_ - c_[1])) / den_
         inside_ = (w0 >= -0.02) & (w1 >= -0.02) & (1 - w0 - w1 >= -0.02)
-        _flr[gy_[inside_], gx_[inside_]] = np.maximum(_flr[gy_[inside_], gx_[inside_]], AO_FLOOR[cls_])
+        if inside_.any():
+            return gy_[inside_], gx_[inside_], False
+    n_ = int(np.ceil(max(np.linalg.norm(P3 - np.roll(P3, 1, axis=0), axis=1).max(), 1.0))) * 2
+    ij_ = np.array([(i, j) for i in range(n_ + 1) for j in range(n_ + 1 - i)], float) / n_
+    Q = a_ + ij_[:, :1] * (b_ - a_) + ij_[:, 1:] * (c_ - a_)
+    f_ = np.floor(Q).astype(int)
+    T = np.unique(np.vstack([f_ + d_ for d_ in ((0, 0), (1, 0), (0, 1), (1, 1))]), axis=0)
+    T = T[(T[:, 0] >= 0) & (T[:, 0] < RA) & (T[:, 1] >= 0) & (T[:, 1] < RA)]
+    AO_FOOTPRINT["texels"] += len(T)
+    return T[:, 1], T[:, 0], True
+
+
+for cls_, regs_ in AO_FLOOR_REGIONS.items():
+    ids_ = [REG.index(r) for r in regs_]
+    for tri_ in np.nonzero(np.isin(_ridf[_lt_p], ids_))[0]:
+        t_ = floor_texels(_uvl[_lt_l[tri_]] * RA - 0.5)
+        if t_ is None:
+            continue
+        AO_FOOTPRINT["class_tris"] += int(t_[2])
+        _flr[t_[0], t_[1]] = np.maximum(_flr[t_[0], t_[1]], AO_FLOOR[cls_])
 AO_LIFT_INFO = None
 if AO_FACE_FLOOR is not None:
     # v5 "AO fully floored" (review-log 2026-09-29 "Wren v5 feedback + FE reference set"): the flat under-eye skin and the
@@ -1171,20 +1197,11 @@ if AO_FACE_FLOOR is not None:
     _flf = AO_FLOOR["skin"] + (AO_FACE_FLOOR[0] - AO_FLOOR["skin"]) * _wf
     _lf_tris = np.nonzero((_lt_p < len(CF)) & np.concatenate([_wf > 0, np.zeros(len(_ridf) - len(CF), bool)])[_lt_p])[0]
     for tri_ in _lf_tris:
-        P3 = _uvl[_lt_l[tri_]] * RA - 0.5
-        x0, y0 = np.floor(P3.min(0)).astype(int); x1, y1 = np.ceil(P3.max(0)).astype(int)
-        x0, y0 = max(x0, 0), max(y0, 0); x1, y1 = min(x1, RA - 1), min(y1, RA - 1)
-        if x1 < x0 or y1 < y0:
+        t_ = floor_texels(_uvl[_lt_l[tri_]] * RA - 0.5)
+        if t_ is None:
             continue
-        gx_, gy_ = np.meshgrid(np.arange(x0, x1 + 1), np.arange(y0, y1 + 1))
-        a_, b_, c_ = P3
-        den_ = (b_[1] - c_[1]) * (a_[0] - c_[0]) + (c_[0] - b_[0]) * (a_[1] - c_[1])
-        if abs(den_) < 1e-12:
-            continue
-        w0 = ((b_[1] - c_[1]) * (gx_ - c_[0]) + (c_[0] - b_[0]) * (gy_ - c_[1])) / den_
-        w1 = ((c_[1] - a_[1]) * (gx_ - c_[0]) + (a_[0] - c_[0]) * (gy_ - c_[1])) / den_
-        inside_ = (w0 >= -0.02) & (w1 >= -0.02) & (1 - w0 - w1 >= -0.02)
-        _flr[gy_[inside_], gx_[inside_]] = np.maximum(_flr[gy_[inside_], gx_[inside_]], _flf[_lt_p[tri_]])
+        AO_FOOTPRINT["face_floor_tris"] += int(t_[2])
+        _flr[t_[0], t_[1]] = np.maximum(_flr[t_[0], t_[1]], _flf[_lt_p[tri_]])
     AO_LIFT_INFO = {"floor": AO_FACE_FLOOR[0], "feather_mm": AO_FACE_FLOOR[1], "undereye_faces": int((_skinf & (_we > 0)).sum()),
                     "undereye_faces_full": int((_skinf & (_we > 0.999)).sum()), "mouth_faces": int((_skinf & (_wm > 0)).sum()),
                     "mouth_faces_full": int((_skinf & (_wm > 0.999)).sum())}
@@ -1204,20 +1221,11 @@ elif AO_FACE_LIFT is not None:
     _lift &= np.isin(np.array(reg), ["skin", "skin_shadow", "lips"])
     _lf_tris = np.nonzero((_lt_p < len(CF)) & np.concatenate([_lift, np.zeros(len(_ridf) - len(CF), bool)])[_lt_p])[0]
     for tri_ in _lf_tris:
-        P3 = _uvl[_lt_l[tri_]] * RA - 0.5
-        x0, y0 = np.floor(P3.min(0)).astype(int); x1, y1 = np.ceil(P3.max(0)).astype(int)
-        x0, y0 = max(x0, 0), max(y0, 0); x1, y1 = min(x1, RA - 1), min(y1, RA - 1)
-        if x1 < x0 or y1 < y0:
+        t_ = floor_texels(_uvl[_lt_l[tri_]] * RA - 0.5)
+        if t_ is None:
             continue
-        gx_, gy_ = np.meshgrid(np.arange(x0, x1 + 1), np.arange(y0, y1 + 1))
-        a_, b_, c_ = P3
-        den_ = (b_[1] - c_[1]) * (a_[0] - c_[0]) + (c_[0] - b_[0]) * (a_[1] - c_[1])
-        if abs(den_) < 1e-12:
-            continue
-        w0 = ((b_[1] - c_[1]) * (gx_ - c_[0]) + (c_[0] - b_[0]) * (gy_ - c_[1])) / den_
-        w1 = ((c_[1] - a_[1]) * (gx_ - c_[0]) + (a_[0] - c_[0]) * (gy_ - c_[1])) / den_
-        inside_ = (w0 >= -0.02) & (w1 >= -0.02) & (1 - w0 - w1 >= -0.02)
-        _flr[gy_[inside_], gx_[inside_]] = np.maximum(_flr[gy_[inside_], gx_[inside_]], AO_FACE_LIFT[0])
+        AO_FOOTPRINT["face_floor_tris"] += int(t_[2])
+        _flr[t_[0], t_[1]] = np.maximum(_flr[t_[0], t_[1]], AO_FACE_LIFT[0])
     AO_LIFT_INFO = {"floor": AO_FACE_LIFT[0], "mouth_band_faces": _n_mouth, "faces": int(_lift.sum())}
 for _ in range(6):
     f_ = _flr.copy()
@@ -1232,7 +1240,8 @@ img_ao.pixels.foreach_set(pa.ravel())
 bstats["hair_strip"] = {"rule": "hair faces packed into u > %.2f; normal texels there flat, AO texels white" % (1 - HAIR_UV_STRIP),
                         "raw_ao_in_hair_strip_p05": round(float(np.percentile(_hair_ao_raw, 5)), 4) if len(_hair_ao_raw) else None,
                         "texels_normal": int(_strip_n.sum()), "texels_ao": int(_strip_a.sum())}
-bstats["ao_lift"] = {"floors": AO_FLOOR, "v4_face_lift": AO_LIFT_INFO, "raw_p05": round(float(np.percentile(_ao_raw[cov_a], 5)), 4),
+print("AOFOOTPRINT", json.dumps(AO_FOOTPRINT))
+bstats["ao_lift"] = {"floors": AO_FLOOR, "v4_face_lift": AO_LIFT_INFO, "sub_texel_footprint": AO_FOOTPRINT,"raw_p05": round(float(np.percentile(_ao_raw[cov_a], 5)), 4),
                      "lifted_p05": round(float(np.percentile(pa[cov_a, 0], 5)), 4), "lifted_mean": round(float(pa[cov_a, 0].mean()), 4)}
 DIG["ao_lifted"] = sha(np.clip(np.rint(pa[:, :1] * 255.0), 0, 255).astype(np.uint8))
 if not DIGEST_ONLY:

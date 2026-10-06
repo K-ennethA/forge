@@ -1,1 +1,13 @@
-﻿STRIP C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\lyra\lyra_v12_fix_compare.png (1787, 1834)
+﻿python.exe : Traceback (most recent call last):
+At C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\improve\lyra_run.ps1:68 char:1
++ & $VPY -P "$I\lyra_compose.py" 2>&1 | Out-File -Encoding utf8 "$LOG\c ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (Traceback (most recent call last)::String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+  File "C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\improve\lyra_compose.py", line 62, in 
+<module>
+    FIX_ROWS = [(v_,) + ROW_DEF[v_] for v_ in os.environ.get("LYRA_FIX_VIEWS", "front,head_tq,head_side").split(",")]  
+ # (v1.2:
+                        ~~~~~~~^^^^
+KeyError: 'head_front head_tq'

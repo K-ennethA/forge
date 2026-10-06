@@ -1,0 +1,80 @@
+{
+ "blend": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\rigged\\lyra.blend",
+ "locks": 41,
+ "tris": {
+  "locks": 7350,
+  "cap": 1004
+ },
+ "interpenetration": {
+  "lock_pairs": 186,
+  "tri_pairs": 11238,
+  "lock_cap_tri_pairs": 0,
+  "locks_involved": 39,
+  "worst_pairs": [
+   [
+    "lock.tail.1",
+    "lock.tail.5",
+    300
+   ],
+   [
+    "lock.tail.2",
+    "lock.tail.3",
+    272
+   ],
+   [
+    "lock.tail.1",
+    "lock.tail.2",
+    250
+   ],
+   [
+    "lock.tail.1",
+    "lock.tail.3",
+    243
+   ],
+   [
+    "lock.tail.2",
+    "lock.tail.4",
+    220
+   ],
+   [
+    "lock.tail.2",
+    "lock.tail.5",
+    212
+   ],
+   [
+    "lock.tail.10",
+    "lock.tail.11",
+    203
+   ],
+   [
+    "lock.tail.0",
+    "lock.tail.1",
+    198
+   ]
+  ],
+  "top_sheets": {
+   "lock_pairs": 175,
+   "tri_pairs": 3140
+  }
+ },
+ "paint": {
+  "patches_total": 223,
+  "patches_per_lock": 5.44,
+  "crevice_patches": 25,
+  "ring_patches": 8,
+  "region_boundary_edges": 1872
+ },
+ "facet_kinks_top_deg": {
+  "p50": 14.31,
+  "p90": 40.47,
+  "max": 177.74,
+  "share_over_20deg_pct": 35.3,
+  "edges": 4408
+ },
+ "faces": {
+  "lock_faces": 3921,
+  "tiny_under_0.25mm2": 16,
+  "sliver_aspect_over_20": 85,
+  "lock_area_cm2": 9041.0
+ }
+}

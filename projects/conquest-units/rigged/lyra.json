@@ -8,7 +8,7 @@
   "max_influences": 4,
   "unweighted": 0,
   "sum_dev_max": 2.220446049250313e-16,
-  "seconds": 0.5,
+  "seconds": 0.4,
   "rule": "body: MPFB game_engine weights; boots / sleeves / bracelets / capelet (shoulder-hung) / emblems: the nearest skin point's weights; boot feet: foot -> ball; collar / tie knot / pin: skin with head / half the neck moved to spine_03; TRUNK_HUNG parts (corset, belt, buckle, vial, medal, medaldisc, medalcord, pouch, pouchflap, pouchbuckle, pouchstrap, skirt, skmotif, skemblem, fronttab, fronttabmotif, strap, satchel, satchelflap, satchelbuckle, satchelstrapl, satchelhang, scrollcase, scrollroll, scrollband) from the TRUNK faces only (the arm chain, clavicles included, is never a source; the skirt / tab / motifs 'fauld': pelvis -> trunk skin under the hem); eyes / cap / swept locks / tie wrap + bow + hairpiece: head; loose strands, ponytail, ribbon tails + tassel, necktie tails past their s_leave: Wren vine_weights onto their chains; books: 'books' (child of hand_r)",
   "census": {
    "skirt+tab+motifs": {
@@ -1289,18 +1289,18 @@
    "mouth_proxy_core": "cf967f4b7defc85a",
    "bake_normal": "f72366e891875563",
    "bake_ao": "5b1a70034b6dfa84",
-   "ao_lifted": "3902bb3b798d2f1b",
+   "ao_lifted": "ac50fcc17f3607e2",
    "hair_custom_normals": "abb1412362fbe109",
    "geometry_colour_uv": "2842c3581c6cb580",
    "weights": "a0b0635a4bfada2d",
    "hold": "3c4f7e4f5ea77682"
   },
-  "combined": "62663bcbe5db76d8"
+  "combined": "ea6453ec61a418b1"
  },
  "glb": {
   "path": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\rigged\\lyra.glb",
-  "bytes": 11208084,
-  "sha256_16": "a82e856eac2b1da7",
+  "bytes": 11206936,
+  "sha256_16": "ed0bd0e32c2304b3",
   "tris": 48108,
   "COLOR_0": true,
   "COLOR_1": true,
@@ -1320,5 +1320,5 @@
   ]
  },
  "improved_report": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\improved\\lyra.json",
- "seconds": 55.1
+ "seconds": 57.2
 }

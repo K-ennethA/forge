@@ -901,7 +901,7 @@
    "mline": 173
   },
   "degenerate_faces_dissolved": 198,
-  "seconds": 11.1,
+  "seconds": 11.2,
   "body_tris_after_cuts": 29186
  },
  "liner_proof": {
@@ -2695,7 +2695,7 @@
    "hair_inner": 894,
    "hair_crevice": 308
   },
-  "seconds": 4.1,
+  "seconds": 4.2,
   "crown": {
    "scalp_top_z": 1.7,
    "hair_top_z": 1.7507,
@@ -2854,13 +2854,13 @@
    "result": [
     "FINISHED"
    ],
-   "seconds": 4.6
+   "seconds": 4.7
   },
   "AO": {
    "result": [
     "FINISHED"
    ],
-   "seconds": 5.5
+   "seconds": 5.7
   },
   "cage_extrusion": 0.012,
   "low_to_high_skin_m": {
@@ -3034,7 +3034,7 @@
     "digest": "abb1412362fbe109"
    }
   },
-  "seconds": 19.4,
+  "seconds": 19.7,
   "hair_strip": {
    "rule": "hair faces packed into u > 0.84; normal texels there flat, AO texels white",
    "raw_ao_in_hair_strip_p05": 0.0,
@@ -3056,9 +3056,15 @@
     "mouth_faces": 442,
     "mouth_faces_full": 396
    },
+   "sub_texel_footprint": {
+    "rule": "a floored triangle that owns no texel centre (a UV sliver thinner than a texel, or a UV-collapsed face) writes its floor to its bilinear footprint: the 2x2 texels around each point of it",
+    "class_tris": 4620,
+    "face_floor_tris": 199,
+    "texels": 72684
+   },
    "raw_p05": 0.0,
    "lifted_p05": 0.45,
-   "lifted_mean": 0.7724
+   "lifted_mean": 0.7745
   }
  },
  "material": {

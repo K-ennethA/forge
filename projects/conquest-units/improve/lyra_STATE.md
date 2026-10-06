@@ -8,9 +8,13 @@
   the 5-7 mm body mesh - a stronger read = amp ~2 mm, one knob. Candidate house rule: jaw by crease, never painted shadow.
   Sheet design/reference/lyra/lyra_sheet.webp (1536x1024). Runner improve/lyra_run.ps1 [-Ver lyra_v12 -FixOf lyra_v11
   -FixViews head_front,head_tq,head_side]. No clips (L5 unanswered), no determinism twin yet (draft mode).
-- **Known defect (fix lane dispatched):** small dark AO tick ~10 mm below the mouth, her left, faint since v1.1 —
-  proven AO-map (gone with AO off, stays with normal off, no non-skin faces there); suspected sliver tri skipped by the
-  AO-floor pass in s6.
+- **v1.2.1 AO FIX (s6 only):** the chin tick was a 3.07 mm2 skin face whose smart_project UV island (0.52 x 9.3 texels)
+  covered no texel centre - the floor rasteriser (centre-inside rule) never wrote it, dilation had nothing to spread, so
+  margin texels (raw AO ~0) bled in via bilinear. GENERAL RULE now: floor_texels() writes a no-centre triangle's floor to
+  its bilinear 2x2 footprint (all three floor loops; AOFOOTPRINT log: 4,620 class + 199 face tris, 72,684 texels). Tick
+  21 -> 0 levels vs median; 28,478 AO texels changed, 0 lowered; only ao_lifted digest moved (build deterministic).
+  Residual: a +-4-5 level trace on her RIGHT (face 6615, AO already 1.0) is NOT AO - normal-map/faceting, own lane if
+  the artist flags it. Runner gotcha: -FixViews value must be QUOTED in PowerShell or it splits on the comma.
 - **v1.1 fixes:** (1) NECK PATCH root cause = the authored jaw-shadow (skin_shadow) edge: per-vertex yes/no ray test +
   head/neck bone-ownership border projected a ~5 mm sawtooth onto the neck (proved by AO/normal-cut differentials +
   magenta region override). Fix in s2: shadow edge is a drawn Gaussian-smoothed per-angle curve, knob JAW_EDGE (4,10) deg;
