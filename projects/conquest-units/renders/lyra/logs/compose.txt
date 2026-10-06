@@ -1,1 +1,1 @@
-﻿STRIP C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\lyra\lyra_v11_fix_compare.png (1787, 1834)
+﻿STRIP C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\lyra\lyra_v12_fix_compare.png (1787, 1834)

@@ -1392,3 +1392,21 @@ find the actual cause (region paint leak / AO / normal artifact),
 never just repaint over it.
 (3) CHIN: too large — shorten to the marked line (front view); part
 of the earlier "boyish" read, face probe ratios re-checked after.
+
+## 2026-10-06 — Lyra v1.1 verdicts (artist, verbatim + 2 markups)
+
+"we dont need the shadow  it looks like discoloration" + "if we
+want the sharper jaw line then it should be made on the 2nd image
+where i drew red line by having it creased or stick out more there".
+Markups saved: design/reference/lyra-v11-neckshadow-annotation.png
+(red tick at the shadow edge under the ear),
+lyra-v11-jawcrease-annotation.png (red line tracing the jaw edge
+from below the ear forward under the chin).
+(1) JAW/NECK SHADOW: REMOVE it on Lyra — even smoothed it reads as
+discoloration. The skin_shadow cast-shadow region under the jaw
+goes; skin reads one tone there.
+(2) JAW DEFINITION IS GEOMETRY, NOT PAINT: a sharper jaw line, if
+kept, is a CREASE/protrusion along the marked line (below the ear
+sweeping forward under the chin) — the jaw edge sticks out / folds,
+never a painted band. (Scope: Lyra now; candidate house rule for
+the next face builds.)

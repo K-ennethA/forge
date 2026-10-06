@@ -1,8 +1,8 @@
-00:01.125  blend            | Read blend: "C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\rigged\lyra.blend"
-00:02.781  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\lyra\lyra_v11_head_front.png'
-00:03.000  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\lyra\lyra_v11_head_tq.png'
-00:03.188  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\lyra\lyra_v11_head_side.png'
-WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\lyra\lyra_v11_head_front.png
-WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\lyra\lyra_v11_head_tq.png
-WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\lyra\lyra_v11_head_side.png
+00:01.110  blend            | Read blend: "C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\rigged\lyra.blend"
+00:02.766  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\lyra\lyra_v12_head_front.png'
+00:02.985  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\lyra\lyra_v12_head_tq.png'
+00:03.188  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\lyra\lyra_v12_head_side.png'
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\lyra\lyra_v12_head_front.png
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\lyra\lyra_v12_head_tq.png
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\lyra\lyra_v12_head_side.png
 Blender 5.0.1 (hash a3db93c5b259 built 2025-12-16 01:32:30)

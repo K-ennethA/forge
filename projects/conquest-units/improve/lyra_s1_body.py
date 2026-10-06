@@ -1081,6 +1081,70 @@ ARM_B = {s: dom_in([n for n in MB if n.endswith("_" + s.lower()) and not n.start
          for s in "LR"}
 LEG_B = {s: dom_in(["thigh_" + s.lower(), "calf_" + s.lower(), "foot_" + s.lower(), "ball_" + s.lower()]) for s in "LR"}
 HEAD_B = dom_in(["head"])
+# ---- v1.2 JAW CREASE (review-log 2026-10-06 "Lyra v1.1 verdicts" (2): "the sharper jaw line ... creased or stick out more
+# there" -- design/reference/lyra-v11-jawcrease-annotation.png: a SIDE-view line from just below the ear lobe, arcing down
+# and forward along the jaw's lower border to under the chin; geometry, never paint). The MPFB jaw border is too soft to be
+# found by curvature or by a silhouette drop (measured: the side-view jaw -> neck step is under 4 mm behind the chin), so
+# the line is CONSTRUCTED from landmarks the way the artist drew it: a quadratic Bezier in the side view (y, z) from S =
+# under the chin (JAW_CREASE[4] behind the chin front, at the chin bottom) through the control C = (E's y, S's z +
+# JAW_CREASE[3]) to E = just below the ear lobe (JAW_CREASE[2] under its lowest point, at its front) -- the markup's gentle
+# rise that turns up under the ear. Each curve point is laid on the skin by an orthographic side ray (+X / -X, head + neck
+# skin): the jaw's lateral surface at that (y, z). Every head / neck vertex then moves OUT along its normal by
+# amp x exp(-(d / sigma)^2), d = its distance to that 3D line: a LOCAL ridge = the jaw edge sticks out and its fold
+# sharpens. (v1.1's rejected global squeeze moved the whole lower jaw inward and smeared it into the neck; this moves only
+# a narrow band, outward.)
+JAW_CREASE_INFO = None
+if JAW_CREASE is not None:
+    from mathutils.kdtree import KDTree
+    _amp_c, _sig_c, _edrop_c, _clift_c, _sback_c = JAW_CREASE
+    _hn_f = [f for f in BF if all(DOMN[i] in ("head", "neck_01") for i in f)]
+    _bvh_c = BVHTree.FromPolygons(BV.tolist(), _hn_f)
+    _zs_c = float(np.interp(0.0, SEAM["xs"], SEAM["zc"])) if SEAM is not None else float(MOUTH[2]) - 0.03
+    _zq_c = np.arange(_zs_c, _zs_c - 0.09, -0.00025)
+    _yq_c = np.array([(lambda h: h[0][1] if h[0] is not None else np.nan)(_bvh_c.ray_cast(Vector((0.0, -0.6, float(z_))),
+                                                                                        Vector((0.0, 1.0, 0.0)), 1.0)) for z_ in _zq_c])
+    _jq_c = np.nonzero(np.diff(np.nan_to_num(_yq_c, nan=9.0)) > 0.008)[0]
+    _zchin_c = float(_zq_c[_jq_c[0]]) if len(_jq_c) else float(_zq_c[-1])
+    _ychin_c = float(np.nanmin(_yq_c[_zq_c >= _zchin_c - 1e-9][-40:]))       # the chin front just above its bottom
+    _ez_c = float(EYE["L"]["c"][2])
+    _ear_m = HEAD_B & (np.abs(BV[:, 0]) > 0.093) & (BV[:, 2] < _ez_c + 0.010) & (BV[:, 2] > _ez_c - 0.09)
+    _lob_i = np.nonzero(_ear_m)[0][np.argsort(BV[_ear_m, 2])[:6]]
+    _E = np.array([float(BV[_lob_i, 1].min()), float(BV[_lob_i, 2].min()) - _edrop_c])
+    _S = np.array([_ychin_c + _sback_c, _zchin_c])
+    _C = np.array([_E[0], _S[1] + _clift_c])
+    _tt = np.linspace(0.0, 1.0, 160)[:, None]
+    _B = (1 - _tt) ** 2 * _S + 2 * (1 - _tt) * _tt * _C + _tt ** 2 * _E
+    _line = []
+    for sg_ in (1.0, -1.0):
+        for y_, z_ in _B:
+            h_ = _bvh_c.ray_cast(Vector((sg_ * 0.3, float(y_), float(z_))), Vector((-sg_, 0.0, 0.0)), 0.6)
+            if h_[0] is not None:
+                _line.append(np.array(h_[0]))
+    _LP = np.array(_line)
+    _kd = KDTree(len(_LP))
+    for k_, p_ in enumerate(_LP):
+        _kd.insert(Vector(p_), k_)
+    _kd.balance()
+    _N_c = VP.vertex_normals(BV, BF)
+    if float(np.mean(np.einsum("ij,ij->i", _N_c, BV - BV.mean(0)))) < 0:
+        _N_c = -_N_c
+    _disp = np.zeros(len(BV))
+    for i_ in np.nonzero(np.isin(DOMN, ["head", "neck_01"]))[0]:
+        _, _, dd_ = _kd.find(Vector(BV[i_]))
+        if dd_ < 3.0 * _sig_c:
+            _disp[i_] = _amp_c * math.exp(-(dd_ / _sig_c) ** 2)
+    BV += _N_c * _disp[:, None]
+    _mv = _disp > 2e-4
+    _half = _LP[_LP[:, 0] > 0]
+    JAW_CREASE_INFO = {"rule": "side-view quadratic Bezier S (under the chin) -> C -> E (below the ear lobe) laid on the skin by "
+                               "+/-X rays; ridge along the vertex normal amp x exp(-(d/sigma)^2)",
+                       "amp_mm": _amp_c * 1000, "sigma_mm": _sig_c * 1000,
+                       "S_yz": _S.round(4).tolist(), "C_yz": _C.round(4).tolist(), "E_yz": _E.round(4).tolist(),
+                       "line_points": len(_LP), "line_len_per_side_mm": round(1000 * float(np.linalg.norm(np.diff(_half, axis=0), axis=1).sum()), 1),
+                       "verts_moved_gt_0.2mm": int(_mv.sum()), "max_disp_mm": round(1000 * float(_disp.max()), 3),
+                       "mean_disp_moved_mm": round(1000 * float(_disp[_mv].mean()), 3) if _mv.any() else 0.0}
+    print("JAWCREASE", json.dumps(JAW_CREASE_INFO))
+report["jaw_crease"] = JAW_CREASE_INFO
 Z_TOP = float(BV[:, 2].max())
 face_front_y = float(BV[HEAD_B, 1].min())
 report["landmarks"] = {"height_total": round(Z_TOP, 4), "hip_z": round(float(HIP["L"][2]), 4),

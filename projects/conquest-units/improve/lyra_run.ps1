@@ -13,7 +13,7 @@
 # -Ver <tag> names the outputs (default lyra_v1). -FixOf <prev tag> (v1.1, render economy): render ONLY the views a fix touches
 # (front, head_front / head_tq / head_side, one-tone head_tq) + checks + probes, and compose <ver>_fix_compare.png = PREV | VER
 # | SHEET (front, head 3/4, head side) instead of the full stills / ortho strip.
-param([switch]$SkipBuild, [string]$Ver = "lyra_v1", [string]$FixOf = "")
+param([switch]$SkipBuild, [string]$Ver = "lyra_v1", [string]$FixOf = "", [string]$FixViews = "front,head_tq,head_side")
 $B = "C:\Program Files\Blender Foundation\Blender 5.0\blender.exe"
 $P = "C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units"   # (never a lowercase $p: PowerShell names are case-insensitive)
 $I = "$P\improve"
@@ -56,7 +56,7 @@ if ($FixOf) {
     @("render_head",  @("--background",$RB,"--factory-startup","--python",$R,"--",$W,"head_front,head_tq,head_side","--res","800")),
     @("render_onetone", @("--background",$RB,"--factory-startup","--python",$R,"--",$W,"head_tq","--res","800","--palette-override","`"$ONE`"","--suffix","_onetone"))
   ) + @($vJobs | Where-Object { $_[0] -in @("check_improved","check_rigged","face_probe","hair_diag") })
-  $env:LYRA_FIX_PREV = $FixOf
+  $env:LYRA_FIX_PREV = $FixOf; $env:LYRA_FIX_VIEWS = $FixViews   # (-FixViews: the strip rows, e.g. head_front,head_tq,head_side)
 }
 $vProcs = @()
 foreach ($j in $vJobs) {

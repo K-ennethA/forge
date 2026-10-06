@@ -57,8 +57,10 @@ PREV = os.environ.get("LYRA_FIX_PREV")
 if PREV:
     # v1.1 FIX STRIP (render economy: only the views the fix touches): PREV | V | SHEET per row, rows = the full front, the
     # head 3/4, the head side; the sheet crop per row = its front figure / HEAD DETAIL panel / side figure's head
-    FIX_ROWS = [("front", "front", (20, 95, 372, 935)), ("head_tq", "head 3/4", (1024, 20, 1266, 236)),
-                ("head_side", "head side", (418, 70, 618, 270))]
+    ROW_DEF = {"front": ("front", (20, 95, 372, 935)), "head_front": ("head front", (120, 90, 300, 270)),
+               "head_tq": ("head 3/4", (1024, 20, 1266, 236)), "head_side": ("head side", (418, 70, 618, 270))}
+    FIX_ROWS = [(v_,) + ROW_DEF[v_] for v_ in os.environ.get("LYRA_FIX_VIEWS", "front,head_tq,head_side").split(",")]   # (v1.2:
+    #   LYRA_FIX_VIEWS picks the rows -- the face fixes compare head_front,head_tq,head_side)
     HT = 560
     rows = []
     for v_, lab_, box_ in FIX_ROWS:

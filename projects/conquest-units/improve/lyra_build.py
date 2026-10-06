@@ -123,8 +123,14 @@ FACE_NORMAL_REF = "flat"
 MOUTH_IN_D = 0.0032
 JAW_LIGHT_DEG = 42.0
 JAW_GATE = (0.008, 0.6, 0.012)
-JAW_EDGE = (4.0, 10.0)                # "neck shadow edge" (v1.1): the chin's cast shadow edged by a DRAWN smooth curve -- azimuth bin,
-                                      #   Gaussian sigma round the neck (deg); larger sigma = a calmer, rounder edge (s2 authored shadow)
+JAW_SHADOW = False                    # "neck shadow" (v1.2: OFF -- review-log "Lyra v1.1 verdicts" (1): "we dont need the shadow it
+                                      #   looks like discoloration"; the neck is plain skin). True = the v1.1 drawn chin cast shadow
+JAW_EDGE = (4.0, 10.0)                # "neck shadow edge" (v1.1, used only with JAW_SHADOW): azimuth bin, Gaussian sigma (deg)
+JAW_CREASE = (0.0012, 0.0050, 0.005, 0.004, 0.012)   # "JAW CREASE" (v1.2, review-log "Lyra v1.1 verdicts" (2): the jaw edge
+                                      #   sticks out, geometry not paint): ridge AMPLITUDE (m), Gaussian half width across the line (m:
+                                      #   the FALLOFF), the line's end under the ear lobe's lowest point (m), its control-point lift over
+                                      #   the chin bottom (m: how early it turns up), its start behind the chin front (m); None = off.
+                                      #   s1 JAW CREASE.
 MOUTH_HIDDEN = (0.034, 0.014, 0.030, 0.00005, 0.06, 0.003)
 EYE_RIM_HIGH_OUT = (0.5, 2.0, 100.0, 50.0)
 ENCLOSED_DIRS = ((0, -1, 0), (0.7, -0.7, 0), (-0.7, -0.7, 0), (0, -0.7, 0.7), (0, -0.7, -0.7), (0.5, -0.5, 0.5),

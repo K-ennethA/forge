@@ -8,7 +8,7 @@
   "max_influences": 4,
   "unweighted": 0,
   "sum_dev_max": 2.220446049250313e-16,
-  "seconds": 0.4,
+  "seconds": 0.5,
   "rule": "body: MPFB game_engine weights; boots / sleeves / bracelets / capelet (shoulder-hung) / emblems: the nearest skin point's weights; boot feet: foot -> ball; collar / tie knot / pin: skin with head / half the neck moved to spine_03; TRUNK_HUNG parts (corset, belt, buckle, vial, medal, medaldisc, medalcord, pouch, pouchflap, pouchbuckle, pouchstrap, skirt, skmotif, skemblem, fronttab, fronttabmotif, strap, satchel, satchelflap, satchelbuckle, satchelstrapl, satchelhang, scrollcase, scrollroll, scrollband) from the TRUNK faces only (the arm chain, clavicles included, is never a source; the skirt / tab / motifs 'fauld': pelvis -> trunk skin under the hem); eyes / cap / swept locks / tie wrap + bow + hairpiece: head; loose strands, ponytail, ribbon tails + tassel, necktie tails past their s_leave: Wren vine_weights onto their chains; books: 'books' (child of hand_r)",
   "census": {
    "skirt+tab+motifs": {
@@ -218,7 +218,7 @@
   },
   "ribbon": {
    "bones": 3,
-   "length_m": 0.206,
+   "length_m": 0.2062,
    "parent": "head"
   }
  },
@@ -965,12 +965,12 @@
    "head": [
     -0.0437,
     -0.0678,
-    1.5474
+    1.5476
    ],
    "tail": [
-    -0.041,
-    -0.0629,
-    1.5332
+    -0.0411,
+    -0.0628,
+    1.5334
    ]
   },
   {
@@ -978,14 +978,14 @@
    "parent": "hair_side.R.0",
    "deform": true,
    "head": [
-    -0.041,
-    -0.0629,
-    1.5332
+    -0.0411,
+    -0.0628,
+    1.5334
    ],
    "tail": [
-    -0.0373,
-    -0.057,
-    1.5196
+    -0.0374,
+    -0.0569,
+    1.5198
    ]
   },
   {
@@ -993,14 +993,14 @@
    "parent": "hair_side.R.1",
    "deform": true,
    "head": [
-    -0.0373,
-    -0.057,
-    1.5196
+    -0.0374,
+    -0.0569,
+    1.5198
    ],
    "tail": [
-    -0.0321,
+    -0.0323,
     -0.0503,
-    1.5069
+    1.507
    ]
   },
   {
@@ -1073,8 +1073,8 @@
     1.7083
    ],
    "tail": [
-    0.0257,
-    0.1538,
+    0.0253,
+    0.1537,
     1.7334
    ]
   },
@@ -1083,14 +1083,14 @@
    "parent": "ribbon.0",
    "deform": true,
    "head": [
-    0.0257,
-    0.1538,
+    0.0253,
+    0.1537,
     1.7334
    ],
    "tail": [
-    0.0098,
-    0.2105,
-    1.7044
+    0.0109,
+    0.2112,
+    1.7045
    ]
   },
   {
@@ -1098,9 +1098,9 @@
    "parent": "ribbon.1",
    "deform": true,
    "head": [
-    0.0098,
-    0.2105,
-    1.7044
+    0.0109,
+    0.2112,
+    1.7045
    ],
    "tail": [
     -0.0008,
@@ -1276,7 +1276,7 @@
  ],
  "bone_count": 70,
  "tris": {
-  "model": 48226,
+  "model": 48142,
   "outline_shells": 0,
   "budget": [
    30000,
@@ -1285,28 +1285,28 @@
  },
  "digest": {
   "parts": {
-   "hair_geometry": "8eeddd022c590186",
-   "mouth_proxy_core": "eb04d64a5be25761",
-   "bake_normal": "ae7fb10f517f0e8c",
-   "bake_ao": "41e28c1948e0c54b",
-   "ao_lifted": "4e2cca8190a7dacd",
-   "hair_custom_normals": "0db6fdce80f54337",
-   "geometry_colour_uv": "aaad8e32fb846bff",
-   "weights": "18b4df7bbe6a49bd",
+   "hair_geometry": "8ff59ce66e8a4206",
+   "mouth_proxy_core": "cf967f4b7defc85a",
+   "bake_normal": "f72366e891875563",
+   "bake_ao": "5b1a70034b6dfa84",
+   "ao_lifted": "3902bb3b798d2f1b",
+   "hair_custom_normals": "abb1412362fbe109",
+   "geometry_colour_uv": "2842c3581c6cb580",
+   "weights": "a0b0635a4bfada2d",
    "hold": "3c4f7e4f5ea77682"
   },
-  "combined": "ff47c5611a7f7002"
+  "combined": "62663bcbe5db76d8"
  },
  "glb": {
   "path": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\rigged\\lyra.glb",
-  "bytes": 11227520,
-  "sha256_16": "ca40d57f91944256",
-  "tris": 48192,
+  "bytes": 11208084,
+  "sha256_16": "a82e856eac2b1da7",
+  "tris": 48108,
   "COLOR_0": true,
   "COLOR_1": true,
   "_GLOW": true,
   "glow_audit": {
-   "glow_values_read": 105583,
+   "glow_values_read": 105356,
    "glow_abs_max": 0.0,
    "all_zero": true
   },
@@ -1320,5 +1320,5 @@
   ]
  },
  "improved_report": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\improved\\lyra.json",
- "seconds": 55.6
+ "seconds": 55.1
 }

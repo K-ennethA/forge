@@ -699,6 +699,28 @@
    "outside_socket_core": 1.154
   }
  },
+ "jaw_crease": {
+  "rule": "side-view quadratic Bezier S (under the chin) -> C -> E (below the ear lobe) laid on the skin by +/-X rays; ridge along the vertex normal amp x exp(-(d/sigma)^2)",
+  "amp_mm": 1.2,
+  "sigma_mm": 5.0,
+  "S_yz": [
+   -0.1334,
+   1.4253
+  ],
+  "C_yz": [
+   -0.0436,
+   1.4293
+  ],
+  "E_yz": [
+   -0.0436,
+   1.4903
+  ],
+  "line_points": 312,
+  "line_len_per_side_mm": 146.4,
+  "verts_moved_gt_0.2mm": 48,
+  "max_disp_mm": 1.199,
+  "mean_disp_moved_mm": 0.826
+ },
  "landmarks": {
   "height_total": 1.7,
   "hip_z": 0.8785,
@@ -762,15 +784,15 @@
    0.1099,
    0.1473
   ],
-  "head_height_m": 0.2747,
-  "heads_tall": 6.1,
+  "head_height_m": 0.2755,
+  "heads_tall": 6.08,
   "eye_spacing_m": 0.0701
  },
  "chin": {
-  "chin_bottom_z": 1.4253,
-  "chin_front_y": -0.1256,
+  "chin_bottom_z": 1.4245,
+  "chin_front_y": -0.1293,
   "slit_z": 1.4798,
-  "slit_to_chin_m": 0.0545,
+  "slit_to_chin_m": 0.0553,
   "jaw_half_width_m": {
    "chin+5mm": 0.0208,
    "chin+10mm": 0.0302,
@@ -782,10 +804,10 @@
   "nose_tip_z": 1.51363,
   "nose_bottom_z": 1.50153,
   "seam_z": 1.47978,
-  "chin_outline_z": 1.42633,
+  "chin_outline_z": 1.42613,
   "nose_bottom_to_seam_mm": 21.75,
-  "seam_to_chin_mm": 53.45,
-  "v_ratio": 0.289,
+  "seam_to_chin_mm": 53.65,
+  "v_ratio": 0.288,
   "seam_width_mm": 47.0,
   "eye_spacing_mm": 70.06,
   "w_eyes": 0.671,
@@ -832,10 +854,10 @@
   }
  },
  "proportions": {
-  "heads_tall_house_rule": 6.1,
+  "heads_tall_house_rule": 6.08,
   "house_rule": "s1: (top - sole) / (top - (slit - 90 mm)); Wren 5.94",
   "heads_tall_chin_outline": 6.12,
-  "head_height_outline_m": 0.2737,
+  "head_height_outline_m": 0.2739,
   "wren_chin_outline_heads": 6.9
  },
  "eye_tuck": {
@@ -863,24 +885,24 @@
  },
  "jaw_shadow": {
   "rule": "cast placement (critical light elevation per vertex, head + neck occluder) -> per-azimuth terminator, Gaussian-smoothed (bin 4 deg, sigma 10 deg) = a drawn smooth edge",
-  "gated_verts": 441,
-  "shadowed_verts_raw": 300,
-  "bins_with_shadow": 59
+  "gated_verts": 0,
+  "shadowed_verts_raw": 0,
+  "bins_with_shadow": 0
  },
  "hair_interior_excluded": {
   "faces": 50
  },
  "iso_cuts": {
   "cuts": 14,
-  "edge_splits": 1177,
+  "edge_splits": 1135,
   "thin_stroke_refine_splits": {
    "brow_L": 4,
    "brow_R": 2,
    "mline": 173
   },
   "degenerate_faces_dissolved": 198,
-  "seconds": 11.6,
-  "body_tris_after_cuts": 29270
+  "seconds": 11.1,
+  "body_tris_after_cuts": 29186
  },
  "liner_proof": {
   "upper_by_zone_mm_median": {
@@ -920,8 +942,7 @@
   "lips": 555,
   "mouth": 568,
   "shirt": 3608,
-  "skin": 14580,
-  "skin_shadow": 608,
+  "skin": 15104,
   "trousers": 2924
  },
  "hidden_skin_removed": {
@@ -967,8 +988,8 @@
  },
  "regions_faces": {
   "lyra": {
-   "skin": 9171,
-   "skin_shadow": 592,
+   "skin": 9679,
+   "skin_shadow": 0,
    "lips": 116,
    "mouth": 177,
    "liner": 112,
@@ -1036,8 +1057,8 @@
   }
  },
  "regions_area_share": {
-  "skin": 0.0377,
-  "skin_shadow": 0.0035,
+  "skin": 0.0413,
+  "skin_shadow": 0.0,
   "lips": 0.0001,
   "mouth": 0.0,
   "liner": 0.0001,
@@ -1112,23 +1133,23 @@
  },
  "face_zone": {
   "rule": "body skin faces (skin, skin_shadow, lips, mouth, liner, brow, lash) with every vertex head- or neck_01-dominant",
-  "faces": 6895,
-  "tris": 6895,
-  "area_cm2": 1203.2,
+  "faces": 6813,
+  "tris": 6813,
+  "area_cm2": 1203.5,
   "dihedral_deg_p50_p90": [
-   6.57,
-   27.43
+   6.71,
+   27.89
   ],
-  "tris_per_cm2": 5.73
+  "tris_per_cm2": 5.66
  },
  "face_uv": {
   "linear_texel_density_vs_rest": {
    "v1_rule": 0.983,
    "v2": 4.5
   },
-  "uv_share_pct": 10.26,
-  "texels_per_mm_face": 1.891,
-  "texels_per_mm_rest": 0.42
+  "uv_share_pct": 10.176,
+  "texels_per_mm_face": 1.883,
+  "texels_per_mm_rest": 0.418
  },
  "uv_hair_strip": {
   "strip_u_from": 0.84,
@@ -1141,10 +1162,10 @@
   "lyra": 0
  },
  "tris": {
-  "total": 48226,
-  "main": 46450,
+  "total": 48142,
+  "main": 46366,
   "books": 1776,
-  "body": 13812,
+  "body": 13728,
   "scalp_locks": 5154,
   "ponytail_locks": 2196,
   "eye": 1584,
@@ -1329,7 +1350,7 @@
      "region": "ribbon"
     },
     {
-     "len_m": 0.19,
+     "len_m": 0.189,
      "end_z": 1.673,
      "region": "ribbon_gold"
     },
@@ -1634,7 +1655,7 @@
     "length": 0.163,
     "tip": [
      0.0695,
-     -0.0692,
+     -0.0693,
      1.4563
     ],
     "chain": "hair_side.L",
@@ -1648,7 +1669,7 @@
     "length": 0.122,
     "tip": [
      0.0882,
-     -0.0596,
+     -0.0597,
      1.4904
     ],
     "chain": "hair_side.L",
@@ -1703,8 +1724,8 @@
     "width_mm": 24.0,
     "length": 0.182,
     "tip": [
-     -0.0606,
-     -0.0615,
+     -0.0609,
+     -0.0616,
      1.4406
     ],
     "chain": "hair_side.R",
@@ -1715,11 +1736,11 @@
    "lock.fringer.1": {
     "tier": "S",
     "width_mm": 10.0,
-    "length": 0.147,
+    "length": 0.146,
     "tip": [
-     -0.0779,
-     -0.0522,
-     1.4682
+     -0.0784,
+     -0.0523,
+     1.4683
     ],
     "chain": "hair_side.R",
     "stations": 14,
@@ -1737,7 +1758,7 @@
     ],
     "chain": "hair_side.R",
     "stations": 15,
-    "lift_max_mm": 1.51,
+    "lift_max_mm": 1.52,
     "min_clear": 0.0061
    },
    "lock.fringer.3": {
@@ -1937,7 +1958,7 @@
     77.62
    ],
    "spine_turn_deg_p50_p90_max": [
-    9.41,
+    9.42,
     23.73,
     143.88
    ],
@@ -1989,8 +2010,8 @@
    "drop_max_part": "lock.tail.0",
    "before": {
     "all": {
-     "lock_pairs": 181,
-     "tri_pairs": 13693
+     "lock_pairs": 180,
+     "tri_pairs": 13689
     },
     "top": {
      "lock_pairs": 176,
@@ -2037,8 +2058,8 @@
     "lock.sides.1",
     "lock.tail.2",
     "lock.fringel.1",
-    "lock.tail.3",
     "lock.fringer.0",
+    "lock.tail.3",
     "lock.tail.4",
     "lock.fringer.1",
     "lock.fringer.2",
@@ -2674,7 +2695,7 @@
    "hair_inner": 894,
    "hair_crevice": 308
   },
-  "seconds": 4.2,
+  "seconds": 4.1,
   "crown": {
    "scalp_top_z": 1.7,
    "hair_top_z": 1.7507,
@@ -2825,15 +2846,15 @@
    "skin_through_area_mm2": 0.0,
    "where_psi_el_mm_above_hairline": []
   },
-  "digest_exact": "8eeddd022c590186",
-  "scalp_digest_exact": "a4934882fc1f4add"
+  "digest_exact": "8ff59ce66e8a4206",
+  "scalp_digest_exact": "8529409cd5c00946"
  },
  "bake": {
   "NORMAL": {
    "result": [
     "FINISHED"
    ],
-   "seconds": 4.4
+   "seconds": 4.6
   },
   "AO": {
    "result": [
@@ -2850,7 +2871,7 @@
    "normal": 2048,
    "ao": 1024
   },
-  "high_tris": 197764,
+  "high_tris": 197260,
   "high_rule": "MPFB body at subdivision 1 (smooth) + every part",
   "high_mouth_hidden_out": {
    "zone_m": [
@@ -2867,18 +2888,18 @@
    "rule": "lower-lid faces from 0.5 mm inside to 2.0 mm outside the lid edge, within 100 deg of straight down, tilted more than 50 deg from the view axis",
    "rim_faces_left_out": 325
   },
-  "normal_baked_texels_pct": 88.78,
-  "normal_detail_fraction_dev_gt_0.05": 0.7474,
-  "ao_baked_texels_pct": 99.69,
-  "ao_mean": 0.4352,
+  "normal_baked_texels_pct": 88.73,
+  "normal_detail_fraction_dev_gt_0.05": 0.7488,
+  "ao_baked_texels_pct": 99.71,
+  "ao_mean": 0.4358,
   "ao_p05": 0.0,
   "pixel_sha": {
-   "normal": "ae7fb10f517f0e8c",
-   "ao": "41e28c1948e0c54b"
+   "normal": "f72366e891875563",
+   "ao": "5b1a70034b6dfa84"
   },
   "normal_skin_only": {
    "rule": "normal texels outside the (dilated) skin-region UV triangles set flat",
-   "skin_texels_pct": 14.41
+   "skin_texels_pct": 14.33
   },
   "mouth_proxy_v6": {
    "sigma_mm": 4.0,
@@ -2894,7 +2915,7 @@
     193
    ],
    "grid_mm": 0.5,
-   "valid_samples": 24424,
+   "valid_samples": 24432,
    "invalid_in_core(seam crack / deep hits)": 0,
    "smooth_vs_high_mm_in_core": {
     "max": 0.754,
@@ -2903,22 +2924,22 @@
    "zone_triangles": {
     "candidates": 1309,
     "visible": 846,
-    "with_texel_centres": 795
+    "with_texel_centres": 777
    },
-   "protected_texels(other islands)": 1174958,
-   "texels_written": 23003,
-   "texels_changed": 23000,
+   "protected_texels(other islands)": 1147564,
+   "texels_written": 22636,
+   "texels_changed": 22628,
    "facet_vs_proxy_deg_core_p50_p90_max": [
-    2.78,
-    7.64,
-    33.82
+    2.79,
+    7.68,
+    34.74
    ],
    "decode_vs_proxy_deg_core_p50_p99_max": [
-    0.297,
-    16.841,
-    38.423
+    0.342,
+    18.666,
+    30.582
    ],
-   "seconds": 2.4
+   "seconds": 2.3
   },
   "hair_proxy_bake": {
    "enabled": true,
@@ -2938,10 +2959,10 @@
        -0.0004,
        1.5794
       ],
-      "hull_dirs_hit": 813,
+      "hull_dirs_hit": 812,
       "radius_m_min_max": [
        0.1298,
-       0.1589
+       0.1591
       ]
      },
      "ponytail": {
@@ -2977,7 +2998,7 @@
     "carry_vs_intended_deg_p50_p90_p99_max": [
      0.0022,
      0.0046,
-     0.007,
+     0.0069,
      0.6763
     ],
     "nonhair_corner_vs_face_deg_max": 0.14619,
@@ -3010,7 +3031,7 @@
       9.57
      ]
     },
-    "digest": "0db6fdce80f54337"
+    "digest": "abb1412362fbe109"
    }
   },
   "seconds": 19.4,
@@ -3037,7 +3058,7 @@
    },
    "raw_p05": 0.0,
    "lifted_p05": 0.45,
-   "lifted_mean": 0.7715
+   "lifted_mean": 0.7724
   }
  },
  "material": {
@@ -3047,7 +3068,7 @@
   "cel_bands": "none (lesson: undone on vampwarrior)",
   "outline_shells": "none (lesson: undone on vampwarrior)"
  },
- "digest_geometry_colour_uv": "aaad8e32fb846bff",
+ "digest_geometry_colour_uv": "2842c3581c6cb580",
  "palette": {
   "default": {
    "skin": {

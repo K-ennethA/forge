@@ -256,7 +256,9 @@ if FACE_LINE_CURVES:
     FIELDS["fline"] = np.where(_flg, face_line_field(BV), 1.0)
 # ---- authored shadow: the chin's cast shadow on the neck under a stylised key light (Wren's)
 _jg = (Z < Z_CHIN + JAW_GATE[0] + JAW_GATE[1] * np.maximum(np.abs(X) - JAW_GATE[2], 0.0)) & (Z > NECK0[2] - 0.06) & \
-    (Y < NECK0[1] + 0.02) & ~(ARM_B["L"] | ARM_B["R"])
+    (Y < NECK0[1] + 0.02) & ~(ARM_B["L"] | ARM_B["R"]) & bool(JAW_SHADOW)
+# (v1.2: JAW_SHADOW False -- the artist's "Lyra v1.1 verdicts" (1) -- empties the gate: no rays, no jawsh cut, no skin_shadow
+#  faces; the v1.1 machinery below stays for the switch)
 # v1.1 (review-log 2026-10-06 "Lyra v1 verdicts" (2), the neck "discoloration"). DIAGNOSIS: the patch IS this authored jaw
 # shadow (skin_shadow region) -- differential renders kept it unchanged with the AO map and the normal map cut, and a
 # palette override of skin_shadow alone recoloured exactly it; 114 of its 118 boundary edges to skin lay on the cast
