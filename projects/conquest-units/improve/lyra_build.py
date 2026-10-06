@@ -53,12 +53,15 @@ TARGETS = {                           # "face dials": the house-style anime base
     "eyes/l-eye-height2-incr": 0.40, "eyes/r-eye-height2-incr": 0.40,      # "eye opening"
     "eyes/l-eye-bag-decr": 1.00, "eyes/r-eye-bag-decr": 1.00,              # no bags (the flat under-eye law)
     "head/head-oval": 0.45,                                                # smooth oval head
-    "chin/chin-bones-decr": 0.60, "chin/chin-width-decr": 0.45, "chin/chin-triangle": 0.40,   # "jaw": soft, gently pointed
+    "chin/chin-bones-decr": 1.00, "chin/chin-width-decr": 1.00, "chin/chin-triangle": 0.70,   # "jaw": soft, pointed (v1.1: was
+    "chin/chin-height-decr": 1.00,                                         #   0.60 / 0.45 / 0.40 + no height dial) -- "CHIN LENGTH":
+                                                                           #   v1.1 the artist's red line (contour seam->chin 61.1 -> 52.7 mm)
     "cheek/l-cheek-volume-decr": 0.15, "cheek/r-cheek-volume-decr": 0.15,  # "cheeks": youthful, not gaunt
     "nose/nose-scale-horiz-decr": 0.45, "nose/nose-volume-decr": 0.50, "nose/nose-point-width-decr": 0.60,   # "nose size"
     "nose/nose-flaring-decr": 0.50, "nose/nose-nostrils-width-decr": 0.50, "nose/nose-scale-vert-decr": 0.20,
     "mouth/mouth-scale-horiz-decr": 0.55,                                  # "MOUTH WIDTH": seam -> ~0.70 x eye spacing
-    "mouth/mouth-trans-up": 0.75,                                          # "MOUTH HEIGHT": toward the Ashe v_ratio 0.29
+    "mouth/mouth-trans-up": 1.00,                                          # "MOUTH HEIGHT": toward the Ashe v_ratio 0.29 (v1.1: 0.75 ->
+                                                                           #   1.0 re-centres the mouth on the SHORTER chin)
     "mouth/mouth-lowerlip-volume-incr": 0.50, "mouth/mouth-upperlip-volume-decr": 0.40,
     "mouth/mouth-angles-up": 0.50,                                         # "mouth corners level"
     "eyebrows/eyebrows-angle-down": 0.12,                                  # "determined brows" (the sheet's calm focus)
@@ -119,8 +122,9 @@ FACE_UV_SCALE = 4.5
 FACE_NORMAL_REF = "flat"
 MOUTH_IN_D = 0.0032
 JAW_LIGHT_DEG = 42.0
-JAW_SMOOTH = 3
 JAW_GATE = (0.008, 0.6, 0.012)
+JAW_EDGE = (4.0, 10.0)                # "neck shadow edge" (v1.1): the chin's cast shadow edged by a DRAWN smooth curve -- azimuth bin,
+                                      #   Gaussian sigma round the neck (deg); larger sigma = a calmer, rounder edge (s2 authored shadow)
 MOUTH_HIDDEN = (0.034, 0.014, 0.030, 0.00005, 0.06, 0.003)
 EYE_RIM_HIGH_OUT = (0.5, 2.0, 100.0, 50.0)
 ENCLOSED_DIRS = ((0, -1, 0), (0.7, -0.7, 0), (-0.7, -0.7, 0), (0, -0.7, 0.7), (0, -0.7, -0.7), (0.5, -0.5, 0.5),
@@ -132,7 +136,12 @@ FACE_LINES = None                     # "age lines": NONE (age 17 -- the youthfu
 # tie, arcing back and falling down the back to the belt line, drifting to her right (the back view)
 HAIR_INTERIOR_R = 0.70
 HAIRLINE = (0.060, -0.040)            # "hairline": above the eye centres at the front / at the nape vs the head joint (m)
-HAIRLINE_SIDE = 0.026                 # "hairline over the ears": above the eye centres across the ear band (m; ear tops stay skin)
+HAIRLINE_SIDE = (0.012, -0.004, -0.004)   # "hairline over the ears" (v1.1, review-log "Lyra v1 verdicts" (1): the hair extends
+                                      #   DOWN into the bare band above / behind the ear): above the eye centres (m) -- the ARCH over
+                                      #   the ear (its top ~5 mm above the eye centres, measured: 7 mm clear), the SIDEBURN dip in
+                                      #   front of the ear, the band BEHIND it (v1: one flat 0.026 arch = 21 mm of bare skin over the ear)
+HAIRLINE_EAR_CE = (-0.30, 0.13)       # the ear's span in the hairline's front/back coordinate ce (measured: skin standing > 95 mm
+                                      #   out at y -0.055 .. -0.015 = ce 0.11 .. -0.28); the arch holds over it, falls outside
 HAIR_CAP_T = 0.0040                   # "hair volume" on the scalp (the inner volume under the swept masses; Elias 12 mm)
 HAIR_CAP_INNER = False                # the cap's scalp-facing shell harvested (provably hidden)
 HAIR_CAP_SINK = 0.0015                # the cap's inner shell / rim sinks this far UNDER the scalp (m): the hairline rim seals into the skin
@@ -408,7 +417,8 @@ OUT_GLB = os.path.join(_OUT_ROOT, "rigged", UNIT + ".glb")
 TEX_DIR = os.path.join(_OUT_ROOT, "improved", "textures")
 TAG = "scratch" if SCRATCH else "main"
 report = {"unit": UNIT, "conquest_character_id": CHAR_ID,
-          "version": "v1 draft (house-style face, mass-first high ponytail, academy outfit, book stack held in the bind pose)",
+          "version": "v1.1 draft (house-style face, mass-first high ponytail, academy outfit, book stack held in the bind pose; "
+                     "v1.1 = the artist's v1 verdicts: side hairline lowered round the ear, continuous jaw cast-shadow field, shorter chin)",
           "name_status": "named by the sheet (LYRA - STUDENT RESEARCHER, PROFESSOR ELIAS' STUDENT)",
           "source": "design/reference/lyra/lyra_sheet.webp (review-log 2026-10-06)", "tier": "hero",
           "tri_budget": TRI_BUDGET, "units": "metres; floor z = 0 at the soles", "overrides": OVERRIDES}

@@ -53,6 +53,35 @@ def fit_h(im, h):
     return im.resize((max(1, int(round(im.size[0] * h / im.size[1]))), h), Image.LANCZOS)
 
 
+PREV = os.environ.get("LYRA_FIX_PREV")
+if PREV:
+    # v1.1 FIX STRIP (render economy: only the views the fix touches): PREV | V | SHEET per row, rows = the full front, the
+    # head 3/4, the head side; the sheet crop per row = its front figure / HEAD DETAIL panel / side figure's head
+    FIX_ROWS = [("front", "front", (20, 95, 372, 935)), ("head_tq", "head 3/4", (1024, 20, 1266, 236)),
+                ("head_side", "head side", (418, 70, 618, 270))]
+    HT = 560
+    rows = []
+    for v_, lab_, box_ in FIX_ROWS:
+        a_ = [Image.open(os.path.join(R, "%s_%s.png" % (k_, v_))).convert("RGB") if os.path.exists(os.path.join(R, "%s_%s.png" % (k_, v_)))
+              else Image.new("RGB", (HT, HT), (80, 30, 30)) for k_ in (PREV, V)]
+        s_ = Image.open(SHEET).convert("RGB").crop(box_)
+        rows.append((lab_, [fit_h(x_, HT) for x_ in a_] + [fit_h(s_, HT)]))
+    Wf = PAD + max(sum(t_.size[0] + PAD for t_ in ts_) for _, ts_ in rows)
+    fx = Image.new("RGB", (Wf, PAD + len(rows) * (LAB + HT + PAD) + 30), (28, 28, 30))
+    d = ImageDraw.Draw(fx)
+    y = PAD
+    for lab_, ts_ in rows:
+        x = PAD
+        for t_, nm_ in zip(ts_, (PREV.split("_")[-1], V.split("_")[-1], "SHEET")):
+            d.text((x + 4, y + 2), "%s  %s" % (lab_, nm_), fill=(235, 235, 235), font=FONT)
+            fx.paste(t_, (x, y + LAB)); x += t_.size[0] + PAD
+        y += LAB + HT + PAD
+    d.text((PAD + 4, y + 4), "fix strip: %s | %s | SHEET (the views the fix touches; same cameras both builds)" % (PREV, V),
+           fill=(220, 220, 210), font=FONT_S)
+    out = os.path.join(R, V + "_fix_compare.png")
+    fx.save(out)
+    print("STRIP", out, fx.size)
+    raise SystemExit(0)
 tiles = []
 for view in ("front", "side", "back"):
     p = os.path.join(R, "%s_ortho_%s.png" % (V, view))

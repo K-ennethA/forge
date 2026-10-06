@@ -255,30 +255,97 @@ if FACE_LINE_CURVES:
     _flg = HEAD_B & (BN[:, 1] < -0.15) & (Z > EZ0 - 0.02) & (Y < HC[1] - 0.01)
     FIELDS["fline"] = np.where(_flg, face_line_field(BV), 1.0)
 # ---- authored shadow: the chin's cast shadow on the neck under a stylised key light (Wren's)
-_el = math.radians(JAW_LIGHT_DEG)
-L_JAW = np.array([0.0, -math.cos(_el), math.sin(_el)])
-BVH_HEADONLY = BVHTree.FromPolygons(BV.tolist(), [f for f, n in zip(BF, fdomn) if n == "head"])
 _jg = (Z < Z_CHIN + JAW_GATE[0] + JAW_GATE[1] * np.maximum(np.abs(X) - JAW_GATE[2], 0.0)) & (Z > NECK0[2] - 0.06) & \
     (Y < NECK0[1] + 0.02) & ~(ARM_B["L"] | ARM_B["R"])
-_cast = np.zeros(len(BV))
-for i in np.nonzero(_jg)[0]:
-    if BVH_HEADONLY.ray_cast(Vector(BV[i] + BN[i] * 0.001), Vector(L_JAW), 0.3)[0] is not None:
-        _cast[i] = 1.0
-_bedges = np.array(sorted(set((min(f[k], f[(k + 1) % len(f)]), max(f[k], f[(k + 1) % len(f)])) for f in BF for k in range(len(f)))))
-_bdeg = np.bincount(_bedges.ravel(), minlength=len(BV)).astype(float)
-for _ in range(JAW_SMOOTH):
-    acc_ = np.zeros(len(BV))
-    np.add.at(acc_, _bedges[:, 0], _cast[_bedges[:, 1]]); np.add.at(acc_, _bedges[:, 1], _cast[_bedges[:, 0]])
-    _cast = 0.5 * _cast + 0.5 * acc_ / np.maximum(_bdeg, 1.0)
-FIELDS["jawsh"] = np.where(_jg, 0.5 - _cast, 1.0)
+# v1.1 (review-log 2026-10-06 "Lyra v1 verdicts" (2), the neck "discoloration"). DIAGNOSIS: the patch IS this authored jaw
+# shadow (skin_shadow region) -- differential renders kept it unchanged with the AO map and the normal map cut, and a
+# palette override of skin_shadow alone recoloured exactly it; 114 of its 118 boundary edges to skin lay on the cast
+# iso-line (4 on the gate). The shape defect: the cast test was a BINARY hit / miss per vertex against the head-only faces,
+# so its edge = the faceted jaw underside (and the head / neck_01 dominance border, a ~5 mm per-face sawtooth) projected
+# at a grazing angle onto the neck + snapped to the ~5 mm vertex pitch: a torn, sawtooth-edged blotch, not a shadow shape.
+# FIX (the style guide's "authored shadow shapes -- drawn"): the cast still PLACES the shadow, a smooth drawn curve EDGES
+# it. Per gated vertex the critical light elevation e_c (bisection; the ray toward the light hits the head + neck skin for
+# every elevation above e_c; occluder = head + neck_01 faces, own-facet hits within JAW_SELF_SKIP skipped) -> per azimuth
+# bin round the neck (JAW_BIN deg) the terminator height that best splits shadowed (e_c < JAW_LIGHT_DEG) below from lit
+# above (bins without shadow = the gate floor) -> Gaussian-smoothed over azimuth (JAW_SIGMA deg) -> the field = height
+# above that curve. The iso-cut traces a smooth line.
+JAW_BIN, JAW_SIGMA = JAW_EDGE
+BVH_JAWOCC = BVHTree.FromPolygons(BV.tolist(), [f for f, n in zip(BF, fdomn) if n in ("head", "neck_01")])
+JAW_SELF_SKIP = 0.003
+
+
+def _lit_ray(p_, el_):
+    e_ = math.radians(el_)
+    d_ = Vector((0.0, -math.cos(e_), math.sin(e_)))
+    o_, left_ = Vector(p_), 0.3
+    for _ in range(4):
+        h_ = BVH_JAWOCC.ray_cast(o_, d_, left_)
+        if h_[0] is None:
+            return True
+        if (h_[0] - Vector(p_)).length > JAW_SELF_SKIP:
+            return False
+        left_ -= h_[3] + 1e-4
+        o_ = h_[0] + d_ * 1e-4
+    return True
+
+
+_ecrit = np.full(len(BV), 90.0)
+_gi = np.nonzero(_jg)[0]
+for i in _gi:
+    p_ = BV[i] + BN[i] * 0.001
+    if not _lit_ray(p_, 0.0):
+        _ecrit[i] = 0.0
+        continue
+    if _lit_ray(p_, 90.0):
+        continue
+    lo_, hi_ = 0.0, 90.0                     # lit at lo_, shadowed at hi_
+    for _ in range(12):
+        mid_ = 0.5 * (lo_ + hi_)
+        if _lit_ray(p_, mid_):
+            lo_ = mid_
+        else:
+            hi_ = mid_
+    _ecrit[i] = 0.5 * (lo_ + hi_)
+_phi = np.degrees(np.arctan2(X, -(Y - NECK0[1])))          # azimuth round the neck axis, 0 = front, + = her left
+_zfloor = NECK0[2] - 0.06
+_bins = np.arange(-180.0, 180.0 + 1e-9, JAW_BIN)
+_zt = np.full(len(_bins), _zfloor)
+_nsh = 0
+for k_, b_ in enumerate(_bins):
+    m_ = _gi[np.abs(((_phi[_gi] - b_) + 180.0) % 360.0 - 180.0) <= JAW_BIN * 0.5]
+    if not len(m_):
+        continue
+    sh_ = _ecrit[m_] < JAW_LIGHT_DEG
+    if not sh_.any():
+        continue
+    _nsh += 1
+    zs_ = np.sort(Z[m_]); o_ = np.argsort(Z[m_]); s_ = sh_[o_]
+    # threshold t between consecutive heights: errors = lit below t + shadowed above t; the best split (lowest error,
+    # ties -> the higher t)
+    cand_ = np.concatenate([[zs_[0] - 1e-4], 0.5 * (zs_[1:] + zs_[:-1]), [zs_[-1] + 1e-4]])
+    err_ = np.array([np.sum(~s_[:j]) + np.sum(s_[j:]) for j in range(len(cand_))])
+    j_ = int(np.max(np.nonzero(err_ == err_.min())[0]))
+    _zt[k_] = cand_[j_]
+_w = np.exp(-0.5 * ((np.arange(-3 * int(JAW_SIGMA / JAW_BIN), 3 * int(JAW_SIGMA / JAW_BIN) + 1) * JAW_BIN) / JAW_SIGMA) ** 2)
+_zt_s = np.convolve(np.pad(_zt, len(_w) // 2, mode="edge"), _w / _w.sum(), mode="valid")
+FIELDS["jawsh"] = np.where(_jg, (Z - np.interp(_phi, _bins, _zt_s)) / 0.05, 1.0)
+report["jaw_shadow"] = {"rule": "cast placement (critical light elevation per vertex, head + neck occluder) -> per-azimuth "
+                                "terminator, Gaussian-smoothed (bin %.0f deg, sigma %.0f deg) = a drawn smooth edge" % (JAW_BIN, JAW_SIGMA),
+                        "gated_verts": int(len(_gi)), "shadowed_verts_raw": int((_ecrit[_gi] < JAW_LIGHT_DEG).sum()),
+                        "bins_with_shadow": _nsh}
 FIELDS["jawgate"] = _jg.astype(float)
 def hairline_z(P):
     ce_ = (HC[1] - P[:, 1]) / np.maximum(np.hypot(P[:, 0], P[:, 1] - HC[1]), 1e-9)          # 1 = front, -1 = back
-    # (Lyra: the hairline arches OVER the ears -- HAIRLINE_SIDE above the eye centres across the ear band (ce -0.48 .. 0.22: the ear and behind it) -- so no ear
-    #  face is scalp: a scalp ear top was harvested in s6 under a cap that cannot follow the helix = crown skin-through holes)
-    return ce_, np.where(ce_ >= 0, np.interp(ce_, [0.0, 0.22, 0.55, 1.0], [EZ0 + HAIRLINE_SIDE, EZ0 + HAIRLINE_SIDE, EZ0 + 0.044, EZ0 + HAIRLINE[0]]),
-                         np.interp(ce_, [-1.0, -0.70, -0.48, 0.0], [HEADJ[2] + HAIRLINE[1], HEADJ[2] + HAIRLINE[1] + 0.012, EZ0 + HAIRLINE_SIDE,
-                                                                     EZ0 + HAIRLINE_SIDE]))
+    # (Lyra: the hairline arches OVER the ears -- so no ear face is scalp: a scalp ear top was harvested in s6 under a cap that
+    #  cannot follow the helix = crown skin-through holes. v1.1: the arch is held only over the ear's own ce span
+    #  (HAIRLINE_EAR_CE) at HAIRLINE_SIDE[0]; the hairline drops to the sideburn in front of the ear and to the band behind it
+    #  -- v1's flat arch across ce -0.48 .. 0.22 at 0.026 left the bare skin band the artist marked. ce >= 0.55 (the front
+    #  hairline, the fringe / part roots) is unchanged)
+    a_, sb_, bh_ = (EZ0 + h_ for h_ in HAIRLINE_SIDE)
+    e0_, e1_ = HAIRLINE_EAR_CE
+    return ce_, np.where(ce_ >= 0, np.interp(ce_, [0.0, e1_, e1_ + 0.08, 0.30, 0.55, 1.0], [a_, a_, sb_, sb_, EZ0 + 0.044, EZ0 + HAIRLINE[0]]),
+                         np.interp(ce_, [-1.0, -0.70, -0.48, e0_ - 0.08, e0_, 0.0], [HEADJ[2] + HAIRLINE[1], HEADJ[2] + HAIRLINE[1] + 0.012,
+                                                                                     bh_, bh_, a_, a_]))
 
 
 _ce, _hl = hairline_z(BV)

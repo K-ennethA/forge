@@ -10,14 +10,17 @@
 #      (improve/wren_hair_diag.py, read-only reuse) on the rigged file
 #   3. the comparison strip <ver>_sheet_compare.png = BUILD | SHEET for front / side / back + the stills sheet
 # Logs + probe / checker outputs live in renders/lyra/. -SkipBuild re-runs 2 + 3 only.
-param([switch]$SkipBuild)
+# -Ver <tag> names the outputs (default lyra_v1). -FixOf <prev tag> (v1.1, render economy): render ONLY the views a fix touches
+# (front, head_front / head_tq / head_side, one-tone head_tq) + checks + probes, and compose <ver>_fix_compare.png = PREV | VER
+# | SHEET (front, head 3/4, head side) instead of the full stills / ortho strip.
+param([switch]$SkipBuild, [string]$Ver = "lyra_v1", [string]$FixOf = "")
 $B = "C:\Program Files\Blender Foundation\Blender 5.0\blender.exe"
 $P = "C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units"   # (never a lowercase $p: PowerShell names are case-insensitive)
 $I = "$P\improve"
 $OUT = "$P\renders\lyra"
 $LOG = "$OUT\logs"
 $VPY = "C:\Users\kenne\OneDrive\Desktop\git\forge\service\.venv\Scripts\python.exe"
-$VER = "lyra_v1"
+$VER = $Ver
 New-Item -ItemType Directory -Force $OUT, $LOG | Out-Null
 $T0 = Get-Date
 if (-not $SkipBuild) {
@@ -47,6 +50,14 @@ $vJobs = @(
   @("face_probe", @("--background","`"$P\improved\lyra.blend`"","--factory-startup","--python","`"$I\wren_face_probe.py`"","--","`"$OUT\$($VER)_face_probe`"","--report","`"$P\improved\lyra.json`"")),
   @("hair_diag", @("--background",$RB,"--factory-startup","--python","`"$I\wren_hair_diag.py`"","--","`"$OUT\$($VER)_hair_diag.json`""))
 )
+if ($FixOf) {
+  $vJobs = @(
+    @("render_full",  @("--background",$RB,"--factory-startup","--python",$R,"--",$W,"front","--res","1024")),
+    @("render_head",  @("--background",$RB,"--factory-startup","--python",$R,"--",$W,"head_front,head_tq,head_side","--res","800")),
+    @("render_onetone", @("--background",$RB,"--factory-startup","--python",$R,"--",$W,"head_tq","--res","800","--palette-override","`"$ONE`"","--suffix","_onetone"))
+  ) + @($vJobs | Where-Object { $_[0] -in @("check_improved","check_rigged","face_probe","hair_diag") })
+  $env:LYRA_FIX_PREV = $FixOf
+}
 $vProcs = @()
 foreach ($j in $vJobs) {
   $pr = Start-Process -FilePath $B -ArgumentList $j[1] -WindowStyle Hidden -PassThru -RedirectStandardOutput "$LOG\$($j[0]).txt" -RedirectStandardError "$LOG\$($j[0]).err"

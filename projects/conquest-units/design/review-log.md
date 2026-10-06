@@ -1374,3 +1374,21 @@ bind pose (clipless law), one comparison sheet vs the SHEET views.
 (2) Open artist questions filed under L-numbers in OPEN-QUESTIONS.md
 (height, book hold, glow, ribbon dynamics, movement intent — batched
 with the v1 renders).
+
+## 2026-10-06 — Lyra v1 verdicts (artist, verbatim + 3 markups)
+
+"hair should extend into the red section" + "also what is the weird
+discoloration on her neck" + "also her chin is too large and should
+only go to where the red line is".
+Markups saved: design/reference/lyra-v1-hairline-annotation.webp
+(red line above/behind her left ear), lyra-v1-neck-annotation.webp
+(orange circle, front of neck above the collar),
+lyra-v1-chin-annotation.png (red line under the chin, front view).
+(1) HAIRLINE: bare skin above/behind the ear — the scalp hair must
+extend DOWN into the marked region (the resume's HAIRLINE_SIDE arch
+over the ear left the zone above it uncovered).
+(2) NECK DISCOLORATION: investigate the marked patch as a defect —
+find the actual cause (region paint leak / AO / normal artifact),
+never just repaint over it.
+(3) CHIN: too large — shorten to the marked line (front view); part
+of the earlier "boyish" read, face probe ratios re-checked after.
