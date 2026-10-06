@@ -1346,3 +1346,31 @@ comparison sheet vs the SHEET views.
 (2) Open artist questions filed under S-numbers in OPEN-QUESTIONS.md
 (blade count, sigil glow, movement intent — batched with the v1
 renders).
+
+## 2026-10-06 — NEW UNIT: Lyra (student researcher, Elias' student) — sheet delivered, v1 draft ordered
+
+Artist (verbatim): "start next one" — with the Lyra character sheet
+attached (front/side/back + head, torso, shoulder, belt, bag, cloth
+pattern detail panels + academy inspiration art + compass-star
+symbol/motif + 8-chip palette). Sheet saved:
+design/reference/lyra/lyra_sheet.webp (1536x1024).
+Sheet facts binding for the build: AGE 17, female, FULL FACE VISIBLE
+(complete house-style face/eyes/mouth stack applies); dark-brown
+hair in a HIGH PONYTAIL with loose fringe strands, blue ribbon +
+gold hairpiece with tassel; white collared shirt, blue necktie
+ribbon with gold diamond pin; navy shoulder capelet/mantle with gold
+trim + the compass-star emblem (uniform style matching Elias, per
+the sheet's own notes); brown cross-chest strap; dark corset belt
+with buckles + hanging vials/instruments; cream/parchment skirt
+panels (gold-trimmed, diamond motif) over black trousers; leather
+satchel + scroll case with vials; brown lace-up boots; carries a
+small STACK OF BOOKS in one arm (front + side views). Role: student
+researcher, peer to Wren, kind/determined/reliable. No magic shown.
+(1) v1 DRAFT lane (two-speeds law): full house-style build INCLUDING
+the face/eyes/mouth/hair stack (Wren reference implementation, Ashe
+ratios, mass-first ponytail per the sheet views), palette
+PIXEL-SAMPLED from the saved sheet, book-stack hold baked into the
+bind pose (clipless law), one comparison sheet vs the SHEET views.
+(2) Open artist questions filed under L-numbers in OPEN-QUESTIONS.md
+(height, book hold, glow, ribbon dynamics, movement intent — batched
+with the v1 renders).

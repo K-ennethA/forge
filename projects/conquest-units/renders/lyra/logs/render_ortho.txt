@@ -1,0 +1,8 @@
+00:01.203  blend            | Read blend: "C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\rigged\lyra.blend"
+00:03.250  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\lyra\lyra_v1_ortho_front.png'
+00:03.734  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\lyra\lyra_v1_ortho_side.png'
+00:04.296  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\lyra\lyra_v1_ortho_back.png'
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\lyra\lyra_v1_ortho_front.png
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\lyra\lyra_v1_ortho_side.png
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\lyra\lyra_v1_ortho_back.png
+Blender 5.0.1 (hash a3db93c5b259 built 2025-12-16 01:32:30)

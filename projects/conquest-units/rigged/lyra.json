@@ -1,0 +1,1324 @@
+{
+ "unit": "lyra",
+ "source": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\improved\\lyra.blend",
+ "fps": 24,
+ "version": "v1 draft",
+ "clips": "none (L5: artist-gated)",
+ "weights": {
+  "max_influences": 4,
+  "unweighted": 0,
+  "sum_dev_max": 2.220446049250313e-16,
+  "seconds": 0.5,
+  "rule": "body: MPFB game_engine weights; boots / sleeves / bracelets / capelet (shoulder-hung) / emblems: the nearest skin point's weights; boot feet: foot -> ball; collar / tie knot / pin: skin with head / half the neck moved to spine_03; TRUNK_HUNG parts (corset, belt, buckle, vial, medal, medaldisc, medalcord, pouch, pouchflap, pouchbuckle, pouchstrap, skirt, skmotif, skemblem, fronttab, fronttabmotif, strap, satchel, satchelflap, satchelbuckle, satchelstrapl, satchelhang, scrollcase, scrollroll, scrollband) from the TRUNK faces only (the arm chain, clavicles included, is never a source; the skirt / tab / motifs 'fauld': pelvis -> trunk skin under the hem); eyes / cap / swept locks / tie wrap + bow + hairpiece: head; loose strands, ponytail, ribbon tails + tassel, necktie tails past their s_leave: Wren vine_weights onto their chains; books: 'books' (child of hand_r)",
+  "census": {
+   "skirt+tab+motifs": {
+    "verts": 2500,
+    "arm_verts": 0,
+    "arm_max": 0.0,
+    "leg_verts": 2038,
+    "leg_max": 0.55
+   },
+   "corset+belts": {
+    "verts": 1168,
+    "arm_verts": 0,
+    "arm_max": 0.0,
+    "leg_verts": 149,
+    "leg_max": 0.1166
+   },
+   "vials+medallions+pouch": {
+    "verts": 616,
+    "arm_verts": 0,
+    "arm_max": 0.0,
+    "leg_verts": 454,
+    "leg_max": 0.336
+   },
+   "satchel+strap+scrolls": {
+    "verts": 694,
+    "arm_verts": 0,
+    "arm_max": 0.0,
+    "leg_verts": 448,
+    "leg_max": 0.7833
+   },
+   "capelet (shoulder-hung, report)": {
+    "verts": 1096,
+    "arm_verts": 958,
+    "arm_max": 1.0,
+    "leg_verts": 0,
+    "leg_max": 0.0
+   }
+  }
+ },
+ "grip": {
+  "books": {
+   "rule": "the BIND POSE holds the book stack (L1: the right arm, the sheet's front view): the stack stands against her right chest (s6, slid clear of the body / outfit), the right palm flat on its outer cover at BOOK_GRIP, the hand roll x elbow pole searched for the least wrist bend (arm axis kept out of the stack), HOLD_TWIST_SHARE of the twist on the forearm, each finger + the thumb curl-solved onto the stack; the bone 'books' is a child of hand_r",
+   "hand_r_to_books_bone_rest4": [
+    [
+     -0.46093499660491943,
+     0.7423679828643799,
+     0.4862389862537384,
+     -0.008255000226199627
+    ],
+    [
+     0.7233189940452576,
+     -0.0031640001107007265,
+     0.6905069947242737,
+     0.08453600108623505
+    ],
+    [
+     0.5141479969024658,
+     0.6699849963188171,
+     -0.5355110168457031,
+     0.09458599984645844
+    ],
+    [
+     0.0,
+     0.0,
+     0.0,
+     1.0
+    ]
+   ],
+   "hold": {
+    "has_books": true,
+    "capelet_laid_behind_books_verts": 57,
+    "grip_point_m": [
+     -0.2357,
+     -0.1796,
+     1.1167
+    ],
+    "hand_roll_deg": 200.0,
+    "elbow_pole": [
+     -0.9,
+     0.1,
+     -0.4
+    ],
+    "wrist_bend_deg": 25.04,
+    "wrist_bend_before_twist_split_deg": 46.46,
+    "twist_deg": {
+     "total": 45.25,
+     "forearm": 22.63,
+     "wrist_left": 22.63
+    },
+    "elbow_flex_deg": 108.9,
+    "upperarm_swing_deg": 55.6,
+    "reach_shortfall_m": 0.0,
+    "arm_axis_in_box_m": 0.001,
+    "fingertip_pad_to_books_mm": {
+     "index": 0.5,
+     "middle": 1.5,
+     "ring": 4.4,
+     "pinky": 3.2,
+     "thumb": 6.2
+    },
+    "finger_curl_scales_knuckle_midtip": {
+     "index": [
+      -0.3,
+      2.2
+     ],
+     "middle": [
+      -0.3,
+      2.2
+     ],
+     "ring": [
+      0.9,
+      2.2
+     ],
+     "pinky": [
+      0.8,
+      2.0
+     ]
+    },
+    "thumb": [
+     20.0,
+     -30.0,
+     90.0,
+     30.0,
+     24.0
+    ],
+    "finger_mesh_max_penetration_mm": 0.0,
+    "palm_hand_mesh_min_to_books_mm": 2.81,
+    "forearm_mesh_min_to_books_mm": 8.16,
+    "upperarm_mesh_min_to_books_mm": 4.24,
+    "chest_body_outfit_min_to_books_mm": 3.0,
+    "penetrating_verts": {
+     "chest_body_outfit": 0,
+     "forearm": 0,
+     "upperarm": 0,
+     "hand_palm": 0,
+     "fingers": 0
+    },
+    "penetrating_parts": {},
+    "bend_by_roll_deg_at_that_pole": {
+     "0": 160.1,
+     "10": 167.8,
+     "20": 175.4,
+     "30": 177.0,
+     "40": 169.4,
+     "50": 161.7,
+     "60": 153.9,
+     "70": 146.1,
+     "80": 138.1,
+     "90": 130.0,
+     "100": 121.7,
+     "110": 113.4,
+     "120": 104.9,
+     "130": 96.3,
+     "140": 87.7,
+     "150": 79.2,
+     "160": 70.9,
+     "170": 63.1,
+     "180": 56.0,
+     "190": 50.2,
+     "200": 46.5,
+     "210": 45.3,
+     "220": 47.1,
+     "230": 51.6,
+     "240": 58.1,
+     "250": 65.9,
+     "260": 74.6,
+     "270": 83.6,
+     "280": 92.7,
+     "290": 101.8,
+     "300": 110.7,
+     "310": 119.5,
+     "320": 128.0,
+     "330": 136.3,
+     "340": 144.4,
+     "350": 152.3
+    },
+    "bones_reseated": 18,
+    "reseat_err": 4.783315460055171e-06,
+    "recentre_shift_m": [
+     -0.03625,
+     0.0,
+     0.0
+    ]
+   }
+  }
+ },
+ "chains": {
+  "hair_side.L": {
+   "bones": 3,
+   "length_m": 0.0331,
+   "parent": "head"
+  },
+  "hair_side.R": {
+   "bones": 3,
+   "length_m": 0.0458,
+   "parent": "head"
+  },
+  "hair_tail": {
+   "bones": 4,
+   "length_m": 0.5451,
+   "parent": "head"
+  },
+  "necktie": {
+   "bones": 3,
+   "length_m": 0.1039,
+   "parent": "spine_03"
+  },
+  "ribbon": {
+   "bones": 3,
+   "length_m": 0.206,
+   "parent": "head"
+  }
+ },
+ "bones": [
+  {
+   "name": "root",
+   "parent": null,
+   "deform": false,
+   "head": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "tail": [
+    0.0,
+    0.2,
+    0.0
+   ]
+  },
+  {
+   "name": "pelvis",
+   "parent": "root",
+   "deform": true,
+   "head": [
+    0.0362,
+    0.0196,
+    0.9062
+   ],
+   "tail": [
+    0.0362,
+    0.06,
+    0.9514
+   ]
+  },
+  {
+   "name": "spine_01",
+   "parent": "pelvis",
+   "deform": true,
+   "head": [
+    0.0362,
+    0.06,
+    0.9514
+   ],
+   "tail": [
+    0.0362,
+    0.0423,
+    1.0146
+   ]
+  },
+  {
+   "name": "spine_02",
+   "parent": "spine_01",
+   "deform": true,
+   "head": [
+    0.0362,
+    0.0423,
+    1.0146
+   ],
+   "tail": [
+    0.0362,
+    0.0292,
+    1.0963
+   ]
+  },
+  {
+   "name": "spine_03",
+   "parent": "spine_02",
+   "deform": true,
+   "head": [
+    0.0362,
+    0.0292,
+    1.0963
+   ],
+   "tail": [
+    0.0362,
+    0.0482,
+    1.2554
+   ]
+  },
+  {
+   "name": "clavicle_l",
+   "parent": "spine_03",
+   "deform": true,
+   "head": [
+    0.0628,
+    0.0187,
+    1.3326
+   ],
+   "tail": [
+    0.1919,
+    0.0207,
+    1.3116
+   ]
+  },
+  {
+   "name": "upperarm_l",
+   "parent": "clavicle_l",
+   "deform": true,
+   "head": [
+    0.1919,
+    0.0207,
+    1.3116
+   ],
+   "tail": [
+    0.2759,
+    0.0245,
+    1.0863
+   ]
+  },
+  {
+   "name": "lowerarm_l",
+   "parent": "upperarm_l",
+   "deform": true,
+   "head": [
+    0.2759,
+    0.0245,
+    1.0863
+   ],
+   "tail": [
+    0.3532,
+    -0.0492,
+    0.886
+   ]
+  },
+  {
+   "name": "hand_l",
+   "parent": "lowerarm_l",
+   "deform": true,
+   "head": [
+    0.3532,
+    -0.0492,
+    0.886
+   ],
+   "tail": [
+    0.3595,
+    -0.0639,
+    0.8615
+   ]
+  },
+  {
+   "name": "index_01_l",
+   "parent": "hand_l",
+   "deform": true,
+   "head": [
+    0.3732,
+    -0.1097,
+    0.8132
+   ],
+   "tail": [
+    0.373,
+    -0.1219,
+    0.7933
+   ]
+  },
+  {
+   "name": "index_02_l",
+   "parent": "index_01_l",
+   "deform": true,
+   "head": [
+    0.373,
+    -0.1219,
+    0.7933
+   ],
+   "tail": [
+    0.3685,
+    -0.1311,
+    0.7751
+   ]
+  },
+  {
+   "name": "index_03_l",
+   "parent": "index_02_l",
+   "deform": true,
+   "head": [
+    0.3685,
+    -0.1311,
+    0.7751
+   ],
+   "tail": [
+    0.3598,
+    -0.1412,
+    0.7542
+   ]
+  },
+  {
+   "name": "middle_01_l",
+   "parent": "hand_l",
+   "deform": true,
+   "head": [
+    0.3805,
+    -0.0878,
+    0.8061
+   ],
+   "tail": [
+    0.3792,
+    -0.0959,
+    0.7765
+   ]
+  },
+  {
+   "name": "middle_02_l",
+   "parent": "middle_01_l",
+   "deform": true,
+   "head": [
+    0.3792,
+    -0.0959,
+    0.7765
+   ],
+   "tail": [
+    0.3755,
+    -0.1037,
+    0.7528
+   ]
+  },
+  {
+   "name": "middle_03_l",
+   "parent": "middle_02_l",
+   "deform": true,
+   "head": [
+    0.3755,
+    -0.1037,
+    0.7528
+   ],
+   "tail": [
+    0.3683,
+    -0.1099,
+    0.73
+   ]
+  },
+  {
+   "name": "pinky_01_l",
+   "parent": "hand_l",
+   "deform": true,
+   "head": [
+    0.3769,
+    -0.0511,
+    0.803
+   ],
+   "tail": [
+    0.3758,
+    -0.0505,
+    0.7837
+   ]
+  },
+  {
+   "name": "pinky_02_l",
+   "parent": "pinky_01_l",
+   "deform": true,
+   "head": [
+    0.3758,
+    -0.0505,
+    0.7837
+   ],
+   "tail": [
+    0.3725,
+    -0.0508,
+    0.7699
+   ]
+  },
+  {
+   "name": "pinky_03_l",
+   "parent": "pinky_02_l",
+   "deform": true,
+   "head": [
+    0.3725,
+    -0.0508,
+    0.7699
+   ],
+   "tail": [
+    0.3683,
+    -0.0508,
+    0.7523
+   ]
+  },
+  {
+   "name": "ring_01_l",
+   "parent": "hand_l",
+   "deform": true,
+   "head": [
+    0.3814,
+    -0.0698,
+    0.8037
+   ],
+   "tail": [
+    0.3819,
+    -0.0724,
+    0.7767
+   ]
+  },
+  {
+   "name": "ring_02_l",
+   "parent": "ring_01_l",
+   "deform": true,
+   "head": [
+    0.3819,
+    -0.0724,
+    0.7767
+   ],
+   "tail": [
+    0.379,
+    -0.0761,
+    0.7547
+   ]
+  },
+  {
+   "name": "ring_03_l",
+   "parent": "ring_02_l",
+   "deform": true,
+   "head": [
+    0.379,
+    -0.0761,
+    0.7547
+   ],
+   "tail": [
+    0.3729,
+    -0.0782,
+    0.7312
+   ]
+  },
+  {
+   "name": "thumb_01_l",
+   "parent": "hand_l",
+   "deform": true,
+   "head": [
+    0.3569,
+    -0.0833,
+    0.8646
+   ],
+   "tail": [
+    0.3391,
+    -0.1036,
+    0.8571
+   ]
+  },
+  {
+   "name": "thumb_02_l",
+   "parent": "thumb_01_l",
+   "deform": true,
+   "head": [
+    0.3391,
+    -0.1036,
+    0.8571
+   ],
+   "tail": [
+    0.3279,
+    -0.1286,
+    0.8393
+   ]
+  },
+  {
+   "name": "thumb_03_l",
+   "parent": "thumb_02_l",
+   "deform": true,
+   "head": [
+    0.3279,
+    -0.1286,
+    0.8393
+   ],
+   "tail": [
+    0.3195,
+    -0.143,
+    0.8196
+   ]
+  },
+  {
+   "name": "clavicle_r",
+   "parent": "spine_03",
+   "deform": true,
+   "head": [
+    0.0097,
+    0.0187,
+    1.3326
+   ],
+   "tail": [
+    -0.1194,
+    0.0207,
+    1.3116
+   ]
+  },
+  {
+   "name": "upperarm_r",
+   "parent": "clavicle_r",
+   "deform": true,
+   "head": [
+    -0.1194,
+    0.0207,
+    1.3116
+   ],
+   "tail": [
+    -0.3359,
+    0.0352,
+    1.2079
+   ]
+  },
+  {
+   "name": "lowerarm_r",
+   "parent": "upperarm_r",
+   "deform": true,
+   "head": [
+    -0.3359,
+    0.0352,
+    1.2079
+   ],
+   "tail": [
+    -0.2265,
+    -0.1454,
+    1.1248
+   ]
+  },
+  {
+   "name": "hand_r",
+   "parent": "lowerarm_r",
+   "deform": true,
+   "head": [
+    -0.2265,
+    -0.1454,
+    1.1248
+   ],
+   "tail": [
+    -0.207,
+    -0.1673,
+    1.1245
+   ]
+  },
+  {
+   "name": "index_01_r",
+   "parent": "hand_r",
+   "deform": true,
+   "head": [
+    -0.1629,
+    -0.2171,
+    1.1381
+   ],
+   "tail": [
+    -0.1466,
+    -0.2338,
+    1.1386
+   ]
+  },
+  {
+   "name": "index_02_r",
+   "parent": "index_01_r",
+   "deform": true,
+   "head": [
+    -0.1466,
+    -0.2338,
+    1.1386
+   ],
+   "tail": [
+    -0.1403,
+    -0.216,
+    1.1473
+   ]
+  },
+  {
+   "name": "index_03_r",
+   "parent": "index_02_r",
+   "deform": true,
+   "head": [
+    -0.1403,
+    -0.216,
+    1.1473
+   ],
+   "tail": [
+    -0.159,
+    -0.209,
+    1.162
+   ]
+  },
+  {
+   "name": "middle_01_r",
+   "parent": "hand_r",
+   "deform": true,
+   "head": [
+    -0.1704,
+    -0.2188,
+    1.1153
+   ],
+   "tail": [
+    -0.1494,
+    -0.2396,
+    1.1073
+   ]
+  },
+  {
+   "name": "middle_02_r",
+   "parent": "middle_01_r",
+   "deform": true,
+   "head": [
+    -0.1494,
+    -0.2396,
+    1.1073
+   ],
+   "tail": [
+    -0.1444,
+    -0.2161,
+    1.1152
+   ]
+  },
+  {
+   "name": "middle_03_r",
+   "parent": "middle_02_r",
+   "deform": true,
+   "head": [
+    -0.1444,
+    -0.2161,
+    1.1152
+   ],
+   "tail": [
+    -0.1665,
+    -0.2125,
+    1.1256
+   ]
+  },
+  {
+   "name": "pinky_01_r",
+   "parent": "hand_r",
+   "deform": true,
+   "head": [
+    -0.1801,
+    -0.2047,
+    1.0824
+   ],
+   "tail": [
+    -0.1631,
+    -0.2028,
+    1.0735
+   ]
+  },
+  {
+   "name": "pinky_02_r",
+   "parent": "pinky_01_r",
+   "deform": true,
+   "head": [
+    -0.1631,
+    -0.2028,
+    1.0735
+   ],
+   "tail": [
+    -0.1703,
+    -0.191,
+    1.0765
+   ]
+  },
+  {
+   "name": "pinky_03_r",
+   "parent": "pinky_02_r",
+   "deform": true,
+   "head": [
+    -0.1703,
+    -0.191,
+    1.0765
+   ],
+   "tail": [
+    -0.188,
+    -0.1944,
+    1.0782
+   ]
+  },
+  {
+   "name": "ring_01_r",
+   "parent": "hand_r",
+   "deform": true,
+   "head": [
+    -0.1761,
+    -0.2145,
+    1.0985
+   ],
+   "tail": [
+    -0.1508,
+    -0.2128,
+    1.0889
+   ]
+  },
+  {
+   "name": "ring_02_r",
+   "parent": "ring_01_r",
+   "deform": true,
+   "head": [
+    -0.1508,
+    -0.2128,
+    1.0889
+   ],
+   "tail": [
+    -0.164,
+    -0.1964,
+    1.0967
+   ]
+  },
+  {
+   "name": "ring_03_r",
+   "parent": "ring_02_r",
+   "deform": true,
+   "head": [
+    -0.164,
+    -0.1964,
+    1.0967
+   ],
+   "tail": [
+    -0.1842,
+    -0.2101,
+    1.0981
+   ]
+  },
+  {
+   "name": "thumb_01_r",
+   "parent": "hand_r",
+   "deform": true,
+   "head": [
+    -0.2003,
+    -0.1704,
+    1.1428
+   ],
+   "tail": [
+    -0.1882,
+    -0.1703,
+    1.1176
+   ]
+  },
+  {
+   "name": "thumb_02_r",
+   "parent": "thumb_01_r",
+   "deform": true,
+   "head": [
+    -0.1882,
+    -0.1703,
+    1.1176
+   ],
+   "tail": [
+    -0.1789,
+    -0.185,
+    1.0899
+   ]
+  },
+  {
+   "name": "thumb_03_r",
+   "parent": "thumb_02_r",
+   "deform": true,
+   "head": [
+    -0.1789,
+    -0.185,
+    1.0899
+   ],
+   "tail": [
+    -0.1809,
+    -0.206,
+    1.075
+   ]
+  },
+  {
+   "name": "books",
+   "parent": "hand_r",
+   "deform": true,
+   "head": [
+    -0.1092,
+    -0.1548,
+    1.173
+   ],
+   "tail": [
+    -0.0993,
+    -0.1471,
+    1.2923
+   ]
+  },
+  {
+   "name": "neck_01",
+   "parent": "spine_03",
+   "deform": true,
+   "head": [
+    0.0362,
+    0.0374,
+    1.3999
+   ],
+   "tail": [
+    0.0362,
+    0.0066,
+    1.4997
+   ]
+  },
+  {
+   "name": "head",
+   "parent": "neck_01",
+   "deform": true,
+   "head": [
+    0.0362,
+    0.0066,
+    1.4997
+   ],
+   "tail": [
+    0.0362,
+    0.0138,
+    1.6836
+   ]
+  },
+  {
+   "name": "hair_side.L.0",
+   "parent": "head",
+   "deform": true,
+   "head": [
+    0.1168,
+    -0.0648,
+    1.5485
+   ],
+   "tail": [
+    0.1157,
+    -0.0613,
+    1.5381
+   ]
+  },
+  {
+   "name": "hair_side.L.1",
+   "parent": "hair_side.L.0",
+   "deform": true,
+   "head": [
+    0.1157,
+    -0.0613,
+    1.5381
+   ],
+   "tail": [
+    0.114,
+    -0.0572,
+    1.528
+   ]
+  },
+  {
+   "name": "hair_side.L.2",
+   "parent": "hair_side.L.1",
+   "deform": true,
+   "head": [
+    0.114,
+    -0.0572,
+    1.528
+   ],
+   "tail": [
+    0.1124,
+    -0.0526,
+    1.5181
+   ]
+  },
+  {
+   "name": "hair_side.R.0",
+   "parent": "head",
+   "deform": true,
+   "head": [
+    -0.0437,
+    -0.0677,
+    1.5473
+   ],
+   "tail": [
+    -0.0409,
+    -0.0628,
+    1.5332
+   ]
+  },
+  {
+   "name": "hair_side.R.1",
+   "parent": "hair_side.R.0",
+   "deform": true,
+   "head": [
+    -0.0409,
+    -0.0628,
+    1.5332
+   ],
+   "tail": [
+    -0.0377,
+    -0.0569,
+    1.5194
+   ]
+  },
+  {
+   "name": "hair_side.R.2",
+   "parent": "hair_side.R.1",
+   "deform": true,
+   "head": [
+    -0.0377,
+    -0.0569,
+    1.5194
+   ],
+   "tail": [
+    -0.0326,
+    -0.0503,
+    1.5067
+   ]
+  },
+  {
+   "name": "hair_tail.0",
+   "parent": "head",
+   "deform": true,
+   "head": [
+    0.0262,
+    0.142,
+    1.7237
+   ],
+   "tail": [
+    -0.0184,
+    0.2085,
+    1.6225
+   ]
+  },
+  {
+   "name": "hair_tail.1",
+   "parent": "hair_tail.0",
+   "deform": true,
+   "head": [
+    -0.0184,
+    0.2085,
+    1.6225
+   ],
+   "tail": [
+    -0.0296,
+    0.2233,
+    1.4886
+   ]
+  },
+  {
+   "name": "hair_tail.2",
+   "parent": "hair_tail.1",
+   "deform": true,
+   "head": [
+    -0.0296,
+    0.2233,
+    1.4886
+   ],
+   "tail": [
+    -0.041,
+    0.2295,
+    1.3538
+   ]
+  },
+  {
+   "name": "hair_tail.3",
+   "parent": "hair_tail.2",
+   "deform": true,
+   "head": [
+    -0.041,
+    0.2295,
+    1.3538
+   ],
+   "tail": [
+    -0.0705,
+    0.2133,
+    1.2218
+   ]
+  },
+  {
+   "name": "ribbon.0",
+   "parent": "head",
+   "deform": true,
+   "head": [
+    0.0352,
+    0.0912,
+    1.7083
+   ],
+   "tail": [
+    0.0251,
+    0.1536,
+    1.7336
+   ]
+  },
+  {
+   "name": "ribbon.1",
+   "parent": "ribbon.0",
+   "deform": true,
+   "head": [
+    0.0251,
+    0.1536,
+    1.7336
+   ],
+   "tail": [
+    0.0107,
+    0.2109,
+    1.7045
+   ]
+  },
+  {
+   "name": "ribbon.2",
+   "parent": "ribbon.1",
+   "deform": true,
+   "head": [
+    0.0107,
+    0.2109,
+    1.7045
+   ],
+   "tail": [
+    -0.0009,
+    0.2362,
+    1.6424
+   ]
+  },
+  {
+   "name": "necktie.0",
+   "parent": "spine_03",
+   "deform": true,
+   "head": [
+    0.0362,
+    -0.0438,
+    1.3927
+   ],
+   "tail": [
+    0.0365,
+    -0.0432,
+    1.3581
+   ]
+  },
+  {
+   "name": "necktie.1",
+   "parent": "necktie.0",
+   "deform": true,
+   "head": [
+    0.0365,
+    -0.0432,
+    1.3581
+   ],
+   "tail": [
+    0.0367,
+    -0.0575,
+    1.3268
+   ]
+  },
+  {
+   "name": "necktie.2",
+   "parent": "necktie.1",
+   "deform": true,
+   "head": [
+    0.0367,
+    -0.0575,
+    1.3268
+   ],
+   "tail": [
+    0.0369,
+    -0.0721,
+    1.2954
+   ]
+  },
+  {
+   "name": "thigh_l",
+   "parent": "pelvis",
+   "deform": true,
+   "head": [
+    0.1306,
+    0.0134,
+    0.8785
+   ],
+   "tail": [
+    0.1762,
+    -0.0111,
+    0.4945
+   ]
+  },
+  {
+   "name": "calf_l",
+   "parent": "thigh_l",
+   "deform": true,
+   "head": [
+    0.1762,
+    -0.0111,
+    0.4945
+   ],
+   "tail": [
+    0.2069,
+    0.0206,
+    0.0931
+   ]
+  },
+  {
+   "name": "foot_l",
+   "parent": "calf_l",
+   "deform": true,
+   "head": [
+    0.2069,
+    0.0206,
+    0.0931
+   ],
+   "tail": [
+    0.2117,
+    -0.0823,
+    0.0348
+   ]
+  },
+  {
+   "name": "ball_l",
+   "parent": "foot_l",
+   "deform": true,
+   "head": [
+    0.2117,
+    -0.0823,
+    0.0348
+   ],
+   "tail": [
+    0.2063,
+    -0.1445,
+    0.0351
+   ]
+  },
+  {
+   "name": "thigh_r",
+   "parent": "pelvis",
+   "deform": true,
+   "head": [
+    -0.0581,
+    0.0134,
+    0.8785
+   ],
+   "tail": [
+    -0.1038,
+    -0.0111,
+    0.4945
+   ]
+  },
+  {
+   "name": "calf_r",
+   "parent": "thigh_r",
+   "deform": true,
+   "head": [
+    -0.1038,
+    -0.0111,
+    0.4945
+   ],
+   "tail": [
+    -0.1345,
+    0.0206,
+    0.0931
+   ]
+  },
+  {
+   "name": "foot_r",
+   "parent": "calf_r",
+   "deform": true,
+   "head": [
+    -0.1345,
+    0.0206,
+    0.0931
+   ],
+   "tail": [
+    -0.1392,
+    -0.0823,
+    0.0348
+   ]
+  },
+  {
+   "name": "ball_r",
+   "parent": "foot_r",
+   "deform": true,
+   "head": [
+    -0.1392,
+    -0.0823,
+    0.0348
+   ],
+   "tail": [
+    -0.1339,
+    -0.1445,
+    0.0351
+   ]
+  }
+ ],
+ "bone_count": 70,
+ "tris": {
+  "model": 48465,
+  "outline_shells": 0,
+  "budget": [
+   30000,
+   50000
+  ]
+ },
+ "digest": {
+  "parts": {
+   "hair_geometry": "d532b4e2e8c13b73",
+   "mouth_proxy_core": "d05ac88fbc7491ed",
+   "bake_normal": "891aef57ef14d8fc",
+   "bake_ao": "73ec4df4c3c4bd79",
+   "ao_lifted": "764c957dfc9e6708",
+   "hair_custom_normals": "280d40ae15219976",
+   "geometry_colour_uv": "0f3992132dd5f05a",
+   "weights": "cf4ecb7273270153",
+   "hold": "3c4f7e4f5ea77682"
+  },
+  "combined": "01e1571c42acf950"
+ },
+ "glb": {
+  "path": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\rigged\\lyra.glb",
+  "bytes": 11289848,
+  "sha256_16": "ce41333bacaa422b",
+  "tris": 48431,
+  "COLOR_0": true,
+  "COLOR_1": true,
+  "_GLOW": true,
+  "glow_audit": {
+   "glow_values_read": 106098,
+   "glow_abs_max": 0.0,
+   "all_zero": true
+  },
+  "skins": 1,
+  "joints": [
+   70
+  ],
+  "meshes": [
+   "lyra",
+   "lyra_books"
+  ]
+ },
+ "improved_report": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\improved\\lyra.json",
+ "seconds": 58.2
+}

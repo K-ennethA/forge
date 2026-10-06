@@ -54,6 +54,19 @@ docs/lane-conventions.md. Per-unit facts: improve/<unit>_STATE.md.
 - S5 Hood void: default = face fully occluded (dark wrap + shadow, zero face stack per
   the sheet's "no face visible"). Confirm no eye-glint/emissive eyes wanted.
 
+## Lyra (v1 draft in flight; sheet 2026-10-06)
+- L1 Book hold: a 2-3 book stack cradled in one arm, baked into the bind pose (clipless
+  law; the sheet's front + side views both show it). Which arm is canon — and should she
+  ship empty-handed instead (Wren precedent: props only in combat/special clips)?
+- L2 Height: age 17, "peer to Wren" — sheet gives no number. Default 1.70 m (a step under
+  Wren). Correct?
+- L3 Glow: no magic on the sheet — _GLOW all zero by default (Varden pattern). Or a faint
+  tier on the gold compass emblem / diamond pin?
+- L4 Ribbons: ponytail + necktie + ribbon tails get follow-through chains (hanging-mass
+  law); the hairpiece tassel too. Any of these rigid instead?
+- L5 Movement intent before any clips: studious/bookish idle (adjusting the book stack,
+  glancing at pages) vs neutral academy stance? Any lore beyond the sheet notes?
+
 ## Game-side (Conquest; all behind debug keys, defaults live)
 - G1 F7 look verdict: warm vs warm-neutralLUT vs new (WorldLook presets).
 - G2 F8 feel verdict: free preset speeds now 2.2/5.0 m/s (artist bumped); camera

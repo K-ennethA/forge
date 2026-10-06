@@ -1,0 +1,2 @@
+﻿STRIP C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\lyra\lyra_v1_sheet_compare.png (2204, 978)
+SHEET C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\lyra\lyra_v1_sheet.png (2130, 1450)
