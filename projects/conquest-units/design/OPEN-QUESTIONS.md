@@ -67,6 +67,41 @@ docs/lane-conventions.md. Per-unit facts: improve/<unit>_STATE.md.
 - L5 Movement intent before any clips: studious/bookish idle (adjusting the book stack,
   glancing at pages) vs neutral academy stance? Any lore beyond the sheet notes?
 
+## Seedant (v1 draft lane kicked off; sheet 2026-10-09)
+- S1 Movement: ANSWERED 2026-10-09 — the placeholder plan is fine (idle sway / leaf rustle /
+  arm taps / blink; walk = in-place pot hop). Knobs IDLE_* / WALK_* in seedant_build.py.
+- S2 Game height: -> the SIZE LINEUP (all creatures in a row, queued); set relative sizes
+  from it.
+- S3 Pot texture: "subtle texture / scratches / worn edges" — v1 does worn lighter rim
+  edges + tonal jitter; painted scratch strokes on the wall are a follow-up if wanted.
+- S4 Skins: ANSWERED 2026-10-09 — alternate colours LATER; default only.
+- S5 Pot shape: ANSWERED 2026-10-09 — ROUND (POT_DEPTH 1.0). Was: the sheet's side view draws the pot 0.70-0.76 of its front width, so v1 builds
+  an OVAL pot (POT_DEPTH 0.74). Real pots are round: keep the oval (matches the sheet) or go
+  round (POT_DEPTH 1.0)?
+
+## Shadowbun (v1 draft lane kicked off; sheet 2026-10-09)
+- B1 Movement: ANSWERED 2026-10-09 — FLOATY WADDLE walk (side-to-side rocking, soft hang time);
+  idle as planned. Knobs WALK_* in shadowbun_build.py.
+- B2 Eyes: ANSWERED — two, one on each side of the head.
+- B3 Glow: ANSWERED — a small glow on the eye + grin (low tier, <= 2.0 cap).
+- B5 Front: ANSWERED — no straight-on front on the sheet; reads as a THICK bunny (front width
+  from the true-ortho back view).
+- B4 Size vs the roster: -> the SIZE LINEUP (queued).
+
+## Size lineup (DELIVERED 2026-10-09: renders/lineup/, design/size-table.json; rerun improve/lineup_run.ps1)
+- Z2 Targets SET 2026-10-09 for 12 units (design/size-table.json). Three now outgrow one cell:
+  magmoo 8 ft tall -> ~26 ft 10 in long; barkling 8 ft -> ~10 ft 11 in wide; petalfang 4 ft ->
+  ~8 ft 11 in wide (cell 1.9 m / 6 ft 3 in; 2x2 boss cell 3.8 m / 12 ft 6 in). Multi-cell units,
+  a different height measure (magmoo's head?), or tighter poses? Then the in-game apply lane.
+- Z1 Relative sizes: today's in-game heights are NOT designed - they fall out of the cell fit
+  (15 of 22 units at ~1.80 m incl. duskmaw / geode / mortis / firefly / seedant / shadowbun; 6
+  footprint-bound units 0.47-1.58 m; only eldroot sized by role at 4.55 m). Set target_height_m
+  per unit in design/size-table.json and rerun -> lineup_target.png. Applying targets in-game is
+  a per-unit delivery change (the .import root_scale or roster model_scale) - a follow-up lane.
+- S6 Seedant arms: ANSWERED 2026-10-09 — PLUMPER (x1.45 wide, ARM_AZ 44). Was: the sheet's front and side views place the arms in non-overlapping spots;
+  v1.2 follows the front (side view: near arm ~0.4 forward of the drawing). Plumper arms =
+  wider ARM_PATH + ARM_AZ ~44 (slightly more side offset). Keep, or try plumper?
+
 ## Game-side (Conquest; all behind debug keys, defaults live)
 - G1 F7 look verdict: warm vs warm-neutralLUT vs new (WorldLook presets).
 - G2 F8 feel verdict: free preset speeds now 2.2/5.0 m/s (artist bumped); camera

@@ -1410,3 +1410,197 @@ kept, is a CREASE/protrusion along the marked line (below the ear
 sweeping forward under the chin) — the jaw edge sticks out / folds,
 never a painted band. (Scope: Lyra now; candidate house rule for
 the next face builds.)
+
+## 2026-10-09 — NEW UNIT: Seedant (artist reference sheet) — first run of the kickoff process
+
+Reference saved: design/reference/seedant-character-sheet.webp — "SEEDANT /
+CHARACTER REFERENCE", three views (front / back / side) + four detail panels
+(face, leaf, leaf arm, pot) + a five-chip palette. Intake (measured, not
+eyeballed): design/reference/seedant/intake.json + intake_overlay.png.
+
+Artist (verbatim): "create the model for this reference it should follow
+the pattern and design done for the firefly jet creature we previously did"
++ "this should be a process we can kick off rather than you doing
+everything directly".
+
+Binding readings:
+(1) PROCESS: new from-scratch units are now KICKED OFF, not hand-built by
+the orchestrator: skill .claude/skills/conquest-new-unit (intake ->
+scaffold -> spec -> one background build lane -> gate + show). Tools:
+improve/sheet_intake.py, improve/new_unit_scaffold.py,
+improve/templates/new_unit/ (runner/render/clips/compose/bake-diff
+templates, BUILD_CONTRACT.md, lane_brief.md.tmpl). Seedant is its first run.
+(2) SEEDANT = a new unit "seedant" built to the FIREFLY PATTERN (SDF organic
+body + closed parametric parts, sheet units 1 = 100 px, palette regions,
+bake, rig, glb, digest twins). Sheet transcription:
+- A small green plant creature sitting IN a terracotta pot; whole unit
+  ~5.0 units tall (pot base y 746 -> red leaf tips y ~246), pot ~3.6 wide.
+- BODY: one soft green gumdrop/bean (head + body one piece, no neck), top
+  of the head ~y 340 front, filling the pot mouth and sinking into it.
+  Smooth, puffy, organic; no hard edges.
+- FACE (face panel: "simple, cute expression / round eyes / small mouth"):
+  two tall glossy black oval eyes with a white highlight dot (top), set
+  close; a small open smile with a pink tongue below and between them.
+- SPROUT CURL: a short stem rising from the top of the head curling into a
+  fiddlehead spiral (darker green outline).
+- LEAF ARMS (panel: "rounded shape / curl at tip / smooth gradient shading /
+  organic plant look"): two plump leaf-lobe arms from the shoulders that
+  DRAPE OVER the pot rim and hang down the outside wall; each tip carries a
+  darker-green spiral curl. They rest ON the rim — never through it.
+- RED LEAVES (panel: "plant-like leaves / subtle veins / tapered shape / red
+  accent"): two tall tapered leaves rising from the back-sides of the body
+  behind the head, splayed outward in a V (front), leaning slightly back
+  (side); a midrib + side veins, slightly folded along the midrib.
+- POT (panel: "terracotta clay pot / simple shape / subtle texture,
+  scratches / worn edges"): tapered flower pot with the classic thick rolled
+  rim band (rim y ~480-585 front), visible rim thickness, slightly worn
+  lighter edges.
+- PALETTE (pixel-sampled chips): body green 174,205,70; leaf red 233,69,65;
+  terracotta 154,77,46; dark terracotta 108,66,50; pale green highlight
+  201,222,148. Curl / outline green and eye black sampled off the drawing.
+- No glow on the sheet: _GLOW all zero (Varden pattern).
+- Tier REGULAR window [8000, 22000] (a line unit like the firefly; expected
+  to land low in the window — simple forms).
+- MOVEMENT not given: idle + walk ship as PLACEHOLDERS (gentle sway / leaf
+  rustle / blink; an in-place pot hop) until the artist answers S1.
+
+## 2026-10-09 — NEW UNIT: Shadowbun (artist reference sheet) + Seedant answers + size lineup
+
+Reference saved: design/reference/shadowbun-character-sheet.webp — "SHADOWBUN /
+CHARACTER REFERENCE", three views + four detail panels (face, ear, tail, belly)
++ a five-chip palette. Intake: design/reference/shadowbun/intake.json +
+intake_overlay.png (run with --ortho-views back,side — see (1)).
+
+Artist (verbatim): "intake this as well, ceate 3d model as well for it.
+alternate colors can be done at a later time, that animation is fine as
+well, sizing would help to see our all conquest creatures in a line so can
+compare and give reference to size"
+
+Binding readings:
+(1) SHADOWBUN = new unit "shadowbun" through the kickoff process (firefly
+pattern). The sheet's "FRONT" is drawn THREE-QUARTER (face in profile to
+image-left, belly patch to one side, tail showing): build from the true
+orthos BACK + SIDE, use the front only as a 3/4 check. Sheet transcription:
+- A plump black shadow-bunny ~6.0 units tall: one tall EGG/PEAR body with no
+  neck (the head is the narrow top of the egg), a slightly protruding rounded
+  muzzle at the front-top. Fluffy FUR read: fringed / tufted silhouette edges
+  everywhere on the black fur (body, arms, legs).
+- FACE (panel: "simple, cute expression / round eye shape / soft,
+  cloud-like mouth / minimal features"): a round WHITE eye dot on the side of
+  the head (every view shows one: rabbit-style lateral eyes, one per side —
+  question B2); a white "cloud-like" toothy GRIN: a row of soft rounded white
+  teeth-bumps along the muzzle's front-lower edge.
+- EARS (panel: "leaf-like shape / soft, fluffy fur / slightly tapered tips /
+  light gray-lavender"): two upright leaf-shaped ears, jagged fur edges,
+  slight V, accent lavender.
+- BELLY (panel: "round belly patch / scalloped top edge / smooth, painterly
+  shading / light gray-lavender"): a large round lighter-lavender patch on
+  the front of the egg, its top edge SCALLOPED (cloud bumps) with a thin
+  pale highlight line along the scallops.
+- ARMS: short thick fluffy black arms hanging close at the sides, tufted ends.
+- LEGS: short stubby legs, big rounded feet with toe clumps.
+- TAIL (panel: "large, fluffy tail / cloud-like shape / soft, rounded fur /
+  light gray-lavender"): a very large cloud-puff tail low on the back (about
+  a third of the body height), lighter lavender, made of rounded fur clumps.
+- PALETTE (pixel-sampled chips; the sheet's labels sit one row off their
+  chips — mapped by colour): main fur 32,30,28 (drawn fur samples 31-35);
+  accent / ears 100,87,97; belly + tail 148,133,143 (shaded 127,112,124);
+  eye + mouth 242,243,240; shadows / outline 108,108,108.
+- Fur detail approach (lane decides, reports): silhouette tufts in the SDF
+  (directional tuft field / clump cones) + fur strokes carried by the baked
+  normal map from the SDF high; ears and tail as rounded clump unions.
+- Glow: none by default (question B3). Tier REGULAR [8000, 22000].
+- Clips PLACEHOLDER: idle (breathing, ear twitch, tail fluff, arm sway) +
+  walk (in-place bunny hop on the stubby legs) — question B1.
+(2) SEEDANT answers: S4 skins -> LATER (default only for now); S1 the
+placeholder clips described (sway / leaf rustle / arm taps / blink + pot
+hop) are FINE (approved as the plan; renders still to be seen).
+(3) SIZE LINEUP (new deliverable, queued as a lane when a lane slot frees —
+WIP is 2 with seedant + shadowbun in flight): one render of EVERY Conquest
+creature standing in a row on a shared floor with a height ruler, at a
+common scale, so the artist can compare and set relative sizes. Reusable:
+rerunnable whenever a unit lands. Answers S2-type size questions for all
+units at once.
+
+## 2026-10-09 — Shadowbun answers (artist verbatim, lane in flight)
+
+"floaty waddle,2 eyes one on each side, can add a small glow, this reference
+didnt give a full front reference but should be like a thick bunny"
+
+Binding readings (delivered to the v1 lane by resume):
+(1) B1 WALK = a FLOATY WADDLE: side-to-side rocking steps on the stubby legs
+with soft hang time (the body lifts a little and drifts down between steps,
+eased landings, no hard impacts); ears + tail trail softly. Replaces the
+placeholder bunny hop. Idle stays as planned.
+(2) B2 EYES = TWO, one on each side of the head (lateral, rabbit-style).
+(3) B3 GLOW = SMALL: the white eye + grin get a faint emission (low tier,
+well under the 2.0 phone cap); everything else stays at zero glow.
+(4) FRONT = a THICK BUNNY: the sheet has no straight-on front. The BACK view
+is a true ortho, so it gives the front's width (mirror it). The body must
+read full, round and wide from the front — never slimmed toward the 3/4
+drawing.
+
+## 2026-10-09 — Shadowbun v1.1 verdict (artist verbatim + markup)
+
+"for shadowbun only fix is to  move the eyes slightly more inward closer to
+the red outline shown"
+Markup saved: design/reference/shadowbun-v11-eye-annotation.png (front
+render; red circles inside each eye, ~0.67 of the current eye spacing, same
+height).
+Binding reading: v1.1 is otherwise ACCEPTED as-is (incl. the residual arm
+nubs) — the ONLY change is eye placement: EYE_AZ 58 -> 34 deg (measured on
+preview renders to land on the marked spacing), EYE_Z unchanged. Parameter
+tweak: orchestrator edit + runner rerun, no lane.
+
+## 2026-10-09 — Gates: Seedant v1.2 + size lineup delivered
+
+- SEEDANT v1.2: lane rebuilt the arms as flattened leaf-lobes (v1.1); the
+  orchestrator gate found the lobe's ellipsoid tiling visible as a quilted
+  pattern -> ARM_K 0.03 -> 0.07 (previews 0.03 / 0.07 / 0.11), which swelled
+  the lobe 0.03 into the pot (clearance -0.025) -> ARM_STANDOFF 0.03 restores
+  +0.0038. Twins byte-identical incl bakes.
+- SIZE LINEUP: improve/lineup_render.py + lineup_run.ps1 (22 units, 18 s),
+  renders/lineup/, design/size-table.json (artist edits target_height_m).
+  Measured: in-game scale = the cell-fit formula for all 19 delivered units
+  (Conquest .import root_scale; no roster model_scale set). Finding: sizes
+  are an artefact of the cell fit, not design (see OPEN-QUESTIONS Z1).
+
+## 2026-10-09 — Size targets (artist verbatim) + Seedant round pot / plumper arms
+
+"round pot and plumper" (Seedant) and the size list:
+"magmoo 8 feet / petalfang 4 feet / barkling 8 feet / blightcap 2 feet /
+vamp warrior 6 feet 2 / firesprite 4 and half feet / varden 6 feet 4 / lyra
+5 foot 8 / shadow assassin 6 feet / mortis 6 feet 2 / seedant 3 and half
+feet / vineweave 5 ft 6 inches"
+
+Binding readings:
+(1) SIZE TARGETS written to design/size-table.json target_height_m (feet ->
+metres: 2.438 / 1.219 / 2.438 / 0.610 / 1.880 / 1.372 / 1.930 / 1.727 /
+1.829 / 1.880 / 1.067 / 1.676). Units not listed keep today's size. The
+lineup now labels in FEET + INCHES (lineup_render.py LABEL_UNITS="ft").
+(2) FOOTPRINT CONSEQUENCE (measured: footprint scales with height): at its
+target, MAGMOO is ~26 ft 10 in long (8.2 m: its rest pose lies along the
+floor), BARKLING ~10 ft 11 in wide (3.3 m) and PETALFANG ~8 ft 11 in wide
+(2.7 m). All three exceed a 1-cell unit (1.9 m); barkling + petalfang fit
+the 2x2 boss cell (3.8 m), magmoo fits no current cell. Artist decision:
+multi-cell units, or measure "8 feet" another way (e.g. magmoo's arched-up
+head height), or a tighter pose. Everything else stays inside one cell.
+(3) Applying targets IN GAME is a per-unit delivery change (Conquest
+.import root_scale / roster model_scale) — not started; awaits (2).
+(4) SEEDANT v1.3: POT_DEPTH 0.74 -> 1.0 (round); ARM_AZ 50 -> 44 with the
+lobes x1.45 wide / x1.18 thick (preview A/B vs the sheet front);
+ARM_STANDOFF 0.03 -> 0.062 (the thicker lobes measured -0.032 into the
+rim at 0.03; previews 0.062 -> +0.0055).
+
+## 2026-10-09 — SDF kit zero-value fix (artist: "fix that sdf issue ... from worktree path")
+
+Run as an isolated worktree lane, then brought back as code only. The patch
+(4 files, +22/-5) went into main: magmoo_sdf.polygonise pushes |F| <
+NODE_EPS * step (0.005, derived: >= 10 float32 ulps of crossing clearance at
+the worst measured slope L/step = 412 /m) off zero on a copy. All runners
+now resolve $P from their own folder (worktree-safe). Worktree evidence:
+firefly / firesprite / magmoo checks unchanged, twins identical (firesprite
+except bake_normal within the gate), retopo p99 within noise, bbox
+unchanged. firesprite NODE_EPS 0.02 KEPT (removing it was worse on 5/8
+parts). Outputs regenerated in MAIN by rerunning the runners (the worktree
+outputs embed worktree paths); seedant + shadowbun re-pinned too.

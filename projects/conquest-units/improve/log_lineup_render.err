@@ -1,0 +1,4 @@
+C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\improve\lineup_render.py:146: DeprecationWarning: 'World.use_nodes' is expected to be removed in Blender 6.0
+  w.use_nodes = True
+C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\improve\lineup_render.py:157: DeprecationWarning: 'Material.use_nodes' is expected to be removed in Blender 6.0
+  m = bpy.data.materials.new(name); m.use_nodes = True
