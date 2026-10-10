@@ -1604,3 +1604,21 @@ except bake_normal within the gate), retopo p99 within noise, bbox
 unchanged. firesprite NODE_EPS 0.02 KEPT (removing it was worse on 5/8
 parts). Outputs regenerated in MAIN by rerunning the runners (the worktree
 outputs embed worktree paths); seedant + shadowbun re-pinned too.
+
+## 2026-10-09 — Conquest: true sizes + import the missing units (artist verbatim)
+
+"yes can remove that worktree, conquest now shouldnt resize check the model
+sizes compared to what we have -- have an agent do it / and yes commit our
+changes / and impot the new models into conquest" + "yes correct sizes to
+what I specified and import the missing ones in as well"
+
+Binding readings: Conquest already shows units at design height (its commit
+e8974f2: roster model_scale, fixed 2 m grid, wide units overhang one tile,
+multi-cell only for giants). A Conquest lane (a) measures every unit
+in-engine against design/size-table.json and CORRECTS every artist-
+specified unit to its target via model_scale. MAGMOO goes to 8 ft (no
+longer held, ~8.5 m nose-to-tail, one tile, overhangs). (b) Imports EVERY
+forge unit not yet in the game: seedant (3'6"), shadowbun (1.80 m, artist
+size open), shadow_assassin (6') as compendium placeholders per the
+import-wave precedent. Answers Z2: no multi-cell for magmoo / barkling /
+petalfang. They overhang.

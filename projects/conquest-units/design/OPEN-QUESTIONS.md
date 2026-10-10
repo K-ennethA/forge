@@ -89,7 +89,8 @@ docs/lane-conventions.md. Per-unit facts: improve/<unit>_STATE.md.
 - B4 Size vs the roster: -> the SIZE LINEUP (queued).
 
 ## Size lineup (DELIVERED 2026-10-09: renders/lineup/, design/size-table.json; rerun improve/lineup_run.ps1)
-- Z2 Targets SET 2026-10-09 for 12 units (design/size-table.json). Three now outgrow one cell:
+- Z2 ANSWERED 2026-10-09: sizes go in AS SPECIFIED (magmoo 8 ft included); wide units overhang one
+  tile (Conquest e8974f2 law), no multi-cell. Was: Targets SET 2026-10-09 for 12 units (design/size-table.json). Three now outgrow one cell:
   magmoo 8 ft tall -> ~26 ft 10 in long; barkling 8 ft -> ~10 ft 11 in wide; petalfang 4 ft ->
   ~8 ft 11 in wide (cell 1.9 m / 6 ft 3 in; 2x2 boss cell 3.8 m / 12 ft 6 in). Multi-cell units,
   a different height measure (magmoo's head?), or tighter poses? Then the in-game apply lane.
