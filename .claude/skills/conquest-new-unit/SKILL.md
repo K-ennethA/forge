@@ -50,8 +50,9 @@ overwrites without --force).
   (body plan, parts, palette sampled values, detail-panel notes), tier + window, every
   deviation the artist asked for, and what ships as PLACEHOLDER (usually the clips: movement
   intent is asked, never guessed — idle + walk placeholders keep clip_names green).
-- Add a `## <Unit>` section to `design/OPEN-QUESTIONS.md` with numbered questions, each with
-  its live default and knob (movement intent, tier/height in the game, any sheet ambiguity).
+- Add a `## <Unit>` section to `design/OPEN-QUESTIONS.md` with ONLY movement intent and in-game
+  height (artist rule 2026-10-09: the SHEET is the spec - never ask about or add anything the
+  sheet does not draw: weapons, wings, glow, extra parts; report deviations from the sheet instead).
 - Fill the STATE skeleton's spec line.
 
 ## 4. Dispatch ONE lane (background)

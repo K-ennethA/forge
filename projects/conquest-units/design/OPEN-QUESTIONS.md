@@ -103,17 +103,16 @@ docs/lane-conventions.md. Per-unit facts: improve/<unit>_STATE.md.
   v1.2 follows the front (side view: near arm ~0.4 forward of the drawing). Plumper arms =
   wider ARM_PATH + ARM_AZ ~44 (slightly more side offset). Keep, or try plumper?
 
-## Bombee / Aquaoct / Canine Bat / Raven Rogue (sheets 2026-10-09; v1 lanes queued 2 at a time)
+## Bombee / Aquaoct / Canine Bat / Raven Rogue (sheets 2026-10-09)
+(Artist rule 2026-10-09: the SHEET is the spec - nothing not drawn is asked or added; only movement + height
+are asked, deviations from the sheet are reported.)
 - N1 Movement intent per unit (defaults are PLACEHOLDER clips): Bombee hover + hover-drift;
   Aquaoct tentacle sway + shuffle-glide; Canine Bat idle + 4-beat trot; Raven Rogue cape-ruffle
   + hop-strut.
-- N2 Sizes: none given; natural sheet scale until set in design/size-table.json (feet).
-- C1 Canine Bat: no wings on the sheet. Ears-only bat (default), or add wings?
-- R1 Raven Rogue "rogue": a weapon / dagger, or unarmed (default; weapons only in combat clips)?
+- N2 ANSWERED 2026-10-09: bombee 3 ft (floats), aquaoct / raven / pangolin 3 ft, canine bat 3'5", mole 2'6".
 
 ## Pangolin Knight / Shadow Mole (sheets 2026-10-09)
-- P1 Pangolin "knight": a weapon / shield, or unarmed (default)?
-- M1 Shadow Mole: the pink stalks / claws glow faintly in-game, or none (default)?
+- M1 ANSWERED 2026-10-09: yes glow (faint pink tiers).
 - N3 Movement for both (placeholder clips) + sizes (size table).
 
 ## Game-side (Conquest; all behind debug keys, defaults live)
