@@ -1,0 +1,15 @@
+{
+ "unit": "shadowbun",
+ "skin": "default",
+ "description": "Shadowbun default look, PIXEL-SAMPLED from design/reference/shadowbun-character-sheet.webp (intake.json swatch chips + direct samples of the drawn surfaces; the sheet's labels sit one row off their chips, mapped by colour per the 2026-10-09 binding reading). Black fur, accent gray-lavender ears, lighter lavender belly + tail, white eye dots + cloud grin. Glow (artist B3, 2026-10-09 'can add a small glow'): ONLY the eye + grin emit, a low tier (emission_scale 0.4, value well under the 2.0 phone cap); every other region is zero Glow. Alternate colours: later (artist).",
+ "regions": {
+  "fur":        {"rgb": [32, 30, 28],    "note": "main fur (black): chip 32,30,28; drawn fur samples 31-35 (side body 33,31,31; back 34,32,33; side arm 34,32,33)"},
+  "ear":        {"rgb": [100, 87, 97],   "note": "accent fur (gray-lavender) chip 100,87,97; drawn ear samples p25 100-102,87-88,97-99 / median 114-119,99-103,111-116 (lit)"},
+  "belly":      {"rgb": [148, 133, 143], "note": "belly / tail (lighter lavender) chip 148,133,143; drawn belly samples median 123-126,107-110,119-122 (shaded)"},
+  "belly_line": {"rgb": [239, 231, 235], "note": "the thin pale line along the scalloped top edge of the belly patch: brightest 3% of the drawn belly-top pixels, side 239,230,234 / front 239,232,235"},
+  "tail":       {"rgb": [148, 133, 143], "note": "belly / tail (lighter lavender) chip 148,133,143 (binding reading: tail = lighter lavender); drawn tail samples median 99,86,96-97 (shaded painterly strokes)"},
+  "eye":        {"rgb": [242, 243, 240], "emission": [242, 243, 240], "emission_scale": 0.4, "note": "eye dot (white) chip 242,243,240; drawn eye 243,244,241. Small glow (B3)"},
+  "mouth":      {"rgb": [242, 243, 240], "emission": [242, 243, 240], "emission_scale": 0.4, "note": "cloud grin tooth-bumps (white) chip 242,243,240; drawn teeth 247,246,244. Small glow (B3)"}
+ },
+ "material": {"roughness": 0.85, "emission_strength": 1.0, "alpha": 1.0}
+}

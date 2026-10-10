@@ -1,0 +1,552 @@
+{
+ "unit": "shadowbun",
+ "source": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\improved\\shadowbun.blend",
+ "fps": 24,
+ "weights": {
+  "max_influences": 4,
+  "unweighted": 0,
+  "sum_dev_max": 2.220446049250313e-16,
+  "per_bone_dominant": {
+   "hips": 696,
+   "body": 1689,
+   "head": 2149,
+   "arm.L.0": 116,
+   "arm.L.1": 330,
+   "leg.L.0": 293,
+   "leg.L.1": 353,
+   "arm.R.0": 83,
+   "arm.R.1": 319,
+   "leg.R.0": 295,
+   "leg.R.1": 343,
+   "tail.0": 665,
+   "tail.1": 1043,
+   "ear.L.0": 168,
+   "ear.L.1": 265,
+   "ear.R.0": 168,
+   "ear.R.1": 265
+  },
+  "limbs": {
+   "arm.L": {
+    "length": 1.5884,
+    "dominant_verts": 517
+   },
+   "arm.R": {
+    "length": 1.5884,
+    "dominant_verts": 462
+   }
+  },
+  "rule": "shell: soft SDF ownership (tau 0.06) between the egg, arms, legs, tail; the egg share runs hips (below HIP_BAND) -> body -> head (above HEAD_BAND) by wide smoothsteps (no seam at the head band); arms / tail: rigkit.vine_weights along their spines (roots blend into body / hips); legs: foot below FOOT_BAND, thigh, top blending into hips; ears: vine_weights from the head surface; eyes + grin decals rigid on head"
+ },
+ "clips": {
+  "idle": {
+   "frames": [
+    1,
+    97
+   ],
+   "period_frames": 96,
+   "seconds": 4.0,
+   "cyclic": true,
+   "seam_main_mm": 0.0,
+   "root_offset_max": 0.0,
+   "clearance_min_z": -0.0,
+   "sole_min_z": {
+    "L": [
+     0.0,
+     0.0
+    ],
+    "R": [
+     -0.0,
+     -0.0
+    ]
+   },
+   "hips_roll_deg": [
+    0.0,
+    0.0
+   ],
+   "body_lift": [
+    0.0,
+    0.0
+   ],
+   "floor_guard_lift": {
+    "frames_lifted": 0,
+    "max": 0.0
+   },
+   "ear_tip_L_p2p_xyz": [
+    0.2463,
+    0.349,
+    0.091
+   ],
+   "tail_tip_p2p_xyz": [
+    0.288,
+    0.0624,
+    0.0807
+   ]
+  },
+  "walk": {
+   "frames": [
+    1,
+    49
+   ],
+   "period_frames": 48,
+   "seconds": 2.0,
+   "cyclic": true,
+   "seam_main_mm": 0.0,
+   "root_offset_max": 0.0,
+   "clearance_min_z": -0.0,
+   "sole_min_z": {
+    "L": [
+     0.0,
+     0.1749
+    ],
+    "R": [
+     -0.0,
+     0.1754
+    ]
+   },
+   "hips_roll_deg": [
+    -7.0,
+    7.0
+   ],
+   "body_lift": [
+    0.0,
+    0.1152
+   ],
+   "floor_guard_lift": {
+    "frames_lifted": 23,
+    "max": 0.00086
+   },
+   "ear_tip_L_p2p_xyz": [
+    0.8797,
+    0.2884,
+    0.2575
+   ],
+   "tail_tip_p2p_xyz": [
+    0.4573,
+    0.0375,
+    0.207
+   ]
+  }
+ },
+ "waddle": {
+  "roll_deg": 7.0,
+  "pivot": "the stance foot's outer sole edge (X +-1.014)",
+  "float_lift": 0.06,
+  "counter_roll_share": 0.35,
+  "seconds": 1.0
+ },
+ "bones": [
+  {
+   "name": "root",
+   "parent": null,
+   "deform": false,
+   "head": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "tail": [
+    0.0,
+    0.0,
+    0.4
+   ]
+  },
+  {
+   "name": "hips",
+   "parent": "root",
+   "deform": true,
+   "head": [
+    0.0242,
+    -0.4794,
+    0.8477
+   ],
+   "tail": [
+    0.0242,
+    -0.5471,
+    1.2477
+   ]
+  },
+  {
+   "name": "body",
+   "parent": "hips",
+   "deform": true,
+   "head": [
+    0.0242,
+    -0.5471,
+    1.2477
+   ],
+   "tail": [
+    0.0242,
+    -0.6839,
+    3.4477
+   ]
+  },
+  {
+   "name": "head",
+   "parent": "body",
+   "deform": true,
+   "head": [
+    0.0242,
+    -0.6839,
+    3.4477
+   ],
+   "tail": [
+    0.0242,
+    -0.7169,
+    4.9477
+   ]
+  },
+  {
+   "name": "ear.L.0",
+   "parent": "head",
+   "deform": true,
+   "head": [
+    0.2213,
+    -0.6514,
+    4.7981
+   ],
+   "tail": [
+    0.3661,
+    -0.4824,
+    5.3715
+   ]
+  },
+  {
+   "name": "ear.L.1",
+   "parent": "ear.L.0",
+   "deform": true,
+   "head": [
+    0.3661,
+    -0.4824,
+    5.3715
+   ],
+   "tail": [
+    0.5142,
+    -0.3702,
+    5.9577
+   ]
+  },
+  {
+   "name": "ear.R.0",
+   "parent": "head",
+   "deform": true,
+   "head": [
+    -0.1728,
+    -0.6515,
+    4.7997
+   ],
+   "tail": [
+    -0.3177,
+    -0.4824,
+    5.3723
+   ]
+  },
+  {
+   "name": "ear.R.1",
+   "parent": "ear.R.0",
+   "deform": true,
+   "head": [
+    -0.3177,
+    -0.4824,
+    5.3723
+   ],
+   "tail": [
+    -0.4658,
+    -0.3702,
+    5.9577
+   ]
+  },
+  {
+   "name": "arm.L.0",
+   "parent": "body",
+   "deform": true,
+   "head": [
+    0.9542,
+    -0.6702,
+    3.5477
+   ],
+   "tail": [
+    1.2432,
+    -0.6526,
+    2.8087
+   ]
+  },
+  {
+   "name": "arm.L.1",
+   "parent": "arm.L.0",
+   "deform": true,
+   "head": [
+    1.2432,
+    -0.6526,
+    2.8087
+   ],
+   "tail": [
+    1.4242,
+    -0.6902,
+    1.7277
+   ]
+  },
+  {
+   "name": "arm.R.0",
+   "parent": "body",
+   "deform": true,
+   "head": [
+    -0.9058,
+    -0.6702,
+    3.5477
+   ],
+   "tail": [
+    -1.1948,
+    -0.6526,
+    2.8087
+   ]
+  },
+  {
+   "name": "arm.R.1",
+   "parent": "arm.R.0",
+   "deform": true,
+   "head": [
+    -1.1948,
+    -0.6526,
+    2.8087
+   ],
+   "tail": [
+    -1.3758,
+    -0.6902,
+    1.7277
+   ]
+  },
+  {
+   "name": "leg.L.0",
+   "parent": "hips",
+   "deform": true,
+   "head": [
+    0.6842,
+    -0.6702,
+    1.0477
+   ],
+   "tail": [
+    0.7242,
+    -0.7102,
+    0.4777
+   ]
+  },
+  {
+   "name": "leg.L.1",
+   "parent": "leg.L.0",
+   "deform": true,
+   "head": [
+    0.7242,
+    -0.7102,
+    0.4777
+   ],
+   "tail": [
+    0.7242,
+    -1.5502,
+    0.2177
+   ]
+  },
+  {
+   "name": "leg.R.0",
+   "parent": "hips",
+   "deform": true,
+   "head": [
+    -0.6358,
+    -0.6702,
+    1.0477
+   ],
+   "tail": [
+    -0.6758,
+    -0.7102,
+    0.4777
+   ]
+  },
+  {
+   "name": "leg.R.1",
+   "parent": "leg.R.0",
+   "deform": true,
+   "head": [
+    -0.6758,
+    -0.7102,
+    0.4777
+   ],
+   "tail": [
+    -0.6758,
+    -1.5502,
+    0.2177
+   ]
+  },
+  {
+   "name": "tail.0",
+   "parent": "hips",
+   "deform": true,
+   "head": [
+    0.0242,
+    0.2698,
+    1.8977
+   ],
+   "tail": [
+    0.0242,
+    0.9698,
+    1.9177
+   ]
+  },
+  {
+   "name": "tail.1",
+   "parent": "tail.0",
+   "deform": true,
+   "head": [
+    0.0242,
+    0.9698,
+    1.9177
+   ],
+   "tail": [
+    0.0242,
+    1.8298,
+    1.9477
+   ]
+  }
+ ],
+ "bone_count": 18,
+ "deform_bone_count": 17,
+ "digest": {
+  "parts": {
+   "bake_normal": "c4645226c8c3a548",
+   "bake_ao": "4b268e2982ca0cab",
+   "geometry_colour_uv": "955d4eb8b227f123",
+   "weights": "79ae952332bc530a",
+   "keys": "28d70626fa8b6d5a",
+   "clip_samples": "3da3b467bddf238a"
+  },
+  "combined": "3c15f47884e74d34"
+ },
+ "glb": {
+  "path": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\rigged\\shadowbun.glb",
+  "bytes": 6256480,
+  "seconds": 0.7,
+  "carries": {
+   "materials": [
+    {
+     "name": "shadowbun_body",
+     "alphaMode": "OPAQUE",
+     "doubleSided": false,
+     "textures": [
+      "baseColorTexture",
+      "normalTexture"
+     ]
+    }
+   ],
+   "primitives": [
+    {
+     "mesh": "shadowbun",
+     "material": "shadowbun_body",
+     "attributes": [
+      "COLOR_0",
+      "COLOR_1",
+      "JOINTS_0",
+      "NORMAL",
+      "POSITION",
+      "TEXCOORD_0",
+      "WEIGHTS_0",
+      "_GLOW"
+     ]
+    }
+   ],
+   "animations": [
+    "idle",
+    "walk"
+   ],
+   "skins": 1,
+   "joints": 18
+  },
+  "structure": "armature identity + skinned 'shadowbun' (one opaque body material); natural scale; report-only cell fit 0.30213"
+ },
+ "skins": {
+  "default": {
+   "file": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\rigged\\shadowbun.blend",
+   "palette": {
+    "fur": {
+     "rgb": [
+      32,
+      30,
+      28
+     ]
+    },
+    "ear": {
+     "rgb": [
+      100,
+      87,
+      97
+     ]
+    },
+    "belly": {
+     "rgb": [
+      148,
+      133,
+      143
+     ]
+    },
+    "belly_line": {
+     "rgb": [
+      239,
+      231,
+      235
+     ]
+    },
+    "tail": {
+     "rgb": [
+      148,
+      133,
+      143
+     ]
+    },
+    "eye": {
+     "rgb": [
+      242,
+      243,
+      240
+     ],
+     "emission": [
+      242,
+      243,
+      240
+     ],
+     "emission_scale": 0.4
+    },
+    "mouth": {
+     "rgb": [
+      242,
+      243,
+      240
+     ],
+     "emission": [
+      242,
+      243,
+      240
+     ],
+     "emission_scale": 0.4
+    }
+   },
+   "glow": {
+    "skin": "default",
+    "glowing_regions": [
+     "eye",
+     "mouth"
+    ],
+    "emission_scale": {
+     "eye": 0.4,
+     "mouth": 0.4
+    },
+    "peak_linear_x_strength": {
+     "eye": 0.3585,
+     "mouth": 0.3585
+    },
+    "only_eye_mouth": true,
+    "under_phone_cap_2.0": true,
+    "low_tier_le_0.5": true
+   }
+  },
+  "rule": "default skin only (artist: alternate colours later)"
+ },
+ "improved_report": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\improved\\shadowbun.json",
+ "seconds": 31.0
+}

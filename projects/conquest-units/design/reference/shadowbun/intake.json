@@ -1,0 +1,268 @@
+{
+ "unit": "shadowbun",
+ "sheet": "design/reference/shadowbun-character-sheet.webp",
+ "size_px": [
+  1672,
+  941
+ ],
+ "background_rgb": [
+  35,
+  35,
+  35
+ ],
+ "bg_tol": 26.0,
+ "views": {
+  "front": {
+   "bbox_px": [
+    28,
+    164,
+    443,
+    776
+   ],
+   "axis_x_px": 202.0,
+   "floor_y_px": 775,
+   "height_px": 612,
+   "height_units": 6.12,
+   "width_units": 4.15,
+   "half_width_profile": {
+    "0.00": {
+     "y_px": 775,
+     "half_w_units": 0.15
+    },
+    "0.10": {
+     "y_px": 714,
+     "half_w_units": 1.07
+    },
+    "0.25": {
+     "y_px": 622,
+     "half_w_units": 2.35
+    },
+    "0.50": {
+     "y_px": 470,
+     "half_w_units": 1.82
+    },
+    "0.75": {
+     "y_px": 317,
+     "half_w_units": 0.52
+    },
+    "0.90": {
+     "y_px": 225,
+     "half_w_units": 0.64
+    }
+   },
+   "transform": "z = (775 - y_px) / 100 ; x = (x_px - 202.0) / 100"
+  },
+  "back": {
+   "bbox_px": [
+    500,
+    172,
+    771,
+    778
+   ],
+   "axis_x_px": 624.0,
+   "floor_y_px": 777,
+   "height_px": 606,
+   "height_units": 6.06,
+   "width_units": 2.71,
+   "half_width_profile": {
+    "0.00": {
+     "y_px": 777,
+     "half_w_units": 0.68
+    },
+    "0.10": {
+     "y_px": 716,
+     "half_w_units": 1.37
+    },
+    "0.25": {
+     "y_px": 626,
+     "half_w_units": 1.31
+    },
+    "0.90": {
+     "y_px": 232,
+     "half_w_units": 0.72
+    }
+   },
+   "transform": "z = (777 - y_px) / 100 ; x = (x_px - 624.0) / 100"
+  },
+  "side": {
+   "bbox_px": [
+    836,
+    168,
+    1222,
+    768
+   ],
+   "axis_x_px": 905.0,
+   "floor_y_px": 767,
+   "height_px": 600,
+   "height_units": 6.0,
+   "width_units": 3.86,
+   "half_width_profile": {
+    "0.00": {
+     "y_px": 767,
+     "half_w_units": 0.08
+    },
+    "0.10": {
+     "y_px": 707,
+     "half_w_units": 2.74
+    },
+    "0.25": {
+     "y_px": 617,
+     "half_w_units": 3.03
+    },
+    "0.50": {
+     "y_px": 468,
+     "half_w_units": 2.7
+    },
+    "0.75": {
+     "y_px": 318,
+     "half_w_units": 1.16
+    },
+    "0.90": {
+     "y_px": 228,
+     "half_w_units": 1.1
+    }
+   },
+   "transform": "z = (767 - y_px) / 100 ; x = (x_px - 905.0) / 100"
+  }
+ },
+ "ortho_frame": {
+  "views": [
+   "back",
+   "side"
+  ],
+  "width_px": 680,
+  "height_px": 680,
+  "below_floor_px": 20,
+  "crops": {
+   "front": [
+    -138,
+    115,
+    542,
+    795
+   ],
+   "back": [
+    284,
+    117,
+    964,
+    797
+   ],
+   "side": [
+    565,
+    107,
+    1245,
+    787
+   ]
+  }
+ },
+ "unnamed_extra_segments_px": [
+  [
+   1242,
+   1419
+  ]
+ ],
+ "swatches": [
+  {
+   "centre_px": [
+    1276.7,
+    757.5
+   ],
+   "rgb": [
+    32,
+    30,
+    28
+   ],
+   "diameter_px": 36,
+   "inferred_by_spacing": true
+  },
+  {
+   "centre_px": [
+    1276.7,
+    794.5
+   ],
+   "rgb": [
+    100,
+    87,
+    97
+   ],
+   "diameter_px": 36
+  },
+  {
+   "centre_px": [
+    1276.7,
+    831.5
+   ],
+   "rgb": [
+    148,
+    133,
+    143
+   ],
+   "diameter_px": 36
+  },
+  {
+   "centre_px": [
+    1276.6,
+    870.0
+   ],
+   "rgb": [
+    242,
+    243,
+    240
+   ],
+   "diameter_px": 36
+  },
+  {
+   "centre_px": [
+    1276.6,
+    906.0
+   ],
+   "rgb": [
+    108,
+    108,
+    108
+   ],
+   "diameter_px": 36
+  }
+ ],
+ "swatch_rejects_off_column": [
+  {
+   "centre_px": [
+    1329.0,
+    126.0
+   ],
+   "rgb": [
+    243,
+    244,
+    241
+   ],
+   "diameter_px": 32
+  },
+  {
+   "centre_px": [
+    1430.0,
+    758.2
+   ],
+   "rgb": [
+    30,
+    31,
+    28
+   ],
+   "diameter_px": 16
+  },
+  {
+   "centre_px": [
+    1402.8,
+    882.9
+   ],
+   "rgb": [
+    33,
+    33,
+    33
+   ],
+   "diameter_px": 12
+  }
+ ],
+ "base_frac": 0.06,
+ "axis_overrides": {},
+ "units_rule": "1 sheet unit = 100 px; per view z = (floor_y - y) / 100, x = (x - axis_x) / 100",
+ "caveat": "automatic split: VERIFY intake_overlay.png before dispatch (overlapping views or a floor shadow fuse / extend a view; rerun with --views or --bg-tol)"
+}

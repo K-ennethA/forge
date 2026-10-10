@@ -1,0 +1,387 @@
+{
+ "unit": "shadowbun",
+ "conquest_character_id": "shadowbun",
+ "source": "none: from-scratch unit (sheet design/reference/shadowbun-character-sheet.webp)",
+ "tier": "regular",
+ "tri_budget": [
+  8000,
+  22000
+ ],
+ "units": "sheet units: 1 unit = 100 px; measured off the TRUE orthos (back + side); floor z = 0 at the soles",
+ "overrides": {},
+ "sdf": {
+  "step": 0.025,
+  "grid": [
+   161,
+   175,
+   211
+  ],
+  "ops": 140,
+  "high_tris": 767300,
+  "high_verts": 383652,
+  "tufts": {
+   "arm.L": 23,
+   "arm.R": 22,
+   "leg.L": 12,
+   "leg.R": 12,
+   "torso": 28
+  },
+  "tail_bulges": 27,
+  "crumbs": {
+   "pieces": 1,
+   "dropped_verts": 0
+  },
+  "seconds": 7.3
+ },
+ "retopo": {
+  "method": "SDF marching tetrahedra (step 0.025) -> collapse decimation (deterministic)",
+  "decimated_tris": 13000,
+  "specks": {
+   "pieces": 1,
+   "dropped_verts": 0
+  },
+  "doubled_faces_removed": 0,
+  "low_to_high": {
+   "mean": 0.00127,
+   "p99": 0.00487,
+   "max": 0.00786
+  },
+  "high_to_low_sampled": {
+   "p99": 0.00395,
+   "max": 0.00955
+  },
+  "seconds": 9.3
+ },
+ "iso_cuts": {
+  "cuts": [
+   {
+    "field": "f_arm.L",
+    "tau": 0.0,
+    "edge_splits": 68,
+    "face_connects": 83
+   },
+   {
+    "field": "f_arm.R",
+    "tau": 0.0,
+    "edge_splits": 63,
+    "face_connects": 74
+   },
+   {
+    "field": "f_leg.L",
+    "tau": 0.0,
+    "edge_splits": 51,
+    "face_connects": 69
+   },
+   {
+    "field": "f_leg.R",
+    "tau": 0.0,
+    "edge_splits": 49,
+    "face_connects": 64
+   },
+   {
+    "field": "f_tail",
+    "tau": 0.0,
+    "edge_splits": 73,
+    "face_connects": 95
+   },
+   {
+    "field": "belly",
+    "tau": 0.0,
+    "edge_splits": 56,
+    "face_connects": 71
+   },
+   {
+    "field": "belly",
+    "tau": 0.032,
+    "edge_splits": 55,
+    "face_connects": 59
+   },
+   {
+    "field": "lw",
+    "tau": 0.0,
+    "edge_splits": 9,
+    "face_connects": 8
+   }
+  ],
+  "seconds": 3.9,
+  "shell_tris_after_cuts": 13848
+ },
+ "centre_shift": [
+  -0.024206,
+  1.230195,
+  0.002285
+ ],
+ "glow": {
+  "skin": "default",
+  "glowing_regions": [
+   "eye",
+   "mouth"
+  ],
+  "emission_scale": {
+   "eye": 0.4,
+   "mouth": 0.4
+  },
+  "peak_linear_x_strength": {
+   "eye": 0.3585,
+   "mouth": 0.3585
+  },
+  "only_eye_mouth": true,
+  "under_phone_cap_2.0": true,
+  "low_tier_le_0.5": true
+ },
+ "regions_faces": {
+  "shadowbun": {
+   "fur": 9397,
+   "ear": 1080,
+   "belly": 702,
+   "belly_line": 102,
+   "tail": 3647,
+   "mouth": 1050,
+   "eye": 360
+  }
+ },
+ "regions_area_share": {
+  "fur": 0.6106,
+  "ear": 0.0466,
+  "belly": 0.0782,
+  "belly_line": 0.002,
+  "tail": 0.2431,
+  "mouth": 0.0152,
+  "eye": 0.0043
+ },
+ "facing": {
+  "rule": "head centre (z 4.40 on the egg axis) -> muzzle tip on the midline",
+  "anchor": [
+   0.0242,
+   -0.8035,
+   4.3977
+  ],
+  "landmark": [
+   0.0242,
+   -1.7602,
+   4.0777
+  ],
+  "angle_from_minusY_deg": 0.0
+ },
+ "face": {
+  "eye.L": {
+   "surface": [
+    0.46389999985694885,
+    -0.23770000040531158,
+    4.400000095367432
+   ],
+   "normal": [
+    0.5398,
+    -0.8282,
+    0.1509
+   ]
+  },
+  "eye.R": {
+   "surface": [
+    -0.46459999680519104,
+    -0.23880000412464142,
+    4.400000095367432
+   ],
+   "normal": [
+    -0.5123,
+    -0.841,
+    0.174
+   ]
+  }
+ },
+ "tris": {
+  "total": 18400,
+  "shell": 13848,
+  "shell_before_cuts": 13000,
+  "eyes": 640,
+  "grin_teeth": 1800,
+  "ears": 2112,
+  "per_part": {
+   "eye.L": 320,
+   "eye.R": 320,
+   "tooth.0.C": 120,
+   "tooth.1.L": 120,
+   "tooth.1.R": 120,
+   "tooth.2.L": 120,
+   "tooth.2.R": 120,
+   "tooth.3.L": 120,
+   "tooth.3.R": 120,
+   "tooth.4.L": 120,
+   "tooth.4.R": 120,
+   "tooth.5.L": 120,
+   "tooth.5.R": 120,
+   "tooth.6.L": 120,
+   "tooth.6.R": 120,
+   "tooth.7.L": 120,
+   "tooth.7.R": 120,
+   "ear.L": 1056,
+   "ear.R": 1056
+  }
+ },
+ "tier_rationale": "REGULAR role (a line unit): window [8000, 22000]. The fur is where the budget goes: the shell carries the tufted silhouette (arms, hand ends, legs, lower body, tail fluff) and the bake carries the tufts at full density into the normal map.",
+ "open_edges": {
+  "closed_parts": [
+   "ear.L",
+   "ear.R",
+   "eye.L",
+   "eye.R",
+   "shell",
+   "tooth.0.C",
+   "tooth.1.L",
+   "tooth.1.R",
+   "tooth.2.L",
+   "tooth.2.R",
+   "tooth.3.L",
+   "tooth.3.R",
+   "tooth.4.L",
+   "tooth.4.R",
+   "tooth.5.L",
+   "tooth.5.R",
+   "tooth.6.L",
+   "tooth.6.R",
+   "tooth.7.L",
+   "tooth.7.R"
+  ],
+  "open_parts": {},
+  "rule": "every piece is a closed solid (shell, ears, decals)"
+ },
+ "measure": {
+  "bbox": [
+   [
+    -1.7826,
+    -1.9124,
+    0.0
+   ],
+   [
+    1.7826,
+    1.9124,
+    5.9577
+   ]
+  ],
+  "height": 5.9577,
+  "width_x": 3.5651,
+  "depth_y": 3.8248,
+  "sheet_px_equivalent": {
+   "height_px": 595.8,
+   "width_px": 356.5
+  },
+  "front_width_vs_side_depth": {
+   "egg_width": 2.7018,
+   "egg_depth": 2.4975,
+   "egg_ratio": 1.0818,
+   "shell_width_z1.2_3.4_incl_arms": 3.5651,
+   "shell_depth_z1.2_3.4_no_tail": 2.6317,
+   "rule": "front width = the BACK view's width (true ortho, mirrored; artist 'thick bunny')",
+   "shell_ratio": 1.3547
+  },
+  "export_cell_fit_report_only": {
+   "scale": 0.30213,
+   "height_m": 1.8,
+   "footprint_m": 1.1556,
+   "bound_by": "height"
+  }
+ },
+ "bake": {
+  "NORMAL": {
+   "result": [
+    "FINISHED"
+   ],
+   "seconds": 1.1
+  },
+  "AO": {
+   "result": [
+    "FINISHED"
+   ],
+   "seconds": 0.8
+  },
+  "cage_extrusion": 0.02,
+  "cage_rule": "3 x the sampled high->low p99 distance (floor 0.02)",
+  "resolution": {
+   "normal": 1024,
+   "ao": 512
+  },
+  "high_tris": 769790,
+  "high_rule": "SDF shell (marching tets, every fur tuft at full density) + every closed part",
+  "body_uv_texels_normal": 588624,
+  "normal_baked_pct_of_body_texels": 99.99,
+  "normal_detail_fraction_dev_gt_0.05": 0.2935,
+  "ao_baked_pct_of_body_texels": 100.0,
+  "ao_mean": 0.8582,
+  "ao_p05": 0.4392,
+  "pixel_sha": {
+   "normal": "c4645226c8c3a548",
+   "ao": "4b268e2982ca0cab"
+  },
+  "seconds": 4.5
+ },
+ "digest_geometry_colour_uv": "955d4eb8b227f123",
+ "palette": {
+  "default": {
+   "fur": {
+    "rgb": [
+     32,
+     30,
+     28
+    ]
+   },
+   "ear": {
+    "rgb": [
+     100,
+     87,
+     97
+    ]
+   },
+   "belly": {
+    "rgb": [
+     148,
+     133,
+     143
+    ]
+   },
+   "belly_line": {
+    "rgb": [
+     239,
+     231,
+     235
+    ]
+   },
+   "tail": {
+    "rgb": [
+     148,
+     133,
+     143
+    ]
+   },
+   "eye": {
+    "rgb": [
+     242,
+     243,
+     240
+    ],
+    "emission": [
+     242,
+     243,
+     240
+    ],
+    "emission_scale": 0.4
+   },
+   "mouth": {
+    "rgb": [
+     242,
+     243,
+     240
+    ],
+    "emission": [
+     242,
+     243,
+     240
+    ],
+    "emission_scale": 0.4
+   }
+  },
+  "files": [
+   "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\palettes\\shadowbun\\default.json"
+  ],
+  "provenance": "pixel-sampled from the sheet's chips + drawn surfaces (see the palette notes)"
+ }
+}
