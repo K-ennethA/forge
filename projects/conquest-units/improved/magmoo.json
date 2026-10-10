@@ -29,7 +29,7 @@
       "dropped_verts": 0
      }
     ],
-    "seconds": 1.2,
+    "seconds": 1.7,
     "protected": {
      "zones": 2,
      "remesh_tris_kept": 1458,
@@ -131,7 +131,7 @@
       "dropped_verts": 0
      }
     ],
-    "seconds": 1.5
+    "seconds": 1.8
    },
    "sdf": {
     "step": 0.03,
@@ -145,7 +145,7 @@
      167
     ],
     "nan": 0,
-    "seconds": 3.1
+    "seconds": 3.6
    },
    "spine_arc_length": 4.8013,
    "regions_cut": {
@@ -153,20 +153,20 @@
      {
       "field": "nz",
       "tau": -0.45,
-      "edge_splits": 326,
-      "face_connects": 393
+      "edge_splits": 328,
+      "face_connects": 396
      },
      {
       "field": "mot",
       "tau": 0.78,
-      "edge_splits": 128,
-      "face_connects": 148
+      "edge_splits": 127,
+      "face_connects": 147
      },
      {
       "field": "tip",
       "tau": 0.05,
-      "edge_splits": 268,
-      "face_connects": 299
+      "edge_splits": 238,
+      "face_connects": 269
      },
      {
       "field": "tip",
@@ -177,8 +177,8 @@
      {
       "field": "end",
       "tau": 0.3,
-      "edge_splits": 220,
-      "face_connects": 258
+      "edge_splits": 214,
+      "face_connects": 252
      },
      {
       "field": "end",
@@ -195,9 +195,9 @@
    "finish": {
     "voxel": 0.03,
     "remesh_tris": 136072,
-    "area": 43.1522,
-    "target_tris": 13161,
-    "tris": 13160,
+    "area": 43.1526,
+    "target_tris": 13162,
+    "tris": 13162,
     "specks": [
      {
       "pieces": 1,
@@ -210,7 +210,7 @@
       "dropped_verts": 0
      }
     ],
-    "seconds": 2.8
+    "seconds": 3.1
    },
    "sdf": {
     "step": 0.03,
@@ -224,7 +224,7 @@
      100
     ],
     "nan": 0,
-    "seconds": 6.0
+    "seconds": 6.5
    },
    "tail_spine_length": 6.6,
    "rest_curl_deg": 105.0,
@@ -233,26 +233,26 @@
      {
       "field": "nz",
       "tau": -0.45,
-      "edge_splits": 423,
-      "face_connects": 501
+      "edge_splits": 431,
+      "face_connects": 506
      },
      {
       "field": "mot",
       "tau": 0.78,
-      "edge_splits": 224,
-      "face_connects": 268
+      "edge_splits": 218,
+      "face_connects": 265
      },
      {
       "field": "tip",
       "tau": 0.05,
-      "edge_splits": 655,
-      "face_connects": 777
+      "edge_splits": 697,
+      "face_connects": 824
      },
      {
       "field": "tip",
       "tau": 0.08,
-      "edge_splits": 371,
-      "face_connects": 416
+      "edge_splits": 388,
+      "face_connects": 434
      },
      {
       "field": "end",
@@ -269,7 +269,7 @@
     ]
    },
    "tip_field_passes": 18,
-   "mean_edge": 0.0984
+   "mean_edge": 0.0985
   },
   "ball": {
    "regions_cut": {
@@ -277,26 +277,26 @@
      {
       "field": "nz",
       "tau": -0.45,
-      "edge_splits": 54,
-      "face_connects": 65
+      "edge_splits": 62,
+      "face_connects": 72
      },
      {
       "field": "mot",
       "tau": 0.78,
-      "edge_splits": 72,
-      "face_connects": 82
+      "edge_splits": 70,
+      "face_connects": 83
      },
      {
       "field": "tip",
       "tau": 0.05,
-      "edge_splits": 145,
-      "face_connects": 157
+      "edge_splits": 132,
+      "face_connects": 142
      },
      {
       "field": "tip",
       "tau": 0.08,
-      "edge_splits": 153,
-      "face_connects": 164
+      "edge_splits": 145,
+      "face_connects": 158
      },
      {
       "field": "end",
@@ -320,7 +320,7 @@
     "eye_faces": 1793
    },
    "tip_field_passes": 16,
-   "mean_edge": 0.1037
+   "mean_edge": 0.1036
   }
  },
  "source_mesh": {
@@ -406,30 +406,30 @@
      "opening_radius": 0.22803,
      "rim_plane_residual_max": 0.06757,
      "rim_to_orb_gap": {
-      "max": 0.01166,
-      "mean": 0.00931
+      "max": 0.01173,
+      "mean": 0.00927
      },
      "dome_top_above_goo": 0.012
     },
     "verts": 226,
     "signed_dist_to_carved_head": {
      "min": -0.16063,
-     "max": 0.20007,
+     "max": 0.20162,
      "frac_inside_goo": 0.2965
     },
     "dish_exposure": {
      "opening_normal": {
-      "eye_px": 1341,
-      "carved_px": 61,
+      "eye_px": 1342,
+      "carved_px": 60,
       "dark_socket_px": 0,
-      "carved_share": 0.0435,
+      "carved_share": 0.0428,
       "dark_share": 0.0
      },
      "cutter_axis": {
-      "eye_px": 1233,
-      "carved_px": 34,
+      "eye_px": 1234,
+      "carved_px": 33,
       "dark_socket_px": 0,
-      "carved_share": 0.0268,
+      "carved_share": 0.026,
       "dark_share": 0.0
      },
      "front_30up": {
@@ -440,10 +440,10 @@
       "dark_share": 0.0
      },
      "above_opening_40deg": {
-      "eye_px": 1221,
-      "carved_px": 33,
+      "eye_px": 1222,
+      "carved_px": 32,
       "dark_socket_px": 0,
-      "carved_share": 0.0263,
+      "carved_share": 0.0255,
       "dark_share": 0.0
      }
     }
@@ -452,7 +452,7 @@
     "rim_height": -0.03846,
     "dome_radius": null,
     "back_radius": 0.238,
-    "thickness": 0.3298,
+    "thickness": 0.3294,
     "max_above_goo_surface": 0.13572,
     "tris": 456,
     "fit": {
@@ -465,29 +465,29 @@
      "rim_plane_residual_max": 0.07261,
      "rim_to_orb_gap": {
       "max": 0.01204,
-      "mean": 0.00913
+      "mean": 0.00912
      },
      "dome_top_above_goo": 0.012
     },
     "verts": 230,
     "signed_dist_to_carved_head": {
      "min": -0.14397,
-     "max": 0.17991,
-     "frac_inside_goo": 0.3304
+     "max": 0.17989,
+     "frac_inside_goo": 0.3348
     },
     "dish_exposure": {
      "opening_normal": {
-      "eye_px": 1353,
-      "carved_px": 56,
+      "eye_px": 1352,
+      "carved_px": 57,
       "dark_socket_px": 0,
-      "carved_share": 0.0397,
+      "carved_share": 0.0405,
       "dark_share": 0.0
      },
      "cutter_axis": {
-      "eye_px": 1258,
-      "carved_px": 25,
+      "eye_px": 1257,
+      "carved_px": 26,
       "dark_socket_px": 0,
-      "carved_share": 0.0195,
+      "carved_share": 0.0203,
       "dark_share": 0.0
      },
      "front_30up": {
@@ -515,8 +515,8 @@
     "rim_height": -0.02618,
     "dome_radius": null,
     "back_radius": 0.2975,
-    "thickness": 0.2618,
-    "max_above_goo_surface": 0.01956,
+    "thickness": 0.2605,
+    "max_above_goo_surface": 0.01869,
     "tris": 278,
     "fit": {
      "mode": "rim",
@@ -527,8 +527,8 @@
      "opening_radius": 0.29434,
      "rim_plane_residual_max": 0.00219,
      "rim_to_orb_gap": {
-      "max": 0.01458,
-      "mean": 0.01128
+      "max": 0.01453,
+      "mean": 0.01124
      },
      "dome_top_above_goo": 0.015
     },
@@ -538,7 +538,7 @@
     "rim_height": -0.02618,
     "dome_radius": null,
     "back_radius": 0.2975,
-    "thickness": 0.2604,
+    "thickness": 0.2629,
     "max_above_goo_surface": 0.01889,
     "tris": 278,
     "fit": {
@@ -550,8 +550,8 @@
      "opening_radius": 0.29434,
      "rim_plane_residual_max": 0.00219,
      "rim_to_orb_gap": {
-      "max": 0.01446,
-      "mean": 0.01106
+      "max": 0.01479,
+      "mean": 0.0114
      },
      "dome_top_above_goo": 0.015
     },
@@ -674,13 +674,13 @@
     "rest": [
      2.2471,
      2.352,
-     0.2157
+     0.2166
     ],
     "radius": 0.21,
     "piece": "tail",
     "clearance_to_pieces": {
-     "head": 6.8133,
-     "mid": 3.0347,
+     "head": 6.813,
+     "mid": 3.0343,
      "tail": 0.2332
     },
     "in_a_gap_corridor": []
@@ -689,44 +689,44 @@
     "rest": [
      -2.9437,
      3.1399,
-     0.1707
+     0.1682
     ],
     "radius": 0.17,
     "piece": "tail",
     "clearance_to_pieces": {
-     "head": 7.4652,
-     "mid": 3.3266,
-     "tail": 0.4065
+     "head": 7.466,
+     "mid": 3.3278,
+     "tail": 0.4068
     },
     "in_a_gap_corridor": []
    },
    {
     "rest": [
-     0.5612,
+     0.5586,
      -1.9365,
      3.9469
     ],
     "radius": 0.16,
     "piece": "mid",
     "clearance_to_pieces": {
-     "head": 2.2158,
-     "mid": 0.4067,
-     "tail": 4.5689
+     "head": 2.2147,
+     "mid": 0.4044,
+     "tail": 4.5683
     },
     "in_a_gap_corridor": []
    },
    {
     "rest": [
-     -1.5115,
+     -1.5106,
      -0.9387,
      3.6723
     ],
     "radius": 0.13,
     "piece": "mid",
     "clearance_to_pieces": {
-     "head": 2.9533,
-     "mid": 0.5743,
-     "tail": 3.6069
+     "head": 2.953,
+     "mid": 0.5736,
+     "tail": 3.6067
     },
     "in_a_gap_corridor": []
    },
@@ -734,14 +734,14 @@
     "rest": [
      0.5291,
      0.3313,
-     2.7477
+     2.748
     ],
     "radius": 0.12,
     "piece": "mid",
     "clearance_to_pieces": {
      "head": 3.9948,
      "mid": 0.3952,
-     "tail": 2.1766
+     "tail": 2.1767
     },
     "in_a_gap_corridor": []
    }
@@ -753,11 +753,11 @@
    },
    {
     "i": 3,
-    "bottom_z": 3.5354
+    "bottom_z": 3.5403
    },
    {
     "i": 4,
-    "bottom_z": 2.6261
+    "bottom_z": 2.6263
    }
   ],
   "droplets_in_a_gap_corridor": 0,
@@ -771,10 +771,10 @@
   "volumes": {
    "head": 7.2398,
    "mid": 6.5502,
-   "tail": 10.8093,
-   "droplets": 0.0969
+   "tail": 10.8089,
+   "droplets": 0.0968
   },
-  "total_volume": 24.6962,
+  "total_volume": 24.6958,
   "radius": 1.8065,
   "diameter": 3.6131,
   "centre_in_clip": [
@@ -795,8 +795,8 @@
   },
   "finish": {
    "voxel": 0.03,
-   "remesh_tris": 145864,
-   "area": 44.2016,
+   "remesh_tris": 145860,
+   "area": 44.201,
    "target_tris": 5797,
    "tris": 5796,
    "specks": [
@@ -811,7 +811,7 @@
      "dropped_verts": 0
     }
    ],
-   "seconds": 3.1,
+   "seconds": 3.9,
    "protected": {
     "zones": 2,
     "remesh_tris_kept": 3202,
@@ -830,7 +830,7 @@
     222
    ],
    "nan": 0,
-   "seconds": 6.9
+   "seconds": 9.2
   }
  },
  "goo_extras": {
@@ -838,11 +838,11 @@
   "drip_tris": 68,
   "splat_tris": 436
  },
- "cut_seconds": 19.9,
+ "cut_seconds": 26.4,
  "flight_segment": {
   "rule": "shape key 'flight': every mound vertex (nearest tail-spine arc < mound exit + 0.35) maps onto a smooth round segment continuing the tail forward (unflattened space: the tube's own cross-section), seeded by closest-point projection then relaxed (uniform Laplacian, re-projected every pass, the tube boundary fixed) -> a fold-free map of the mound disc onto the segment",
-  "free_verts": 6484,
-  "fixed_verts": 1870,
+  "free_verts": 6535,
+  "fixed_verts": 1881,
   "relax_passes": 900,
   "segment": {
    "radius": 0.4913,
@@ -851,15 +851,15 @@
    "junction_arc": 1.2786,
    "mound_exit_arc": 0.9286
   },
-  "faces_touching_free": 13021,
-  "flipped_faces": 164,
-  "flipped_area_frac": 0.000607,
+  "faces_touching_free": 13123,
+  "flipped_faces": 199,
+  "flipped_area_frac": 0.000274,
   "degenerate_faces": 0,
   "free_edge_len_p05_p50": [
-   0.00329,
-   0.02089
+   0.00333,
+   0.02133
   ],
-  "seconds": 1.7
+  "seconds": 1.5
  },
  "glow_tiers": {
   "default": {
@@ -893,19 +893,19 @@
    "pass": true
   }
  },
- "uv_seconds": 2.5,
+ "uv_seconds": 2.4,
  "islands": {
   "head": {
    "verts": 6242,
    "faces": 12480
   },
   "mid": {
-   "verts": 4604,
-   "faces": 9204
+   "verts": 4569,
+   "faces": 9134
   },
   "tail": {
-   "verts": 8354,
-   "faces": 16704
+   "verts": 8416,
+   "faces": 16828
   },
   "drop.0": {
    "verts": 93,
@@ -928,8 +928,8 @@
    "faces": 58
   },
   "ball": {
-   "verts": 3489,
-   "faces": 6974
+   "verts": 3474,
+   "faces": 6944
   },
   "eye_orb.0": {
    "verts": 226,
@@ -995,15 +995,15 @@
    "amount": 0.16,
    "radius": 0.95,
    "crown:mid": {
-    "verts": 1026,
+    "verts": 996,
     "max_offset": 0.16
    },
    "crown:tail": {
-    "verts": 923,
+    "verts": 924,
     "max_offset": 0.16
    },
    "head:mid": {
-    "verts": 823,
+    "verts": 819,
     "max_offset": 0.16
    },
    "head:head": {
@@ -1012,22 +1012,22 @@
    }
   },
   "max_offset": {
-   "flight": 1.9669,
+   "flight": 1.975,
    "tuck_mid": 0.4023,
    "sq_head": 1.1256,
-   "sq_mid": 1.2961,
+   "sq_mid": 1.2958,
    "sq_tail": 0.8519,
    "bulge_crown": 0.16,
    "bulge_head": 0.1596
   },
   "moved_verts": {
-   "flight": 6484,
-   "tuck_mid": 752,
+   "flight": 6535,
+   "tuck_mid": 751,
    "sq_head": 6698,
-   "sq_mid": 4604,
-   "sq_tail": 8354,
-   "bulge_crown": 1947,
-   "bulge_head": 1589
+   "sq_mid": 4569,
+   "sq_tail": 8416,
+   "bulge_crown": 1918,
+   "bulge_head": 1585
   },
   "seconds": 0.1
  },
@@ -1082,16 +1082,16 @@
   }
  },
  "tris": {
-  "total": 49192,
+  "total": 49216,
   "head": 12480,
-  "mid": 9204,
-  "tail": 16704,
+  "mid": 9134,
+  "tail": 16828,
   "drop.0": 182,
   "drop.1": 118,
   "drop.2": 104,
   "drop.3": 68,
   "drop.4": 58,
-  "ball": 6974,
+  "ball": 6944,
   "eye_orb.0": 448,
   "eye_orb.1": 456,
   "ball_eye.0": 278,
@@ -1106,16 +1106,16 @@
   "splat": 436
  },
  "region_faces": {
-  "goo_cool": 5790,
-  "goo": 23294,
-  "goo_hot": 9128,
-  "flame": 6247,
+  "goo_cool": 5868,
+  "goo": 23255,
+  "goo_hot": 9077,
+  "flame": 6283,
   "core": 1387,
   "eye": 1886,
-  "eye_goo": 1252,
-  "eye_core": 208
+  "eye_goo": 1260,
+  "eye_core": 200
  },
- "digest_geometry_colour_uv": "519f47808f0dc1f1",
+ "digest_geometry_colour_uv": "12883671f8394758",
  "palette": {
   "default": {
    "goo_cool": {
@@ -1227,5 +1227,5 @@
    "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\palettes\\magmoo\\default.json"
   ]
  },
- "seconds_to_improved": 53.3
+ "seconds_to_improved": 66.2
 }

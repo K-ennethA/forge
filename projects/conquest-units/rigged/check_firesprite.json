@@ -73,7 +73,12 @@
    "check": "flat_shaded",
    "pass": true,
    "smooth_faces": 0,
-   "faces": 17576
+   "faces": 17576,
+   "smooth_outside_exemption": 0,
+   "smooth_exempt": 0,
+   "exemption": null,
+   "declared_not_allowed": null,
+   "rule": "use_smooth or corner normal > 0.5 deg off the face normal; exempt only in declared hair-family regions"
   },
   {
    "check": "colour",

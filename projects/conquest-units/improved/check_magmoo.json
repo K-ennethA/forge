@@ -32,7 +32,7 @@
   {
    "check": "tri_budget",
    "pass": true,
-   "tris": 49192,
+   "tris": 49216,
    "budget": [
     30000,
     50000
@@ -50,12 +50,12 @@
     {
      "mesh": "magmoo",
      "layers": 1,
-     "islands": 821,
+     "islands": 789,
      "flipped": 0,
      "overlap": false,
      "overlap_note": "summed UV area is 16% below the rasterised coverage at 512x512 \u2014 consistent with no overlap. A raster quantises every island edge, so anything under 8% is counted as clean.",
-     "coverage": 0.596,
-     "area_distortion_p95": 6759.603
+     "coverage": 0.6035,
+     "area_distortion_p95": 6813.011
     }
    ]
   },
@@ -63,7 +63,12 @@
    "check": "flat_shaded",
    "pass": true,
    "smooth_faces": 0,
-   "faces": 49192
+   "faces": 49216,
+   "smooth_outside_exemption": 0,
+   "smooth_exempt": 0,
+   "exemption": null,
+   "declared_not_allowed": null,
+   "rule": "use_smooth or corner normal > 0.5 deg off the face normal; exempt only in declared hair-family regions"
   },
   {
    "check": "colour",

@@ -167,9 +167,26 @@ for code in range(16):
         _CASES[code] = [[(a, c), (a, d), (b, d)], [(a, c), (b, d), (b, c)]]
 
 
+# Near-zero push (2026-10-09; was a per-build workaround: firesprite NODE_EPS 0.02, shadowbun CORNER_CLAMP 0.1).
+# A node value v puts every crossing on its edges within |v|/L of the node (L = the field's measured slope on crossing
+# edges), so |v| ~ 0 welds 3-4 crossings into coincident vertices -> zero-area slivers -> Blender's COLLAPSE decimation
+# folds a large high toward a hull (firesprite body raw: 10378 zero-area tris, low bbox 0.71 of the high, p99 0.61).
+# Pushing |v| < NODE_EPS * step to +-NODE_EPS * step bounds every crossing >= NODE_EPS * step / L from any node.
+# Derivation: require >= 10 float32 ulps of clearance at |x| < 16 (ulp 9.5e-7 -> 9.5e-6; the smallest sliver's
+# float32 normal is then good to ~0.1 rad). Worst kit grid measured: L / step = 4.94 / 0.012 (firesprite wand flame)
+# -> NODE_EPS >= 0.0039; 0.005 is the smallest value of the swept set {1e-4, 1e-3, 2.5e-3, 5e-3, 1e-2, 2e-2} meeting it.
+# Measured over all 24 kit grids (firefly 1, firesprite 8, magmoo 15): 0 zero-area (< 1e-12) and 0 float32-coincident
+# tris from 1e-3 up, min tri area >= 1.0e-10 at 5e-3 (100x the audit floor), decimated low bbox / p99 within decimation
+# noise of the 0.02 result; collapse already recovers at 1e-4. The surface moves by <= NODE_EPS * step (0.08 mm at step 0.016).
+# Re-derive if a future grid's L / step exceeds NODE_EPS / 9.5e-6 = 526 /m.
+NODE_EPS = 0.005
+
+
 def polygonise(grid):
-    """-> (V (n,3), F (m,3) int) outward-oriented triangles of the zero set (welded on grid edges)."""
-    F = grid.F
+    """-> (V (n,3), F (m,3) int) outward-oriented triangles of the zero set (welded on grid edges).
+    Values with |F| < NODE_EPS * step are pushed off zero on a COPY (grid.F is left untouched)."""
+    e = NODE_EPS * grid.step
+    F = np.where(np.abs(grid.F) < e, np.where(grid.F < 0, -e, e), grid.F)
     nx, ny, nz = F.shape
     mn = np.minimum.reduce([F[dx:nx - 1 + dx, dy:ny - 1 + dy, dz:nz - 1 + dz] for dx, dy, dz in _CORNERS])
     mx = np.maximum.reduce([F[dx:nx - 1 + dx, dy:ny - 1 + dy, dz:nz - 1 + dz] for dx, dy, dz in _CORNERS])

@@ -1,7 +1,7 @@
 {
  "camera": "tactical: 40 deg round, 55 deg down, fit 1.25",
  "resolution": 384,
- "silhouette_px": 8385,
+ "silhouette_px": 8387,
  "palette_region_alpha": {
   "goo_cool": 0.7,
   "goo": 0.64,
@@ -17,53 +17,53 @@
  "alpha_sweep": [
   {
    "goo_alpha": 0.35,
-   "T_mean": 0.4894,
-   "T_p90": 0.7329
+   "T_mean": 0.4892,
+   "T_p90": 0.7344
   },
   {
    "goo_alpha": 0.45,
-   "T_mean": 0.4075,
-   "T_p90": 0.6279
+   "T_mean": 0.4074,
+   "T_p90": 0.6306
   },
   {
    "goo_alpha": 0.55,
-   "T_mean": 0.3298,
-   "T_p90": 0.5233
+   "T_mean": 0.3306,
+   "T_p90": 0.5264
   },
   {
    "goo_alpha": 0.7,
-   "T_mean": 0.2186,
-   "T_p90": 0.3654
+   "T_mean": 0.2193,
+   "T_p90": 0.3676
   },
   {
    "goo_alpha": 0.85,
-   "T_mean": 0.1168,
-   "T_p90": 0.1997
+   "T_mean": 0.1172,
+   "T_p90": 0.2044
   },
   {
    "goo_alpha": 1.0,
-   "T_mean": 0.0335,
-   "T_p90": 0.043
+   "T_mean": 0.0337,
+   "T_p90": 0.0432
   }
  ],
  "sorting_modes": [
   {
    "mode": "dithered",
-   "T_mean": 0.2624,
-   "T_p90": 0.4293,
+   "T_mean": 0.263,
+   "T_p90": 0.4327,
    "mean_abs_diff_vs_dithered_0_255": 0.0
   },
   {
    "mode": "blended_overlap",
    "T_mean": 0.2603,
-   "T_p90": 0.3915,
-   "mean_abs_diff_vs_dithered_0_255": 3.519
+   "T_p90": 0.3914,
+   "mean_abs_diff_vs_dithered_0_255": 3.498
   },
   {
    "mode": "blended_prepass",
-   "T_mean": 0.2763,
+   "T_mean": 0.2764,
    "T_p90": 0.392,
-   "mean_abs_diff_vs_dithered_0_255": 4.263
+   "mean_abs_diff_vs_dithered_0_255": 4.289
   }
  ]
 }

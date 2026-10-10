@@ -7,9 +7,9 @@
   "unweighted": 0,
   "sum_dev_max": 0.0,
   "per_bone_dominant": {
-   "body": 2878,
-   "abdomen": 1165,
-   "head": 4188,
+   "body": 2908,
+   "abdomen": 1166,
+   "head": 4175,
    "flame": 0,
    "antenna.L.0": 106,
    "antenna.L.1": 142,
@@ -468,7 +468,7 @@
    ],
    "tail": [
     0.503,
-    -0.2131,
+    -0.213,
     7.4923
    ]
   },
@@ -498,7 +498,7 @@
    ],
    "tail": [
     -0.5018,
-    -0.2131,
+    -0.213,
     7.4923
    ]
   },
@@ -508,7 +508,7 @@
    "deform": true,
    "head": [
     0.6495,
-    -0.2115,
+    -0.2114,
     3.3974
    ],
    "tail": [
@@ -553,7 +553,7 @@
    "deform": true,
    "head": [
     0.5487,
-    -0.2305,
+    -0.2304,
     4.503
    ],
    "tail": [
@@ -573,7 +573,7 @@
    ],
    "tail": [
     1.7176,
-    0.189,
+    0.1891,
     4.2858
    ]
   },
@@ -583,7 +583,7 @@
    "deform": true,
    "head": [
     1.7176,
-    0.189,
+    0.1891,
     4.2858
    ],
    "tail": [
@@ -598,7 +598,7 @@
    "deform": true,
    "head": [
     -0.6484,
-    -0.2115,
+    -0.2114,
     3.3974
    ],
    "tail": [
@@ -643,7 +643,7 @@
    "deform": true,
    "head": [
     -0.5475,
-    -0.2305,
+    -0.2304,
     4.503
    ],
    "tail": [
@@ -687,19 +687,19 @@
  "deform_bone_count": 20,
  "digest": {
   "parts": {
-   "bake_normal": "2c4fa9244a282fa6",
-   "bake_ao": "f0ab625fc2904dcc",
-   "geometry_colour_uv": "1506517a23b3828b",
-   "weights": "6fc780ed06ecbd6e",
+   "bake_normal": "83b6478f67edf9b6",
+   "bake_ao": "f9a12d1fc81f5739",
+   "geometry_colour_uv": "f2c83b818a50220f",
+   "weights": "fc586061dfcc04e4",
    "keys": "2461c349d103bb88",
-   "clip_samples": "8eddbc8e436e2015"
+   "clip_samples": "2c10c835ec3d81fc"
   },
-  "combined": "f28560054f37d01b"
+  "combined": "62bf6facee190220"
  },
  "glb": {
   "path": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\rigged\\firefly.glb",
-  "bytes": 5043876,
-  "seconds": 0.6,
+  "bytes": 5685880,
+  "seconds": 0.7,
   "carries": {
    "materials": [
     {
@@ -1398,15 +1398,15 @@
    },
    "region_faces": {
     "firefly": {
-     "shell": 2676,
-     "band": 2087,
-     "pack": 459,
-     "rail": 334,
-     "helmet": 1533,
+     "shell": 2695,
+     "band": 2099,
+     "pack": 487,
+     "rail": 335,
+     "helmet": 1493,
      "strap": 638,
-     "mask": 713,
-     "goggle_cup": 606,
-     "snout": 256,
+     "mask": 711,
+     "goggle_cup": 613,
+     "snout": 267,
      "filter": 198,
      "goggle_rim": 576,
      "lens_cell": 876,
@@ -1430,14 +1430,14 @@
      "flame_core": 330
     }
    },
-   "geometry_colour_uv_digest": "8f401fcd715fbdcb"
+   "geometry_colour_uv_digest": "3e89233da1077fe8"
   },
   "repaint_proof": {
    "rule": "a skin is a pure palette swap: same regions/faces/vertices; default restored",
-   "default_digest_before": "1506517a23b3828b",
-   "default_digest_after_restore": "1506517a23b3828b"
+   "default_digest_before": "f2c83b818a50220f",
+   "default_digest_after_restore": "f2c83b818a50220f"
   }
  },
  "improved_report": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\improved\\firefly.json",
- "seconds": 21.8
+ "seconds": 23.9
 }

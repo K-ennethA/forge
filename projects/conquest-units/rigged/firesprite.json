@@ -335,7 +335,7 @@
     20.0
    ]
   },
-  "seconds": 0.8,
+  "seconds": 0.9,
   "rule": "in place (root at the origin, Conquest glides); closed-form, integer harmonics (exact seams); idle legs = analytic 2-bone IK onto planted feet; walk legs = rigid (knee locked), hip pivot + hips height solved in closed form so planted soles sit exactly on z 0; floor guard on both (no foot mesh below z 0)"
  },
  "bones": [
@@ -899,19 +899,19 @@
  "deform_bone_count": 35,
  "digest": {
   "parts": {
-   "bake_normal": "ab8325500545862a",
+   "bake_normal": "f28e1cb2c164898f",
    "bake_ao": "d82f7a2ceaa0121f",
    "geometry_colour_uv": "550bd505845877d0",
    "weights": "d31b7e0995f687be",
    "keys": "ba2f7385048e6ea2",
    "clip_samples": "39eb25e23dd3fb47"
   },
-  "combined": "8a6a1dad22279fbb"
+  "combined": "9cb2ee72c912e7c4"
  },
  "glb": {
   "path": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\rigged\\firesprite.glb",
-  "bytes": 5657232,
-  "seconds": 0.7,
+  "bytes": 6269328,
+  "seconds": 0.9,
   "carries": {
    "materials": [
     {
@@ -1531,5 +1531,5 @@
   }
  },
  "improved_report": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\improved\\firesprite.json",
- "seconds": 72.5
+ "seconds": 76.0
 }

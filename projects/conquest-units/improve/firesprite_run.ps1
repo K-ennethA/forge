@@ -7,7 +7,7 @@
 #   tolerance gate (firesprite_bake_diff.py) if they differ.
 param([switch]$SkipBuild)
 $B = "C:\Program Files\Blender Foundation\Blender 5.0\blender.exe"
-$P = "C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units"   # never assign lowercase $p: PowerShell names are case-insensitive
+$P = Split-Path -Parent $PSScriptRoot   # never assign lowercase $p: PowerShell names are case-insensitive
 $I = "$P\improve"
 $OUT = "$P\renders\firesprite"
 $VPY = "C:\Users\kenne\OneDrive\Desktop\git\forge\service\.venv\Scripts\python.exe"

@@ -8,7 +8,7 @@
 param([switch]$SkipBuild)
 $T0 = Get-Date
 $B = "C:\Program Files\Blender Foundation\Blender 5.0\blender.exe"
-$P = "C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units"
+$P = Split-Path -Parent $PSScriptRoot
 $I = "$P\improve"
 $OUT = "$P\renders\magmoo"
 $V = "magmoo_v5"
