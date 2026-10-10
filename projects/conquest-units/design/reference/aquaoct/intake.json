@@ -1,0 +1,258 @@
+{
+ "unit": "aquaoct",
+ "sheet": "design/reference/aquaoct-character-sheet.png",
+ "size_px": [
+  1672,
+  941
+ ],
+ "background_rgb": [
+  35,
+  36,
+  40
+ ],
+ "bg_tol": 26.0,
+ "views": {
+  "front": {
+   "bbox_px": [
+    24,
+    236,
+    450,
+    791
+   ],
+   "axis_x_px": 242.5,
+   "floor_y_px": 790,
+   "height_px": 555,
+   "height_units": 5.55,
+   "width_units": 4.26,
+   "half_width_profile": {
+    "0.00": {
+     "y_px": 790,
+     "half_w_units": 0.355
+    },
+    "0.10": {
+     "y_px": 735,
+     "half_w_units": 1.825
+    },
+    "0.25": {
+     "y_px": 652,
+     "half_w_units": 2.165
+    },
+    "0.50": {
+     "y_px": 513,
+     "half_w_units": 1.215
+    },
+    "0.75": {
+     "y_px": 374,
+     "half_w_units": 1.225
+    },
+    "0.90": {
+     "y_px": 291,
+     "half_w_units": 1.035
+    }
+   },
+   "transform": "z = (790 - y_px) / 100 ; x = (x_px - 242.5) / 100"
+  },
+  "back": {
+   "bbox_px": [
+    452,
+    234,
+    834,
+    778
+   ],
+   "axis_x_px": 672.0,
+   "floor_y_px": 777,
+   "height_px": 544,
+   "height_units": 5.44,
+   "width_units": 3.82,
+   "half_width_profile": {
+    "0.00": {
+     "y_px": 777,
+     "half_w_units": 0.7
+    },
+    "0.10": {
+     "y_px": 723,
+     "half_w_units": 0.8
+    },
+    "0.25": {
+     "y_px": 641,
+     "half_w_units": 1.9
+    },
+    "0.50": {
+     "y_px": 506,
+     "half_w_units": 1.46
+    },
+    "0.75": {
+     "y_px": 370,
+     "half_w_units": 1.5
+    },
+    "0.90": {
+     "y_px": 288,
+     "half_w_units": 1.28
+    }
+   },
+   "transform": "z = (777 - y_px) / 100 ; x = (x_px - 672.0) / 100"
+  },
+  "side": {
+   "bbox_px": [
+    864,
+    240,
+    1187,
+    792
+   ],
+   "axis_x_px": 984.5,
+   "floor_y_px": 791,
+   "height_px": 552,
+   "height_units": 5.52,
+   "width_units": 3.23,
+   "half_width_profile": {
+    "0.00": {
+     "y_px": 791,
+     "half_w_units": 0.115
+    },
+    "0.10": {
+     "y_px": 736,
+     "half_w_units": 0.305
+    },
+    "0.25": {
+     "y_px": 653,
+     "half_w_units": 1.625
+    },
+    "0.50": {
+     "y_px": 516,
+     "half_w_units": 1.215
+    },
+    "0.75": {
+     "y_px": 378,
+     "half_w_units": 1.715
+    },
+    "0.90": {
+     "y_px": 295,
+     "half_w_units": 1.745
+    }
+   },
+   "transform": "z = (791 - y_px) / 100 ; x = (x_px - 984.5) / 100"
+  }
+ },
+ "ortho_frame": {
+  "views": [
+   "front",
+   "side"
+  ],
+  "width_px": 480,
+  "height_px": 620,
+  "below_floor_px": 20,
+  "crops": {
+   "front": [
+    2,
+    190,
+    482,
+    810
+   ],
+   "back": [
+    432,
+    177,
+    912,
+    797
+   ],
+   "side": [
+    744,
+    191,
+    1224,
+    811
+   ]
+  }
+ },
+ "unnamed_extra_segments_px": [],
+ "swatches": [
+  {
+   "centre_px": [
+    1254.7,
+    869.0
+   ],
+   "rgb": [
+    215,
+    236,
+    231
+   ],
+   "diameter_px": 72
+  },
+  {
+   "centre_px": [
+    1338.7,
+    869.0
+   ],
+   "rgb": [
+    164,
+    215,
+    206
+   ],
+   "diameter_px": 74
+  },
+  {
+   "centre_px": [
+    1422.7,
+    869.0
+   ],
+   "rgb": [
+    109,
+    178,
+    175
+   ],
+   "diameter_px": 74
+  },
+  {
+   "centre_px": [
+    1506.7,
+    869.0
+   ],
+   "rgb": [
+    75,
+    130,
+    144
+   ],
+   "diameter_px": 74
+  },
+  {
+   "centre_px": [
+    1590.4,
+    869.0
+   ],
+   "rgb": [
+    39,
+    59,
+    64
+   ],
+   "diameter_px": 72
+  }
+ ],
+ "swatch_rejects_off_column": [
+  {
+   "centre_px": [
+    1542.0,
+    65.0
+   ],
+   "rgb": [
+    31,
+    32,
+    36
+   ],
+   "diameter_px": 16
+  },
+  {
+   "centre_px": [
+    1270.6,
+    811.0
+   ],
+   "rgb": [
+    27,
+    36,
+    40
+   ],
+   "diameter_px": 14
+  }
+ ],
+ "base_frac": 0.06,
+ "axis_overrides": {},
+ "units_rule": "1 sheet unit = 100 px; per view z = (floor_y - y) / 100, x = (x - axis_x) / 100",
+ "caveat": "automatic split: VERIFY intake_overlay.png before dispatch (overlapping views or a floor shadow fuse / extend a view; rerun with --views or --bg-tol). A DARK subject on a dark sheet (shadowbun) loses its outline into the background: the floor line can sit high by ~15 px - check the soles"
+}

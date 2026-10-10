@@ -1,0 +1,19 @@
+SDF {"step": 0.02, "band": 0.08, "grid": [165, 179, 167], "ops": 1, "high_tris": 733360, "high_verts": 366682, "crumbs": {"pieces": 1, "dropped_verts": 0}, "seconds": 5.4}
+Info: Baking map saved to internal image, save it externally or pack it
+Info: Baking map saved to internal image, save it externally or pack it
+Info: Saved copy as "bombee.blend"
+IMPROVED_SAVED C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\improved\bombee.blend 27.6
+CLIP idle {"frames": [1, 97], "period_frames": 96, "seconds": 4.0, "cyclic": true, "seam_main_mm": 0.0, "root_offset_max": 0.0, "clearance_min_z": 0.3361, "body_lift": [0.3808, 0.5363], "pitch_deg": [-2.071, 2.042], "roll_deg": [-1.566, 1.882], "wing_tip_p2p_xyz": {"wing.L.up": [0.807, 0.4978, 0.4702], "wing.R.up": [0.8096, 0.4147, 0.4744]}, "upper_tips_z_LR_corr": 0.9632, "wing_min_sd_outside_seat": 0.0255, "wing_min_dist_to_midline": 0.1018, "wing_gate": true, "buzz_hz": 6.0}
+CLIP walk {"frames": [1, 49], "period_frames": 48, "seconds": 2.0, "cyclic": true, "seam_main_mm": 0.0, "root_offset_max": 0.0, "clearance_min_z": 0.3229, "body_lift": [0.4271, 0.5014], "pitch_deg": [9.001, 11.002], "roll_deg": [-1.498, 1.498], "wing_tip_p2p_xyz": {"wing.L.up": [0.966, 0.4667, 0.4175], "wing.R.up": [0.966, 0.4667, 0.4175]}, "upper_tips_z_LR_corr": 0.9701, "wing_min_sd_outside_seat": 0.0114, "wing_min_dist_to_midline": 0.0564, "wing_gate": true, "buzz_hz": 6.0}
+Info: Saved copy as "bombee.blend"
+INFO Draco mesh compression is available, use library at C:\Program Files\Blender Foundation\Blender 5.0\5.0\scripts\addons_core\io_scene_gltf2\extern_draco.dll
+21:00:08 | INFO: Starting glTF 2.0 export
+21:00:08 | INFO: Extracting primitive: bombee
+21:00:08 | WARNING: glTF specification does not allow this case (multiple materials with different Vertex Color)
+21:00:08 | INFO: Primitives created: 2
+21:00:08 | INFO: Finished glTF 2.0 export in 0.26959705352783203 s
+
+RIG_DONE {"bone_count": 5, "weights": {"max_influences": 1, "unweighted": 0, "sum_dev_max": 0.0, "per_bone_verts": {"body": 6529, "wing.L.up": 957, "wing.R.up": 957, "stinger": 194}, "rule": "rigid pieces: shell + decals + spikes 1.0 body; wing.{L,R}.up membrane/veins/rim 1.0 on their wing bone (pivot = the root seat on the top of the ball); stinger 1.0 stinger"}, "digest": {"parts": {"bake_normal": "4ca52b084dc6c042", "bake_ao": "9eaa474d190f430b", "geometry_colour_uv": "ffa63615274d47b2", "weights": "547e72ee5e920edf", "keys": "c53228adefeec21a", "clip_samples": "722884409f3e0206"}, "combined": "b3a2541ae21290da"}, "seconds": 28.8}
+HOVER {"hover_frac_H": 0.1, "hover_height_units": 0.4643, "rest_height_units": 4.6426, "rule": "rest pose on the floor (contract feet_origin, spike tips z 0); both clips key body.location z = HOVER_FRAC x H + the bob; the contract root never moves"}
+GLB {"materials": [{"name": "bombee_body", "alphaMode": "OPAQUE", "doubleSided": false, "textures": ["baseColorTexture", "normalTexture"]}, {"name": "bombee_wing", "alphaMode": "BLEND", "doubleSided": true, "textures": []}], "primitives": [{"mesh": "bombee", "material": "bombee_body", "attributes": ["COLOR_0", "COLOR_1", "JOINTS_0", "NORMAL", "POSITION", "TEXCOORD_0", "WEIGHTS_0", "_GLOW"]}, {"mesh": "bombee", "material": "bombee_wing", "attributes": ["COLOR_0", "COLOR_1", "JOINTS_0", "NORMAL", "POSITION", "TEXCOORD_0", "WEIGHTS_0", "_GLOW"]}], "animations": ["idle", "walk"], "skins": 1, "joints": 5}
+Blender 5.0.1 (hash a3db93c5b259 built 2025-12-16 01:32:30)

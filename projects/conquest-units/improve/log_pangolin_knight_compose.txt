@@ -1,0 +1,2 @@
+﻿WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\pangolin_knight\pangolin_knight_sheet_vs_model.png
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\pangolin_knight\pangolin_knight_contact.png

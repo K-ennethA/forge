@@ -1,0 +1,642 @@
+{
+ "unit": "raven_rogue",
+ "conquest_character_id": "raven_rogue",
+ "source": "none: from-scratch unit (sheet design/reference/raven_rogue-character-sheet.png)",
+ "tier": "regular",
+ "tri_budget": [
+  8000,
+  22000
+ ],
+ "units": "sheet units: 1 unit = 100 px; measured off the TRUE orthos (front + side); floor z = 0 at the soles",
+ "overrides": {},
+ "sdf": {
+  "step": 0.025,
+  "band": 0.32,
+  "max_k": 0.25,
+  "grid": [
+   105,
+   109,
+   223
+  ],
+  "ops": 30,
+  "high_tris": 426848,
+  "high_verts": 213426,
+  "crumbs": {
+   "pieces": 1,
+   "dropped_verts": 0
+  },
+  "seconds": 3.5
+ },
+ "retopo": {
+  "method": "SDF marching tetrahedra (step 0.025) -> collapse decimation (deterministic)",
+  "decimated_tris": 5600,
+  "specks": {
+   "pieces": 1,
+   "dropped_verts": 0
+  },
+  "doubled_faces_removed": 0,
+  "low_to_high": {
+   "mean": 0.00129,
+   "p99": 0.00427,
+   "max": 0.00658
+  },
+  "high_to_low_sampled": {
+   "p99": 0.00306,
+   "max": 0.0075
+  },
+  "bbox_low": [
+   [
+    -1.0795,
+    -1.3709,
+    -0.0014
+   ],
+   [
+    1.0795,
+    0.9043,
+    5.3251
+   ]
+  ],
+  "bbox_high": [
+   [
+    -1.08,
+    -1.37,
+    0.0015
+   ],
+   [
+    1.08,
+    0.9038,
+    5.3242
+   ]
+  ],
+  "seconds": 5.8
+ },
+ "iso_cuts": {
+  "bib_refine_new_verts": 600,
+  "cuts": [
+   {
+    "field": "f_leg.L",
+    "tau": 0.0,
+    "edge_splits": 17,
+    "face_connects": 21
+   },
+   {
+    "field": "f_leg.R",
+    "tau": 0.0,
+    "edge_splits": 26,
+    "face_connects": 30
+   },
+   {
+    "field": "bib",
+    "tau": 0.0,
+    "edge_splits": 309,
+    "face_connects": 332
+   },
+   {
+    "field": "z",
+    "tau": 0.61,
+    "edge_splits": 55,
+    "face_connects": 59
+   },
+   {
+    "field": "z",
+    "tau": 0.67,
+    "edge_splits": 97,
+    "face_connects": 97
+   },
+   {
+    "field": "z",
+    "tau": 0.43,
+    "edge_splits": 31,
+    "face_connects": 37
+   },
+   {
+    "field": "z",
+    "tau": 0.49,
+    "edge_splits": 36,
+    "face_connects": 39
+   }
+  ],
+  "seconds": 1.8,
+  "shell_tris_after_cuts": 7942
+ },
+ "cape": {
+  "A.L": {
+   "cols": 31,
+   "rows": 11,
+   "tris": 1360,
+   "z_range": [
+    2.129,
+    3.55
+   ],
+   "r_range": [
+    0.75,
+    2.555
+   ]
+  },
+  "B.L": {
+   "cols": 37,
+   "rows": 12,
+   "tris": 1772,
+   "z_range": [
+    1.275,
+    3.15
+   ],
+   "r_range": [
+    0.863,
+    2.408
+   ]
+  },
+  "C.L": {
+   "cols": 31,
+   "rows": 12,
+   "tris": 1484,
+   "z_range": [
+    0.475,
+    2.6
+   ],
+   "r_range": [
+    0.765,
+    2.32
+   ]
+  },
+  "A.R": {
+   "cols": 31,
+   "rows": 11,
+   "tris": 1360,
+   "z_range": [
+    2.129,
+    3.55
+   ],
+   "r_range": [
+    0.75,
+    2.555
+   ]
+  },
+  "B.R": {
+   "cols": 37,
+   "rows": 12,
+   "tris": 1772,
+   "z_range": [
+    1.275,
+    3.15
+   ],
+   "r_range": [
+    0.863,
+    2.408
+   ]
+  },
+  "C.R": {
+   "cols": 31,
+   "rows": 12,
+   "tris": 1484,
+   "z_range": [
+    0.475,
+    2.6
+   ],
+   "r_range": [
+    0.765,
+    2.32
+   ]
+  }
+ },
+ "centre_shift": [
+  0.0,
+  0.185758,
+  -0.001392
+ ],
+ "glow": {
+  "skin": "default",
+  "glowing_regions": [],
+  "no_glow": true
+ },
+ "regions_faces": {
+  "raven_rogue": {
+   "plumage": 4844,
+   "bib": 1500,
+   "leg": 1342,
+   "leg_band": 256,
+   "claw": 192,
+   "beak": 400,
+   "beak_low": 240,
+   "eye": 672,
+   "pupil": 256,
+   "lid": 1056,
+   "scar": 896,
+   "fang": 32,
+   "cape": 4560,
+   "cape_mid": 2540,
+   "cape_tip": 2804
+  }
+ },
+ "regions_area_share": {
+  "plumage": 0.199,
+  "bib": 0.0399,
+  "leg": 0.016,
+  "leg_band": 0.0019,
+  "claw": 0.0016,
+  "beak": 0.0201,
+  "beak_low": 0.0083,
+  "eye": 0.0067,
+  "pupil": 0.0011,
+  "lid": 0.0118,
+  "scar": 0.0028,
+  "fang": 0.0001,
+  "cape": 0.3072,
+  "cape_mid": 0.1597,
+  "cape_tip": 0.2237
+ },
+ "zero_area_faces": 0,
+ "facing": {
+  "rule": "head centre (HEAD_C, midline) -> beak tip on the midline",
+  "anchor": [
+   0.0,
+   -0.5358,
+   3.8514
+  ],
+  "landmark": [
+   0.0,
+   -2.1908,
+   2.5214
+  ],
+  "angle_from_minusY_deg": 0.0
+ },
+ "face": {
+  "eye.L": {
+   "centre_xz": [
+    0.43,
+    3.94
+   ],
+   "lid": [
+    0.1,
+    3.975,
+    0.74,
+    4.225
+   ]
+  },
+  "eye.R": {
+   "centre_xz": [
+    -0.43,
+    3.94
+   ],
+   "lid": [
+    -0.1,
+    3.975,
+    -0.74,
+    4.225
+   ]
+  },
+  "scar": {
+   "ends_xz": [
+    [
+     0.27,
+     4.62
+    ],
+    [
+     0.66,
+     3.48
+    ]
+   ],
+   "side": "L (+X)"
+  },
+  "fang": {
+   "root": [
+    0.5199999809265137,
+    -1.2267999649047852,
+    3.6700000762939453
+   ]
+  }
+ },
+ "tris": {
+  "total": 21590,
+  "shell": 7942,
+  "shell_before_cuts": 5600,
+  "eye_rim": 672,
+  "eye": 672,
+  "pupil": 256,
+  "lid": 384,
+  "scar": 896,
+  "fang": 32,
+  "beak": 640,
+  "claw": 192,
+  "tail": 672,
+  "cape": 9232,
+  "per_part": {
+   "eye_rim.L": 336,
+   "eye.L": 336,
+   "pupil.L": 128,
+   "lid.L": 192,
+   "eye_rim.R": 336,
+   "eye.R": 336,
+   "pupil.R": 128,
+   "lid.R": 192,
+   "scar": 896,
+   "fang": 32,
+   "beak": 640,
+   "claw.L.0": 24,
+   "claw.L.1": 24,
+   "claw.L.2": 24,
+   "claw.L.3": 24,
+   "claw.R.0": 24,
+   "claw.R.1": 24,
+   "claw.R.2": 24,
+   "claw.R.3": 24,
+   "tail.0": 224,
+   "tail.1": 224,
+   "tail.2": 224,
+   "cape.A.L": 1360,
+   "cape.B.L": 1772,
+   "cape.C.L": 1484,
+   "cape.A.R": 1360,
+   "cape.B.R": 1772,
+   "cape.C.R": 1484
+  }
+ },
+ "tier_rationale": "REGULAR role (a line unit): window [8000, 22000]. The cape is where the budget goes: six closed layered slabs carry the ragged silhouette; the shell carries the body, head, crest, legs and feet; the bake carries the SDF high's detail into the normal map.",
+ "open_edges": {
+  "closed_parts": [
+   "beak",
+   "cape.A.L",
+   "cape.A.R",
+   "cape.B.L",
+   "cape.B.R",
+   "cape.C.L",
+   "cape.C.R",
+   "claw.L.0",
+   "claw.L.1",
+   "claw.L.2",
+   "claw.L.3",
+   "claw.R.0",
+   "claw.R.1",
+   "claw.R.2",
+   "claw.R.3",
+   "eye.L",
+   "eye.R",
+   "eye_rim.L",
+   "eye_rim.R",
+   "fang",
+   "lid.L",
+   "lid.R",
+   "pupil.L",
+   "pupil.R",
+   "scar",
+   "shell",
+   "tail.0",
+   "tail.1",
+   "tail.2"
+  ],
+  "open_parts": {},
+  "rule": "every piece is a closed solid (shell, beak, decals, fang, claws, tail, cape slabs)"
+ },
+ "measure": {
+  "bbox": [
+   [
+    -2.0277,
+    -2.2655,
+    0.0
+   ],
+   [
+    2.0277,
+    2.2655,
+    5.3265
+   ]
+  ],
+  "height": 5.3265,
+  "width_x": 4.0554,
+  "depth_y": 4.5309,
+  "sheet": {
+   "front_height_u": 5.38,
+   "front_width_u": 4.15,
+   "side_height_u": 5.31,
+   "side_width_u": 4.5
+  },
+  "export_cell_fit_report_only": {
+   "scale": 0.33793,
+   "height_m": 1.8,
+   "footprint_m": 1.5312,
+   "bound_by": "height"
+  }
+ },
+ "bake": {
+  "NORMAL": {
+   "result": [
+    "FINISHED"
+   ],
+   "seconds": 0.7
+  },
+  "AO": {
+   "result": [
+    "FINISHED"
+   ],
+   "seconds": 0.6
+  },
+  "ao_floor": {
+   "floors": {
+    "plumage": 0.55,
+    "bib_face": 0.6,
+    "decal_beak": 0.7
+   },
+   "classes": {
+    "plumage": [
+     "plumage",
+     "cape",
+     "cape_mid",
+     "cape_tip",
+     "leg",
+     "leg_band",
+     "claw"
+    ],
+    "bib_face": [
+     "bib"
+    ],
+    "decal_beak": [
+     "beak",
+     "beak_low",
+     "eye",
+     "pupil",
+     "lid",
+     "scar",
+     "fang"
+    ]
+   },
+   "hidden_rule": "normal ray hits within 0.12",
+   "faces_visible": 16654,
+   "faces_hidden": 4936,
+   "visible_texels": 93085,
+   "before": {
+    "visible_all": {
+     "mean": 0.5252,
+     "p05": 0.0
+    },
+    "plumage": {
+     "mean": 0.5102,
+     "p05": 0.0,
+     "texels": 83508
+    },
+    "bib_face": {
+     "mean": 0.8368,
+     "p05": 0.0,
+     "texels": 4589
+    },
+    "decal_beak": {
+     "mean": 0.4891,
+     "p05": 0.0,
+     "texels": 4988
+    }
+   },
+   "after": {
+    "visible_all": {
+     "mean": 0.734,
+     "p05": 0.55
+    },
+    "plumage": {
+     "mean": 0.721,
+     "p05": 0.55,
+     "texels": 83508
+    },
+    "bib_face": {
+     "mean": 0.8975,
+     "p05": 0.6,
+     "texels": 4589
+    },
+    "decal_beak": {
+     "mean": 0.8002,
+     "p05": 0.7,
+     "texels": 4988
+    }
+   }
+  },
+  "cage_extrusion": 0.02,
+  "cage_rule": "3 x the sampled high->low p99 distance (floor 0.02)",
+  "resolution": {
+   "normal": 1024,
+   "ao": 512
+  },
+  "high_tris": 440496,
+  "high_rule": "SDF shell (marching tets) + every closed part",
+  "body_uv_texels_normal": 489992,
+  "normal_baked_pct_of_body_texels": 98.68,
+  "normal_detail_fraction_dev_gt_0.05": 0.4611,
+  "ao_baked_pct_of_body_texels": 100.0,
+  "ao_mean": 0.6928,
+  "ao_p05": 0.55,
+  "pixel_sha": {
+   "normal": "45bf3885e7584ee7",
+   "ao": "0c1015b4fac3616b"
+  },
+  "seconds": 5.5
+ },
+ "digest_geometry_colour_uv": "9295a16aa0cc8ae9",
+ "palette": {
+  "default": {
+   "plumage": {
+    "rgb": [
+     57,
+     51,
+     64
+    ]
+   },
+   "bib": {
+    "rgb": [
+     229,
+     208,
+     184
+    ]
+   },
+   "leg": {
+    "rgb": [
+     103,
+     94,
+     93
+    ]
+   },
+   "leg_band": {
+    "rgb": [
+     62,
+     56,
+     57
+    ]
+   },
+   "claw": {
+    "rgb": [
+     46,
+     45,
+     45
+    ]
+   },
+   "beak": {
+    "rgb": [
+     103,
+     94,
+     93
+    ]
+   },
+   "beak_low": {
+    "rgb": [
+     72,
+     66,
+     68
+    ]
+   },
+   "eye": {
+    "rgb": [
+     245,
+     223,
+     187
+    ]
+   },
+   "pupil": {
+    "rgb": [
+     62,
+     52,
+     62
+    ]
+   },
+   "lid": {
+    "rgb": [
+     30,
+     28,
+     32
+    ]
+   },
+   "scar": {
+    "rgb": [
+     142,
+     68,
+     65
+    ]
+   },
+   "fang": {
+    "rgb": [
+     224,
+     204,
+     183
+    ]
+   },
+   "cape": {
+    "rgb": [
+     53,
+     49,
+     59
+    ]
+   },
+   "cape_mid": {
+    "rgb": [
+     70,
+     65,
+     84
+    ]
+   },
+   "cape_tip": {
+    "rgb": [
+     101,
+     88,
+     112
+    ]
+   }
+  },
+  "files": [
+   "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\palettes\\raven_rogue\\default.json"
+  ],
+  "provenance": "pixel-sampled from the sheet's chips + drawn surfaces (see the palette notes)"
+ }
+}

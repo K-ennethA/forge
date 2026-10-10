@@ -1,0 +1,496 @@
+{
+ "unit": "shadow_mole",
+ "source": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\improved\\shadow_mole.blend",
+ "fps": 24,
+ "weights": {
+  "max_influences": 4,
+  "unweighted": 0,
+  "sum_dev_max": 2.220446049250313e-16,
+  "per_bone_dominant": {
+   "burrow": 2062,
+   "body": 921,
+   "head": 649,
+   "crown": 854,
+   "claw.L": 339,
+   "claw.R": 342,
+   "stalk.tall.0": 234,
+   "stalk.tall.1": 239,
+   "stalk.tall.2": 1367,
+   "stalk.L.0": 141,
+   "stalk.L.1": 110,
+   "stalk.L.2": 1089,
+   "stalk.R.0": 128,
+   "stalk.R.1": 103,
+   "stalk.R.2": 1100
+  },
+  "stalks": {
+   "stalk.tall": {
+    "length": 2.968,
+    "root_arc": 0.2526,
+    "dominant_verts": 966
+   },
+   "stalk.L": {
+    "length": 1.8459,
+    "root_arc": 0.2357,
+    "dominant_verts": 541
+   },
+   "stalk.R": {
+    "length": 1.8459,
+    "root_arc": 0.2357,
+    "dominant_verts": 548
+   }
+  },
+  "rule": "shell: soft SDF ownership (tau 0.08): burrow -> burrow (static), trunk -> body, head + snout -> head, each paw + toes -> claw.<side>, each stalk -> rigkit.vine_weights along its own spine from where it leaves the burrow (the root blends into the burrow); eyes rigid on head, crown petals on crown, each tuft's petals on its stalk's last bone"
+ },
+ "clips": {
+  "idle": {
+   "frames": [
+    1,
+    97
+   ],
+   "period_frames": 96,
+   "seconds": 4.0,
+   "cyclic": true,
+   "seam_main_mm": 0.0,
+   "root_offset_max": 0.0,
+   "clearance_min_z": 0.0,
+   "lowest_point_range": [
+    0.0,
+    0.0
+   ],
+   "body_lift": [
+    0.0,
+    0.0307
+   ],
+   "burrow_static_max_move": 5.5e-05,
+   "floor_guard_lift": {
+    "frames_lifted": 0,
+    "max": 0.0
+   },
+   "tip_p2p": {
+    "stalk.tall": 0.6332,
+    "stalk.L": 0.4584,
+    "stalk.R": 0.459
+   }
+  },
+  "walk": {
+   "frames": [
+    1,
+    49
+   ],
+   "period_frames": 48,
+   "seconds": 2.0,
+   "cyclic": true,
+   "seam_main_mm": 0.0,
+   "root_offset_max": 0.0,
+   "clearance_min_z": 0.0,
+   "lowest_point_range": [
+    0.0,
+    0.0
+   ],
+   "body_lift": [
+    0.0,
+    0.0575
+   ],
+   "burrow_static_max_move": 0.00015,
+   "floor_guard_lift": {
+    "frames_lifted": 0,
+    "max": 0.0
+   },
+   "tip_p2p": {
+    "stalk.tall": 0.487,
+    "stalk.L": 0.2967,
+    "stalk.R": 0.2962
+   }
+  }
+ },
+ "clip_seconds": 0.9,
+ "bones": [
+  {
+   "name": "root",
+   "parent": null,
+   "deform": false,
+   "head": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "tail": [
+    0.0,
+    0.0,
+    0.4
+   ]
+  },
+  {
+   "name": "burrow",
+   "parent": "root",
+   "deform": true,
+   "head": [
+    -0.008,
+    -0.0655,
+    0.0
+   ],
+   "tail": [
+    -0.008,
+    -0.0655,
+    0.35
+   ]
+  },
+  {
+   "name": "body",
+   "parent": "root",
+   "deform": true,
+   "head": [
+    -0.008,
+    -0.2155,
+    0.3
+   ],
+   "tail": [
+    -0.008,
+    -0.4055,
+    1.4
+   ]
+  },
+  {
+   "name": "head",
+   "parent": "body",
+   "deform": true,
+   "head": [
+    -0.008,
+    -0.4055,
+    1.4
+   ],
+   "tail": [
+    -0.008,
+    -1.2655,
+    2.04
+   ]
+  },
+  {
+   "name": "crown",
+   "parent": "head",
+   "deform": true,
+   "head": [
+    -0.008,
+    -1.3057,
+    2.0923
+   ],
+   "tail": [
+    -0.008,
+    -1.5191,
+    2.3697
+   ]
+  },
+  {
+   "name": "claw.L",
+   "parent": "body",
+   "deform": true,
+   "head": [
+    0.472,
+    -0.7855,
+    0.98
+   ],
+   "tail": [
+    0.492,
+    -0.9455,
+    0.72
+   ]
+  },
+  {
+   "name": "claw.R",
+   "parent": "body",
+   "deform": true,
+   "head": [
+    -0.488,
+    -0.7855,
+    0.98
+   ],
+   "tail": [
+    -0.508,
+    -0.9455,
+    0.72
+   ]
+  },
+  {
+   "name": "stalk.tall.0",
+   "parent": "root",
+   "deform": true,
+   "head": [
+    0.8436,
+    0.7405,
+    0.2963
+   ],
+   "tail": [
+    0.7793,
+    0.7526,
+    1.1834
+   ]
+  },
+  {
+   "name": "stalk.tall.1",
+   "parent": "stalk.tall.0",
+   "deform": true,
+   "head": [
+    0.7793,
+    0.7526,
+    1.1834
+   ],
+   "tail": [
+    0.5024,
+    0.4403,
+    1.9827
+   ]
+  },
+  {
+   "name": "stalk.tall.2",
+   "parent": "stalk.tall.1",
+   "deform": true,
+   "head": [
+    0.5024,
+    0.4403,
+    1.9827
+   ],
+   "tail": [
+    0.372,
+    0.3145,
+    2.84
+   ]
+  },
+  {
+   "name": "stalk.L.0",
+   "parent": "root",
+   "deform": true,
+   "head": [
+    1.0568,
+    1.1471,
+    0.2742
+   ],
+   "tail": [
+    1.0794,
+    1.2645,
+    0.7877
+   ]
+  },
+  {
+   "name": "stalk.L.1",
+   "parent": "stalk.L.0",
+   "deform": true,
+   "head": [
+    1.0794,
+    1.2645,
+    0.7877
+   ],
+   "tail": [
+    1.0544,
+    1.3463,
+    1.3084
+   ]
+  },
+  {
+   "name": "stalk.L.2",
+   "parent": "stalk.L.1",
+   "deform": true,
+   "head": [
+    1.0544,
+    1.3463,
+    1.3084
+   ],
+   "tail": [
+    1.192,
+    1.2745,
+    1.82
+   ]
+  },
+  {
+   "name": "stalk.R.0",
+   "parent": "root",
+   "deform": true,
+   "head": [
+    -1.0729,
+    1.1471,
+    0.2742
+   ],
+   "tail": [
+    -1.0954,
+    1.2645,
+    0.7877
+   ]
+  },
+  {
+   "name": "stalk.R.1",
+   "parent": "stalk.R.0",
+   "deform": true,
+   "head": [
+    -1.0954,
+    1.2645,
+    0.7877
+   ],
+   "tail": [
+    -1.0705,
+    1.3463,
+    1.3084
+   ]
+  },
+  {
+   "name": "stalk.R.2",
+   "parent": "stalk.R.1",
+   "deform": true,
+   "head": [
+    -1.0705,
+    1.3463,
+    1.3084
+   ],
+   "tail": [
+    -1.208,
+    1.2745,
+    1.82
+   ]
+  }
+ ],
+ "bone_count": 16,
+ "deform_bone_count": 15,
+ "digest": {
+  "parts": {
+   "bake_normal": "212019bed4548df9",
+   "bake_ao": "88ca3a28d649863e",
+   "geometry_colour_uv": "63dda8b8c58be4b8",
+   "weights": "2d76f948b96bcce5",
+   "keys": "e95bad1f9b914552",
+   "clip_samples": "458f84528a04725a"
+  },
+  "combined": "216803c46f51bd95"
+ },
+ "glb": {
+  "path": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\rigged\\shadow_mole.glb",
+  "bytes": 5934272,
+  "seconds": 0.7,
+  "carries": {
+   "materials": [
+    {
+     "name": "shadow_mole_body",
+     "alphaMode": "OPAQUE",
+     "doubleSided": false,
+     "textures": [
+      "baseColorTexture",
+      "normalTexture"
+     ]
+    }
+   ],
+   "primitives": [
+    {
+     "mesh": "shadow_mole",
+     "material": "shadow_mole_body",
+     "attributes": [
+      "COLOR_0",
+      "COLOR_1",
+      "JOINTS_0",
+      "NORMAL",
+      "POSITION",
+      "TEXCOORD_0",
+      "WEIGHTS_0",
+      "_GLOW"
+     ]
+    }
+   ],
+   "animations": [
+    "idle",
+    "walk"
+   ],
+   "skins": 1,
+   "joints": 16
+  },
+  "structure": "armature identity + skinned 'shadow_mole' (one opaque body material); natural scale; report-only cell fit 0.46964"
+ },
+ "skins": {
+  "default": {
+   "file": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\rigged\\shadow_mole.blend",
+   "palette": {
+    "body": {
+     "rgb": [
+      22,
+      14,
+      25
+     ]
+    },
+    "burrow": {
+     "rgb": [
+      23,
+      15,
+      26
+     ]
+    },
+    "burrow_hole": {
+     "rgb": [
+      8,
+      8,
+      8
+     ]
+    },
+    "claw": {
+     "rgb": [
+      231,
+      46,
+      131
+     ]
+    },
+    "stalk_root": {
+     "rgb": [
+      183,
+      34,
+      104
+     ]
+    },
+    "stalk": {
+     "rgb": [
+      231,
+      46,
+      131
+     ]
+    },
+    "stalk_tip": {
+     "rgb": [
+      233,
+      89,
+      159
+     ]
+    },
+    "petal": {
+     "rgb": [
+      231,
+      46,
+      131
+     ]
+    },
+    "petal_pale": {
+     "rgb": [
+      234,
+      160,
+      198
+     ]
+    },
+    "eye_dark": {
+     "rgb": [
+      4,
+      4,
+      5
+     ]
+    },
+    "eye_white": {
+     "rgb": [
+      236,
+      236,
+      233
+     ]
+    }
+   },
+   "glow": {
+    "skin": "default",
+    "glowing_regions": [],
+    "no_glow": true
+   }
+  },
+  "rule": "default skin only (brief 2026-10-09)"
+ },
+ "improved_report": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\improved\\shadow_mole.json",
+ "seconds": 35.2
+}

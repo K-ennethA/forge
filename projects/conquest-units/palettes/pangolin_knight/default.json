@@ -1,0 +1,26 @@
+{
+ "unit": "pangolin_knight",
+ "skin": "default",
+ "description": "Pangolin Knight default look, PIXEL-SAMPLED from design/reference/pangolin_knight-character-sheet.webp (intake.json swatch chips 70,52,47 / 131,87,64 / 177,114,81 / 203,146,102 / 243,208,170 / 72,59,57 + medians of the drawn surfaces, outline pixels excluded). Cream face / chest / belly with a tan fur edge, brown layered scales in three tones + a dark outline band, a segmented tail, dark grey-brown gauntlets with lighter armour bands, dark claws, a pink nose, a black eye with a white glint. No glow (brief).",
+ "regions": {
+  "cream":          {"rgb": [243, 208, 170], "note": "face / chest / belly: chip 243,208,170; drawn side-view cheek median 243,208,169 (px 845-875, 380-410), belly 240,200,159"},
+  "fur_tan":        {"rgb": [223, 171, 125], "note": "the soft fur edge band + forearms + shins: drawn side-view shin median 223,171,125 (px 960-985, 700-740); chest edge 220,163,114"},
+  "underskin":      {"rgb": [131, 87, 64],   "note": "body skin under the scales (seen in the gaps), upper legs, the head cap under the helmet: chip 131,87,64"},
+  "nose":           {"rgb": [233, 177, 141], "note": "pink nose tip: drawn side-view nose median 233,177,141 (px 752-762, 401-412)"},
+  "foot":           {"rgb": [167, 110, 77],  "note": "feet: drawn side-view foot median 167,110,77 (px 930-960, 760-780)"},
+  "foot_band":      {"rgb": [198, 139, 94],  "note": "light band across each foot behind the claws: drawn band p75 198,139,94 (px 915-925, 750-775)"},
+  "scale_light":    {"rgb": [207, 139, 92],  "note": "lit scales (helmet top, the back centre column): drawn back-view centre leaves 206,137,92 / 208,139,92, helmet top 209,139,92 (chip 203,146,102)"},
+  "scale":          {"rgb": [177, 114, 80],  "note": "base scale tone: chip 177,114,81; drawn helmet side 178,115,79, back side column 172,111,77"},
+  "scale_dark":     {"rgb": [157, 101, 71],  "note": "shaded scales: drawn back-view centre leaf (shade side) 156,100,71, side-view mid flank 160,102,71"},
+  "scale_edge":     {"rgb": [131, 87, 64],   "note": "the outline band round every scale (the sheet's drawn leaf edges, softened): chip 131,87,64"},
+  "tail_band":      {"rgb": [177, 113, 78],  "note": "tail bands (mid): drawn back-view band median 177,113,78 (px 650-680, 760-780)"},
+  "tail_band_light":{"rgb": [202, 133, 89],  "note": "tail bands (light, alternating): drawn back-view band median 202,133,89 (px 600-640, 700-740)"},
+  "tail_under":     {"rgb": [226, 175, 127], "note": "tail underside (lighter): drawn side-view tail underside median 226,175,127 (px 1080-1110, 740-770)"},
+  "gauntlet":       {"rgb": [110, 80, 68],   "note": "armour-band gauntlets (dark grey-brown): drawn side-view gauntlet p25-median 107,79,67 / 131,97,80 (lit) -> 110,80,68 (chip 72,59,57 is the claw tone)"},
+  "gauntlet_band":  {"rgb": [174, 118, 86],  "note": "light armour bands on the gauntlet (cuff + front rim): drawn cuff p75 172,119,88 (px 866-876, 515-545), chip 177,114,81"},
+  "claw":           {"rgb": [76, 58, 52],    "note": "dark claws (hands + feet): chip 72,59,57; drawn claw p25 73,53,47 (hand) / 79,58,51 (foot)"},
+  "eye":            {"rgb": [33, 23, 18],    "note": "black eye: drawn side-view eye median 33,23,18 (px 815-828, 365-390)"},
+  "glint":          {"rgb": [250, 246, 240], "note": "eye highlight (white dot, upper front of the eye)"}
+ },
+ "material": {"roughness": 0.85, "emission_strength": 1.0, "alpha": 1.0}
+}

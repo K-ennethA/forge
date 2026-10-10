@@ -1,0 +1,23 @@
+{
+ "unit": "raven_rogue",
+ "skin": "default",
+ "description": "Raven Rogue default look, PIXEL-SAMPLED from design/reference/raven_rogue-character-sheet.png (intake.json swatch chips 53,49,59 / 70,65,84 / 101,88,112 / 229,208,184 / 142,68,65 / 103,94,93 + direct samples of the drawn surfaces, outline pixels excluded). Dark purple-navy plumage, cream bib, matte dark-grey beak, pale-gold eyes, red scar, cape grading dark -> mid -> violet tips, grey legs + feet. No glow (brief).",
+ "regions": {
+  "plumage":  {"rgb": [57, 51, 64],    "note": "head + body plumage: drawn medians forehead 63,57,71 / head side 56,49,62 / head back (side view) 55,51,64 / upper cape 52,45,59 -> mean 57,51,64 (between chips 53,49,59 and 70,65,84)"},
+  "bib":      {"rgb": [229, 208, 184], "note": "cream bib + cheeks: chip 229,208,184; drawn bib median 212,185,160 (shaded) / lit p75 226,199,169; cheek 222,197,173"},
+  "leg":      {"rgb": [103, 94, 93],   "note": "legs + feet (grey): chip 103,94,93; drawn foot top highlights 130,114,110, shins 65-79,60-73,60-72 (shaded)"},
+  "leg_band": {"rgb": [62, 56, 57],    "note": "simple leg bands (darker grey): drawn band lines 51,45,46 lifted toward the shin tone"},
+  "claw":     {"rgb": [46, 45, 45],    "note": "claws (dark grey): drawn claw lit pixels 46,45,45"},
+  "beak":     {"rgb": [103, 94, 93],   "note": "upper bill (matte dark grey): chip 103,94,93; drawn beak front median 92,82,82 (p75 108,97,94), side culmen 81,76,78"},
+  "beak_low": {"rgb": [72, 66, 68],    "note": "lower mandible (darker): drawn front p25 71,65,68; side gonys band 47,46,47 (shadowed)"},
+  "eye":      {"rgb": [245, 223, 187], "note": "pale-gold eye: drawn lit eye side 245-248,223-225,186-190 / front p75 245,222,185"},
+  "pupil":    {"rgb": [62, 52, 62],    "note": "pupil (dark plum-grey): drawn pupil pixels 68,58,57 (R) / 30,22,26 (L core)"},
+  "lid":      {"rgb": [30, 28, 32],    "note": "lid line + eye rim (the drawn black outline round the eye): outline pixels ~30,28,32"},
+  "scar":     {"rgb": [142, 68, 65],   "note": "red slash scar: chip 142,68,65; drawn scar 124,59,60"},
+  "fang":     {"rgb": [224, 204, 183], "note": "small fang (cream-white): drawn fang brightest 30% 224,204,183 (front) / 214,192,170 (side)"},
+  "cape":     {"rgb": [53, 49, 59],    "note": "cape feathers, upper (darkest plumage): chip 53,49,59; drawn cape back 46,41,54 / upper cape 52,45,59"},
+  "cape_mid": {"rgb": [70, 65, 84],    "note": "cape grading band (purple-navy): chip 70,65,84"},
+  "cape_tip": {"rgb": [101, 88, 112],  "note": "ragged violet tips: chip 101,88,112; drawn tips 93-95,76-79,102-108 (front mid-cape 95,79,108; side tail 89,71,103)"}
+ },
+ "material": {"roughness": 0.9, "emission_strength": 1.0, "alpha": 1.0}
+}

@@ -1,0 +1,10 @@
+00:01.610  blend            | Read blend: "C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\rigged\aquaoct.blend"
+00:03.735  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\aquaoct\aquaoct_face.png'
+00:04.172  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\aquaoct\aquaoct_head_spot.png'
+00:04.516  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\aquaoct\aquaoct_mask_eye.png'
+00:04.907  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\aquaoct\aquaoct_tentacle.png'
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\aquaoct\aquaoct_face.png
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\aquaoct\aquaoct_head_spot.png
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\aquaoct\aquaoct_mask_eye.png
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\aquaoct\aquaoct_tentacle.png
+Blender 5.0.1 (hash a3db93c5b259 built 2025-12-16 01:32:30)

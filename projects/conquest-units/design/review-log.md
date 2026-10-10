@@ -1622,3 +1622,124 @@ forge unit not yet in the game: seedant (3'6"), shadowbun (1.80 m, artist
 size open), shadow_assassin (6') as compendium placeholders per the
 import-wave precedent. Answers Z2: no multi-cell for magmoo / barkling /
 petalfang. They overhang.
+
+## 2026-10-09 — NEW UNITS x4: Bombee, Aquaoct, Canine Bat Hybrid, Raven Rogue (artist sheets)
+
+Artist (verbatim): "these 3 are next" (Bombee, Aquaoct, Canine Bat Hybrid) +
+"next intake" (Raven Rogue) + "load them in and start the process".
+Sheets were pasted inline, then loaded off the clipboard by a watcher:
+design/reference/{bombee,aquaoct,canine_bat,raven_rogue}-character-sheet.png
+(originals in design/reference/incoming/). Intake: design/reference/<unit>/
+intake.json + intake_overlay.png. All four are in tier REGULAR [8000,
+22000] and ship with idle + walk PLACEHOLDER clips (movement asked, never
+guessed). No artist size yet: each goes in at its natural sheet scale, and
+the size table takes it.
+
+BOMBEE (true orthos BACK + SIDE; the front is drawn 3/4). A round, almost
+spherical fuzzy bee body (~4.3 units incl. wings).
+- Front: a pale cream face disc covers the front. Two round, shiny
+  dark-brown eyes with a highlight, a small smile, pink blush cheeks.
+- Body: bold black + yellow bands wrap the body behind the face. From the
+  back, the bands circle a large conical cream-tan STINGER pointing back.
+- Wings: two upper wings, large leaf / petal shapes, slightly translucent
+  cream with a tan diamond vein lattice. Two small lower wings.
+- Underside: four small conical cream-tan spikes (feet).
+- Palette: cream 253,235,207 / yellow 254,198,92 / black 45,41,40 /
+  tan 229,190,148 / blush 249,169,141.
+- A flyer: placeholder idle = hover bob + wing buzz, walk = hover-drift.
+  The translucent wings use the firefly alpha path.
+
+AQUAOCT (true orthos FRONT + SIDE). An octopus.
+- Head: a tall, glossy, egg-shaped pale-aqua head, more than half the
+  height, with rounded darker teal spots in varied sizes.
+- Face: a goggle-like cream / white MASK around two big round eyes (teal
+  iris, highlight). The side view shows its round strap button. Below it,
+  a small beak-like mouth with a scalloped white "beard" frill.
+- Tentacles: EIGHT leaf-like flowing tentacles with soft wavy edges, aqua
+  above and cream-white below. They splay out and curl down, and it stands
+  on the tips.
+- Palette: 215,236,231 / 164,215,206 / 109,178,175 / 75,130,144 /
+  39,59,64.
+- Placeholder: idle = tentacle sway; walk = a tentacle-shuffle glide.
+
+CANINE BAT HYBRID — unit "canine_bat" (true orthos BACK + SIDE; the front
+is drawn 3/4). A QUADRUPED dog-bat (~6.0 units incl. ears).
+- Ears: OVERSIZED upright pointed ears, a thin membrane with a mauve
+  inner surface and soft fur at the base.
+- Face: big round dark eyes with a pale rim, a distinctive pig / bat snout
+  (mauve-grey), small fangs.
+- Body: a fluffy pale neck RUFF, short soft dark plum-charcoal fur, short
+  sturdy legs with rounded paws, lighter fur on the lower legs / paws, a
+  small tail.
+- Palette: 37,34,37 / 87,76,84 / 189,169,165 / 137,106,116 /
+  104,74,89.
+- NO wings drawn (question C1).
+- The first four-legged forge creature: placeholder walk = a 4-beat
+  quadruped trot.
+
+RAVEN ROGUE — unit "raven_rogue" (true orthos FRONT + SIDE). A chunky
+upright raven (~5.3 units).
+- Plumage: dark purple-navy, a cream chest bib, a LARGE curved dark-grey
+  beak.
+- Face: heavy-lidded intense pale-gold eyes, a red slash scar across one
+  brow, a small fang, a swept head crest.
+- Wings: layered CAPE-like wings draped around the body, with torn /
+  ragged tips that grade to violet.
+- Legs + tail: short legs with simple leg bands, clawed grey feet, a short
+  ragged tail.
+- Palette: 53,49,59 / 70,65,84 / 101,88,112 / 229,208,184 /
+  142,68,65 / 103,94,93.
+- No weapon on the sheet. Placeholder: idle = a cape-ruffle stance; walk =
+  a hop-strut.
+
+## 2026-10-09 — Bombee v1 verdict (artist verbatim + 2 markups)
+
+"get rid of these extra wings on bombee and the main wings staying should
+clip in as much and should be more out like the red"
+Markups: design/reference/bombee-v1-lowerwing-annotation.png (red X on both
+small lower wings), bombee-v1-wingroot-annotation.png (a red outline drawn
+round the upper wing, ABOVE / outside the body line).
+Binding reading: (1) REMOVE the two small lower wings: geometry, bones,
+clip keys, everything. (2) The two main wings must NOT clip into the ball as
+much: roots seated shallowly on the top surface, with the petal raised and
+splayed outward so the whole leaf stands above / outside the body silhouette,
+per the red outline.
+
+## 2026-10-09 — NEW UNITS x2: Pangolin Knight, Shadow Mole (artist sheets)
+
+Artist (verbatim): "this is a new intake" (Pangolin Knight) + "also begin
+shadow mole". Sheets: design/reference/pangolin_knight-character-sheet.webp,
+shadow_mole-character-sheet.png (the latter came off the clipboard). Both
+have intake.json + overlay. Both sheets draw the FRONT three-quarter, so the
+true orthos are BACK + SIDE. Tier REGULAR [8000, 22000]. Idle + walk are
+PLACEHOLDER. Natural sheet scale; the size table takes them.
+
+PANGOLIN KNIGHT ("pangolin_knight", ~5.9 units). An upright bipedal
+pangolin.
+- Face: cream face / chest / belly with soft fluffy fur; a short snout
+  with a pink nose tip; a simple expressive black eye.
+- Head: HELMET-like overlapping head scales with a crest ("simple layered
+  scales, smooth rounded shapes, not too many scales").
+- Body: covered in layered, overlapping, rounded-pointed brown SCALES in
+  rows, the back a stack of large leaf scales. A LONG SEGMENTED tapering
+  TAIL of scaled bands curves down to the floor behind.
+- Forelimbs held forward with armour-band GAUNTLETS and dark brown claws.
+  Short legs, clawed dark feet.
+- Palette: 70,52,47 / 131,87,64 / 177,114,81 / 203,147,102 / 243,208,170
+  / 71,59,57.
+- No weapon drawn (question P1).
+
+SHADOW MOLE ("shadow_mole", ~3.8 units). A near-black mole emerging from
+a SHADOW BURROW.
+- Burrow: a soft, cloud-edged, near-black disc on the floor, with the
+  creature rising from it.
+- Body: a smooth rounded dome body + head; a small simple white eye with a
+  dark pupil.
+- Stalks: pink BURROW-STALKS. One tall and two short, long and flexible,
+  each ending in a flower-like petal tip with a gradient from bright pink
+  to pale pink. A pink petal crown sits on the head.
+- Claws: two bright pink DIGGING CLAWS resting on the burrow rim, rounded
+  with three pointed toes.
+- Palette: body 22,14,25 / shadow 23,15,26 / pink 230,47,132 / highlight
+  227,148,189 / accent 186,34,105.
+- Glow: none by default (question M1: should the pink glow?).

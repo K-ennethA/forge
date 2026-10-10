@@ -1,0 +1,421 @@
+{
+ "unit": "canine_bat",
+ "conquest_character_id": "canine_bat",
+ "source": "none: from-scratch unit (sheet design/reference/canine_bat-character-sheet.png)",
+ "tier": "regular",
+ "tri_budget": [
+  8000,
+  22000
+ ],
+ "units": "sheet units: 1 unit = 100 px; measured off the TRUE orthos (back + side); floor z = 0 at the soles",
+ "overrides": {},
+ "sdf": {
+  "step": 0.025,
+  "band": 0.24,
+  "grid": [
+   133,
+   201,
+   207
+  ],
+  "ops": 73,
+  "high_tris": 678488,
+  "high_verts": 339220,
+  "tufts": {
+   "head": 8,
+   "ruff": 15
+  },
+  "ruff_puffs": 19,
+  "crumbs": {
+   "pieces": 1,
+   "dropped_verts": 0
+  },
+  "seconds": 6.3
+ },
+ "retopo": {
+  "method": "SDF marching tetrahedra (step 0.025) -> collapse decimation (deterministic)",
+  "decimated_tris": 12000,
+  "specks": {
+   "pieces": 1,
+   "dropped_verts": 0
+  },
+  "doubled_faces_removed": 0,
+  "low_to_high": {
+   "mean": 0.00114,
+   "p99": 0.00359,
+   "max": 0.00568
+  },
+  "high_to_low_sampled": {
+   "p99": 0.00311,
+   "max": 0.01024
+  },
+  "bbox_high": [
+   2.3405,
+   4.4225,
+   4.6399
+  ],
+  "bbox_low": [
+   2.3404,
+   4.4246,
+   4.6397
+  ],
+  "bbox_low_over_high": [
+   0.99996,
+   1.00048,
+   0.99996
+  ],
+  "seconds": 8.2
+ },
+ "iso_cuts": {
+  "cuts": [
+   {
+    "field": "f_snout",
+    "tau": 0.0,
+    "edge_splits": 22,
+    "face_connects": 31
+   },
+   {
+    "field": "f_ruff",
+    "tau": 0.0,
+    "edge_splits": 188,
+    "face_connects": 227
+   },
+   {
+    "field": "light",
+    "tau": 0.0,
+    "edge_splits": 199,
+    "face_connects": 238
+   }
+  ],
+  "seconds": 3.4,
+  "shell_tris_after_cuts": 12818
+ },
+ "centre_shift": [
+  0.003182,
+  -0.062554,
+  0.000117
+ ],
+ "glow": {
+  "skin": "default",
+  "glowing_regions": [],
+  "rule": "no glow (brief): every region writes zero Glow"
+ },
+ "regions_faces": {
+  "canine_bat": {
+   "fur": 5865,
+   "fur_light": 3999,
+   "ruff": 2683,
+   "snout": 271,
+   "nostril": 140,
+   "ear_back": 804,
+   "ear_inner": 504,
+   "ear_rim": 456,
+   "ear_vein": 108,
+   "eye_rim": 432,
+   "eye": 432,
+   "eye_hi": 120,
+   "fang": 100
+  }
+ },
+ "regions_area_share": {
+  "fur": 0.4672,
+  "fur_light": 0.2169,
+  "ruff": 0.1041,
+  "snout": 0.0141,
+  "nostril": 0.0017,
+  "ear_back": 0.0753,
+  "ear_inner": 0.0417,
+  "ear_rim": 0.0113,
+  "ear_vein": 0.0141,
+  "eye_rim": 0.0289,
+  "eye": 0.0199,
+  "eye_hi": 0.0021,
+  "fang": 0.0028
+ },
+ "facing": {
+  "rule": "head centre (HEAD_C) -> the snout face centre on the midline",
+  "anchor": [
+   -0.0032,
+   -1.0174,
+   3.8399
+  ],
+  "landmark": [
+   -0.0032,
+   -2.2074,
+   3.5449
+  ],
+  "angle_from_minusY_deg": 0.0
+ },
+ "face": {
+  "eye.L": {
+   "surface": [
+    0.7609000205993652,
+    -1.7651000022888184,
+    3.8399999141693115
+   ],
+   "normal": [
+    0.6531,
+    -0.7572,
+    0.0077
+   ]
+  },
+  "nostril.L": {
+   "surface": [
+    0.10999999940395355,
+    -2.2695000171661377,
+    3.5799999237060547
+   ]
+  },
+  "fang.L": {
+   "root": [
+    0.2,
+    -2.02,
+    3.386
+   ],
+   "tip": [
+    0.2,
+    -2.05,
+    3.096
+   ]
+  },
+  "eye.R": {
+   "surface": [
+    -0.7599999904632568,
+    -1.764299988746643,
+    3.8399999141693115
+   ],
+   "normal": [
+    -0.6402,
+    -0.7678,
+    0.0266
+   ]
+  },
+  "nostril.R": {
+   "surface": [
+    -0.10999999940395355,
+    -2.2697999477386475,
+    3.5799999237060547
+   ]
+  },
+  "fang.R": {
+   "root": [
+    -0.2,
+    -2.02,
+    3.3819
+   ],
+   "tip": [
+    -0.2,
+    -2.05,
+    3.0919
+   ]
+  }
+ },
+ "tris": {
+  "total": 18578,
+  "shell": 12818,
+  "shell_before_cuts": 12000,
+  "eyes": 1728,
+  "nostrils": 224,
+  "fangs": 160,
+  "ears": 3648,
+  "per_part": {
+   "eye_rim.L": 384,
+   "eye.L": 384,
+   "eye_hi.L": 96,
+   "nostril.L": 112,
+   "fang.L": 80,
+   "eye_rim.R": 384,
+   "eye.R": 384,
+   "eye_hi.R": 96,
+   "nostril.R": 112,
+   "fang.R": 80,
+   "ear.L": 1824,
+   "ear.R": 1824
+  }
+ },
+ "tier_rationale": "REGULAR role (a line unit): window [8000, 22000]. The shell carries the fur silhouette (ruff fringe, cheeks, ear-base fur, belly fringe, haunches, lower-leg fluff) and the bake carries the tufts at full density; the two oversized membrane ears are the next biggest share.",
+ "open_edges": {
+  "closed_parts": [
+   "ear.L",
+   "ear.R",
+   "eye.L",
+   "eye.R",
+   "eye_hi.L",
+   "eye_hi.R",
+   "eye_rim.L",
+   "eye_rim.R",
+   "fang.L",
+   "fang.R",
+   "nostril.L",
+   "nostril.R",
+   "shell"
+  ],
+  "open_parts": {},
+  "rule": "every piece is a closed solid (shell, ears, decals, fangs)"
+ },
+ "measure": {
+  "bbox": [
+   [
+    -1.3433,
+    -2.2172,
+    0.0
+   ],
+   [
+    1.3433,
+    2.2172,
+    6.0399
+   ]
+  ],
+  "height": 6.0399,
+  "width_x": 2.6865,
+  "depth_y": 4.4345,
+  "sheet_px_equivalent": {
+   "height_px": 604.0,
+   "width_px": 268.7,
+   "depth_px": 443.4
+  },
+  "sheet": {
+   "back_view_height_px": 605,
+   "back_view_width_px": 266,
+   "side_view_length_px": 446
+  },
+  "export_cell_fit_report_only": {
+   "scale": 0.29802,
+   "height_m": 1.8,
+   "footprint_m": 1.3216,
+   "bound_by": "height"
+  }
+ },
+ "bake": {
+  "NORMAL": {
+   "result": [
+    "FINISHED"
+   ],
+   "seconds": 1.1
+  },
+  "AO": {
+   "result": [
+    "FINISHED"
+   ],
+   "seconds": 1.1
+  },
+  "cage_extrusion": 0.02,
+  "cage_rule": "3 x the sampled high->low p99 distance (floor 0.02)",
+  "resolution": {
+   "normal": 1024,
+   "ao": 512
+  },
+  "high_tris": 681584,
+  "high_rule": "SDF shell (marching tets, every fur tuft at full density) + every closed part",
+  "body_uv_texels_normal": 602093,
+  "normal_baked_pct_of_body_texels": 100.0,
+  "normal_detail_fraction_dev_gt_0.05": 0.1555,
+  "ao_baked_pct_of_body_texels": 100.0,
+  "ao_mean": 0.7771,
+  "ao_p05": 0.0,
+  "pixel_sha": {
+   "normal": "c657ccc650ba4859",
+   "ao": "e2c86648363c7d68"
+  },
+  "seconds": 5.1
+ },
+ "digest_geometry_colour_uv": "43af81386b8aae79",
+ "palette": {
+  "default": {
+   "fur": {
+    "rgb": [
+     55,
+     49,
+     54
+    ]
+   },
+   "fur_light": {
+    "rgb": [
+     132,
+     114,
+     115
+    ]
+   },
+   "ruff": {
+    "rgb": [
+     143,
+     123,
+     122
+    ]
+   },
+   "snout": {
+    "rgb": [
+     173,
+     150,
+     150
+    ]
+   },
+   "nostril": {
+    "rgb": [
+     86,
+     72,
+     73
+    ]
+   },
+   "ear_inner": {
+    "rgb": [
+     135,
+     105,
+     113
+    ]
+   },
+   "ear_vein": {
+    "rgb": [
+     125,
+     98,
+     105
+    ]
+   },
+   "ear_rim": {
+    "rgb": [
+     37,
+     34,
+     37
+    ]
+   },
+   "ear_back": {
+    "rgb": [
+     55,
+     49,
+     54
+    ]
+   },
+   "eye": {
+    "rgb": [
+     30,
+     27,
+     28
+    ]
+   },
+   "eye_rim": {
+    "rgb": [
+     229,
+     202,
+     185
+    ]
+   },
+   "eye_hi": {
+    "rgb": [
+     242,
+     228,
+     221
+    ]
+   },
+   "fang": {
+    "rgb": [
+     205,
+     182,
+     169
+    ]
+   }
+  },
+  "files": [
+   "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\palettes\\canine_bat\\default.json"
+  ],
+  "provenance": "pixel-sampled from the sheet's chips + drawn surfaces (see the palette notes)"
+ }
+}

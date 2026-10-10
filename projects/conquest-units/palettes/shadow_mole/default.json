@@ -1,0 +1,19 @@
+{
+ "unit": "shadow_mole",
+ "skin": "default",
+ "description": "Shadow Mole default look, PIXEL-SAMPLED from design/reference/shadow_mole-character-sheet.png: the five palette chips (intake.json swatches 22,14,25 body / 23,15,26 shadow / 230,47,132 pink primary / 227,148,189 pink highlight / 186,34,105 pink accent) + medians of the drawn surfaces over the back + side views (sheet box x 442-1201, y 260-660; masks: body = purple-tinted near-black, burrow = neutral near-black, pink = R > 110 and R - G > 40). Near-black mole on a near-black cloud burrow with a deeper black opening, bright pink stalks / claws / petals with pale-pink petal streaks. No glow anywhere (the sheet draws none; question M1 open).",
+ "regions": {
+  "body":        {"rgb": [22, 14, 25], "note": "mole body + head: chip 1 (22,14,25); drawn body mask median 22,14,25 (33165 px; back (632,520) / side (1000,530) medians identical)"},
+  "burrow":      {"rgb": [23, 15, 26], "note": "burrow rim puffs + disc (v1.1 gate: a near-black shadow pool, not grey stone): the SHADOW chip 2 (23,15,26, deep purple-black); v1 used 16,14,17, the drawn burrow mask median outside the opening (20095 px); back puffs (470-520, 600-625) 25,25,26 lit / (740-790, 600-625) 18,16,18"},
+  "burrow_hole": {"rgb": [8, 8, 8], "note": "the burrow's dark opening round the body: drawn lum < 11 inside the burrow, median 8,8,8 (24150 px; back (600-660, 590-610) 8,8,8)"},
+  "claw":        {"rgb": [231, 46, 131], "note": "digging claws: side claw (955-1025, 555-625) median 230,45,130; drawn pink median 231,46,131; chip 3 230,47,132"},
+  "stalk_root":  {"rgb": [183, 34, 104], "note": "stalk root band (accent): short-stalk back rows y 540-560 median 181,30,101 / 183,31,103; drawn dark-pink median 183,34,104; chip 5 186,34,105"},
+  "stalk":       {"rgb": [231, 46, 131], "note": "stalk body (bright pink): short-stalk back rows y 460-500 231,47,132 / 235,45,131, tall-stalk rows y 320-420 230,47,131 / 233,48,134 / 232,48,132; chip 3 230,47,132"},
+  "stalk_tip":   {"rgb": [233, 89, 159], "note": "the paler band under each tuft (the gradient toward pale): drawn transition cluster (pink, G 70-115) median 233,89,159 (1624 px)"},
+  "petal":       {"rgb": [231, 46, 131], "note": "petal edges + tips (bright pink): drawn pink median 231,46,131; crown petals side (840-955, 360-495) dark side 200,40,114 (shaded) -- the lit primary is used"},
+  "petal_pale":  {"rgb": [234, 160, 198], "note": "the petals' pale-pink streaks: drawn pale petal cluster (pink, G > 100) median 234,160,198 (7384 px); chip 4 227,148,189"},
+  "eye_dark":    {"rgb": [4, 4, 5], "note": "the eye's dark oval: side eye (981,494) ring lum 0-5 (13 x 21 px oval)"},
+  "eye_white":   {"rgb": [236, 236, 233], "note": "the eye's white centre: side eye core lum 212-246 (6 x 12 px), front eye core 230-255"}
+ },
+ "material": {"roughness": 0.85, "emission_strength": 1.0, "alpha": 1.0}
+}

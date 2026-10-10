@@ -1,0 +1,1653 @@
+{
+ "unit": "pangolin_knight",
+ "conquest_character_id": "pangolin_knight",
+ "source": "none: from-scratch unit (sheet design/reference/pangolin_knight-character-sheet.webp)",
+ "tier": "regular",
+ "tri_budget": [
+  8000,
+  22000
+ ],
+ "units": "sheet units: 1 unit = 100 px; measured off the TRUE orthos (back + side); floor z = 0 at the soles (side y 790 / back y 782; the intake floor lines 818 / 811 are the drawn tail tip, 28 / 29 px lower)",
+ "overrides": {},
+ "sdf": {
+  "step": 0.025,
+  "band": 0.3,
+  "max_k": 0.22,
+  "grid": [
+   111,
+   133,
+   220
+  ],
+  "ops": 14,
+  "high_tris": 413140,
+  "high_verts": 206572,
+  "crumbs": {
+   "pieces": 1,
+   "dropped_verts": 0
+  },
+  "seconds": 3.5
+ },
+ "retopo": {
+  "method": "SDF marching tetrahedra (step 0.025) -> collapse decimation (deterministic)",
+  "decimated_tris": 5000,
+  "specks": {
+   "pieces": 1,
+   "dropped_verts": 0
+  },
+  "doubled_faces_removed": 0,
+  "low_to_high": {
+   "mean": 0.00129,
+   "p99": 0.00365,
+   "max": 0.00486
+  },
+  "high_to_low_sampled": {
+   "p99": 0.00334,
+   "max": 0.00636
+  },
+  "bbox_low": [
+   [
+    -1.2413,
+    -2.3877,
+    0.0
+   ],
+   [
+    1.2419,
+    0.4542,
+    5.2797
+   ]
+  ],
+  "bbox_high": [
+   [
+    -1.2399,
+    -2.3899,
+    0.0001
+   ],
+   [
+    1.2399,
+    0.455,
+    5.28
+   ]
+  ],
+  "seconds": 4.4
+ },
+ "iso_cuts": {
+  "cuts": [
+   {
+    "field": "f_arm.L",
+    "tau": 0.0,
+    "edge_splits": 32,
+    "face_connects": 38
+   },
+   {
+    "field": "f_arm.R",
+    "tau": 0.0,
+    "edge_splits": 26,
+    "face_connects": 33
+   },
+   {
+    "field": "f_leg.L",
+    "tau": 0.0,
+    "edge_splits": 41,
+    "face_connects": 48
+   },
+   {
+    "field": "f_leg.R",
+    "tau": 0.0,
+    "edge_splits": 53,
+    "face_connects": 58
+   },
+   {
+    "field": "cream",
+    "tau": 0.0,
+    "edge_splits": 108,
+    "face_connects": 127
+   },
+   {
+    "field": "cream",
+    "tau": -0.1,
+    "edge_splits": 163,
+    "face_connects": 171
+   },
+   {
+    "field": "nose",
+    "tau": 0.0,
+    "edge_splits": 13,
+    "face_connects": 14
+   },
+   {
+    "field": "z",
+    "tau": 0.4,
+    "edge_splits": 67,
+    "face_connects": 74
+   },
+   {
+    "field": "y",
+    "tau": -0.72,
+    "edge_splits": 34,
+    "face_connects": 40
+   },
+   {
+    "field": "y",
+    "tau": -0.58,
+    "edge_splits": 37,
+    "face_connects": 46
+   }
+  ],
+  "seconds": 1.6,
+  "shell_tris_after_cuts": 6148
+ },
+ "scales": {
+  "count_body": 49,
+  "count_helmet": 16,
+  "rows": [
+   {
+    "name": "scale.0.0.C",
+    "theta": 180.0,
+    "z": [
+     4.3,
+     3.3
+    ],
+    "R_root_tip": [
+     0.251,
+     0.92
+    ],
+    "tone": "scale",
+    "tris": 164
+   },
+   {
+    "name": "scale.0.1.L",
+    "theta": 144.0,
+    "z": [
+     4.3,
+     3.3
+    ],
+    "R_root_tip": [
+     0.285,
+     0.974
+    ],
+    "tone": "scale",
+    "tris": 164
+   },
+   {
+    "name": "scale.0.1.R",
+    "theta": 144.0,
+    "z": [
+     4.3,
+     3.3
+    ],
+    "R_root_tip": [
+     0.285,
+     0.974
+    ],
+    "tone": "scale",
+    "tris": 164
+   },
+   {
+    "name": "scale.0.2.L",
+    "theta": 108.0,
+    "z": [
+     4.3,
+     3.3
+    ],
+    "R_root_tip": [
+     0.412,
+     0.994
+    ],
+    "tone": "scale_dark",
+    "tris": 164
+   },
+   {
+    "name": "scale.0.2.R",
+    "theta": 108.0,
+    "z": [
+     4.3,
+     3.3
+    ],
+    "R_root_tip": [
+     0.412,
+     0.994
+    ],
+    "tone": "scale",
+    "tris": 164
+   },
+   {
+    "name": "scale.0.3.L",
+    "theta": 72.0,
+    "z": [
+     4.3,
+     3.3
+    ],
+    "R_root_tip": [
+     0.681,
+     1.003
+    ],
+    "tone": "scale",
+    "tris": 164
+   },
+   {
+    "name": "scale.0.3.R",
+    "theta": 72.0,
+    "z": [
+     4.3,
+     3.3
+    ],
+    "R_root_tip": [
+     0.681,
+     1.003
+    ],
+    "tone": "scale",
+    "tris": 164
+   },
+   {
+    "name": "scale.1.0.L",
+    "theta": 162.0,
+    "z": [
+     3.88,
+     2.88
+    ],
+    "R_root_tip": [
+     0.38,
+     1.045
+    ],
+    "tone": "scale_light",
+    "tris": 164
+   },
+   {
+    "name": "scale.1.0.R",
+    "theta": 162.0,
+    "z": [
+     3.88,
+     2.88
+    ],
+    "R_root_tip": [
+     0.38,
+     1.045
+    ],
+    "tone": "scale_light",
+    "tris": 164
+   },
+   {
+    "name": "scale.1.1.L",
+    "theta": 126.0,
+    "z": [
+     3.88,
+     2.88
+    ],
+    "R_root_tip": [
+     0.391,
+     1.047
+    ],
+    "tone": "scale",
+    "tris": 164
+   },
+   {
+    "name": "scale.1.1.R",
+    "theta": 126.0,
+    "z": [
+     3.88,
+     2.88
+    ],
+    "R_root_tip": [
+     0.391,
+     1.047
+    ],
+    "tone": "scale_dark",
+    "tris": 164
+   },
+   {
+    "name": "scale.1.2.L",
+    "theta": 90.0,
+    "z": [
+     3.88,
+     2.88
+    ],
+    "R_root_tip": [
+     0.397,
+     1.004
+    ],
+    "tone": "scale",
+    "tris": 164
+   },
+   {
+    "name": "scale.1.2.R",
+    "theta": 90.0,
+    "z": [
+     3.88,
+     2.88
+    ],
+    "R_root_tip": [
+     0.397,
+     1.004
+    ],
+    "tone": "scale",
+    "tris": 164
+   },
+   {
+    "name": "scale.2.0.C",
+    "theta": 180.0,
+    "z": [
+     3.46,
+     2.46
+    ],
+    "R_root_tip": [
+     0.557,
+     1.188
+    ],
+    "tone": "scale_light",
+    "tris": 164
+   },
+   {
+    "name": "scale.2.1.L",
+    "theta": 144.0,
+    "z": [
+     3.46,
+     2.46
+    ],
+    "R_root_tip": [
+     0.555,
+     1.096
+    ],
+    "tone": "scale",
+    "tris": 164
+   },
+   {
+    "name": "scale.2.1.R",
+    "theta": 144.0,
+    "z": [
+     3.46,
+     2.46
+    ],
+    "R_root_tip": [
+     0.555,
+     1.096
+    ],
+    "tone": "scale",
+    "tris": 164
+   },
+   {
+    "name": "scale.2.2.L",
+    "theta": 108.0,
+    "z": [
+     3.46,
+     2.46
+    ],
+    "R_root_tip": [
+     0.552,
+     0.933
+    ],
+    "tone": "scale",
+    "tris": 164
+   },
+   {
+    "name": "scale.2.2.R",
+    "theta": 108.0,
+    "z": [
+     3.46,
+     2.46
+    ],
+    "R_root_tip": [
+     0.552,
+     0.933
+    ],
+    "tone": "scale",
+    "tris": 164
+   },
+   {
+    "name": "scale.2.3.L",
+    "theta": 72.0,
+    "z": [
+     3.46,
+     2.46
+    ],
+    "R_root_tip": [
+     0.552,
+     0.945
+    ],
+    "tone": "scale_dark",
+    "tris": 164
+   },
+   {
+    "name": "scale.2.3.R",
+    "theta": 72.0,
+    "z": [
+     3.46,
+     2.46
+    ],
+    "R_root_tip": [
+     0.552,
+     0.945
+    ],
+    "tone": "scale",
+    "tris": 164
+   },
+   {
+    "name": "scale.3.0.L",
+    "theta": 162.0,
+    "z": [
+     3.04,
+     2.04
+    ],
+    "R_root_tip": [
+     0.663,
+     1.316
+    ],
+    "tone": "scale",
+    "tris": 164
+   },
+   {
+    "name": "scale.3.0.R",
+    "theta": 162.0,
+    "z": [
+     3.04,
+     2.04
+    ],
+    "R_root_tip": [
+     0.663,
+     1.316
+    ],
+    "tone": "scale_light",
+    "tris": 164
+   },
+   {
+    "name": "scale.3.1.L",
+    "theta": 126.0,
+    "z": [
+     3.04,
+     2.04
+    ],
+    "R_root_tip": [
+     0.655,
+     1.127
+    ],
+    "tone": "scale",
+    "tris": 164
+   },
+   {
+    "name": "scale.3.1.R",
+    "theta": 126.0,
+    "z": [
+     3.04,
+     2.04
+    ],
+    "R_root_tip": [
+     0.655,
+     1.127
+    ],
+    "tone": "scale",
+    "tris": 164
+   },
+   {
+    "name": "scale.3.2.L",
+    "theta": 90.0,
+    "z": [
+     3.04,
+     2.04
+    ],
+    "R_root_tip": [
+     0.766,
+     1.008
+    ],
+    "tone": "scale",
+    "tris": 164
+   },
+   {
+    "name": "scale.3.2.R",
+    "theta": 90.0,
+    "z": [
+     3.04,
+     2.04
+    ],
+    "R_root_tip": [
+     0.766,
+     1.008
+    ],
+    "tone": "scale",
+    "tris": 164
+   },
+   {
+    "name": "scale.4.0.C",
+    "theta": 180.0,
+    "z": [
+     2.62,
+     1.62
+    ],
+    "R_root_tip": [
+     0.737,
+     1.552
+    ],
+    "tone": "scale_light",
+    "tris": 164
+   },
+   {
+    "name": "scale.4.1.L",
+    "theta": 144.0,
+    "z": [
+     2.62,
+     1.62
+    ],
+    "R_root_tip": [
+     0.723,
+     1.325
+    ],
+    "tone": "scale",
+    "tris": 164
+   },
+   {
+    "name": "scale.4.1.R",
+    "theta": 144.0,
+    "z": [
+     2.62,
+     1.62
+    ],
+    "R_root_tip": [
+     0.723,
+     1.325
+    ],
+    "tone": "scale_dark",
+    "tris": 164
+   },
+   {
+    "name": "scale.4.2.L",
+    "theta": 108.0,
+    "z": [
+     2.62,
+     1.62
+    ],
+    "R_root_tip": [
+     0.702,
+     1.12
+    ],
+    "tone": "scale_dark",
+    "tris": 164
+   },
+   {
+    "name": "scale.4.2.R",
+    "theta": 108.0,
+    "z": [
+     2.62,
+     1.62
+    ],
+    "R_root_tip": [
+     0.702,
+     1.12
+    ],
+    "tone": "scale",
+    "tris": 164
+   },
+   {
+    "name": "scale.4.3.L",
+    "theta": 72.0,
+    "z": [
+     2.62,
+     1.62
+    ],
+    "R_root_tip": [
+     1.136,
+     1.109
+    ],
+    "tone": "scale_dark",
+    "tris": 164
+   },
+   {
+    "name": "scale.4.3.R",
+    "theta": 72.0,
+    "z": [
+     2.62,
+     1.62
+    ],
+    "R_root_tip": [
+     1.136,
+     1.109
+    ],
+    "tone": "scale_dark",
+    "tris": 164
+   },
+   {
+    "name": "scale.5.0.L",
+    "theta": 162.0,
+    "z": [
+     2.2,
+     1.25
+    ],
+    "R_root_tip": [
+     0.79,
+     1.501
+    ],
+    "tone": "scale_light",
+    "tris": 164
+   },
+   {
+    "name": "scale.5.0.R",
+    "theta": 162.0,
+    "z": [
+     2.2,
+     1.25
+    ],
+    "R_root_tip": [
+     0.79,
+     1.537
+    ],
+    "tone": "scale_light",
+    "tris": 164
+   },
+   {
+    "name": "scale.5.1.L",
+    "theta": 126.0,
+    "z": [
+     2.2,
+     1.25
+    ],
+    "R_root_tip": [
+     0.759,
+     1.324
+    ],
+    "tone": "scale",
+    "tris": 164
+   },
+   {
+    "name": "scale.5.1.R",
+    "theta": 126.0,
+    "z": [
+     2.2,
+     1.25
+    ],
+    "R_root_tip": [
+     0.759,
+     1.324
+    ],
+    "tone": "scale",
+    "tris": 164
+   },
+   {
+    "name": "scale.5.2.L",
+    "theta": 90.0,
+    "z": [
+     2.2,
+     1.25
+    ],
+    "R_root_tip": [
+     0.741,
+     1.205
+    ],
+    "tone": "scale",
+    "tris": 164
+   },
+   {
+    "name": "scale.5.2.R",
+    "theta": 90.0,
+    "z": [
+     2.2,
+     1.25
+    ],
+    "R_root_tip": [
+     0.741,
+     1.205
+    ],
+    "tone": "scale_dark",
+    "tris": 164
+   },
+   {
+    "name": "scale.6.0.L",
+    "theta": 144.0,
+    "z": [
+     1.78,
+     0.95
+    ],
+    "R_root_tip": [
+     0.868,
+     1.381
+    ],
+    "tone": "scale",
+    "tris": 164
+   },
+   {
+    "name": "scale.6.0.R",
+    "theta": 144.0,
+    "z": [
+     1.78,
+     0.95
+    ],
+    "R_root_tip": [
+     0.856,
+     1.381
+    ],
+    "tone": "scale",
+    "tris": 164
+   },
+   {
+    "name": "scale.6.1.L",
+    "theta": 108.0,
+    "z": [
+     1.78,
+     0.95
+    ],
+    "R_root_tip": [
+     0.763,
+     1.246
+    ],
+    "tone": "scale",
+    "tris": 164
+   },
+   {
+    "name": "scale.6.1.R",
+    "theta": 108.0,
+    "z": [
+     1.78,
+     0.95
+    ],
+    "R_root_tip": [
+     0.763,
+     1.246
+    ],
+    "tone": "scale",
+    "tris": 164
+   },
+   {
+    "name": "scale.6.2.L",
+    "theta": 72.0,
+    "z": [
+     1.78,
+     0.95
+    ],
+    "R_root_tip": [
+     0.763,
+     0.97
+    ],
+    "tone": "scale",
+    "tris": 164
+   },
+   {
+    "name": "scale.6.2.R",
+    "theta": 72.0,
+    "z": [
+     1.78,
+     0.95
+    ],
+    "R_root_tip": [
+     0.763,
+     0.97
+    ],
+    "tone": "scale",
+    "tris": 164
+   },
+   {
+    "name": "scale.7.0.L",
+    "theta": 108.0,
+    "z": [
+     1.4,
+     0.8
+    ],
+    "R_root_tip": [
+     0.787,
+     1.203
+    ],
+    "tone": "scale",
+    "tris": 164
+   },
+   {
+    "name": "scale.7.0.R",
+    "theta": 108.0,
+    "z": [
+     1.4,
+     0.8
+    ],
+    "R_root_tip": [
+     0.787,
+     1.203
+    ],
+    "tone": "scale",
+    "tris": 164
+   },
+   {
+    "name": "scale.7.1.L",
+    "theta": 72.0,
+    "z": [
+     1.4,
+     0.8
+    ],
+    "R_root_tip": [
+     0.733,
+     0.979
+    ],
+    "tone": "scale",
+    "tris": 164
+   },
+   {
+    "name": "scale.7.1.R",
+    "theta": 72.0,
+    "z": [
+     1.4,
+     0.8
+    ],
+    "R_root_tip": [
+     0.733,
+     0.979
+    ],
+    "tone": "scale",
+    "tris": 164
+   },
+   {
+    "name": "helmet.0.C",
+    "root": [
+     0.0,
+     40.0
+    ],
+    "tip": [
+     0.0,
+     0.0
+    ],
+    "offset_root_tip": [
+     -0.04,
+     0.43
+    ],
+    "skull_r_root_tip": [
+     0.777,
+     0.841
+    ],
+    "tone": "scale_light",
+    "tris": 164
+   },
+   {
+    "name": "helmet.1.L",
+    "root": [
+     60.0,
+     38.0
+    ],
+    "tip": [
+     64.0,
+     -6.0
+    ],
+    "offset_root_tip": [
+     -0.04,
+     0.2
+    ],
+    "skull_r_root_tip": [
+     0.732,
+     0.771
+    ],
+    "tone": "scale",
+    "tris": 164
+   },
+   {
+    "name": "helmet.1.R",
+    "root": [
+     60.0,
+     38.0
+    ],
+    "tip": [
+     64.0,
+     -6.0
+    ],
+    "offset_root_tip": [
+     -0.04,
+     0.2
+    ],
+    "skull_r_root_tip": [
+     0.732,
+     0.771
+    ],
+    "tone": "scale",
+    "tris": 164
+   },
+   {
+    "name": "helmet.2.L",
+    "root": [
+     120.0,
+     38.0
+    ],
+    "tip": [
+     122.0,
+     -18.0
+    ],
+    "offset_root_tip": [
+     -0.04,
+     0.24
+    ],
+    "skull_r_root_tip": [
+     0.697,
+     0.762
+    ],
+    "tone": "scale_dark",
+    "tris": 164
+   },
+   {
+    "name": "helmet.2.R",
+    "root": [
+     120.0,
+     38.0
+    ],
+    "tip": [
+     122.0,
+     -18.0
+    ],
+    "offset_root_tip": [
+     -0.04,
+     0.24
+    ],
+    "skull_r_root_tip": [
+     0.697,
+     0.762
+    ],
+    "tone": "scale_dark",
+    "tris": 164
+   },
+   {
+    "name": "helmet.3.C",
+    "root": [
+     180.0,
+     40.0
+    ],
+    "tip": [
+     180.0,
+     -24.0
+    ],
+    "offset_root_tip": [
+     -0.04,
+     0.28
+    ],
+    "skull_r_root_tip": [
+     0.703,
+     0.798
+    ],
+    "tone": "scale",
+    "tris": 164
+   },
+   {
+    "name": "helmet.4.L",
+    "root": [
+     30.0,
+     72.0
+    ],
+    "tip": [
+     34.0,
+     26.0
+    ],
+    "offset_root_tip": [
+     -0.02,
+     0.24
+    ],
+    "skull_r_root_tip": [
+     0.741,
+     0.771
+    ],
+    "tone": "scale",
+    "tris": 164
+   },
+   {
+    "name": "helmet.4.R",
+    "root": [
+     30.0,
+     72.0
+    ],
+    "tip": [
+     34.0,
+     26.0
+    ],
+    "offset_root_tip": [
+     -0.02,
+     0.24
+    ],
+    "skull_r_root_tip": [
+     0.741,
+     0.771
+    ],
+    "tone": "scale",
+    "tris": 164
+   },
+   {
+    "name": "helmet.5.L",
+    "root": [
+     90.0,
+     70.0
+    ],
+    "tip": [
+     92.0,
+     22.0
+    ],
+    "offset_root_tip": [
+     -0.02,
+     0.26
+    ],
+    "skull_r_root_tip": [
+     0.722,
+     0.706
+    ],
+    "tone": "scale_light",
+    "tris": 164
+   },
+   {
+    "name": "helmet.5.R",
+    "root": [
+     90.0,
+     70.0
+    ],
+    "tip": [
+     92.0,
+     22.0
+    ],
+    "offset_root_tip": [
+     -0.02,
+     0.26
+    ],
+    "skull_r_root_tip": [
+     0.722,
+     0.706
+    ],
+    "tone": "scale_light",
+    "tris": 164
+   },
+   {
+    "name": "helmet.6.L",
+    "root": [
+     150.0,
+     70.0
+    ],
+    "tip": [
+     152.0,
+     20.0
+    ],
+    "offset_root_tip": [
+     -0.02,
+     0.28
+    ],
+    "skull_r_root_tip": [
+     0.713,
+     0.708
+    ],
+    "tone": "scale",
+    "tris": 164
+   },
+   {
+    "name": "helmet.6.R",
+    "root": [
+     150.0,
+     70.0
+    ],
+    "tip": [
+     152.0,
+     20.0
+    ],
+    "offset_root_tip": [
+     -0.02,
+     0.28
+    ],
+    "skull_r_root_tip": [
+     0.713,
+     0.708
+    ],
+    "tone": "scale",
+    "tris": 164
+   },
+   {
+    "name": "helmet.7.C",
+    "root": [
+     0.0,
+     89.0
+    ],
+    "tip": [
+     0.0,
+     54.0
+    ],
+    "offset_root_tip": [
+     0.02,
+     0.18
+    ],
+    "skull_r_root_tip": [
+     0.729,
+     0.762
+    ],
+    "tone": "scale_light",
+    "tris": 164
+   },
+   {
+    "name": "helmet.8.L",
+    "root": [
+     120.0,
+     89.0
+    ],
+    "tip": [
+     120.0,
+     54.0
+    ],
+    "offset_root_tip": [
+     0.02,
+     0.19
+    ],
+    "skull_r_root_tip": [
+     0.728,
+     0.704
+    ],
+    "tone": "scale",
+    "tris": 164
+   },
+   {
+    "name": "helmet.8.R",
+    "root": [
+     120.0,
+     89.0
+    ],
+    "tip": [
+     120.0,
+     54.0
+    ],
+    "offset_root_tip": [
+     0.02,
+     0.19
+    ],
+    "skull_r_root_tip": [
+     0.728,
+     0.704
+    ],
+    "tone": "scale",
+    "tris": 164
+   },
+   {
+    "name": "helmet.9.C",
+    "root": [
+     180.0,
+     36.0
+    ],
+    "tip": [
+     180.0,
+     86.0
+    ],
+    "offset_root_tip": [
+     0.22,
+     0.36
+    ],
+    "skull_r_root_tip": [
+     0.704,
+     0.725
+    ],
+    "tone": "scale_light",
+    "tris": 164
+   }
+  ]
+ },
+ "tail": {
+  "stations": 29,
+  "tris": 864,
+  "length": 3.182,
+  "bands": 6,
+  "tip": [
+   -1.4,
+   1.88,
+   0.06
+  ],
+  "min_z": 0.017
+ },
+ "centre_shift": [
+  -0.029954,
+  -0.320312,
+  2.8e-05
+ ],
+ "glow": {
+  "skin": "default",
+  "glowing_regions": [],
+  "no_glow": true
+ },
+ "regions_faces": {
+  "pangolin_knight": {
+   "cream": 1489,
+   "fur_tan": 1575,
+   "underskin": 2213,
+   "nose": 37,
+   "foot": 731,
+   "foot_band": 173,
+   "scale_light": 1344,
+   "scale": 4816,
+   "scale_dark": 1120,
+   "scale_edge": 3380,
+   "tail_band": 230,
+   "tail_band_light": 240,
+   "tail_under": 324,
+   "gauntlet": 480,
+   "gauntlet_band": 560,
+   "claw": 864,
+   "eye": 576,
+   "glint": 80
+  }
+ },
+ "regions_area_share": {
+  "cream": 0.0585,
+  "fur_tan": 0.0326,
+  "underskin": 0.0966,
+  "nose": 0.0003,
+  "foot": 0.0143,
+  "foot_band": 0.0019,
+  "scale_light": 0.1199,
+  "scale": 0.3815,
+  "scale_dark": 0.0974,
+  "scale_edge": 0.1001,
+  "tail_band": 0.0106,
+  "tail_band_light": 0.0145,
+  "tail_under": 0.0206,
+  "gauntlet": 0.0117,
+  "gauntlet_band": 0.0089,
+  "claw": 0.0279,
+  "eye": 0.0024,
+  "glint": 0.0003
+ },
+ "zero_area_faces": 0,
+ "facing": {
+  "rule": "head centre (HEAD_C, midline) -> nose tip (NOSE_C) on the midline",
+  "anchor": [
+   0.03,
+   -0.9797,
+   4.42
+  ],
+  "landmark": [
+   0.03,
+   -2.0397,
+   3.84
+  ],
+  "angle_from_minusY_deg": 0.0
+ },
+ "face": {
+  "eye.L": {
+   "centre_side_yz": [
+    -1.69,
+    4.15
+   ],
+   "half_axes": [
+    0.095,
+    0.19
+   ]
+  },
+  "eye.R": {
+   "centre_side_yz": [
+    -1.69,
+    4.15
+   ],
+   "half_axes": [
+    0.095,
+    0.19
+   ]
+  }
+ },
+ "tris": {
+  "total": 20232,
+  "shell": 6148,
+  "shell_before_cuts": 5000,
+  "eye": 576,
+  "glint": 80,
+  "scale": 8036,
+  "helmet": 2624,
+  "tail": 864,
+  "gauntlet": 1040,
+  "hclaw": 384,
+  "fclaw": 480,
+  "per_part": {
+   "eye.L": 288,
+   "glint.L": 40,
+   "eye.R": 288,
+   "glint.R": 40,
+   "scale.0.0.C": 164,
+   "scale.0.1.L": 164,
+   "scale.0.1.R": 164,
+   "scale.0.2.L": 164,
+   "scale.0.2.R": 164,
+   "scale.0.3.L": 164,
+   "scale.0.3.R": 164,
+   "scale.1.0.L": 164,
+   "scale.1.0.R": 164,
+   "scale.1.1.L": 164,
+   "scale.1.1.R": 164,
+   "scale.1.2.L": 164,
+   "scale.1.2.R": 164,
+   "scale.2.0.C": 164,
+   "scale.2.1.L": 164,
+   "scale.2.1.R": 164,
+   "scale.2.2.L": 164,
+   "scale.2.2.R": 164,
+   "scale.2.3.L": 164,
+   "scale.2.3.R": 164,
+   "scale.3.0.L": 164,
+   "scale.3.0.R": 164,
+   "scale.3.1.L": 164,
+   "scale.3.1.R": 164,
+   "scale.3.2.L": 164,
+   "scale.3.2.R": 164,
+   "scale.4.0.C": 164,
+   "scale.4.1.L": 164,
+   "scale.4.1.R": 164,
+   "scale.4.2.L": 164,
+   "scale.4.2.R": 164,
+   "scale.4.3.L": 164,
+   "scale.4.3.R": 164,
+   "scale.5.0.L": 164,
+   "scale.5.0.R": 164,
+   "scale.5.1.L": 164,
+   "scale.5.1.R": 164,
+   "scale.5.2.L": 164,
+   "scale.5.2.R": 164,
+   "scale.6.0.L": 164,
+   "scale.6.0.R": 164,
+   "scale.6.1.L": 164,
+   "scale.6.1.R": 164,
+   "scale.6.2.L": 164,
+   "scale.6.2.R": 164,
+   "scale.7.0.L": 164,
+   "scale.7.0.R": 164,
+   "scale.7.1.L": 164,
+   "scale.7.1.R": 164,
+   "helmet.0.C": 164,
+   "helmet.1.L": 164,
+   "helmet.1.R": 164,
+   "helmet.2.L": 164,
+   "helmet.2.R": 164,
+   "helmet.3.C": 164,
+   "helmet.4.L": 164,
+   "helmet.4.R": 164,
+   "helmet.5.L": 164,
+   "helmet.5.R": 164,
+   "helmet.6.L": 164,
+   "helmet.6.R": 164,
+   "helmet.7.C": 164,
+   "helmet.8.L": 164,
+   "helmet.8.R": 164,
+   "helmet.9.C": 164,
+   "tail": 864,
+   "gauntlet.L": 520,
+   "hclaw.L.0": 64,
+   "hclaw.L.1": 64,
+   "hclaw.L.2": 64,
+   "gauntlet.R": 520,
+   "hclaw.R.0": 64,
+   "hclaw.R.1": 64,
+   "hclaw.R.2": 64,
+   "fclaw.L.0": 80,
+   "fclaw.L.1": 80,
+   "fclaw.L.2": 80,
+   "fclaw.R.0": 80,
+   "fclaw.R.1": 80,
+   "fclaw.R.2": 80
+  }
+ },
+ "tier_rationale": "REGULAR role (a line unit): window [8000, 22000]. The scales are where the budget goes: 65 closed plates (6 x 7 grid each) carry the layered-scale identity; the shell carries the body, head, snout, arms and legs; the bake carries the SDF high's detail into the normal map.",
+ "open_edges": {
+  "closed_parts": 85,
+  "open_parts": {},
+  "rule": "every piece is a closed solid (shell, scales, helmet, tail, gauntlets, claws, eye decals)"
+ },
+ "measure": {
+  "bbox": [
+   [
+    -1.37,
+    -2.2003,
+    0.0
+   ],
+   [
+    1.37,
+    2.2003,
+    5.632
+   ]
+  ],
+  "height": 5.632,
+  "width_x": 2.7401,
+  "depth_y": 4.4006,
+  "sheet": {
+   "side_height_from_soles_u": 5.62,
+   "back_height_from_soles_u": 5.64,
+   "intake_heights_u": {
+    "back": 5.94,
+    "side": 5.91
+   },
+   "side_width_u": 4.47,
+   "back_width_u": 3.07
+  },
+  "export_cell_fit_report_only": {
+   "scale": 0.3196,
+   "height_m": 1.8,
+   "footprint_m": 1.4064,
+   "bound_by": "height"
+  }
+ },
+ "bake": {
+  "NORMAL": {
+   "result": [
+    "FINISHED"
+   ],
+   "seconds": 0.6
+  },
+  "AO": {
+   "result": [
+    "FINISHED"
+   ],
+   "seconds": 0.6
+  },
+  "ao_floor": {
+   "floors": {
+    "scales": 0.5,
+    "fur": 0.6,
+    "hard": 0.65
+   },
+   "classes": {
+    "scales": [
+     "scale_light",
+     "scale",
+     "scale_dark",
+     "scale_edge",
+     "underskin",
+     "tail_band",
+     "tail_band_light",
+     "tail_under"
+    ],
+    "fur": [
+     "cream",
+     "fur_tan",
+     "nose",
+     "foot",
+     "foot_band"
+    ],
+    "hard": [
+     "gauntlet",
+     "gauntlet_band",
+     "claw",
+     "eye",
+     "glint"
+    ]
+   },
+   "hidden_rule": "normal ray hits within 0.10",
+   "faces_visible": 14798,
+   "faces_hidden": 5434,
+   "visible_texels": 43653,
+   "before": {
+    "visible_all": {
+     "mean": 0.4026,
+     "p05": 0.0
+    },
+    "scales": {
+     "mean": 0.3432,
+     "p05": 0.0,
+     "texels": 35363
+    },
+    "fur": {
+     "mean": 0.6773,
+     "p05": 0.0627,
+     "texels": 5845
+    },
+    "hard": {
+     "mean": 0.6045,
+     "p05": 0.0,
+     "texels": 2445
+    }
+   },
+   "after": {
+    "visible_all": {
+     "mean": 0.6558,
+     "p05": 0.5
+    },
+    "scales": {
+     "mean": 0.6297,
+     "p05": 0.5,
+     "texels": 35363
+    },
+    "fur": {
+     "mean": 0.7654,
+     "p05": 0.6,
+     "texels": 5845
+    },
+    "hard": {
+     "mean": 0.7717,
+     "p05": 0.65,
+     "texels": 2445
+    }
+   }
+  },
+  "cage_extrusion": 0.02,
+  "cage_rule": "3 x the sampled high->low p99 distance (floor 0.02)",
+  "resolution": {
+   "normal": 1024,
+   "ao": 512
+  },
+  "high_tris": 427224,
+  "high_rule": "SDF shell (marching tets) + every closed part",
+  "body_uv_texels_normal": 257610,
+  "normal_baked_pct_of_body_texels": 95.31,
+  "normal_detail_fraction_dev_gt_0.05": 0.5694,
+  "ao_baked_pct_of_body_texels": 100.0,
+  "ao_mean": 0.6131,
+  "ao_p05": 0.5,
+  "pixel_sha": {
+   "normal": "253edc18a2022818",
+   "ao": "18dd6c356b9471ba"
+  },
+  "seconds": 5.0
+ },
+ "digest_geometry_colour_uv": "e6e8cc7860997556",
+ "palette": {
+  "default": {
+   "cream": {
+    "rgb": [
+     243,
+     208,
+     170
+    ]
+   },
+   "fur_tan": {
+    "rgb": [
+     223,
+     171,
+     125
+    ]
+   },
+   "underskin": {
+    "rgb": [
+     131,
+     87,
+     64
+    ]
+   },
+   "nose": {
+    "rgb": [
+     233,
+     177,
+     141
+    ]
+   },
+   "foot": {
+    "rgb": [
+     167,
+     110,
+     77
+    ]
+   },
+   "foot_band": {
+    "rgb": [
+     198,
+     139,
+     94
+    ]
+   },
+   "scale_light": {
+    "rgb": [
+     207,
+     139,
+     92
+    ]
+   },
+   "scale": {
+    "rgb": [
+     177,
+     114,
+     80
+    ]
+   },
+   "scale_dark": {
+    "rgb": [
+     157,
+     101,
+     71
+    ]
+   },
+   "scale_edge": {
+    "rgb": [
+     131,
+     87,
+     64
+    ]
+   },
+   "tail_band": {
+    "rgb": [
+     177,
+     113,
+     78
+    ]
+   },
+   "tail_band_light": {
+    "rgb": [
+     202,
+     133,
+     89
+    ]
+   },
+   "tail_under": {
+    "rgb": [
+     226,
+     175,
+     127
+    ]
+   },
+   "gauntlet": {
+    "rgb": [
+     110,
+     80,
+     68
+    ]
+   },
+   "gauntlet_band": {
+    "rgb": [
+     174,
+     118,
+     86
+    ]
+   },
+   "claw": {
+    "rgb": [
+     76,
+     58,
+     52
+    ]
+   },
+   "eye": {
+    "rgb": [
+     33,
+     23,
+     18
+    ]
+   },
+   "glint": {
+    "rgb": [
+     250,
+     246,
+     240
+    ]
+   }
+  },
+  "files": [
+   "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\palettes\\pangolin_knight\\default.json"
+  ],
+  "provenance": "pixel-sampled from the sheet's chips + drawn surfaces (see the palette notes)"
+ }
+}

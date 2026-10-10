@@ -1,0 +1,21 @@
+{
+ "unit": "canine_bat",
+ "skin": "default",
+ "description": "Canine Bat Hybrid default look, PIXEL-SAMPLED from design/reference/canine_bat-character-sheet.png (intake.json swatch chips 37,34,37 / 87,76,84 / 189,169,165 / 137,106,116 / 104,74,89 + direct medians of the drawn surfaces, sample px cited per region). Dark plum-charcoal fur, a pale fluffy neck ruff, lighter grey-mauve lower legs / paws / inner thighs / belly, a mauve-grey snout, mauve ear membranes with a dark rim + faint darker-mauve veins, big dark eyes with a pale rim + highlight, two cream fangs. No glow (brief): every region writes zero Glow.",
+ "regions": {
+  "fur":        {"rgb": [55, 49, 54],    "note": "short soft dark plum-charcoal fur: medians of the drawn fur, side body (1000,580) 53,48,52 / side haunch (1090,620) 57,50,56 / back body (550,620) 59,53,58 / side head (880,450) 52,48,52 / back head (550,420) 56,50,56; chip 37,34,37 is the deepest shadow tone"},
+  "fur_light":  {"rgb": [132, 114, 115], "note": "lighter fur on the lower legs / paws / inner thighs / belly: drawn medians back lower legs (495,760) 149,128,128 / (600,760) 146,124,124, side hind strip (1125,700) 151,129,127, side belly (975,637) 116,100,101, side paws (1100,775) 109,94,94 / (870,775) 114,100,105, panel paw (1210,720) 113,97,102 -> their mean"},
+  "ruff":       {"rgb": [143, 123, 122], "note": "fluffy pale neck ruff: drawn medians side (845,530) 139,122,121 / (830,560) 141,120,120, front bright decile (150-230,560-640) 151,130,129, back bright (470-660,500-580) 140,121,119 -> their mean"},
+  "snout":      {"rgb": [173, 150, 150], "note": "pig / bat snout (mauve-grey): drawn medians side (725,430) 186,163,161, front (115,445) 166,142,144, face panel (1260,140) 168,147,145 / (1270,133) 166,144,142 -> mean; chip 189,169,165"},
+  "nostril":    {"rgb": [86, 72, 73],    "note": "the two nostrils: darkest decile of the drawn front snout (115,445 r6) 86,72,73"},
+  "ear_inner":  {"rgb": [135, 105, 113], "note": "ear membrane inner surface (mauve): drawn side ear median (990,300) 135,105,113, bright decile (940-1010,230-330) 136,106,113; chip 137,106,116"},
+  "ear_vein":   {"rgb": [125, 98, 105],  "note": "FAINT vein strips on the inner membrane: drawn vein-line median on the side ear (970,260 r6) 125,98,105 (the darker-mauve chip 104,74,89 read as stripes on the v1 preview: too strong for faint veins)"},
+  "ear_rim":    {"rgb": [37, 34, 37],    "note": "dark ear rim: drawn rim darkest decile (1000-1030,195-240) 31,31,31; chip 37,34,37"},
+  "ear_back":   {"rgb": [55, 49, 54],    "note": "back of the ear = dark fur: drawn back-view ear (470,280) 52,48,52 (same tone as the body fur)"},
+  "eye":        {"rgb": [30, 27, 28],    "note": "big round dark eye: face-panel iris (1215,115) 30,27,28; side iris (793,420) 31,26,29"},
+  "eye_rim":    {"rgb": [229, 202, 185], "note": "pale eye rim: side view (809,442) 230,201,188 / (800,445) 228,202,181"},
+  "eye_hi":     {"rgb": [242, 228, 221], "note": "eye highlight: brightest 2% of the side eye (780-830,385-430) 242,228,221"},
+  "fang":       {"rgb": [205, 182, 169], "note": "two small fangs: brightest decile side fang (712-740,470-500) 215,189,175, face panel fang (1230-1290,180-215) 191,172,160 -> mean"}
+ },
+ "material": {"roughness": 0.85, "emission_strength": 1.0, "alpha": 1.0}
+}

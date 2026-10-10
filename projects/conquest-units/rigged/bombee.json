@@ -1,0 +1,359 @@
+{
+ "unit": "bombee",
+ "source": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\improved\\bombee.blend",
+ "fps": 24,
+ "weights": {
+  "max_influences": 1,
+  "unweighted": 0,
+  "sum_dev_max": 0.0,
+  "per_bone_verts": {
+   "body": 6529,
+   "wing.L.up": 957,
+   "wing.R.up": 957,
+   "stinger": 194
+  },
+  "rule": "rigid pieces: shell + decals + spikes 1.0 body; wing.{L,R}.up membrane/veins/rim 1.0 on their wing bone (pivot = the root seat on the top of the ball); stinger 1.0 stinger"
+ },
+ "clips": {
+  "idle": {
+   "frames": [
+    1,
+    97
+   ],
+   "period_frames": 96,
+   "seconds": 4.0,
+   "cyclic": true,
+   "seam_main_mm": 0.0,
+   "root_offset_max": 0.0,
+   "clearance_min_z": 0.3361,
+   "body_lift": [
+    0.3808,
+    0.5363
+   ],
+   "pitch_deg": [
+    -2.071,
+    2.042
+   ],
+   "roll_deg": [
+    -1.566,
+    1.882
+   ],
+   "wing_tip_p2p_xyz": {
+    "wing.L.up": [
+     0.807,
+     0.4978,
+     0.4702
+    ],
+    "wing.R.up": [
+     0.8096,
+     0.4147,
+     0.4744
+    ]
+   },
+   "upper_tips_z_LR_corr": 0.9632,
+   "wing_min_sd_outside_seat": 0.0255,
+   "wing_min_dist_to_midline": 0.1018,
+   "wing_gate": true,
+   "buzz_hz": 6.0
+  },
+  "walk": {
+   "frames": [
+    1,
+    49
+   ],
+   "period_frames": 48,
+   "seconds": 2.0,
+   "cyclic": true,
+   "seam_main_mm": 0.0,
+   "root_offset_max": 0.0,
+   "clearance_min_z": 0.3229,
+   "body_lift": [
+    0.4271,
+    0.5014
+   ],
+   "pitch_deg": [
+    9.001,
+    11.002
+   ],
+   "roll_deg": [
+    -1.498,
+    1.498
+   ],
+   "wing_tip_p2p_xyz": {
+    "wing.L.up": [
+     0.966,
+     0.4667,
+     0.4175
+    ],
+    "wing.R.up": [
+     0.966,
+     0.4667,
+     0.4175
+    ]
+   },
+   "upper_tips_z_LR_corr": 0.9701,
+   "wing_min_sd_outside_seat": 0.0114,
+   "wing_min_dist_to_midline": 0.0564,
+   "wing_gate": true,
+   "buzz_hz": 6.0
+  }
+ },
+ "hover": {
+  "hover_frac_H": 0.1,
+  "hover_height_units": 0.4643,
+  "rest_height_units": 4.6426,
+  "rule": "rest pose on the floor (contract feet_origin, spike tips z 0); both clips key body.location z = HOVER_FRAC x H + the bob; the contract root never moves"
+ },
+ "bones": [
+  {
+   "name": "root",
+   "parent": null,
+   "deform": false,
+   "head": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "tail": [
+    0.0,
+    0.0,
+    0.4
+   ]
+  },
+  {
+   "name": "body",
+   "parent": "root",
+   "deform": true,
+   "head": [
+    0.0,
+    -0.3394,
+    1.69
+   ],
+   "tail": [
+    0.0,
+    -0.3394,
+    2.69
+   ]
+  },
+  {
+   "name": "wing.L.up",
+   "parent": "body",
+   "deform": true,
+   "head": [
+    0.48,
+    -0.2894,
+    3.2877
+   ],
+   "tail": [
+    0.805,
+    0.175,
+    4.0921
+   ]
+  },
+  {
+   "name": "wing.R.up",
+   "parent": "body",
+   "deform": true,
+   "head": [
+    -0.48,
+    -0.2894,
+    3.2877
+   ],
+   "tail": [
+    -0.805,
+    0.175,
+    4.0921
+   ]
+  },
+  {
+   "name": "stinger",
+   "parent": "body",
+   "deform": true,
+   "head": [
+    0.0,
+    1.2521,
+    2.2806
+   ],
+   "tail": [
+    0.0,
+    2.04,
+    2.4195
+   ]
+  }
+ ],
+ "bone_count": 5,
+ "deform_bone_count": 4,
+ "digest": {
+  "parts": {
+   "bake_normal": "4ca52b084dc6c042",
+   "bake_ao": "9eaa474d190f430b",
+   "geometry_colour_uv": "ffa63615274d47b2",
+   "weights": "547e72ee5e920edf",
+   "keys": "c53228adefeec21a",
+   "clip_samples": "722884409f3e0206"
+  },
+  "combined": "b3a2541ae21290da"
+ },
+ "glb": {
+  "path": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\rigged\\bombee.glb",
+  "bytes": 4838296,
+  "seconds": 0.7,
+  "carries": {
+   "materials": [
+    {
+     "name": "bombee_body",
+     "alphaMode": "OPAQUE",
+     "doubleSided": false,
+     "textures": [
+      "baseColorTexture",
+      "normalTexture"
+     ]
+    },
+    {
+     "name": "bombee_wing",
+     "alphaMode": "BLEND",
+     "doubleSided": true,
+     "textures": []
+    }
+   ],
+   "primitives": [
+    {
+     "mesh": "bombee",
+     "material": "bombee_body",
+     "attributes": [
+      "COLOR_0",
+      "COLOR_1",
+      "JOINTS_0",
+      "NORMAL",
+      "POSITION",
+      "TEXCOORD_0",
+      "WEIGHTS_0",
+      "_GLOW"
+     ]
+    },
+    {
+     "mesh": "bombee",
+     "material": "bombee_wing",
+     "attributes": [
+      "COLOR_0",
+      "COLOR_1",
+      "JOINTS_0",
+      "NORMAL",
+      "POSITION",
+      "TEXCOORD_0",
+      "WEIGHTS_0",
+      "_GLOW"
+     ]
+    }
+   ],
+   "animations": [
+    "idle",
+    "walk"
+   ],
+   "skins": 1,
+   "joints": 5
+  },
+  "structure": "armature identity + skinned 'bombee' (body opaque + wing BLEND double-sided primitives); natural scale; report-only cell fit 0.38772"
+ },
+ "skins": {
+  "default": {
+   "file": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\rigged\\bombee.blend",
+   "palette": {
+    "face": {
+     "rgb": [
+      253,
+      235,
+      207
+     ]
+    },
+    "black": {
+     "rgb": [
+      45,
+      41,
+      40
+     ]
+    },
+    "yellow": {
+     "rgb": [
+      254,
+      198,
+      92
+     ]
+    },
+    "stinger": {
+     "rgb": [
+      247,
+      220,
+      179
+     ]
+    },
+    "spike": {
+     "rgb": [
+      237,
+      204,
+      163
+     ]
+    },
+    "wing": {
+     "rgb": [
+      246,
+      229,
+      208
+     ]
+    },
+    "wing_vein": {
+     "rgb": [
+      229,
+      190,
+      148
+     ]
+    },
+    "wing_rim": {
+     "rgb": [
+      82,
+      58,
+      42
+     ]
+    },
+    "eye": {
+     "rgb": [
+      35,
+      21,
+      15
+     ]
+    },
+    "eye_iris": {
+     "rgb": [
+      87,
+      58,
+      51
+     ]
+    },
+    "eye_hi": {
+     "rgb": [
+      250,
+      244,
+      240
+     ]
+    },
+    "mouth": {
+     "rgb": [
+      56,
+      42,
+      30
+     ]
+    },
+    "blush": {
+     "rgb": [
+      249,
+      169,
+      141
+     ]
+    }
+   }
+  },
+  "rule": "default skin only (brief: no alternate palettes for v1)"
+ },
+ "improved_report": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\improved\\bombee.json",
+ "seconds": 28.8
+}

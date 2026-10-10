@@ -1,0 +1,712 @@
+{
+ "unit": "aquaoct",
+ "source": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\improved\\aquaoct.blend",
+ "fps": 24,
+ "weights": {
+  "max_influences": 4,
+  "unweighted": 0,
+  "sum_dev_max": 2.220446049250313e-16,
+  "per_bone_dominant": {
+   "body": 1235,
+   "head": 4055,
+   "tent.crown.L.0": 154,
+   "tent.crown.L.1": 177,
+   "tent.crown.L.2": 144,
+   "tent.crown.R.0": 199,
+   "tent.crown.R.1": 280,
+   "tent.crown.R.2": 259,
+   "tent.side.L.0": 275,
+   "tent.side.L.1": 370,
+   "tent.side.L.2": 270,
+   "tent.side.R.0": 269,
+   "tent.side.R.1": 335,
+   "tent.side.R.2": 287,
+   "tent.front.L.0": 228,
+   "tent.front.L.1": 303,
+   "tent.front.L.2": 215,
+   "tent.front.R.0": 110,
+   "tent.front.R.1": 197,
+   "tent.front.R.2": 229,
+   "tent.stand.L.0": 162,
+   "tent.stand.L.1": 165,
+   "tent.stand.L.2": 164,
+   "tent.stand.R.0": 137,
+   "tent.stand.R.1": 190,
+   "tent.stand.R.2": 237
+  },
+  "tentacles": {
+   "tent.crown.L": {
+    "length": 2.5822,
+    "root_arc": 0.4709,
+    "dominant_verts": 535
+   },
+   "tent.crown.R": {
+    "length": 2.5822,
+    "root_arc": 0.4709,
+    "dominant_verts": 789
+   },
+   "tent.side.L": {
+    "length": 2.9019,
+    "root_arc": 0.4232,
+    "dominant_verts": 976
+   },
+   "tent.side.R": {
+    "length": 2.9019,
+    "root_arc": 0.4232,
+    "dominant_verts": 959
+   },
+   "tent.front.L": {
+    "length": 2.7621,
+    "root_arc": 0.3522,
+    "dominant_verts": 851
+   },
+   "tent.front.R": {
+    "length": 2.7621,
+    "root_arc": 0.3522,
+    "dominant_verts": 624
+   },
+   "tent.stand.L": {
+    "length": 2.4328,
+    "root_arc": 0.2654,
+    "dominant_verts": 582
+   },
+   "tent.stand.R": {
+    "length": 2.4328,
+    "root_arc": 0.2654,
+    "dominant_verts": 645
+   }
+  },
+  "rule": "shell: soft SDF ownership (tau 0.08): egg + face + mask -> head, base + beard -> body, each tentacle -> rigkit.vine_weights along its own spine from where it leaves the base (the root blends into body); eyes, highlights, button lenses, beak rigid on head"
+ },
+ "clips": {
+  "idle": {
+   "frames": [
+    1,
+    97
+   ],
+   "period_frames": 96,
+   "seconds": 4.0,
+   "cyclic": true,
+   "seam_main_mm": 0.0,
+   "root_offset_max": 0.0,
+   "clearance_min_z": 7e-05,
+   "lowest_point_range": [
+    0.0001,
+    0.0456
+   ],
+   "body_lift": [
+    0.0047,
+    0.0553
+   ],
+   "floor_guard_lift": {
+    "frames_lifted": 23,
+    "max": 0.00874
+   },
+   "tip_p2p": {
+    "tent.crown.L": 0.5974,
+    "tent.crown.R": 0.5375,
+    "tent.side.L": 0.4519,
+    "tent.side.R": 0.4166,
+    "tent.front.L": 0.3252,
+    "tent.front.R": 0.3665,
+    "tent.stand.L": 0.185,
+    "tent.stand.R": 0.198
+   }
+  },
+  "walk": {
+   "frames": [
+    1,
+    49
+   ],
+   "period_frames": 48,
+   "seconds": 2.0,
+   "cyclic": true,
+   "seam_main_mm": 0.0,
+   "root_offset_max": 0.0,
+   "clearance_min_z": 0.02022,
+   "lowest_point_range": [
+    0.0202,
+    0.103
+   ],
+   "body_lift": [
+    0.0,
+    0.0663
+   ],
+   "floor_guard_lift": {
+    "frames_lifted": 0,
+    "max": 0.0
+   },
+   "tip_p2p": {
+    "tent.crown.L": 0.7108,
+    "tent.crown.R": 0.6303,
+    "tent.side.L": 0.7678,
+    "tent.side.R": 0.7108,
+    "tent.front.L": 0.715,
+    "tent.front.R": 0.7387,
+    "tent.stand.L": 0.7942,
+    "tent.stand.R": 0.7942
+   }
+  }
+ },
+ "clip_seconds": 1.3,
+ "bones": [
+  {
+   "name": "root",
+   "parent": null,
+   "deform": false,
+   "head": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "tail": [
+    0.0,
+    0.0,
+    0.4
+   ]
+  },
+  {
+   "name": "body",
+   "parent": "root",
+   "deform": true,
+   "head": [
+    -0.0011,
+    -0.2842,
+    2.1232
+   ],
+   "tail": [
+    -0.0011,
+    -0.2842,
+    2.9032
+   ]
+  },
+  {
+   "name": "head",
+   "parent": "body",
+   "deform": true,
+   "head": [
+    -0.0011,
+    -0.2842,
+    2.9032
+   ],
+   "tail": [
+    -0.0011,
+    1.2147,
+    5.3562
+   ]
+  },
+  {
+   "name": "tent.crown.L.0",
+   "parent": "body",
+   "deform": true,
+   "head": [
+    0.5227,
+    0.2781,
+    2.9875
+   ],
+   "tail": [
+    1.0027,
+    0.7872,
+    3.0607
+   ]
+  },
+  {
+   "name": "tent.crown.L.1",
+   "parent": "tent.crown.L.0",
+   "deform": true,
+   "head": [
+    1.0027,
+    0.7872,
+    3.0607
+   ],
+   "tail": [
+    1.532,
+    1.2486,
+    3.0939
+   ]
+  },
+  {
+   "name": "tent.crown.L.2",
+   "parent": "tent.crown.L.1",
+   "deform": true,
+   "head": [
+    1.532,
+    1.2486,
+    3.0939
+   ],
+   "tail": [
+    2.0467,
+    1.6254,
+    3.3432
+   ]
+  },
+  {
+   "name": "tent.crown.R.0",
+   "parent": "body",
+   "deform": true,
+   "head": [
+    -0.5248,
+    0.2781,
+    2.9875
+   ],
+   "tail": [
+    -1.0048,
+    0.7872,
+    3.0607
+   ]
+  },
+  {
+   "name": "tent.crown.R.1",
+   "parent": "tent.crown.R.0",
+   "deform": true,
+   "head": [
+    -1.0048,
+    0.7872,
+    3.0607
+   ],
+   "tail": [
+    -1.5342,
+    1.2486,
+    3.0939
+   ]
+  },
+  {
+   "name": "tent.crown.R.2",
+   "parent": "tent.crown.R.1",
+   "deform": true,
+   "head": [
+    -1.5342,
+    1.2486,
+    3.0939
+   ],
+   "tail": [
+    -2.0489,
+    1.6254,
+    3.3432
+   ]
+  },
+  {
+   "name": "tent.side.L.0",
+   "parent": "body",
+   "deform": true,
+   "head": [
+    0.6447,
+    0.0377,
+    2.6018
+   ],
+   "tail": [
+    1.322,
+    0.367,
+    2.2821
+   ]
+  },
+  {
+   "name": "tent.side.L.1",
+   "parent": "tent.side.L.0",
+   "deform": true,
+   "head": [
+    1.322,
+    0.367,
+    2.2821
+   ],
+   "tail": [
+    1.8122,
+    0.6728,
+    1.7011
+   ]
+  },
+  {
+   "name": "tent.side.L.2",
+   "parent": "tent.side.L.1",
+   "deform": true,
+   "head": [
+    1.8122,
+    0.6728,
+    1.7011
+   ],
+   "tail": [
+    1.9388,
+    0.8358,
+    0.9232
+   ]
+  },
+  {
+   "name": "tent.side.R.0",
+   "parent": "body",
+   "deform": true,
+   "head": [
+    -0.6469,
+    0.0377,
+    2.6018
+   ],
+   "tail": [
+    -1.3241,
+    0.367,
+    2.2821
+   ]
+  },
+  {
+   "name": "tent.side.R.1",
+   "parent": "tent.side.R.0",
+   "deform": true,
+   "head": [
+    -1.3241,
+    0.367,
+    2.2821
+   ],
+   "tail": [
+    -1.8144,
+    0.6728,
+    1.7011
+   ]
+  },
+  {
+   "name": "tent.side.R.2",
+   "parent": "tent.side.R.1",
+   "deform": true,
+   "head": [
+    -1.8144,
+    0.6728,
+    1.7011
+   ],
+   "tail": [
+    -1.941,
+    0.8358,
+    0.9232
+   ]
+  },
+  {
+   "name": "tent.front.L.0",
+   "parent": "body",
+   "deform": true,
+   "head": [
+    0.473,
+    -0.6691,
+    2.2438
+   ],
+   "tail": [
+    1.0139,
+    -1.094,
+    1.8328
+   ]
+  },
+  {
+   "name": "tent.front.L.1",
+   "parent": "tent.front.L.0",
+   "deform": true,
+   "head": [
+    1.0139,
+    -1.094,
+    1.8328
+   ],
+   "tail": [
+    1.3863,
+    -1.4482,
+    1.2233
+   ]
+  },
+  {
+   "name": "tent.front.L.2",
+   "parent": "tent.front.L.1",
+   "deform": true,
+   "head": [
+    1.3863,
+    -1.4482,
+    1.2233
+   ],
+   "tail": [
+    1.4704,
+    -1.6091,
+    0.4632
+   ]
+  },
+  {
+   "name": "tent.front.R.0",
+   "parent": "body",
+   "deform": true,
+   "head": [
+    -0.4751,
+    -0.6691,
+    2.2438
+   ],
+   "tail": [
+    -1.0161,
+    -1.094,
+    1.8328
+   ]
+  },
+  {
+   "name": "tent.front.R.1",
+   "parent": "tent.front.R.0",
+   "deform": true,
+   "head": [
+    -1.0161,
+    -1.094,
+    1.8328
+   ],
+   "tail": [
+    -1.3884,
+    -1.4482,
+    1.2233
+   ]
+  },
+  {
+   "name": "tent.front.R.2",
+   "parent": "tent.front.R.1",
+   "deform": true,
+   "head": [
+    -1.3884,
+    -1.4482,
+    1.2233
+   ],
+   "tail": [
+    -1.4725,
+    -1.6091,
+    0.4632
+   ]
+  },
+  {
+   "name": "tent.stand.L.0",
+   "parent": "body",
+   "deform": true,
+   "head": [
+    0.3834,
+    -0.2842,
+    2.1125
+   ],
+   "tail": [
+    0.6898,
+    -0.2842,
+    1.4649
+   ]
+  },
+  {
+   "name": "tent.stand.L.1",
+   "parent": "tent.stand.L.0",
+   "deform": true,
+   "head": [
+    0.6898,
+    -0.2842,
+    1.4649
+   ],
+   "tail": [
+    0.7786,
+    -0.2842,
+    0.7504
+   ]
+  },
+  {
+   "name": "tent.stand.L.2",
+   "parent": "tent.stand.L.1",
+   "deform": true,
+   "head": [
+    0.7786,
+    -0.2842,
+    0.7504
+   ],
+   "tail": [
+    0.6989,
+    -0.2842,
+    0.0332
+   ]
+  },
+  {
+   "name": "tent.stand.R.0",
+   "parent": "body",
+   "deform": true,
+   "head": [
+    -0.3856,
+    -0.2842,
+    2.1125
+   ],
+   "tail": [
+    -0.6919,
+    -0.2842,
+    1.4649
+   ]
+  },
+  {
+   "name": "tent.stand.R.1",
+   "parent": "tent.stand.R.0",
+   "deform": true,
+   "head": [
+    -0.6919,
+    -0.2842,
+    1.4649
+   ],
+   "tail": [
+    -0.7808,
+    -0.2842,
+    0.7504
+   ]
+  },
+  {
+   "name": "tent.stand.R.2",
+   "parent": "tent.stand.R.1",
+   "deform": true,
+   "head": [
+    -0.7808,
+    -0.2842,
+    0.7504
+   ],
+   "tail": [
+    -0.7011,
+    -0.2842,
+    0.0332
+   ]
+  }
+ ],
+ "bone_count": 27,
+ "deform_bone_count": 26,
+ "digest": {
+  "parts": {
+   "bake_normal": "7e218fea56385007",
+   "bake_ao": "e8accaa6a6ead9f7",
+   "geometry_colour_uv": "89d5c13cc2d3a3d8",
+   "weights": "ff721a06787c7e86",
+   "keys": "8b56e6e6178ea3de",
+   "clip_samples": "3eb0c798f9c0668c"
+  },
+  "combined": "8aa896d8221f7699"
+ },
+ "glb": {
+  "path": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\rigged\\aquaoct.glb",
+  "bytes": 7144416,
+  "seconds": 1.0,
+  "carries": {
+   "materials": [
+    {
+     "name": "aquaoct_body",
+     "alphaMode": "OPAQUE",
+     "doubleSided": false,
+     "textures": [
+      "baseColorTexture",
+      "normalTexture"
+     ]
+    }
+   ],
+   "primitives": [
+    {
+     "mesh": "aquaoct",
+     "material": "aquaoct_body",
+     "attributes": [
+      "COLOR_0",
+      "COLOR_1",
+      "JOINTS_0",
+      "NORMAL",
+      "POSITION",
+      "TEXCOORD_0",
+      "WEIGHTS_0",
+      "_GLOW"
+     ]
+    }
+   ],
+   "animations": [
+    "idle",
+    "walk"
+   ],
+   "skins": 1,
+   "joints": 27
+  },
+  "structure": "armature identity + skinned 'aquaoct' (one opaque body material); natural scale; report-only cell fit 0.32572"
+ },
+ "skins": {
+  "default": {
+   "file": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\rigged\\aquaoct.blend",
+   "palette": {
+    "head": {
+     "rgb": [
+      164,
+      215,
+      206
+     ]
+    },
+    "spot": {
+     "rgb": [
+      109,
+      178,
+      175
+     ]
+    },
+    "mantle": {
+     "rgb": [
+      145,
+      205,
+      199
+     ]
+    },
+    "beard": {
+     "rgb": [
+      228,
+      233,
+      220
+     ]
+    },
+    "mask": {
+     "rgb": [
+      212,
+      220,
+      207
+     ]
+    },
+    "beak": {
+     "rgb": [
+      141,
+      165,
+      160
+     ]
+    },
+    "eye_iris": {
+     "rgb": [
+      109,
+      178,
+      175
+     ]
+    },
+    "eye_pupil": {
+     "rgb": [
+      22,
+      28,
+      29
+     ]
+    },
+    "eye_highlight": {
+     "rgb": [
+      242,
+      245,
+      240
+     ]
+    },
+    "button": {
+     "rgb": [
+      199,
+      226,
+      214
+     ]
+    },
+    "tent_top": {
+     "rgb": [
+      119,
+      185,
+      181
+     ]
+    },
+    "tent_under": {
+     "rgb": [
+      208,
+      228,
+      214
+     ]
+    }
+   },
+   "glow": {
+    "skin": "default",
+    "glowing_regions": [],
+    "no_glow": true
+   }
+  },
+  "rule": "default skin only (brief 2026-10-09)"
+ },
+ "improved_report": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\improved\\aquaoct.json",
+ "seconds": 99.0
+}

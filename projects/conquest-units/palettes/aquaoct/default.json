@@ -1,0 +1,20 @@
+{
+ "unit": "aquaoct",
+ "skin": "default",
+ "description": "Aquaoct default look, PIXEL-SAMPLED from design/reference/aquaoct-character-sheet.png: the five palette chips (intake.json swatches 215,236,231 / 164,215,206 / 109,178,175 / 75,130,144 / 39,59,64) + k-means clusters of the drawn surfaces (6 clusters per region, sheet px boxes in each note). Pale-aqua glossy egg head with darker-teal spots, cream goggle mask + white beard frill, big dark eyes with a teal iris ring and a white highlight, aqua-topped tentacles with cream-white undersides. No glow anywhere (the sheet draws none). Alternate colours: none yet (default skin only, brief 2026-10-09).",
+ "regions": {
+  "head":          {"rgb": [164, 215, 206], "note": "egg head: chip 2 (164,215,206); drawn egg clusters side box (900,245)-(1165,430) 175,225,220 32% / 140,204,200 21%, back box (525,240)-(750,450) 179,227,224 / 145,207,204 -- the chip is the mid tone between them"},
+  "spot":          {"rgb": [109, 178, 175], "note": "darker-teal head spots: chip 3 (109,178,175); drawn spot clusters egg side 116,185,183 14% / back 118,187,187 23% / front 128,195,191 23%"},
+  "mantle":        {"rgb": [145, 205, 199], "note": "head base under the egg (where the tentacles join): back-view egg / base cluster 145,207,204 17%; front 159,215,210"},
+  "beard":         {"rgb": [228, 233, 220], "note": "scalloped beard frill + the face below the mask: front beard box (160,532)-(245,585) cluster 227,232,219 58%; side sample (925,545) 242,244,232"},
+  "mask":          {"rgb": [212, 220, 207], "note": "goggle mask band: front mask box (130,462)-(276,528) clusters 206,218,206 47% / 230,231,220 20% (lit), weighted"},
+  "beak":          {"rgb": [141, 165, 160], "note": "small beak-like mouth under the mask lobe: the mask's shaded cluster 141,165,160 16% (the drawn mouth V is the mask's shadow tone)"},
+  "eye_iris":      {"rgb": [109, 178, 175], "note": "teal iris ring: drawn iris ring at r 10-13 px from the eye centres: front L 105,141,142 / 101,145,143, side 128,189,186; chip 3 (109,178,175) sits between them"},
+  "eye_pupil":     {"rgb": [22, 28, 29], "note": "dark pupil: drawn eye core r 0-8 px medians 6,11,11 / 10,14,16 / 17,20,20 / 28,38,40 (front L), 13,12,15 / 20,22,20 (side) -> mean 22,28,29; chip 5 39,59,64 reads too light against the drawn pupils"},
+  "eye_highlight": {"rgb": [242, 245, 240], "note": "eye highlight: drawn highlight p80 242,245,240 / 246,248,242 (front R eye r 2-6 px)"},
+  "button":        {"rgb": [199, 226, 214], "note": "the side strap button's light-teal lens: side view (972,500) median 199,226,214"},
+  "tent_top":      {"rgb": [119, 185, 181], "note": "tentacle tops (aqua): drawn clusters front box (25,560)-(450,780) 120,187,183 16% / side box (1040,560)-(1185,720) 117,182,178 16% -> mean"},
+  "tent_under":    {"rgb": [208, 228, 214], "note": "tentacle undersides (cream-white): drawn clusters front 213,229,214 26% / side 204,227,214 24% / back 194,219,205 21% -> front+side mean"}
+ },
+ "material": {"roughness": 0.38, "emission_strength": 1.0, "alpha": 1.0}
+}

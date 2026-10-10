@@ -1,0 +1,725 @@
+{
+ "unit": "aquaoct",
+ "conquest_character_id": "aquaoct",
+ "source": "none: from-scratch unit (sheet design/reference/aquaoct-character-sheet.png)",
+ "tier": "regular",
+ "tri_budget": [
+  8000,
+  22000
+ ],
+ "units": "sheet units: 1 unit = 100 px; measured off the TRUE orthos (front + side); floor z = 0 at the standing tentacle tips",
+ "overrides": {},
+ "sdf": {
+  "step": 0.025,
+  "band": 0.28,
+  "grid": [
+   217,
+   182,
+   244
+  ],
+  "ops": 18,
+  "high_tris": 686968,
+  "high_verts": 343486,
+  "crumbs": {
+   "pieces": 1,
+   "dropped_verts": 0
+  },
+  "tentacles": 8,
+  "high_bbox": [
+   [
+    -2.0857,
+    -1.3774,
+    0.0
+   ],
+   [
+    2.0866,
+    1.9456,
+    5.5228
+   ]
+  ],
+  "seconds": 63.9
+ },
+ "retopo": {
+  "method": "SDF marching tetrahedra (step 0.025) -> collapse decimation (deterministic)",
+  "decimated_tris": 15500,
+  "specks": {
+   "pieces": 1,
+   "dropped_verts": 0
+  },
+  "doubled_faces_removed": 0,
+  "low_to_high": {
+   "mean": 0.00096,
+   "p99": 0.00335,
+   "max": 0.00603
+  },
+  "high_to_low_sampled": {
+   "p99": 0.00278,
+   "max": 0.00995
+  },
+  "bbox_low_over_high": [
+   0.9997,
+   1.0005,
+   1.0006
+  ],
+  "seconds": 9.1
+ },
+ "iso_cuts": {
+  "cuts": [
+   {
+    "field": "f_face",
+    "tau": 0.0,
+    "edge_splits": 119,
+    "face_connects": 147
+   },
+   {
+    "field": "f_base",
+    "tau": 0.0,
+    "edge_splits": 188,
+    "face_connects": 232
+   },
+   {
+    "field": "f_beard",
+    "tau": 0.0,
+    "edge_splits": 0,
+    "face_connects": 0
+   },
+   {
+    "field": "f_mask",
+    "tau": 0.0,
+    "edge_splits": 71,
+    "face_connects": 90
+   },
+   {
+    "field": "f_tent",
+    "tau": 0.0,
+    "edge_splits": 51,
+    "face_connects": 68
+   },
+   {
+    "field": "tside",
+    "tau": 0.0,
+    "edge_splits": 701,
+    "face_connects": 803
+   }
+  ],
+  "seconds": 12.3,
+  "shell_tris_after_cuts": 17760
+ },
+ "centre_shift": [
+  0.001075,
+  0.284205,
+  -0.003232
+ ],
+ "glow": {
+  "skin": "default",
+  "glowing_regions": [],
+  "no_glow": true
+ },
+ "regions_faces": {
+  "aquaoct": {
+   "head": 3144,
+   "spot": 1530,
+   "mantle": 988,
+   "beard": 351,
+   "mask": 1388,
+   "beak": 56,
+   "eye_iris": 224,
+   "eye_pupil": 112,
+   "eye_highlight": 96,
+   "button": 128,
+   "tent_top": 6736,
+   "tent_under": 5153
+  }
+ },
+ "regions_area_share": {
+  "head": 0.3311,
+  "spot": 0.0506,
+  "mantle": 0.0404,
+  "beard": 0.0074,
+  "mask": 0.032,
+  "beak": 0.0004,
+  "eye_iris": 0.0085,
+  "eye_pupil": 0.0009,
+  "eye_highlight": 0.0007,
+  "button": 0.004,
+  "tent_top": 0.276,
+  "tent_under": 0.248
+ },
+ "facing": {
+  "rule": "head-base axis (0, Y_AX) at the bridge height -> the mask bridge front on the midline",
+  "anchor": [
+   -0.0011,
+   -0.2842,
+   2.9532
+  ],
+  "landmark": [
+   -0.0011,
+   -1.3878,
+   2.9467
+  ],
+  "angle_from_minusY_deg": 0.0
+ },
+ "face": {
+  "eye.L": {
+   "surface": [
+    0.455,
+    -0.8187,
+    3.08
+   ],
+   "axis": [
+    0.4247,
+    -0.89,
+    0.1659
+   ]
+  },
+  "button.L": {
+   "surface": [
+    0.6061,
+    -0.13,
+    2.88
+   ],
+   "normal": [
+    0.9902,
+    -0.134,
+    0.0403
+   ]
+  },
+  "eye.R": {
+   "surface": [
+    -0.455,
+    -0.8187,
+    3.08
+   ],
+   "axis": [
+    -0.4247,
+    -0.89,
+    0.1659
+   ]
+  },
+  "button.R": {
+   "surface": [
+    -0.6061,
+    -0.13,
+    2.88
+   ],
+   "normal": [
+    -0.9902,
+    -0.134,
+    0.0403
+   ]
+  },
+  "beak": [
+   0.0,
+   -0.8656,
+   2.66
+  ]
+ },
+ "spots": {
+  "decals": [
+   {
+    "view": "front",
+    "px": [
+     246.5,
+     320
+    ],
+    "r_px": 25,
+    "centre": [
+     0.1189,
+     -0.6056,
+     4.7032
+    ],
+    "kept": true
+   },
+   {
+    "view": "front",
+    "px": [
+     286.5,
+     276
+    ],
+    "r_px": 15,
+    "centre": [
+     0.5189,
+     -0.0402,
+     5.1432
+    ],
+    "kept": true
+   },
+   {
+    "view": "front",
+    "px": [
+     311.5,
+     329
+    ],
+    "r_px": 8,
+    "centre": [
+     0.7689,
+     -0.3675,
+     4.6132
+    ],
+    "kept": true
+   },
+   {
+    "view": "front",
+    "px": [
+     155,
+     349
+    ],
+    "r_px": 11,
+    "centre": [
+     -0.7961,
+     -0.4714,
+     4.4132
+    ],
+    "kept": true
+   },
+   {
+    "view": "front",
+    "px": [
+     183,
+     318
+    ],
+    "r_px": 7,
+    "centre": [
+     -0.5161,
+     -0.4694,
+     4.7232
+    ],
+    "kept": true
+   },
+   {
+    "view": "front",
+    "px": [
+     148,
+     403
+    ],
+    "r_px": 6,
+    "centre": [
+     -0.8661,
+     -0.5837,
+     3.8732
+    ],
+    "kept": true
+   },
+   {
+    "view": "front",
+    "px": [
+     249,
+     401
+    ],
+    "r_px": 12,
+    "centre": [
+     0.1439,
+     -0.9642,
+     3.8932
+    ],
+    "kept": true
+   },
+   {
+    "view": "side",
+    "px": [
+     1047.5,
+     322.5
+    ],
+    "r_px": 24,
+    "centre": [
+     1.0907,
+     0.3458,
+     4.6882
+    ],
+    "kept": true
+   },
+   {
+    "view": "side",
+    "px": [
+     1098.5,
+     276.5
+    ],
+    "r_px": 15,
+    "centre": [
+     0.7842,
+     0.8558,
+     5.1482
+    ],
+    "kept": true
+   },
+   {
+    "view": "side",
+    "px": [
+     1113.5,
+     326.5
+    ],
+    "r_px": 8,
+    "centre": [
+     0.9547,
+     1.0058,
+     4.6482
+    ],
+    "kept": true
+   },
+   {
+    "view": "side",
+    "px": [
+     992.5,
+     307.5
+    ],
+    "r_px": 9,
+    "centre": [
+     0.7399,
+     -0.2042,
+     4.8382
+    ],
+    "kept": true
+   },
+   {
+    "view": "side",
+    "px": [
+     953.5,
+     345
+    ],
+    "r_px": 8,
+    "centre": [
+     0.5935,
+     -0.5942,
+     4.4632
+    ],
+    "kept": true
+   },
+   {
+    "view": "side",
+    "px": [
+     1012.5,
+     389
+    ],
+    "r_px": 13,
+    "centre": [
+     1.1483,
+     -0.0042,
+     4.0232
+    ],
+    "kept": true
+   },
+   {
+    "view": "back",
+    "px": [
+     628.5,
+     341
+    ],
+    "r_px": 30,
+    "centre": [
+     0.0989,
+     1.5256,
+     4.4932
+    ],
+    "kept": true
+   },
+   {
+    "view": "back",
+    "px": [
+     588.5,
+     286
+    ],
+    "r_px": 15,
+    "centre": [
+     0.4989,
+     1.3106,
+     5.0432
+    ],
+    "kept": true
+   },
+   {
+    "view": "back",
+    "px": [
+     558.5,
+     349
+    ],
+    "r_px": 10,
+    "centre": [
+     0.7989,
+     1.2079,
+     4.4132
+    ],
+    "kept": true
+   },
+   {
+    "view": "back",
+    "px": [
+     697,
+     324
+    ],
+    "r_px": 9,
+    "centre": [
+     -0.5861,
+     1.3733,
+     4.6632
+    ],
+    "kept": true
+   },
+   {
+    "view": "back",
+    "px": [
+     719,
+     370
+    ],
+    "r_px": 12,
+    "centre": [
+     -0.8061,
+     1.1591,
+     4.2032
+    ],
+    "kept": true
+   }
+  ],
+  "kept": 18,
+  "dropped_overlapping": []
+ },
+ "tris": {
+  "total": 21188,
+  "shell": 17760,
+  "shell_before_cuts": 15500,
+  "spot_decals": 2448,
+  "eyes": 560,
+  "eye_highlights": 144,
+  "button_lenses": 192,
+  "beak": 84,
+  "shell_by_region": {
+   "beard": 351,
+   "head": 3144,
+   "mantle": 988,
+   "mask": 1388,
+   "tent_top": 6736,
+   "tent_under": 5153
+  },
+  "per_part": {
+   "spot.00": 160,
+   "spot.01": 160,
+   "spot.02": 112,
+   "spot.03": 112,
+   "spot.04": 112,
+   "spot.05": 112,
+   "spot.06": 160,
+   "spot.07": 160,
+   "spot.08": 160,
+   "spot.09": 112,
+   "spot.10": 112,
+   "spot.11": 112,
+   "spot.12": 160,
+   "spot.13": 160,
+   "spot.14": 160,
+   "spot.15": 112,
+   "spot.16": 112,
+   "spot.17": 160,
+   "eye.L": 280,
+   "highlight.L": 72,
+   "button.L": 96,
+   "eye.R": 280,
+   "highlight.R": 72,
+   "button.R": 96,
+   "beak": 84
+  }
+ },
+ "tier_rationale": "REGULAR role (a line unit): window [8000, 22000]. The eight wide leaf tentacles carry most of the surface (and the budget); the face reads from the iso-cut mask band + closed eye domes.",
+ "open_edges": {
+  "closed_parts": [
+   "beak",
+   "button.L",
+   "button.R",
+   "eye.L",
+   "eye.R",
+   "highlight.L",
+   "highlight.R",
+   "shell",
+   "spot.00",
+   "spot.01",
+   "spot.02",
+   "spot.03",
+   "spot.04",
+   "spot.05",
+   "spot.06",
+   "spot.07",
+   "spot.08",
+   "spot.09",
+   "spot.10",
+   "spot.11",
+   "spot.12",
+   "spot.13",
+   "spot.14",
+   "spot.15",
+   "spot.16",
+   "spot.17"
+  ],
+  "open_parts": {},
+  "rule": "every piece is a closed solid (shell, eyes, highlights, button lenses, beak, spot decals)"
+ },
+ "measure": {
+  "bbox": [
+   [
+    -2.0856,
+    -1.6622,
+    0.0
+   ],
+   [
+    2.0856,
+    1.6622,
+    5.5263
+   ]
+  ],
+  "height": 5.5263,
+  "width_x": 4.1712,
+  "depth_y": 3.3245,
+  "sheet_px_equivalent": {
+   "height_px": 552.6,
+   "width_px": 417.1,
+   "sheet_front": {
+    "height_px": 555,
+    "width_px": 426
+   },
+   "sheet_side": {
+    "height_px": 552,
+    "width_px": 323
+   }
+  },
+  "egg_share_of_height": 0.5092,
+  "export_cell_fit_report_only": {
+   "scale": 0.32572,
+   "height_m": 1.8,
+   "footprint_m": 1.3586,
+   "bound_by": "height"
+  }
+ },
+ "bake": {
+  "NORMAL": {
+   "result": [
+    "FINISHED"
+   ],
+   "seconds": 1.2
+  },
+  "AO": {
+   "result": [
+    "FINISHED"
+   ],
+   "seconds": 0.8
+  },
+  "cage_extrusion": 0.02,
+  "cage_rule": "3 x the sampled high->low p99 distance (floor 0.02)",
+  "resolution": {
+   "normal": 1024,
+   "ao": 512
+  },
+  "high_tris": 688554,
+  "high_rule": "SDF shell (marching tets) + every closed part",
+  "body_uv_texels_normal": 541108,
+  "normal_baked_pct_of_body_texels": 100.0,
+  "normal_detail_fraction_dev_gt_0.05": 0.2008,
+  "ao_baked_pct_of_body_texels": 100.0,
+  "ao_mean": 0.823,
+  "ao_p05": 0.4392,
+  "recessed_domes_flat": {
+   "parts": [
+    "eye.",
+    "highlight.",
+    "button."
+   ],
+   "texels_normal": 7383,
+   "texels_ao": 1853,
+   "rule": "kept out of the high; texels set flat normal / AO 1 (coverage % excludes them)"
+  },
+  "pixel_sha": {
+   "normal": "7e218fea56385007",
+   "ao": "e8accaa6a6ead9f7"
+  },
+  "seconds": 6.1
+ },
+ "digest_geometry_colour_uv": "89d5c13cc2d3a3d8",
+ "palette": {
+  "default": {
+   "head": {
+    "rgb": [
+     164,
+     215,
+     206
+    ]
+   },
+   "spot": {
+    "rgb": [
+     109,
+     178,
+     175
+    ]
+   },
+   "mantle": {
+    "rgb": [
+     145,
+     205,
+     199
+    ]
+   },
+   "beard": {
+    "rgb": [
+     228,
+     233,
+     220
+    ]
+   },
+   "mask": {
+    "rgb": [
+     212,
+     220,
+     207
+    ]
+   },
+   "beak": {
+    "rgb": [
+     141,
+     165,
+     160
+    ]
+   },
+   "eye_iris": {
+    "rgb": [
+     109,
+     178,
+     175
+    ]
+   },
+   "eye_pupil": {
+    "rgb": [
+     22,
+     28,
+     29
+    ]
+   },
+   "eye_highlight": {
+    "rgb": [
+     242,
+     245,
+     240
+    ]
+   },
+   "button": {
+    "rgb": [
+     199,
+     226,
+     214
+    ]
+   },
+   "tent_top": {
+    "rgb": [
+     119,
+     185,
+     181
+    ]
+   },
+   "tent_under": {
+    "rgb": [
+     208,
+     228,
+     214
+    ]
+   }
+  },
+  "files": [
+   "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\palettes\\aquaoct\\default.json"
+  ],
+  "provenance": "pixel-sampled from the sheet's chips + drawn surfaces (see the palette notes)"
+ }
+}

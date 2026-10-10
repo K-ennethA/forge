@@ -1,0 +1,21 @@
+{
+ "unit": "bombee",
+ "skin": "default",
+ "description": "Bombee default look, PIXEL-SAMPLED from design/reference/bombee-character-sheet.png (intake.json swatch chips cream 253,235,207 / yellow 254,198,92 / black 45,41,40 / tan 229,190,148 / blush 249,169,141, plus direct samples of the drawn surfaces; sampler: service venv PIL, medians of masked boxes). Cream face disc, bold black + yellow bands wrapping behind it and circling the stinger, cream-tan stinger + spikes, slightly translucent cream wings with a tan diamond vein lattice and a brown outline, dark-brown eyes (dark rim, brown iris, dark pupil, white highlight), dark smile line, pink blush. No glow (the sheet draws none). Wings see-through via 'alpha' (0-1, written to Col alpha = glTF COLOR_0.a; the wing material is alphaMode BLEND double-sided); material.alpha multiplies it (one knob for 'more / less see-through').",
+ "regions": {
+  "face":      {"rgb": [253, 235, 207], "note": "face disc (cream) chip 253,235,207; drawn side face 252,234,202 (box x900-950 y450-520 median)"},
+  "black":     {"rgb": [45, 41, 40],    "note": "black bands chip 45,41,40 (inferred by spacing in intake); drawn back view 43,37,34 (box x470-500 y520-580)"},
+  "yellow":    {"rgb": [254, 198, 92],  "note": "yellow bands chip 254,198,92; drawn back view 253,197,90 (box x600-625 y470-515)"},
+  "stinger":   {"rgb": [247, 220, 179], "note": "stinger (cream-tan): drawn side-view stinger median 247,220,179 (box x1165-1215 y465-495); back view 245,220,180"},
+  "spike":     {"rgb": [237, 204, 163], "note": "foot spikes (cream-tan, a step darker): drawn medians side 239,206,165 / back 235,202,162"},
+  "wing":      {"rgb": [246, 229, 208], "alpha": 0.8, "note": "wing membrane (slightly translucent cream): drawn back-view wing interior median 246,229,208 (min channel > 200, no vein pixels); alpha 0.8 = 'slightly translucent'"},
+  "wing_vein": {"rgb": [229, 190, 148], "note": "diamond vein lattice: the sheet's tan chip 229,190,148 (drawn vein pixels p10 213,184,155 / median 235,210,182 are anti-aliased into the membrane)"},
+  "wing_rim":  {"rgb": [82, 58, 42],    "note": "the wing's thin brown outline: drawn outline median 82,58,42 (back view, sum < 330, warm)"},
+  "eye":       {"rgb": [35, 21, 15],    "note": "eye rim / pupil (near-black brown): drawn eye dark pixels median side 37,23,16 / front 33,19,14"},
+  "eye_iris":  {"rgb": [87, 58, 51],    "note": "iris (dark brown): face-detail panel iris ring median 86,58,48; side 87,58,51"},
+  "eye_hi":    {"rgb": [250, 244, 240], "note": "eye highlight (white dot): face-detail panel brightest in-eye pixels median 250,244,240"},
+  "mouth":     {"rgb": [56, 42, 30],    "note": "smile line: drawn side smile median 56,42,30"},
+  "blush":     {"rgb": [249, 169, 141], "note": "blush chip 249,169,141 (drawn blush 251,204,169 is the chip feathered into the cream; the decal is hard-edged so it carries the chip)"}
+ },
+ "material": {"roughness": 0.8, "emission_strength": 1.0, "alpha": 1.0}
+}

@@ -1,0 +1,537 @@
+{
+ "unit": "shadow_mole",
+ "conquest_character_id": "shadow_mole",
+ "source": "none: from-scratch unit (sheet design/reference/shadow_mole-character-sheet.png)",
+ "tier": "regular",
+ "tri_budget": [
+  8000,
+  22000
+ ],
+ "units": "sheet units: 1 unit = 100 px; measured off the TRUE orthos (back + side); floor z = 0 under the burrow",
+ "overrides": {},
+ "sdf": {
+  "step": 0.025,
+  "band": 0.36,
+  "grid": [
+   165,
+   165,
+   137
+  ],
+  "ops": 36,
+  "high_tris": 550628,
+  "high_verts": 275316,
+  "crumbs": {
+   "pieces": 1,
+   "dropped_verts": 0
+  },
+  "puffs": 26,
+  "stalks": {
+   "stalk.tall": {
+    "length": 2.968,
+    "exit_arc": 0.2526
+   },
+   "stalk.L": {
+    "length": 1.8459,
+    "exit_arc": 0.2357
+   },
+   "stalk.R": {
+    "length": 1.8459,
+    "exit_arc": 0.2357
+   }
+  },
+  "high_bbox": [
+   [
+    -1.9068,
+    -1.662,
+    0.0
+   ],
+   [
+    1.9212,
+    2.1322,
+    3.1199
+   ]
+  ],
+  "seconds": 11.5
+ },
+ "retopo": {
+  "method": "SDF marching tetrahedra (step 0.025) -> collapse decimation (deterministic)",
+  "decimated_tris": 10000,
+  "specks": {
+   "pieces": 1,
+   "dropped_verts": 0
+  },
+  "doubled_faces_removed": 0,
+  "low_to_high": {
+   "mean": 0.00075,
+   "p99": 0.00236,
+   "max": 0.00365
+  },
+  "high_to_low_sampled": {
+   "p99": 0.00207,
+   "max": 0.00479
+  },
+  "bbox_low_over_high": [
+   1.0006,
+   1.0002,
+   1.0003
+  ],
+  "seconds": 8.3
+ },
+ "iso_cuts": {
+  "cuts": [
+   {
+    "field": "f_burrow",
+    "tau": 0.0,
+    "edge_splits": 165,
+    "face_connects": 202
+   },
+   {
+    "field": "f_claw",
+    "tau": 0.0,
+    "edge_splits": 49,
+    "face_connects": 69
+   },
+   {
+    "field": "f_stalk",
+    "tau": 0.0,
+    "edge_splits": 5,
+    "face_connects": 6
+   },
+   {
+    "field": "rb",
+    "tau": 1.18,
+    "edge_splits": 49,
+    "face_connects": 61
+   },
+   {
+    "field": "sfrac",
+    "tau": 0.3,
+    "edge_splits": 110,
+    "face_connects": 132
+   },
+   {
+    "field": "sfrac",
+    "tau": 0.86,
+    "edge_splits": 72,
+    "face_connects": 90
+   }
+  ],
+  "seconds": 3.0,
+  "shell_tris_after_cuts": 10900
+ },
+ "centre_shift": [
+  0.008031,
+  0.28545,
+  -7e-06
+ ],
+ "glow": {
+  "skin": "default",
+  "glowing_regions": [],
+  "no_glow": true
+ },
+ "regions_faces": {
+  "shadow_mole": {
+   "body": 2618,
+   "burrow": 2952,
+   "burrow_hole": 739,
+   "claw": 952,
+   "stalk_root": 1229,
+   "stalk": 1735,
+   "stalk_tip": 1107,
+   "petal": 2900,
+   "petal_pale": 928,
+   "eye_dark": 180,
+   "eye_white": 144
+  }
+ },
+ "regions_area_share": {
+  "body": 0.1732,
+  "burrow": 0.3967,
+  "burrow_hole": 0.0346,
+  "claw": 0.0284,
+  "stalk_root": 0.0484,
+  "stalk": 0.0869,
+  "stalk_tip": 0.0475,
+  "petal": 0.1102,
+  "petal_pale": 0.0719,
+  "eye_dark": 0.0019,
+  "eye_white": 0.0004
+ },
+ "facing": {
+  "rule": "body axis (0, TRUNK_C.y) at the face height (z 1.62) -> the face front on the midline",
+  "anchor": [
+   -0.008,
+   -0.2155,
+   1.62
+  ],
+  "landmark": [
+   -0.008,
+   -1.3294,
+   1.62
+  ],
+  "angle_from_minusY_deg": 0.0
+ },
+ "face": {
+  "eye.L": {
+   "surface": [
+    0.5713,
+    -0.106,
+    1.487
+   ],
+   "normal": [
+    0.8492,
+    -0.0541,
+    0.5253
+   ]
+  },
+  "eye.R": {
+   "surface": [
+    -0.5713,
+    -0.106,
+    1.487
+   ],
+   "normal": [
+    -0.8492,
+    -0.0541,
+    0.5253
+   ]
+  },
+  "crown_hub": [
+   0.0,
+   -1.0202,
+   2.0923
+  ]
+ },
+ "tris": {
+  "total": 19204,
+  "shell": 10900,
+  "shell_before_cuts": 10000,
+  "eyes": 576,
+  "claw_tips": 768,
+  "tuft_petals": 5280,
+  "crown_petals": 1680,
+  "shell_by_region": {
+   "body": 2618,
+   "burrow": 2952,
+   "burrow_hole": 739,
+   "claw": 520,
+   "stalk": 1735,
+   "stalk_root": 1229,
+   "stalk_tip": 1107
+  },
+  "per_part": {
+   "eye.L": 288,
+   "eye.R": 288,
+   "clawtip.L.0": 128,
+   "clawtip.L.1": 128,
+   "clawtip.L.2": 128,
+   "clawtip.R.0": 128,
+   "clawtip.R.1": 128,
+   "clawtip.R.2": 128,
+   "petal.tall.00": 240,
+   "petal.tall.01": 240,
+   "petal.tall.02": 240,
+   "petal.tall.03": 240,
+   "petal.tall.04": 240,
+   "petal.tall.05": 240,
+   "petal.tall.06": 240,
+   "petal.tall.07": 240,
+   "petal.L.00": 240,
+   "petal.R.00": 240,
+   "petal.L.01": 240,
+   "petal.R.01": 240,
+   "petal.L.02": 240,
+   "petal.R.02": 240,
+   "petal.L.03": 240,
+   "petal.R.03": 240,
+   "petal.L.04": 240,
+   "petal.R.04": 240,
+   "petal.L.05": 240,
+   "petal.R.05": 240,
+   "petal.L.06": 240,
+   "petal.R.06": 240,
+   "petal.crown.00": 240,
+   "petal.crown.01": 240,
+   "petal.crown.02": 240,
+   "petal.crown.03": 240,
+   "petal.crown.04": 240,
+   "petal.crown.05": 240,
+   "petal.crown.06": 240
+  }
+ },
+ "tier_rationale": "REGULAR role (a line unit): window [8000, 22000]. The SDF shell (burrow + mole + claws + stalks) carries ~2/3 of the budget; the 26 petal blades (tufts + crown) the rest.",
+ "open_edges": {
+  "closed_parts": [
+   "clawtip.L.0",
+   "clawtip.L.1",
+   "clawtip.L.2",
+   "clawtip.R.0",
+   "clawtip.R.1",
+   "clawtip.R.2",
+   "eye.L",
+   "eye.R",
+   "petal.L.00",
+   "petal.L.01",
+   "petal.L.02",
+   "petal.L.03",
+   "petal.L.04",
+   "petal.L.05",
+   "petal.L.06",
+   "petal.R.00",
+   "petal.R.01",
+   "petal.R.02",
+   "petal.R.03",
+   "petal.R.04",
+   "petal.R.05",
+   "petal.R.06",
+   "petal.crown.00",
+   "petal.crown.01",
+   "petal.crown.02",
+   "petal.crown.03",
+   "petal.crown.04",
+   "petal.crown.05",
+   "petal.crown.06",
+   "petal.tall.00",
+   "petal.tall.01",
+   "petal.tall.02",
+   "petal.tall.03",
+   "petal.tall.04",
+   "petal.tall.05",
+   "petal.tall.06",
+   "petal.tall.07",
+   "shell"
+  ],
+  "open_parts": {},
+  "rule": "every piece is a closed solid (shell, eye decals, petals, claw tips)"
+ },
+ "measure": {
+  "bbox": [
+   [
+    -1.9152,
+    -1.9473,
+    0.0
+   ],
+   [
+    1.9152,
+    1.9473,
+    3.8327
+   ]
+  ],
+  "height": 3.8327,
+  "width_x": 3.8303,
+  "depth_y": 3.8947,
+  "sheet_px_equivalent": {
+   "height_px": 383.3,
+   "width_px": 383.0,
+   "depth_px": 389.5,
+   "sheet_back": {
+    "height_px": 382,
+    "width_px": 370
+   },
+   "sheet_side": {
+    "height_px": 352,
+    "width_px": 367
+   }
+  },
+  "export_cell_fit_report_only": {
+   "scale": 0.46964,
+   "height_m": 1.8,
+   "footprint_m": 1.8291,
+   "bound_by": "height"
+  },
+  "body_top_z_rest": 2.1604
+ },
+ "bake": {
+  "NORMAL": {
+   "result": [
+    "FINISHED"
+   ],
+   "seconds": 1.0
+  },
+  "AO": {
+   "result": [
+    "FINISHED"
+   ],
+   "seconds": 0.8
+  },
+  "cage_extrusion": 0.02,
+  "cage_rule": "3 x the sampled high->low p99 distance (floor 0.02)",
+  "resolution": {
+   "normal": 1024,
+   "ao": 512
+  },
+  "high_tris": 555212,
+  "high_rule": "SDF shell (marching tets) + every closed part",
+  "body_uv_texels_normal": 598882,
+  "normal_baked_pct_of_body_texels": 99.33,
+  "normal_detail_fraction_dev_gt_0.05": 0.2999,
+  "ao_baked_pct_of_body_texels": 100.0,
+  "ao_mean_before_floor": 0.7566,
+  "ao_p05_before_floor": 0.0,
+  "ao_classes": {
+   "floor": {
+    "body": 0.5,
+    "burrow": 0.45,
+    "burrow_hole": 0.4,
+    "claw": 0.55,
+    "stalk_root": 0.5,
+    "stalk": 0.55,
+    "stalk_tip": 0.55,
+    "petal": 0.6,
+    "petal_pale": 0.6,
+    "eye_dark": 0.7,
+    "eye_white": 0.7
+   },
+   "per_region": {
+    "body": {
+     "texels": 24438,
+     "p05_before": 0.4392,
+     "le_0.02_before": 96
+    },
+    "burrow": {
+     "texels": 63924,
+     "p05_before": 0.6863,
+     "le_0.02_before": 0
+    },
+    "burrow_hole": {
+     "texels": 5546,
+     "p05_before": 0.3765,
+     "le_0.02_before": 0
+    },
+    "claw": {
+     "texels": 3871,
+     "p05_before": 0.0,
+     "le_0.02_before": 1252
+    },
+    "stalk_root": {
+     "texels": 7044,
+     "p05_before": 0.251,
+     "le_0.02_before": 0
+    },
+    "stalk": {
+     "texels": 12603,
+     "p05_before": 0.3765,
+     "le_0.02_before": 0
+    },
+    "stalk_tip": {
+     "texels": 6776,
+     "p05_before": 0.0,
+     "le_0.02_before": 1423
+    },
+    "petal": {
+     "texels": 15316,
+     "p05_before": 0.0,
+     "le_0.02_before": 4176
+    },
+    "petal_pale": {
+     "texels": 9895,
+     "p05_before": 0.0,
+     "le_0.02_before": 1620
+    },
+    "eye_dark": {
+     "texels": 216,
+     "p05_before": 0.0,
+     "le_0.02_before": 115
+    },
+    "eye_white": {
+     "texels": 50,
+     "p05_before": 0.0,
+     "le_0.02_before": 24
+    }
+   },
+   "p05_after_floor": 0.502,
+   "min_after_floor": 0.4
+  },
+  "pixel_sha": {
+   "normal": "212019bed4548df9",
+   "ao": "88ca3a28d649863e"
+  },
+  "seconds": 6.2
+ },
+ "digest_geometry_colour_uv": "63dda8b8c58be4b8",
+ "palette": {
+  "default": {
+   "body": {
+    "rgb": [
+     22,
+     14,
+     25
+    ]
+   },
+   "burrow": {
+    "rgb": [
+     23,
+     15,
+     26
+    ]
+   },
+   "burrow_hole": {
+    "rgb": [
+     8,
+     8,
+     8
+    ]
+   },
+   "claw": {
+    "rgb": [
+     231,
+     46,
+     131
+    ]
+   },
+   "stalk_root": {
+    "rgb": [
+     183,
+     34,
+     104
+    ]
+   },
+   "stalk": {
+    "rgb": [
+     231,
+     46,
+     131
+    ]
+   },
+   "stalk_tip": {
+    "rgb": [
+     233,
+     89,
+     159
+    ]
+   },
+   "petal": {
+    "rgb": [
+     231,
+     46,
+     131
+    ]
+   },
+   "petal_pale": {
+    "rgb": [
+     234,
+     160,
+     198
+    ]
+   },
+   "eye_dark": {
+    "rgb": [
+     4,
+     4,
+     5
+    ]
+   },
+   "eye_white": {
+    "rgb": [
+     236,
+     236,
+     233
+    ]
+   }
+  },
+  "files": [
+   "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\palettes\\shadow_mole\\default.json"
+  ],
+  "provenance": "pixel-sampled from the sheet's chips + drawn surfaces (see the palette notes)"
+ }
+}

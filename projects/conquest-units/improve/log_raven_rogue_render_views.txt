@@ -1,0 +1,12 @@
+00:01.719  blend            | Read blend: "C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\rigged\raven_rogue.blend"
+00:03.922  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\raven_rogue\raven_rogue_front.png'
+00:04.422  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\raven_rogue\raven_rogue_threequarter.png'
+00:04.828  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\raven_rogue\raven_rogue_side.png'
+00:05.219  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\raven_rogue\raven_rogue_back.png'
+00:05.500  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\raven_rogue\raven_rogue_tactical.png'
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\raven_rogue\raven_rogue_front.png
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\raven_rogue\raven_rogue_threequarter.png
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\raven_rogue\raven_rogue_side.png
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\raven_rogue\raven_rogue_back.png
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\raven_rogue\raven_rogue_tactical.png
+Blender 5.0.1 (hash a3db93c5b259 built 2025-12-16 01:32:30)
