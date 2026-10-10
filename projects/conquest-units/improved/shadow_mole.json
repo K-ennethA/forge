@@ -51,7 +51,7 @@
     3.1199
    ]
   ],
-  "seconds": 11.5
+  "seconds": 11.8
  },
  "retopo": {
   "method": "SDF marching tetrahedra (step 0.025) -> collapse decimation (deterministic)",
@@ -75,7 +75,7 @@
    1.0002,
    1.0003
   ],
-  "seconds": 8.3
+  "seconds": 6.3
  },
  "iso_cuts": {
   "cuts": [
@@ -116,7 +116,7 @@
     "face_connects": 90
    }
   ],
-  "seconds": 3.0,
+  "seconds": 2.6,
   "shell_tris_after_cuts": 10900
  },
  "centre_shift": [
@@ -126,8 +126,16 @@
  ],
  "glow": {
   "skin": "default",
-  "glowing_regions": [],
-  "no_glow": true
+  "glowing_regions": [
+   "claw",
+   "petal",
+   "petal_pale",
+   "stalk",
+   "stalk_root",
+   "stalk_tip"
+  ],
+  "peak_srgb_x_scale": 0.4588,
+  "ok": true
  },
  "regions_faces": {
   "shadow_mole": {
@@ -346,13 +354,13 @@
    "result": [
     "FINISHED"
    ],
-   "seconds": 1.0
+   "seconds": 0.9
   },
   "AO": {
    "result": [
     "FINISHED"
    ],
-   "seconds": 0.8
+   "seconds": 0.7
   },
   "cage_extrusion": 0.02,
   "cage_rule": "3 x the sampled high->low p99 distance (floor 0.02)",
@@ -443,12 +451,12 @@
    "min_after_floor": 0.4
   },
   "pixel_sha": {
-   "normal": "212019bed4548df9",
+   "normal": "a59eb14ab247922b",
    "ao": "88ca3a28d649863e"
   },
-  "seconds": 6.2
+  "seconds": 5.3
  },
- "digest_geometry_colour_uv": "63dda8b8c58be4b8",
+ "digest_geometry_colour_uv": "cbfb67285362ee87",
  "palette": {
   "default": {
    "body": {
@@ -477,42 +485,78 @@
      231,
      46,
      131
-    ]
+    ],
+    "emission": [
+     231,
+     46,
+     131
+    ],
+    "emission_scale": 0.25
    },
    "stalk_root": {
     "rgb": [
      183,
      34,
      104
-    ]
+    ],
+    "emission": [
+     183,
+     34,
+     104
+    ],
+    "emission_scale": 0.15
    },
    "stalk": {
     "rgb": [
      231,
      46,
      131
-    ]
+    ],
+    "emission": [
+     231,
+     46,
+     131
+    ],
+    "emission_scale": 0.25
    },
    "stalk_tip": {
     "rgb": [
      233,
      89,
      159
-    ]
+    ],
+    "emission": [
+     233,
+     89,
+     159
+    ],
+    "emission_scale": 0.35
    },
    "petal": {
     "rgb": [
      231,
      46,
      131
-    ]
+    ],
+    "emission": [
+     231,
+     46,
+     131
+    ],
+    "emission_scale": 0.4
    },
    "petal_pale": {
     "rgb": [
      234,
      160,
      198
-    ]
+    ],
+    "emission": [
+     234,
+     160,
+     198
+    ],
+    "emission_scale": 0.5
    },
    "eye_dark": {
     "rgb": [

@@ -351,18 +351,18 @@
  "deform_bone_count": 15,
  "digest": {
   "parts": {
-   "bake_normal": "212019bed4548df9",
+   "bake_normal": "a59eb14ab247922b",
    "bake_ao": "88ca3a28d649863e",
-   "geometry_colour_uv": "63dda8b8c58be4b8",
+   "geometry_colour_uv": "cbfb67285362ee87",
    "weights": "2d76f948b96bcce5",
    "keys": "e95bad1f9b914552",
    "clip_samples": "458f84528a04725a"
   },
-  "combined": "216803c46f51bd95"
+  "combined": "431a00f0e39e9d16"
  },
  "glb": {
   "path": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\rigged\\shadow_mole.glb",
-  "bytes": 5934272,
+  "bytes": 5906044,
   "seconds": 0.7,
   "carries": {
    "materials": [
@@ -431,42 +431,78 @@
       231,
       46,
       131
-     ]
+     ],
+     "emission": [
+      231,
+      46,
+      131
+     ],
+     "emission_scale": 0.25
     },
     "stalk_root": {
      "rgb": [
       183,
       34,
       104
-     ]
+     ],
+     "emission": [
+      183,
+      34,
+      104
+     ],
+     "emission_scale": 0.15
     },
     "stalk": {
      "rgb": [
       231,
       46,
       131
-     ]
+     ],
+     "emission": [
+      231,
+      46,
+      131
+     ],
+     "emission_scale": 0.25
     },
     "stalk_tip": {
      "rgb": [
       233,
       89,
       159
-     ]
+     ],
+     "emission": [
+      233,
+      89,
+      159
+     ],
+     "emission_scale": 0.35
     },
     "petal": {
      "rgb": [
       231,
       46,
       131
-     ]
+     ],
+     "emission": [
+      231,
+      46,
+      131
+     ],
+     "emission_scale": 0.4
     },
     "petal_pale": {
      "rgb": [
       234,
       160,
       198
-     ]
+     ],
+     "emission": [
+      234,
+      160,
+      198
+     ],
+     "emission_scale": 0.5
     },
     "eye_dark": {
      "rgb": [
@@ -485,12 +521,20 @@
    },
    "glow": {
     "skin": "default",
-    "glowing_regions": [],
-    "no_glow": true
+    "glowing_regions": [
+     "claw",
+     "petal",
+     "petal_pale",
+     "stalk",
+     "stalk_root",
+     "stalk_tip"
+    ],
+    "peak_srgb_x_scale": 0.4588,
+    "ok": true
    }
   },
   "rule": "default skin only (brief 2026-10-09)"
  },
  "improved_report": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\improved\\shadow_mole.json",
- "seconds": 35.2
+ "seconds": 32.0
 }

@@ -1,15 +1,15 @@
 {
  "digest": {
   "parts": {
-   "bake_normal": "a0bd8eee777ee0ba",
+   "bake_normal": "212019bed4548df9",
    "bake_ao": "88ca3a28d649863e",
-   "geometry_colour_uv": "63dda8b8c58be4b8",
+   "geometry_colour_uv": "cbfb67285362ee87",
    "weights": "2d76f948b96bcce5",
    "keys": "e95bad1f9b914552",
    "clip_samples": "458f84528a04725a"
   },
-  "combined": "8a33fc6f52b94b91"
+  "combined": "138462fc40950320"
  },
  "tris": 19204,
- "seconds": 34.4
+ "seconds": 31.4
 }

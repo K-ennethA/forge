@@ -723,16 +723,23 @@ def repaint(obs, pal):
     return out
 
 
+GLOW_REGIONS = {"stalk_root", "stalk", "stalk_tip", "petal", "petal_pale", "claw"}   # artist 2026-10-09 (M1): "yes glow"
+GLOW_CAP = 2.0                        # emissive palette ceiling (phone cap, import notes s7)
+
+
 def glow_check(pal):
-    """the sheet draws no glow (question M1 open, default none): every region zero Glow"""
+    """M1 answered 2026-10-09 ("yes glow"): exactly the pink regions glow, faintly, under the phone cap"""
     lit = sorted(n for n, v in pal["regions"].items() if "emission" in v)
-    return {"skin": pal["skin"], "glowing_regions": lit, "no_glow": not lit}
+    peak = max([max(c / 255.0 for c in pal["regions"][n]["emission"]) * pal["regions"][n].get("emission_scale", 1.0)
+                for n in lit] or [0.0])
+    return {"skin": pal["skin"], "glowing_regions": lit, "peak_srgb_x_scale": round(peak, 4),
+            "ok": set(lit) == GLOW_REGIONS and peak * pal["material"].get("emission_strength", 1.0) <= GLOW_CAP}
 
 
 MAT_BODY = make_mat(UNIT + "_body")
 pal_default = PAL.load(UNIT, "default")
 report["glow"] = glow_check(pal_default)
-assert report["glow"]["no_glow"], report["glow"]
+assert report["glow"]["ok"], report["glow"]
 
 low = new_obj(UNIT, VALL, FALL)
 me = low.data
@@ -810,7 +817,7 @@ low["conquest_front_landmark"] = landmark.tolist()
 low["conquest_facing_rule"] = report["facing"]["rule"]
 low["conquest_source"] = "from scratch: design/reference/shadow_mole-character-sheet.png (no sculpt)"
 low["conquest_scale_policy"] = "natural proportions in sheet units (1 = 100 sheet px); game scales at import (cell fit report-only)"
-low["conquest_emission_channel"] = "Glow colour attribute (2nd colour set, glTF COLOR_1) -> Emission Color; Col -> Base Color (no glow regions)"
+low["conquest_emission_channel"] = "Glow colour attribute (2nd colour set, glTF COLOR_1) -> Emission Color; Col -> Base Color (pink stalks / petals / claws glow faintly, palette tiers 0.15-0.50)"
 # focus boxes for the close-ups (world, after the centre shift) = the sheet's four detail panels
 _tall = STALKS[0]
 _tip = _tall.C[-1]

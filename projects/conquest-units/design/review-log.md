@@ -1743,3 +1743,16 @@ a SHADOW BURROW.
 - Palette: body 22,14,25 / shadow 23,15,26 / pink 230,47,132 / highlight
   227,148,189 / accent 186,34,105.
 - Glow: none by default (question M1: should the pink glow?).
+
+## 2026-10-09 — Sizes for the six + Shadow Mole glow (artist verbatim)
+
+"bombee is about 3 feet big and floats / canine bat is also 3 foot 5 /
+pagolin knight is 3 feet / shadow mole sticks out of the ground to a height
+of maybe 2 and a half feet, yes glow / aquaoct is around 3 feet as well /
+raven rogue is 3 feet as well"
+Applied (Conquest 2nd commit after cb0a8ca): bombee 3 ft as its body EXTENT,
+with the idle hover lifting it so its top is ~3 ft 3 in. aquaoct,
+raven_rogue and pangolin_knight 3 ft; canine_bat 3 ft 5 in; shadow_mole
+2 ft 6 in out of the ground. M1 ANSWERED: Shadow Mole's pink stalks /
+petals / claws glow faintly (palette tiers 0.15-0.50; the build's gate now
+requires exactly those regions to glow, under the 2.0 cap).

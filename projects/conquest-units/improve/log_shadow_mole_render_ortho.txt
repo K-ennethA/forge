@@ -1,7 +1,7 @@
-00:01.734  blend            | Read blend: "C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\rigged\shadow_mole.blend"
-00:04.094  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\shadow_mole\shadow_mole_ortho_front.png'
-00:04.313  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\shadow_mole\shadow_mole_ortho_back.png'
-00:04.703  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\shadow_mole\shadow_mole_ortho_side.png'
+00:01.500  blend            | Read blend: "C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\rigged\shadow_mole.blend"
+00:03.657  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\shadow_mole\shadow_mole_ortho_front.png'
+00:04.016  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\shadow_mole\shadow_mole_ortho_back.png'
+00:04.282  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\shadow_mole\shadow_mole_ortho_side.png'
 WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\shadow_mole\shadow_mole_ortho_front.png
 WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\shadow_mole\shadow_mole_ortho_back.png
 WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\shadow_mole\shadow_mole_ortho_side.png
