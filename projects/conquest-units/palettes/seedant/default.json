@@ -1,0 +1,25 @@
+{
+ "unit": "seedant",
+ "skin": "default",
+ "description": "Seedant v1 draft, default look. PIXEL-SAMPLED from design/reference/seedant-character-sheet.webp (1536x1024): the five palette chips (intake.json swatches, 36 px chips at x 1160: body green 174,205,70 / leaf red 233,69,65 / terracotta 154,77,46 / dark terracotta 108,66,50 / pale green 201,222,148) + masked medians of the drawn surfaces (box + hue mask quoted per region). No glow on the sheet: no region carries emission (Glow all zero). Opaque only.",
+ "regions": {
+  "body":        {"rgb": [174, 205, 70],  "note": "CHIP 1 (174,205,70); drawn body front x219 y400 median 182,210,70"},
+  "body_shade":  {"rgb": [201, 222, 148], "note": "CHIP 5 (201,222,148): the pale highlight chip on the upper head"},
+  "arm":         {"rgb": [182, 210, 70],  "note": "drawn leaf arms, front box x60-180 y440-520 (g > r+10, g > 150) median"},
+  "curl":        {"rgb": [57, 107, 50],   "note": "arm-tip curls, leaf-arm panel box x1200-1280 y540-600 dark-green mask median (front arms 63,112,51 / 57,106,47)"},
+  "sprout":      {"rgb": [79, 127, 52],   "note": "sprout curl, front box x195-240 y320-370 dark-green mask median"},
+  "leaf":        {"rgb": [222, 54, 46],   "note": "leaf panel box x1150-1290 y260-410 (r > 200, g < 90) median (chip 2 is 233,69,65)"},
+  "leaf_vein":   {"rgb": [181, 42, 39],   "note": "leaf panel darker-red mask p75 (subtle side veins)"},
+  "leaf_midrib": {"rgb": [157, 37, 35],   "note": "leaf panel darker-red mask median (the midrib line)"},
+  "eye":         {"rgb": [21, 21, 19],    "note": "front eye x201 y432 5x5 median"},
+  "eye_glint":   {"rgb": [238, 238, 238], "note": "front eye highlight x202 y413 3x3 median"},
+  "mouth":       {"rgb": [35, 15, 10],    "note": "face panel mouth box x1205-1235 y180-210 dark mask median"},
+  "tongue":      {"rgb": [179, 62, 65],   "note": "face panel tongue box x1210-1230 y190-210 pink mask median"},
+  "pot":         {"rgb": [154, 77, 46],   "note": "CHIP 3 (154,77,46); drawn wall front box x70-370 y600-740 median 154,74,42"},
+  "pot_rim":     {"rgb": [150, 71, 41],   "note": "drawn rim band, front box x36-402 y500-580 terracotta mask median"},
+  "pot_lip":     {"rgb": [189, 100, 57],  "note": "worn lighter rim edge: front rim-top rows y474-494 terracotta-hue mask median"},
+  "pot_inner":   {"rgb": [108, 66, 50],   "note": "CHIP 4 (108,66,50): dark terracotta, the inner wall"},
+  "soil":        {"rgb": [76, 34, 26],    "note": "pot panel interior box x1150-1296 y628-650 dark mask median (no soil is drawn: the darkest pot interior)"}
+ },
+ "material": {"roughness": 0.6, "emission_strength": 0.0}
+}

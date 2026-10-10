@@ -1,0 +1,231 @@
+{
+ "unit": "seedant",
+ "sheet": "design/reference/seedant-character-sheet.webp",
+ "size_px": [
+  1536,
+  1024
+ ],
+ "background_rgb": [
+  40,
+  40,
+  40
+ ],
+ "bg_tol": 26.0,
+ "views": {
+  "front": {
+   "bbox_px": [
+    36,
+    246,
+    404,
+    747
+   ],
+   "axis_x_px": 219.0,
+   "floor_y_px": 746,
+   "height_px": 501,
+   "height_units": 5.01,
+   "width_units": 3.68,
+   "half_width_profile": {
+    "0.00": {
+     "y_px": 746,
+     "half_w_units": 0.15
+    },
+    "0.10": {
+     "y_px": 696,
+     "half_w_units": 1.28
+    },
+    "0.25": {
+     "y_px": 621,
+     "half_w_units": 1.44
+    },
+    "0.50": {
+     "y_px": 496,
+     "half_w_units": 1.83
+    },
+    "0.75": {
+     "y_px": 371,
+     "half_w_units": 1.28
+    },
+    "0.90": {
+     "y_px": 296,
+     "half_w_units": 1.14
+    }
+   },
+   "transform": "z = (746 - y_px) / 100 ; x = (x_px - 219.0) / 100"
+  },
+  "back": {
+   "bbox_px": [
+    442,
+    244,
+    788,
+    747
+   ],
+   "axis_x_px": 615.5,
+   "floor_y_px": 746,
+   "height_px": 503,
+   "height_units": 5.03,
+   "width_units": 3.46,
+   "half_width_profile": {
+    "0.00": {
+     "y_px": 746,
+     "half_w_units": 0.115
+    },
+    "0.10": {
+     "y_px": 696,
+     "half_w_units": 1.205
+    },
+    "0.25": {
+     "y_px": 620,
+     "half_w_units": 1.375
+    },
+    "0.50": {
+     "y_px": 495,
+     "half_w_units": 1.735
+    },
+    "0.75": {
+     "y_px": 370,
+     "half_w_units": 1.335
+    },
+    "0.90": {
+     "y_px": 294,
+     "half_w_units": 1.215
+    }
+   },
+   "transform": "z = (746 - y_px) / 100 ; x = (x_px - 615.5) / 100"
+  },
+  "side": {
+   "bbox_px": [
+    820,
+    240,
+    1100,
+    744
+   ],
+   "axis_x_px": 958.0,
+   "floor_y_px": 743,
+   "height_px": 504,
+   "height_units": 5.04,
+   "width_units": 2.8,
+   "half_width_profile": {
+    "0.00": {
+     "y_px": 743,
+     "half_w_units": 0.1
+    },
+    "0.10": {
+     "y_px": 693,
+     "half_w_units": 0.91
+    },
+    "0.25": {
+     "y_px": 617,
+     "half_w_units": 1.06
+    },
+    "0.50": {
+     "y_px": 492,
+     "half_w_units": 1.4
+    },
+    "0.75": {
+     "y_px": 366,
+     "half_w_units": 1.11
+    },
+    "0.90": {
+     "y_px": 290,
+     "half_w_units": 1.01
+    }
+   },
+   "transform": "z = (743 - y_px) / 100 ; x = (x_px - 958.0) / 100"
+  }
+ },
+ "ortho_frame": {
+  "width_px": 410,
+  "height_px": 570,
+  "below_floor_px": 20,
+  "crops": {
+   "front": [
+    14,
+    196,
+    424,
+    766
+   ],
+   "back": [
+    410,
+    196,
+    820,
+    766
+   ],
+   "side": [
+    753,
+    193,
+    1163,
+    763
+   ]
+  }
+ },
+ "unnamed_extra_segments_px": [
+  [
+   1140,
+   1299
+  ]
+ ],
+ "swatches": [
+  {
+   "centre_px": [
+    1160.2,
+    824.0
+   ],
+   "rgb": [
+    174,
+    205,
+    70
+   ],
+   "diameter_px": 36
+  },
+  {
+   "centre_px": [
+    1160.2,
+    860.0
+   ],
+   "rgb": [
+    233,
+    69,
+    65
+   ],
+   "diameter_px": 36
+  },
+  {
+   "centre_px": [
+    1160.2,
+    896.0
+   ],
+   "rgb": [
+    154,
+    77,
+    46
+   ],
+   "diameter_px": 36
+  },
+  {
+   "centre_px": [
+    1160.2,
+    932.0
+   ],
+   "rgb": [
+    108,
+    66,
+    50
+   ],
+   "diameter_px": 36
+  },
+  {
+   "centre_px": [
+    1160.2,
+    968.0
+   ],
+   "rgb": [
+    201,
+    222,
+    148
+   ],
+   "diameter_px": 36
+  }
+ ],
+ "units_rule": "1 sheet unit = 100 px; per view z = (floor_y - y) / 100, x = (x - axis_x) / 100",
+ "caveat": "automatic split: VERIFY intake_overlay.png before dispatch (overlapping views or a floor shadow fuse / extend a view; rerun with --views or --bg-tol)"
+}

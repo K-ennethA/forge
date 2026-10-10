@@ -1,0 +1,527 @@
+{
+ "unit": "seedant",
+ "conquest_character_id": "seedant",
+ "source": "none: from scratch (sheet design/reference/seedant-character-sheet.webp)",
+ "tier": "regular",
+ "tri_budget": [
+  8000,
+  22000
+ ],
+ "units": "sheet units: 1 unit = 100 px of the reference sheet (orthographic views); floor z = 0 at the pot base",
+ "overrides": {},
+ "sdf": {
+  "step": 0.015,
+  "grid": [
+   296,
+   223,
+   189
+  ],
+  "ops": [
+   "union",
+   "union",
+   "union"
+  ],
+  "high_tris": 805260,
+  "high_verts": 402632,
+  "crumbs": {
+   "pieces": 1,
+   "dropped_verts": 0
+  },
+  "seconds": 87.2
+ },
+ "retopo": {
+  "method": "SDF marching tetrahedra (step 0.015) -> collapse decimation (deterministic)",
+  "decimated_tris": 6000,
+  "specks": {
+   "pieces": 1,
+   "dropped_verts": 0
+  },
+  "low_to_high": {
+   "mean": 0.00082,
+   "p99": 0.00211,
+   "max": 0.004
+  },
+  "high_to_low_sampled": {
+   "p99": 0.00199,
+   "max": 0.00429
+  },
+  "seconds": 9.3
+ },
+ "iso_cuts": {
+  "cuts": [
+   {
+    "field": "f_arm",
+    "tau": 0.0,
+    "edge_splits": 60,
+    "face_connects": 69
+   },
+   {
+    "field": "hl",
+    "tau": 0.0,
+    "edge_splits": 17,
+    "face_connects": 20
+   }
+  ],
+  "seconds": 0.3,
+  "shell_tris_after_cuts": 6154
+ },
+ "centre_shift": [
+  0.000496,
+  -0.018063,
+  0.0
+ ],
+ "regions_faces": {
+  "seedant": {
+   "body": 2910,
+   "body_shade": 34,
+   "arm": 3210,
+   "curl": 854,
+   "sprout": 456,
+   "leaf": 1496,
+   "leaf_vein": 192,
+   "leaf_midrib": 132,
+   "eye": 480,
+   "eye_glint": 224,
+   "mouth": 200,
+   "tongue": 112,
+   "pot": 640,
+   "pot_rim": 640,
+   "pot_lip": 384,
+   "pot_inner": 192,
+   "soil": 192
+  }
+ },
+ "regions_area_share": {
+  "body": 0.1535,
+  "body_shade": 0.0013,
+  "arm": 0.134,
+  "curl": 0.0028,
+  "sprout": 0.0055,
+  "leaf": 0.0846,
+  "leaf_vein": 0.005,
+  "leaf_midrib": 0.0045,
+  "eye": 0.0041,
+  "eye_glint": 0.0007,
+  "mouth": 0.0007,
+  "tongue": 0.0002,
+  "pot": 0.2356,
+  "pot_rim": 0.1811,
+  "pot_lip": 0.0551,
+  "pot_inner": 0.0314,
+  "soil": 0.0998
+ },
+ "facing": {
+  "rule": "head centre (body axis, z 3.40) -> the mouth centre on the midline",
+  "anchor": [
+   -0.0005,
+   0.0681,
+   3.4
+  ],
+  "landmark": [
+   -0.0005,
+   -0.7851,
+   2.98
+  ],
+  "angle_from_minusY_deg": 0.0
+ },
+ "arm_rim_clearance": {
+  "rule": "signed distance from every arm vertex to the pot solid (nearest pot face, sign by its outward normal); > 0 = outside the pot. The arms rest ON the rim: min ~ 0 and never below -0.005",
+  "low_arm_min": 0.0055,
+  "low_arm_min_at_sheet_xyz": [
+   1.267,
+   -1.291,
+   2.663
+  ],
+  "low_arm_p01": 0.0208,
+  "low_arm_below_-0.005": 0,
+  "high_arm_min": 0.0011,
+  "high_arm_below_-0.005": 0,
+  "curl_min": 0.3185,
+  "arm_verts": 1642
+ },
+ "tris": {
+  "total": 17858,
+  "shell": 6154,
+  "pot": 3968,
+  "leaf.L": 1768,
+  "leaf.R": 1768,
+  "sprout": 896,
+  "curl.L": 840,
+  "curl.R": 840,
+  "eye.L": 400,
+  "eye_glint.L": 168,
+  "eye.R": 400,
+  "eye_glint.R": 168,
+  "mouth": 320,
+  "tongue": 168
+ },
+ "tier_rationale": "REGULAR role (a line unit): window [8000, 22000]. Simple soft forms (one gumdrop shell, an oval pot, two leaves, three curls, face decals) -> lands in the low half of the window.",
+ "open_edges": {
+  "closed_parts": {
+   "shell": 0,
+   "pot": 0,
+   "leaf.L": 0,
+   "leaf.R": 0,
+   "sprout": 0,
+   "curl.L": 0,
+   "curl.R": 0,
+   "eye.L": 0,
+   "eye_glint.L": 0,
+   "eye.R": 0,
+   "eye_glint.R": 0,
+   "mouth": 0,
+   "tongue": 0
+  },
+  "open_parts": {},
+  "rule": "every piece is a closed solid (shell = marching tets of one SDF; pot = one lathe with poles; leaves = lens blades with pole ends; curls/sprout = capped tubes; decals = top + bottom + wall)"
+ },
+ "measure": {
+  "bbox": [
+   [
+    -1.834,
+    -1.8481,
+    0.0
+   ],
+   [
+    1.834,
+    1.8481,
+    5.01
+   ]
+  ],
+  "height": 5.01,
+  "width_x": 3.668,
+  "depth_y": 3.6961,
+  "sheet_px_equivalent": {
+   "height_px": 501.0,
+   "width_px": 366.8
+  },
+  "sheet_reference": {
+   "front_height_u": 5.01,
+   "front_width_u": 3.68,
+   "side_width_u": 2.8
+  },
+  "export_cell_fit_report_only": {
+   "scale": 0.35928,
+   "height_m": 1.8,
+   "footprint_m": 1.3279,
+   "bound_by": "height"
+  }
+ },
+ "bake": {
+  "NORMAL": {
+   "result": [
+    "FINISHED"
+   ],
+   "seconds": 1.1
+  },
+  "AO": {
+   "result": [
+    "FINISHED"
+   ],
+   "seconds": 0.9
+  },
+  "cage_extrusion": 0.02,
+  "cage_rule": "3 x the sampled high->low p99 distance (floor 0.02)",
+  "resolution": {
+   "normal": 1024,
+   "ao": 512
+  },
+  "high_tris": 811454,
+  "high_rule": "SDF shell (marching tets) + every closed part",
+  "uv_texels_normal": 647955,
+  "normal_baked_pct_of_texels": 99.5,
+  "normal_detail_fraction_dev_gt_0.05": 0.1986,
+  "ao_baked_pct_of_texels": 100.0,
+  "ao_mean": 0.6728,
+  "ao_p05": 0.0,
+  "ao_classes": {
+   "hidden_faces": 1612,
+   "visible_faces": 10736,
+   "ao_le_0.02_texels": 17548,
+   "ao_le_0.02_pct": 10.84,
+   "ao_le_0.02_on_hidden_only_texels": 13342,
+   "ao_le_0.02_on_visible_texels": 4206,
+   "visible_ao_p05_before_floor": 0.0627,
+   "visible_ao_p01_before_floor": 0.0,
+   "per_region": {
+    "body": {
+     "texels": 18160,
+     "p05": 0.1255,
+     "le_0.02": 274
+    },
+    "body_shade": {
+     "texels": 207,
+     "p05": 0.8745,
+     "le_0.02": 0
+    },
+    "arm": {
+     "texels": 21126,
+     "p05": 0.0,
+     "le_0.02": 2432
+    },
+    "curl": {
+     "texels": 366,
+     "p05": 0.0,
+     "le_0.02": 88
+    },
+    "sprout": {
+     "texels": 608,
+     "p05": 0.251,
+     "le_0.02": 9
+    },
+    "leaf": {
+     "texels": 13543,
+     "p05": 0.3137,
+     "le_0.02": 107
+    },
+    "leaf_vein": {
+     "texels": 821,
+     "p05": 0.4392,
+     "le_0.02": 0
+    },
+    "leaf_midrib": {
+     "texels": 731,
+     "p05": 0.251,
+     "le_0.02": 2
+    },
+    "eye": {
+     "texels": 272,
+     "p05": 0.658,
+     "le_0.02": 0
+    },
+    "eye_glint": {
+     "texels": 42,
+     "p05": 0.8118,
+     "le_0.02": 0
+    },
+    "mouth": {
+     "texels": 45,
+     "p05": 0.502,
+     "le_0.02": 0
+    },
+    "tongue": {
+     "texels": 11,
+     "p05": 0.5314,
+     "le_0.02": 0
+    },
+    "pot": {
+     "texels": 37789,
+     "p05": 0.9373,
+     "le_0.02": 0
+    },
+    "pot_rim": {
+     "texels": 28318,
+     "p05": 0.0627,
+     "le_0.02": 803
+    },
+    "pot_lip": {
+     "texels": 8979,
+     "p05": 0.0,
+     "le_0.02": 461
+    },
+    "pot_inner": {
+     "texels": 5018,
+     "p05": 0.0627,
+     "le_0.02": 27
+    },
+    "soil": {
+     "texels": 10305,
+     "p05": 0.251,
+     "le_0.02": 3
+    }
+   },
+   "floor": {
+    "body": 0.45,
+    "body_shade": 0.45,
+    "arm": 0.45,
+    "curl": 0.5,
+    "sprout": 0.5,
+    "leaf": 0.45,
+    "leaf_vein": 0.45,
+    "leaf_midrib": 0.45,
+    "eye": 0.7,
+    "eye_glint": 0.7,
+    "mouth": 0.7,
+    "tongue": 0.7,
+    "pot": 0.45,
+    "pot_rim": 0.4,
+    "pot_lip": 0.4,
+    "pot_inner": 0.3,
+    "soil": 0.3
+   },
+   "visible_ao_p05_after_floor": 0.3765,
+   "visible_ao_p01_after_floor": 0.3
+  },
+  "pixel_sha": {
+   "normal": "ba98517bff7463e4",
+   "ao": "2c29c3b0b342cf9a"
+  },
+  "seconds": 5.7
+ },
+ "digest_geometry_colour_uv": "b2c10be735e5268c",
+ "palette": {
+  "default": {
+   "body": {
+    "rgb": [
+     174,
+     205,
+     70
+    ]
+   },
+   "body_shade": {
+    "rgb": [
+     201,
+     222,
+     148
+    ]
+   },
+   "arm": {
+    "rgb": [
+     182,
+     210,
+     70
+    ]
+   },
+   "curl": {
+    "rgb": [
+     57,
+     107,
+     50
+    ]
+   },
+   "sprout": {
+    "rgb": [
+     79,
+     127,
+     52
+    ]
+   },
+   "leaf": {
+    "rgb": [
+     222,
+     54,
+     46
+    ]
+   },
+   "leaf_vein": {
+    "rgb": [
+     181,
+     42,
+     39
+    ]
+   },
+   "leaf_midrib": {
+    "rgb": [
+     157,
+     37,
+     35
+    ]
+   },
+   "eye": {
+    "rgb": [
+     21,
+     21,
+     19
+    ]
+   },
+   "eye_glint": {
+    "rgb": [
+     238,
+     238,
+     238
+    ]
+   },
+   "mouth": {
+    "rgb": [
+     35,
+     15,
+     10
+    ]
+   },
+   "tongue": {
+    "rgb": [
+     179,
+     62,
+     65
+    ]
+   },
+   "pot": {
+    "rgb": [
+     154,
+     77,
+     46
+    ]
+   },
+   "pot_rim": {
+    "rgb": [
+     150,
+     71,
+     41
+    ]
+   },
+   "pot_lip": {
+    "rgb": [
+     189,
+     100,
+     57
+    ]
+   },
+   "pot_inner": {
+    "rgb": [
+     108,
+     66,
+     50
+    ]
+   },
+   "soil": {
+    "rgb": [
+     76,
+     34,
+     26
+    ]
+   }
+  },
+  "files": [
+   "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\palettes\\seedant\\default.json"
+  ],
+  "provenance": "pixel-sampled from the sheet (chips + masked medians of the drawn surfaces)"
+ },
+ "leaves": {
+  "L": {
+   "length": 2.1021,
+   "s_exit": 0.1766
+  },
+  "R": {
+   "length": 2.1021,
+   "s_exit": 0.1766
+  }
+ },
+ "arms": {
+  "L": {
+   "rim_point": [
+    1.1735,
+    -1.1976,
+    2.72
+   ],
+   "n_out": [
+    0.6947,
+    -0.7193,
+    0.0
+   ],
+   "length": 1.8012
+  },
+  "R": {
+   "rim_point": [
+    -1.1745,
+    -1.1976,
+    2.72
+   ],
+   "n_out": [
+    -0.6947,
+    -0.7193,
+    0.0
+   ],
+   "length": 1.8012
+  }
+ }
+}

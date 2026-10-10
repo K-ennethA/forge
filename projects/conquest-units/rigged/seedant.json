@@ -1,0 +1,576 @@
+{
+ "unit": "seedant",
+ "source": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\improved\\seedant.blend",
+ "fps": 24,
+ "weights": {
+  "max_influences": 2,
+  "unweighted": 0,
+  "sum_dev_max": 1.1102230246251565e-16,
+  "per_bone_dominant": {
+   "pot": 1986,
+   "body": 1180,
+   "head": 1026,
+   "eye.L": 288,
+   "eye.R": 288,
+   "arm.L.0": 159,
+   "arm.L.1": 252,
+   "arm.L.2": 653,
+   "arm.R.0": 158,
+   "arm.R.1": 256,
+   "arm.R.2": 702,
+   "leaf.L.0": 124,
+   "leaf.L.1": 248,
+   "leaf.L.2": 471,
+   "leaf.R.0": 124,
+   "leaf.R.1": 248,
+   "leaf.R.2": 471,
+   "sprout.0": 136,
+   "sprout.1": 185
+  },
+  "rule": "pot (pot + soil) 100% pot; shell: head above the NECK_Z blend, body below; arm-owned shell blends (by SDF ownership) into rigkit.vine_weights along the arm path from where it leaves the body (parent body); curls 100% on the arm tip bone; leaves + sprout vine weights from where they leave the body (parent head); eye + glint decals 100% eye.{L,R}; mouth + tongue head"
+ },
+ "clips": {
+  "idle": {
+   "frames": [
+    1,
+    97
+   ],
+   "period_frames": 96,
+   "seconds": 4.0,
+   "cyclic": true,
+   "status": "PLACEHOLDER (artist question S1: movement intent not given)",
+   "seam_mm": 0.0,
+   "root_offset_max": 0.0,
+   "min_z": 0.0,
+   "pot_lift": [
+    0.0,
+    0.0
+   ],
+   "arm_pot_clearance_min": 0.0081,
+   "arm_pot_clearance_rest": 0.0055
+  },
+  "walk": {
+   "frames": [
+    1,
+    49
+   ],
+   "period_frames": 48,
+   "seconds": 2.0,
+   "cyclic": true,
+   "status": "PLACEHOLDER (artist question S1: movement intent not given)",
+   "seam_mm": 0.0,
+   "root_offset_max": 0.0,
+   "min_z": 0.0,
+   "pot_lift": [
+    0.0,
+    0.2992
+   ],
+   "arm_pot_clearance_min": 0.0078,
+   "arm_pot_clearance_rest": 0.0055
+  }
+ },
+ "bones": [
+  {
+   "name": "root",
+   "parent": null,
+   "deform": false,
+   "head": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "tail": [
+    0.0,
+    0.0,
+    0.4
+   ]
+  },
+  {
+   "name": "pot",
+   "parent": "root",
+   "deform": true,
+   "head": [
+    -0.0005,
+    0.0181,
+    0.0
+   ],
+   "tail": [
+    -0.0005,
+    0.0181,
+    1.2
+   ]
+  },
+  {
+   "name": "body",
+   "parent": "pot",
+   "deform": true,
+   "head": [
+    -0.0005,
+    0.0681,
+    2.4
+   ],
+   "tail": [
+    -0.0005,
+    0.0681,
+    3.05
+   ]
+  },
+  {
+   "name": "head",
+   "parent": "body",
+   "deform": true,
+   "head": [
+    -0.0005,
+    0.0681,
+    3.05
+   ],
+   "tail": [
+    -0.0005,
+    0.0681,
+    4.0
+   ]
+  },
+  {
+   "name": "eye.L",
+   "parent": "head",
+   "deform": true,
+   "head": [
+    0.2325,
+    -0.6629,
+    3.28
+   ],
+   "tail": [
+    0.2325,
+    -0.6629,
+    3.53
+   ]
+  },
+  {
+   "name": "eye.R",
+   "parent": "head",
+   "deform": true,
+   "head": [
+    -0.2335,
+    -0.6626,
+    3.28
+   ],
+   "tail": [
+    -0.2335,
+    -0.6626,
+    3.53
+   ]
+  },
+  {
+   "name": "leaf.L.0",
+   "parent": "head",
+   "deform": true,
+   "head": [
+    0.6752,
+    0.58,
+    3.1172
+   ],
+   "tail": [
+    0.8224,
+    0.6096,
+    3.74
+   ]
+  },
+  {
+   "name": "leaf.L.1",
+   "parent": "leaf.L.0",
+   "deform": true,
+   "head": [
+    0.8224,
+    0.6096,
+    3.74
+   ],
+   "tail": [
+    0.8793,
+    0.6459,
+    4.3777
+   ]
+  },
+  {
+   "name": "leaf.L.2",
+   "parent": "leaf.L.1",
+   "deform": true,
+   "head": [
+    0.8793,
+    0.6459,
+    4.3777
+   ],
+   "tail": [
+    0.8295,
+    0.7381,
+    5.01
+   ]
+  },
+  {
+   "name": "leaf.R.0",
+   "parent": "head",
+   "deform": true,
+   "head": [
+    -0.6762,
+    0.58,
+    3.1172
+   ],
+   "tail": [
+    -0.8234,
+    0.6096,
+    3.74
+   ]
+  },
+  {
+   "name": "leaf.R.1",
+   "parent": "leaf.R.0",
+   "deform": true,
+   "head": [
+    -0.8234,
+    0.6096,
+    3.74
+   ],
+   "tail": [
+    -0.8803,
+    0.6459,
+    4.3777
+   ]
+  },
+  {
+   "name": "leaf.R.2",
+   "parent": "leaf.R.1",
+   "deform": true,
+   "head": [
+    -0.8803,
+    0.6459,
+    4.3777
+   ],
+   "tail": [
+    -0.8305,
+    0.7381,
+    5.01
+   ]
+  },
+  {
+   "name": "sprout.0",
+   "parent": "head",
+   "deform": true,
+   "head": [
+    -0.0999,
+    -0.3816,
+    3.8756
+   ],
+   "tail": [
+    0.0248,
+    -0.2943,
+    4.2038
+   ]
+  },
+  {
+   "name": "sprout.1",
+   "parent": "sprout.0",
+   "deform": true,
+   "head": [
+    0.0248,
+    -0.2943,
+    4.2038
+   ],
+   "tail": [
+    0.0405,
+    -0.2833,
+    4.06
+   ]
+  },
+  {
+   "name": "arm.L.0",
+   "parent": "body",
+   "deform": true,
+   "head": [
+    0.7428,
+    -0.7516,
+    2.84
+   ],
+   "tail": [
+    1.1556,
+    -1.1791,
+    2.8869
+   ]
+  },
+  {
+   "name": "arm.L.1",
+   "parent": "arm.L.0",
+   "deform": true,
+   "head": [
+    1.1556,
+    -1.1791,
+    2.8869
+   ],
+   "tail": [
+    1.3568,
+    -1.3875,
+    2.4405
+   ]
+  },
+  {
+   "name": "arm.L.2",
+   "parent": "arm.L.1",
+   "deform": true,
+   "head": [
+    1.3568,
+    -1.3875,
+    2.4405
+   ],
+   "tail": [
+    1.2568,
+    -1.2839,
+    1.86
+   ]
+  },
+  {
+   "name": "arm.R.0",
+   "parent": "body",
+   "deform": true,
+   "head": [
+    -0.7438,
+    -0.7516,
+    2.84
+   ],
+   "tail": [
+    -1.1566,
+    -1.1791,
+    2.8869
+   ]
+  },
+  {
+   "name": "arm.R.1",
+   "parent": "arm.R.0",
+   "deform": true,
+   "head": [
+    -1.1566,
+    -1.1791,
+    2.8869
+   ],
+   "tail": [
+    -1.3578,
+    -1.3875,
+    2.4405
+   ]
+  },
+  {
+   "name": "arm.R.2",
+   "parent": "arm.R.1",
+   "deform": true,
+   "head": [
+    -1.3578,
+    -1.3875,
+    2.4405
+   ],
+   "tail": [
+    -1.2578,
+    -1.2839,
+    1.86
+   ]
+  }
+ ],
+ "bone_count": 20,
+ "deform_bone_count": 19,
+ "digest": {
+  "parts": {
+   "bake_normal": "ba98517bff7463e4",
+   "bake_ao": "2c29c3b0b342cf9a",
+   "geometry_colour_uv": "b2c10be735e5268c",
+   "weights": "34d1ba07e7711221",
+   "keys": "1f034ab8e0789ce1",
+   "clip_samples": "888d49faedbe32e4"
+  },
+  "combined": "a67a991973296657"
+ },
+ "glb": {
+  "path": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\rigged\\seedant.glb",
+  "bytes": 4718568,
+  "seconds": 0.8,
+  "carries": {
+   "materials": [
+    {
+     "name": "seedant_body",
+     "alphaMode": "OPAQUE",
+     "doubleSided": false,
+     "textures": [
+      "baseColorTexture",
+      "normalTexture"
+     ]
+    }
+   ],
+   "primitives": [
+    {
+     "mesh": "seedant",
+     "material": "seedant_body",
+     "colour_sets": [
+      "COLOR_0",
+      "COLOR_1"
+     ]
+    }
+   ],
+   "nodes": [
+    "arm.L.0",
+    "arm.L.1",
+    "arm.L.2",
+    "arm.R.0",
+    "arm.R.1",
+    "arm.R.2",
+    "body",
+    "eye.L",
+    "eye.R",
+    "head",
+    "leaf.L.0",
+    "leaf.L.1",
+    "leaf.L.2",
+    "leaf.R.0",
+    "leaf.R.1",
+    "leaf.R.2",
+    "pot",
+    "root",
+    "seedant",
+    "seedant_rig",
+    "sprout.0",
+    "sprout.1"
+   ],
+   "animations": [
+    "idle",
+    "walk"
+   ],
+   "skins": 1,
+   "joints": 20,
+   "extensionsUsed": []
+  },
+  "structure": "armature identity + skinned 'seedant' (one opaque primitive); natural scale; report-only cell fit 0.35928"
+ },
+ "skins": {
+  "default": {
+   "file": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\rigged\\seedant.blend",
+   "palette": {
+    "body": {
+     "rgb": [
+      174,
+      205,
+      70
+     ]
+    },
+    "body_shade": {
+     "rgb": [
+      201,
+      222,
+      148
+     ]
+    },
+    "arm": {
+     "rgb": [
+      182,
+      210,
+      70
+     ]
+    },
+    "curl": {
+     "rgb": [
+      57,
+      107,
+      50
+     ]
+    },
+    "sprout": {
+     "rgb": [
+      79,
+      127,
+      52
+     ]
+    },
+    "leaf": {
+     "rgb": [
+      222,
+      54,
+      46
+     ]
+    },
+    "leaf_vein": {
+     "rgb": [
+      181,
+      42,
+      39
+     ]
+    },
+    "leaf_midrib": {
+     "rgb": [
+      157,
+      37,
+      35
+     ]
+    },
+    "eye": {
+     "rgb": [
+      21,
+      21,
+      19
+     ]
+    },
+    "eye_glint": {
+     "rgb": [
+      238,
+      238,
+      238
+     ]
+    },
+    "mouth": {
+     "rgb": [
+      35,
+      15,
+      10
+     ]
+    },
+    "tongue": {
+     "rgb": [
+      179,
+      62,
+      65
+     ]
+    },
+    "pot": {
+     "rgb": [
+      154,
+      77,
+      46
+     ]
+    },
+    "pot_rim": {
+     "rgb": [
+      150,
+      71,
+      41
+     ]
+    },
+    "pot_lip": {
+     "rgb": [
+      189,
+      100,
+      57
+     ]
+    },
+    "pot_inner": {
+     "rgb": [
+      108,
+      66,
+      50
+     ]
+    },
+    "soil": {
+     "rgb": [
+      76,
+      34,
+      26
+     ]
+    }
+   }
+  },
+  "extra": "none requested (OPEN-QUESTIONS S4): no repaint proof needed"
+ },
+ "improved_report": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\improved\\seedant.json",
+ "seconds": 121.3
+}
