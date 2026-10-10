@@ -28,7 +28,14 @@ commit or spawn, nothing windowed, port 9876 never). Paths below are relative to
    - a view drawn THREE-QUARTER (many sheets' "front") is not an ortho: rerun with
      `--ortho-views back,side` (or whichever views are true orthos) so the compare uses only those;
    - an axis pulled by a low tail / prop: `--base-frac` smaller, or `--axis view=x_px`;
-   - palette labels may sit off their chips: map chips by COLOUR, never by label row.
+   - palette labels may sit off their chips: map chips by COLOUR, never by label row;
+   - a big TITLE or the detail panels merging into a view: `--region x0,y0,x1,y1` (the turnaround
+     box only; chips are still searched sheet-wide);
+   - views that OVERLAP in x (a side-view beak over the back view's feathers, touching tentacles):
+     `--assign x1,x2` (each blob goes to the view holding its centre).
+   Chips are found as a column OR a row, with gaps and dark chips recovered by spacing.
+0. Sheets pasted inline (no file on disk): run a clipboard watcher (save each NEW clipboard image to
+   design/reference/incoming/) and ask the artist to copy each sheet image; identify each by its title.
 4. Look at the sheet yourself and transcribe it: parts, materials, the detail panels'
    notes, palette, anything that will need a deviation or an artist decision.
 

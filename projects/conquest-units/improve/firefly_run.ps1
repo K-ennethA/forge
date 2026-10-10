@@ -13,8 +13,8 @@ $VPY = "C:\Users\kenne\OneDrive\Desktop\git\forge\service\.venv\Scripts\python.e
 New-Item -ItemType Directory -Force $OUT | Out-Null
 $T0 = Get-Date
 if (-not $SkipBuild) {
-  $bp = Start-Process -FilePath $B -ArgumentList @("--background","--factory-startup","--python","`"$I\firefly_build.py`"") -WindowStyle Hidden -PassThru -RedirectStandardOutput "$I\log_firefly_build.txt" -RedirectStandardError "$I\log_firefly_build.err"
-  $dp = Start-Process -FilePath $B -ArgumentList @("--background","--factory-startup","--python","`"$I\firefly_build.py`"","--","--digest-only","`"$I\log_firefly_digest2.json`"") -WindowStyle Hidden -PassThru -RedirectStandardOutput "$I\log_firefly_digest2.txt" -RedirectStandardError "$I\log_firefly_digest2.err"
+  $bp = Start-Process -FilePath $B -ArgumentList @("--background","--factory-startup","--python-exit-code","1","--python","`"$I\firefly_build.py`"") -WindowStyle Hidden -PassThru -RedirectStandardOutput "$I\log_firefly_build.txt" -RedirectStandardError "$I\log_firefly_build.err"
+  $dp = Start-Process -FilePath $B -ArgumentList @("--background","--factory-startup","--python-exit-code","1","--python","`"$I\firefly_build.py`"","--","--digest-only","`"$I\log_firefly_digest2.json`"") -WindowStyle Hidden -PassThru -RedirectStandardOutput "$I\log_firefly_digest2.txt" -RedirectStandardError "$I\log_firefly_digest2.err"
   $null = $bp.Handle; $null = $dp.Handle
   $bp.WaitForExit(); "build exit=$($bp.ExitCode) wall_s=$([math]::Round(((Get-Date)-$T0).TotalSeconds,1))"
   $dp.WaitForExit(); "digest twin exit=$($dp.ExitCode) wall_s=$([math]::Round(((Get-Date)-$T0).TotalSeconds,1))"

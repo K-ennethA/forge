@@ -23,10 +23,10 @@ $dmJobs = @(
   @("check_rigged",   @("--background","`"$P\rigged\duskmaw.blend`"","--factory-startup","--python","`"$I\conquest_contract_check.py`"","--","`"$P\rigged\check_duskmaw.json`"")),
   @("render_after",   @("--background","`"$P\improved\duskmaw.blend`"","--factory-startup","--python","`"$I\duskmaw_render.py`"","--","`"$OUT\duskmaw_v4`"",$VIEWS)),
   @("render_v3sil",   @("--background","`"$P\improved\duskmaw_v3.blend`"","--factory-startup","--python","`"$I\duskmaw_render.py`"","--","`"$OUT\v3\duskmaw`"","silhouette,silhouetteside")),
-  @("aabb",           @("--background","--factory-startup","--python","`"$I\duskmaw_aabb_check.py`"","--","`"$P\rigged\duskmaw_aabb.json`"","shipped=$GLB#180@1.0","rerun_natural=$P\rigged\duskmaw.glb#180@1.0","rerun_roster_fit=$P\rigged\duskmaw.glb#180@fit")),
-  @("seethrough",     @("--background","--factory-startup","--python","`"$I\duskmaw_seethrough.py`"","--","`"$P\rigged\duskmaw_seethrough.json`"","v3_improved=`"$P\improved\duskmaw_v3.blend`"","v4_improved=`"$P\improved\duskmaw.blend`"","v4_rigged=`"$P\rigged\duskmaw.blend`"")),
+  @("aabb",           @("--background","--factory-startup","--python-exit-code","1","--python","`"$I\duskmaw_aabb_check.py`"","--","`"$P\rigged\duskmaw_aabb.json`"","shipped=$GLB#180@1.0","rerun_natural=$P\rigged\duskmaw.glb#180@1.0","rerun_roster_fit=$P\rigged\duskmaw.glb#180@fit")),
+  @("seethrough",     @("--background","--factory-startup","--python-exit-code","1","--python","`"$I\duskmaw_seethrough.py`"","--","`"$P\rigged\duskmaw_seethrough.json`"","v3_improved=`"$P\improved\duskmaw_v3.blend`"","v4_improved=`"$P\improved\duskmaw.blend`"","v4_rigged=`"$P\rigged\duskmaw.blend`"")),
   @("clips_mp4",      @("--background","`"$P\rigged\duskmaw.blend`"","--factory-startup","--python","`"$I\duskmaw_clips.py`"","--","`"$OUT`"","768","sheet","--tag","v4")),
-  @("base",           @("--background","--factory-startup","--python","`"$I\duskmaw_base_measure.py`"","--","`"$P\rigged\duskmaw_base.json`"","v3_improved=`"$P\improved\duskmaw_v3.blend`"","v4_improved=`"$P\improved\duskmaw.blend`""))
+  @("base",           @("--background","--factory-startup","--python-exit-code","1","--python","`"$I\duskmaw_base_measure.py`"","--","`"$P\rigged\duskmaw_base.json`"","v3_improved=`"$P\improved\duskmaw_v3.blend`"","v4_improved=`"$P\improved\duskmaw.blend`""))
 )
 $dmProcs = @()
 foreach ($j in $dmJobs) {
@@ -34,7 +34,7 @@ foreach ($j in $dmJobs) {
   $null = $pr.Handle; $dmProcs += ,@($j[0], $pr)
 }
 foreach ($x in $dmProcs) { $x[1].WaitForExit(); "$($x[0]) exit=$($x[1].ExitCode)" }
-$pb = Start-Process -FilePath $B -ArgumentList @("--background","--factory-startup","--python","`"$I\duskmaw_before_after.py`"") -WindowStyle Hidden -PassThru -RedirectStandardOutput "$I\log_duskmaw_ba.txt" -RedirectStandardError "$I\log_duskmaw_ba.err"
+$pb = Start-Process -FilePath $B -ArgumentList @("--background","--factory-startup","--python-exit-code","1","--python","`"$I\duskmaw_before_after.py`"") -WindowStyle Hidden -PassThru -RedirectStandardOutput "$I\log_duskmaw_ba.txt" -RedirectStandardError "$I\log_duskmaw_ba.err"
 $null = $pb.Handle; $pb.WaitForExit(); "before_after exit=$($pb.ExitCode)"
 foreach ($c in @("check_improved","check_rigged")) { (Get-Content "$I\log_duskmaw_$c.txt" | Select-String "checks, ").Line | % { "$c : $_" } }
 (Get-Content "$I\log_duskmaw_aabb.txt" | Select-String "^AABB").Line
@@ -59,7 +59,7 @@ if ($Determinism) {
   foreach ($x in $tw) { $d = Digests $x[1]; "TWIN$($x[0]) $d"; $same = $same -and ($d -eq $d1) }
   "DIGESTS identical (all but the normal bake)=$same"
   $npys = @("$env:TEMP\duskmaw_normal_main.npy") + ($tw | % { "$env:TEMP\duskmaw_normal_duskmaw_twin$($_[0]).npy" })
-  $pd = Start-Process -FilePath $B -ArgumentList (@("--background","--factory-startup","--python","`"$I\duskmaw_bake_diff.py`"","--") + $npys) -WindowStyle Hidden -PassThru -RedirectStandardOutput "$I\log_duskmaw_bakediff.txt" -RedirectStandardError "$I\log_duskmaw_bakediff.err"
+  $pd = Start-Process -FilePath $B -ArgumentList (@("--background","--factory-startup","--python-exit-code","1","--python","`"$I\duskmaw_bake_diff.py`"","--") + $npys) -WindowStyle Hidden -PassThru -RedirectStandardOutput "$I\log_duskmaw_bakediff.txt" -RedirectStandardError "$I\log_duskmaw_bakediff.err"
   $null = $pd.Handle; $pd.WaitForExit(); (Get-Content "$I\log_duskmaw_bakediff.txt" | Select-String "^BAKE_DIFF").Line; "bake_diff exit=$($pd.ExitCode)"
 }
 "ALL DONE wall=$([math]::Round(((Get-Date)-$t0).TotalSeconds,1))s"

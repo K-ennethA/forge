@@ -23,7 +23,7 @@ if (-not $SkipBuild) {
   & $VPY -P "$I\shadow_assassin_palette.py" 2>&1 | Out-File -Encoding utf8 "$LOG\palette.txt"
   "palette exit=$LASTEXITCODE"
   if (Test-Path "$P\rigged\shadow_assassin.blend") { Remove-Item "$P\rigged\shadow_assassin.blend" }
-  $args_ = @("--background","--factory-startup","--python","`"$I\shadow_assassin_build.py`"","--","--glb")
+  $args_ = @("--background","--factory-startup","--python-exit-code","1","--python","`"$I\shadow_assassin_build.py`"","--","--glb")
   $bp = Start-Process -FilePath $B -ArgumentList $args_ -WindowStyle Hidden -PassThru -RedirectStandardOutput "$LOG\build.txt" -RedirectStandardError "$LOG\build.err"
   $null = $bp.Handle
   $bp.WaitForExit()

@@ -48,15 +48,15 @@ New-Item -ItemType Directory -Force $OUT | Out-Null
 $T0 = Get-Date
 if (-not $SkipBuild) {
   Remove-Item "$env:TEMP\wren_hairnormal_main.npy","$env:TEMP\wren_hairnormal_twin.npy" -ErrorAction SilentlyContinue
-  $bp = Start-Process -FilePath $B -ArgumentList @("--background","--factory-startup","--python","`"$I\wren_build.py`"") -WindowStyle Hidden -PassThru -RedirectStandardOutput "$I\log_wren_build.txt" -RedirectStandardError "$I\log_wren_build.err"
-  $dp = Start-Process -FilePath $B -ArgumentList @("--background","--factory-startup","--python","`"$I\wren_build.py`"","--","--digest-only","`"$I\log_wren_digest2.json`"") -WindowStyle Hidden -PassThru -RedirectStandardOutput "$I\log_wren_digest2.txt" -RedirectStandardError "$I\log_wren_digest2.err"
+  $bp = Start-Process -FilePath $B -ArgumentList @("--background","--factory-startup","--python-exit-code","1","--python","`"$I\wren_build.py`"") -WindowStyle Hidden -PassThru -RedirectStandardOutput "$I\log_wren_build.txt" -RedirectStandardError "$I\log_wren_build.err"
+  $dp = Start-Process -FilePath $B -ArgumentList @("--background","--factory-startup","--python-exit-code","1","--python","`"$I\wren_build.py`"","--","--digest-only","`"$I\log_wren_digest2.json`"") -WindowStyle Hidden -PassThru -RedirectStandardOutput "$I\log_wren_digest2.txt" -RedirectStandardError "$I\log_wren_digest2.err"
   # v5.1 HAIR-STABILITY PROBE (the hair-face decoupling): sections 1-5 again under a deliberate FACE edit (the v4 mouth
   # profile = a geometry edit + the v1 brows = a paint-cut edit next to the hairline); its exact hair digest must equal the
   # build's (face edits never move approved hair).
-  $hp = Start-Process -FilePath $B -ArgumentList @("--background","--factory-startup","--python","`"$I\wren_build.py`"","--","--hair-digest-only","`"$I\log_wren_hairprobe.json`"","--set","`"LIP_PROFILE='line'`"","--set","`"BROW_W=(0.0064,0.0028)`"") -WindowStyle Hidden -PassThru -RedirectStandardOutput "$I\log_wren_hairprobe.txt" -RedirectStandardError "$I\log_wren_hairprobe.err"
+  $hp = Start-Process -FilePath $B -ArgumentList @("--background","--factory-startup","--python-exit-code","1","--python","`"$I\wren_build.py`"","--","--hair-digest-only","`"$I\log_wren_hairprobe.json`"","--set","`"LIP_PROFILE='line'`"","--set","`"BROW_W=(0.0064,0.0028)`"") -WindowStyle Hidden -PassThru -RedirectStandardOutput "$I\log_wren_hairprobe.txt" -RedirectStandardError "$I\log_wren_hairprobe.err"
   # v7: + the mouth-dial probe (the mouth's MPFB height / width dials back at their v5 values: a body-geometry edit inside
   # the head, where the v6 region rule leaked 42 mouth-interior faces into the scalp cap)
-  $mp = Start-Process -FilePath $B -ArgumentList @("--background","--factory-startup","--python","`"$I\wren_build.py`"","--","--hair-digest-only","`"$I\log_wren_mouthprobe.json`"","--set","`"TARGETS_EDIT={'mouth/mouth-trans-up':0.0,'mouth/mouth-scale-horiz-decr':0.2}`"") -WindowStyle Hidden -PassThru -RedirectStandardOutput "$I\log_wren_mouthprobe.txt" -RedirectStandardError "$I\log_wren_mouthprobe.err"
+  $mp = Start-Process -FilePath $B -ArgumentList @("--background","--factory-startup","--python-exit-code","1","--python","`"$I\wren_build.py`"","--","--hair-digest-only","`"$I\log_wren_mouthprobe.json`"","--set","`"TARGETS_EDIT={'mouth/mouth-trans-up':0.0,'mouth/mouth-scale-horiz-decr':0.2}`"") -WindowStyle Hidden -PassThru -RedirectStandardOutput "$I\log_wren_mouthprobe.txt" -RedirectStandardError "$I\log_wren_mouthprobe.err"
   $null = $bp.Handle; $null = $dp.Handle; $null = $hp.Handle; $null = $mp.Handle
   $bp.WaitForExit(); $bwall = [math]::Round(((Get-Date)-$T0).TotalSeconds,1); "build exit=$($bp.ExitCode) wall_s=$bwall"
   $dp.WaitForExit(); "digest twin exit=$($dp.ExitCode) wall_s=$([math]::Round(((Get-Date)-$T0).TotalSeconds,1))"

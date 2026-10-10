@@ -31,14 +31,14 @@ New-Item -ItemType Directory -Force $OUT, $LOG | Out-Null
 $T0 = Get-Date
 if (-not $SkipBuild) {
   if (Test-Path "$P\rigged\elias.blend") { Remove-Item "$P\rigged\elias.blend" }
-  $args_ = @("--background","--factory-startup","--python","`"$I\elias_build.py`"","--","--glb")
+  $args_ = @("--background","--factory-startup","--python-exit-code","1","--python","`"$I\elias_build.py`"","--","--glb")
   $bp = Start-Process -FilePath $B -ArgumentList $args_ -WindowStyle Hidden -PassThru -RedirectStandardOutput "$LOG\build.txt" -RedirectStandardError "$LOG\build.err"
   $null = $bp.Handle
   if ($Twin) {
     $TW = "$env:TEMP\elias_twin"
     Remove-Item -Recurse -Force $TW -ErrorAction SilentlyContinue
     New-Item -ItemType Directory -Force $TW | Out-Null
-    $targs = @("--background","--factory-startup","--python","`"$I\elias_build.py`"","--","--glb","--scratch","`"$TW`"")
+    $targs = @("--background","--factory-startup","--python-exit-code","1","--python","`"$I\elias_build.py`"","--","--glb","--scratch","`"$TW`"")
     $tp = Start-Process -FilePath $B -ArgumentList $targs -WindowStyle Hidden -PassThru -RedirectStandardOutput "$LOG\twin.txt" -RedirectStandardError "$LOG\twin.err"
     $null = $tp.Handle
   }

@@ -15,8 +15,8 @@ $VPY = "C:\Users\kenne\OneDrive\Desktop\git\forge\service\.venv\Scripts\python.e
 New-Item -ItemType Directory -Force $OUT | Out-Null
 $T0 = Get-Date
 if (-not $SkipBuild) {
-  $bp = Start-Process -FilePath $B -ArgumentList @("--background","--factory-startup","--python","`"$I\$($U)_build.py`"") -WindowStyle Hidden -PassThru -RedirectStandardOutput "$I\log_$($U)_build.txt" -RedirectStandardError "$I\log_$($U)_build.err"
-  $dp = Start-Process -FilePath $B -ArgumentList @("--background","--factory-startup","--python","`"$I\$($U)_build.py`"","--","--digest-only","`"$I\log_$($U)_digest2.json`"") -WindowStyle Hidden -PassThru -RedirectStandardOutput "$I\log_$($U)_digest2.txt" -RedirectStandardError "$I\log_$($U)_digest2.err"
+  $bp = Start-Process -FilePath $B -ArgumentList @("--background","--factory-startup","--python-exit-code","1","--python","`"$I\$($U)_build.py`"") -WindowStyle Hidden -PassThru -RedirectStandardOutput "$I\log_$($U)_build.txt" -RedirectStandardError "$I\log_$($U)_build.err"
+  $dp = Start-Process -FilePath $B -ArgumentList @("--background","--factory-startup","--python-exit-code","1","--python","`"$I\$($U)_build.py`"","--","--digest-only","`"$I\log_$($U)_digest2.json`"") -WindowStyle Hidden -PassThru -RedirectStandardOutput "$I\log_$($U)_digest2.txt" -RedirectStandardError "$I\log_$($U)_digest2.err"
   $null = $bp.Handle; $null = $dp.Handle
   $bp.WaitForExit(); "build exit=$($bp.ExitCode) wall_s=$([math]::Round(((Get-Date)-$T0).TotalSeconds,1))"
   $dp.WaitForExit(); "digest twin exit=$($dp.ExitCode) wall_s=$([math]::Round(((Get-Date)-$T0).TotalSeconds,1))"

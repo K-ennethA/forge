@@ -72,7 +72,7 @@ foreach ($j in $vJobs) {
   $null = $pr.Handle; $vProcs += ,@($j[0], $pr)
 }
 foreach ($x in $vProcs) { $x[1].WaitForExit(); "$($x[0]) exit=$($x[1].ExitCode)" }
-$pb = Start-Process -FilePath $B -ArgumentList @("--background","--factory-startup","--python","`"$I\supaoctto_before_after.py`"") -WindowStyle Hidden -PassThru -RedirectStandardOutput "$I\log_supaoctto_ba.txt" -RedirectStandardError "$I\log_supaoctto_ba.err"
+$pb = Start-Process -FilePath $B -ArgumentList @("--background","--factory-startup","--python-exit-code","1","--python","`"$I\supaoctto_before_after.py`"") -WindowStyle Hidden -PassThru -RedirectStandardOutput "$I\log_supaoctto_ba.txt" -RedirectStandardError "$I\log_supaoctto_ba.err"
 $null = $pb.Handle; $pb.WaitForExit(); "before_after exit=$($pb.ExitCode)"
 foreach ($c in @("check_improved","check_rigged","check_starfish","check_floating")) { (Get-Content "$I\log_supaoctto_$c.txt" | Select-String "checks, ").Line | % { "$c : $_" } }
 "total wall_s=$([math]::Round(((Get-Date)-$tAll).TotalSeconds,1))"

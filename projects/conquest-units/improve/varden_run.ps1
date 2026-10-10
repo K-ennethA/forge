@@ -26,14 +26,14 @@ New-Item -ItemType Directory -Force $OUT, $LOG | Out-Null
 $T0 = Get-Date
 if (-not $SkipBuild) {
   if (Test-Path "$P\rigged\varden.blend") { Remove-Item "$P\rigged\varden.blend" }
-  $args_ = @("--background","--factory-startup","--python","`"$I\varden_build.py`"")
+  $args_ = @("--background","--factory-startup","--python-exit-code","1","--python","`"$I\varden_build.py`"")
   $bp = Start-Process -FilePath $B -ArgumentList $args_ -WindowStyle Hidden -PassThru -RedirectStandardOutput "$LOG\build.txt" -RedirectStandardError "$LOG\build.err"
   $null = $bp.Handle
   if ($Twin) {
     $TW = "$env:TEMP\varden_twin"
     Remove-Item -Recurse -Force $TW -ErrorAction SilentlyContinue
     New-Item -ItemType Directory -Force $TW | Out-Null
-    $targs = @("--background","--factory-startup","--python","`"$I\varden_build.py`"","--","--scratch","`"$TW`"")
+    $targs = @("--background","--factory-startup","--python-exit-code","1","--python","`"$I\varden_build.py`"","--","--scratch","`"$TW`"")
     $tp = Start-Process -FilePath $B -ArgumentList $targs -WindowStyle Hidden -PassThru -RedirectStandardOutput "$LOG\twin.txt" -RedirectStandardError "$LOG\twin.err"
     $null = $tp.Handle
   }

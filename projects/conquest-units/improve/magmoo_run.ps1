@@ -61,7 +61,7 @@ foreach ($wave in @(@("check_*","translucency*"), @("render_*"))) {
   foreach ($x in $procs) { $x[1].WaitForExit(); "$($x[0]) exit=$($x[1].ExitCode)" }
 }
 foreach ($x in $clipP) { $x[1].WaitForExit(); "$($x[0]) exit=$($x[1].ExitCode)" }
-$ba = Start-Process -FilePath $B -ArgumentList @("--background","--factory-startup","--python","`"$I\magmoo_before_after.py`"") -WindowStyle Hidden -PassThru -RedirectStandardOutput "$I\log_magmoo_ba.txt" -RedirectStandardError "$I\log_magmoo_ba.err"
+$ba = Start-Process -FilePath $B -ArgumentList @("--background","--factory-startup","--python-exit-code","1","--python","`"$I\magmoo_before_after.py`"") -WindowStyle Hidden -PassThru -RedirectStandardOutput "$I\log_magmoo_ba.txt" -RedirectStandardError "$I\log_magmoo_ba.err"
 $null = $ba.Handle; $ba.WaitForExit(); "before_after exit=$($ba.ExitCode)"
 foreach ($c in @("check_improved","check_rigged")) { (Get-Content "$I\log_magmoo_$c.txt" | Select-String "checks, ").Line | % { "$c : $_" } }
 if (-not $SkipBuild) {
