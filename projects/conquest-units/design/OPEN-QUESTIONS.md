@@ -157,3 +157,7 @@ are asked, deviations from the sheet are reported.)
 
 ## Sand Drill Worm (sheet 2026-10-12)
 - N14 Movement intent (burrows? slithers upright? hops on its drill tail?) + in-game height.
+
+## Vulture Creature (sheets 2026-10-12)
+- N15 Movement intent (walks? hops? flies with the cloak wings?) still OPEN (placeholder idle + walk in game).
+  Height ANSWERED 2026-10-12: 5 ft (1.524 m).

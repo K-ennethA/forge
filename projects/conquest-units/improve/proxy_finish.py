@@ -1126,6 +1126,197 @@ def erase3d(V, F, UV, TEXI, tex, spheres, report):
     return rep
 
 
+# ======================================================================================================================
+# light mode: 3D-masked texture recolours + a hue clamp (opt-in; artist 2026-10-12, Vulture Creature: "the black wings
+# and more skull like shape, but without the green aura"; head = bone skull helmet, glow = NONE)
+# ======================================================================================================================
+def lab_to_srgb(lab):
+    """inverse of srgb_to_lab (D65): (..., 3) Lab -> sRGB 0..255 floats (clipped)"""
+    lab = np.asarray(lab, float)
+    fy = (lab[..., 0] + 16.0) / 116.0
+    fx = fy + lab[..., 1] / 500.0
+    fz = fy - lab[..., 2] / 200.0
+    f = np.stack([fx, fy, fz], -1)
+    xyz = np.where(f > 0.206893, f ** 3, (f - 16.0 / 116.0) / 7.787) * np.array([0.95047, 1.0, 1.08883])
+    M = np.array([[0.4124, 0.3576, 0.1805], [0.2126, 0.7152, 0.0722], [0.0193, 0.1192, 0.9505]])
+    c = np.clip(xyz @ np.linalg.inv(M).T, 0.0, 1.0)
+    c = np.where(c <= 0.0031308, 12.92 * c, 1.055 * np.power(c, 1 / 2.4) - 0.055)
+    return np.clip(c * 255.0, 0.0, 255.0)
+
+
+def texel_points(V, F, UV, TEXI, tex, spacing_px=0.7):
+    """every texel a triangle covers -> its 3D surface point (dense barycentric samples, finer than a texel, at most
+    `spacing_px` texels apart; each texel takes its sample NEAREST the texel centre, the same convention as
+    face_paint). -> {texture key: (pos (h*w, 3) float32, covered (h*w,) bool)}"""
+    sys.path.insert(0, REPO)
+    from meshgen.tools.mesh_metrics import _bary_grid
+    out = {}
+    for t_, im in tex.items():
+        h_, w_ = im.shape[:2]
+        sel = np.nonzero(TEXI == t_)[0]
+        pos = np.zeros((h_ * w_, 3), np.float32)
+        best = np.full(h_ * w_, np.inf)
+        if len(sel):
+            Tuv = UV[F[sel]] * np.array([w_ - 1, h_ - 1], float)
+            span = np.max(np.linalg.norm(Tuv - np.roll(Tuv, 1, axis=1), axis=2), 1)
+            level = np.clip(np.ceil(span / spacing_px).astype(int), 1, 128)
+            for L in np.unique(level):
+                ss = sel[level == L]
+                Bg = _bary_grid(int(L))
+                for ch in np.array_split(ss, max(1, len(ss) * len(Bg) // 2000000)):
+                    p3 = np.einsum("kj,fjd->fkd", Bg, V[F[ch]]).reshape(-1, 3)
+                    uvs = np.einsum("kj,fjd->fkd", Bg, UV[F[ch]]).reshape(-1, 2)
+                    uf = (uvs[:, 0] % 1.0) * (w_ - 1); vf = (uvs[:, 1] % 1.0) * (h_ - 1)
+                    u = np.clip(uf, 0, w_ - 1).round().astype(int); v = np.clip(vf, 0, h_ - 1).round().astype(int)
+                    ti = v * w_ + u
+                    d2 = (uf - u) ** 2 + (vf - v) ** 2
+                    o = np.lexsort((d2, ti))
+                    first = np.ones(len(o), bool); first[1:] = ti[o][1:] != ti[o][:-1]
+                    k_ = o[first]
+                    better = d2[k_] < best[ti[k_]]
+                    k_ = k_[better]
+                    best[ti[k_]] = d2[k_]; pos[ti[k_]] = p3[k_]
+        out[t_] = (pos, np.isfinite(best))
+    return out
+
+
+def _region_w(X, reg):
+    """soft 3D region weight in [0, 1]: max over `boxes` [[lo, hi], ...] / `spheres` [[c, r], ...] (feather `feather` u,
+    smoothstep), times (1 - the same for `exclude` boxes)"""
+    fe = float(reg.get("feather", 0.03))
+
+    def sstep(d):                       # d = signed distance (negative inside) -> 1 inside, 0 beyond feather
+        t = np.clip(-d / max(fe, 1e-9) + 1.0, 0.0, 1.0) if fe > 0 else (d <= 0).astype(float)
+        return t * t * (3 - 2 * t)
+    w = np.zeros(len(X))
+    for b in reg.get("boxes") or []:
+        w = np.maximum(w, sstep(sd_box(X, np.asarray(b[0], float), np.asarray(b[1], float))))
+    for c, r in reg.get("spheres") or []:
+        w = np.maximum(w, sstep(np.linalg.norm(X - np.asarray(c, float), axis=1) - float(r)))
+    for b in reg.get("exclude") or []:
+        w = w * (1.0 - sstep(sd_box(X, np.asarray(b[0], float), np.asarray(b[1], float))))
+    return w
+
+
+def _lab_select_w(Lb, sel):
+    """soft colour selection in CIELab: product over the given ranges {"L": [lo, hi], "a": [..], "b": [..]}, each edge
+    a smoothstep `soft` Lab units wide"""
+    s = float(sel.get("soft", 3.0))
+    w = np.ones(len(Lb))
+    for k, j in (("L", 0), ("a", 1), ("b", 2)):
+        if k in sel:
+            lo, hi = [float(v) for v in sel[k]]
+            t0 = np.clip((Lb[:, j] - (lo - s)) / max(s, 1e-9), 0, 1); t1 = np.clip(((hi + s) - Lb[:, j]) / max(s, 1e-9), 0, 1)
+            w = w * t0 * t0 * (3 - 2 * t0) * t1 * t1 * (3 - 2 * t1)
+    return w
+
+
+def recolour3d(V, F, UV, TEXI, tex, specs, report, tp=None):
+    """opt-in light.recolour3d (texture only, geometry untouched): per spec, the texels whose 3D surface point lies in
+    the spec's region (_region_w) AND whose colour matches `select` (_lab_select_w) are repainted to `target_rgb` with
+    the proxy's own detail kept as a luminance ratio: new = target x clip((Y / Y_median)^detail_gamma, detail_clip),
+    Y_median over the selected texels (weight > 0.5). Blend weight = region x select x `strength`. -> report rows"""
+    tp = tp or texel_points(V, F, UV, TEXI, tex)
+    rows = []
+    for sp in specs:
+        tgt = np.asarray(sp["target_rgb"], float)
+        gam = float(sp.get("detail_gamma", 0.8)); dc = sp.get("detail_clip", [0.55, 1.35])
+        row = {"name": sp.get("name"), "target_rgb": tgt.tolist(), "why": sp.get("why")}
+        for t_, im in tex.items():
+            pos, cov = tp[t_]
+            idx = np.nonzero(cov)[0]
+            wr = _region_w(pos[idx].astype(float), sp)
+            idx, wr = idx[wr > 1e-3], wr[wr > 1e-3]
+            if not len(idx):
+                continue
+            flat = im.reshape(-1, 3)
+            src = flat[idx].astype(float)
+            Lb = srgb_to_lab(src)
+            w = wr * _lab_select_w(Lb, sp.get("select") or {}) * float(sp.get("strength", 1.0))
+            keep = w > 1e-3
+            idx, w, src = idx[keep], w[keep], src[keep]
+            if not len(idx):
+                continue
+            Y = src @ np.array([0.2126, 0.7152, 0.0722])
+            Ym = float(np.median(Y[w > 0.5])) if (w > 0.5).any() else float(np.median(Y))
+            det = np.clip((np.maximum(Y, 1.0) / max(Ym, 1.0)) ** gam, float(dc[0]), float(dc[1]))
+            new = np.clip(tgt[None, :] * det[:, None], 0, 255)
+            flat[idx] = np.clip(np.rint(src * (1 - w[:, None]) + new * w[:, None]), 0, 255).astype(np.uint8)
+            row.update({"texels_touched": int(len(idx)), "texels_ge_half": int((w > 0.5).sum()),
+                        "median_src_rgb": np.round(np.median(src[w > 0.5], 0)).tolist() if (w > 0.5).any() else None,
+                        "median_new_rgb": np.round(np.median(flat[idx[w > 0.5]].astype(float), 0)).tolist()
+                        if (w > 0.5).any() else None})
+        rows.append(row)
+    report["recolour3d"] = rows
+    return rows
+
+
+def tint_clamp(V, F, UV, TEXI, tex, specs, report, tp=None):
+    """opt-in light.tint_clamp (texture only): a HUE clamp in CIELab that keeps L* (the brightness) exactly: a* is raised
+    to `a_min` (green -> neutral) and, when given, b* to `b_min` (blue -> neutral / warm), on every texel (no region) or
+    on the texels whose 3D point lies in the spec's region (`boxes` / `spheres` / `exclude`, soft). Specs apply in
+    order. Report: texels per texture with a* < -3 / -6 before and after."""
+    rows = []
+    for sp in specs:
+        row = {"a_min": sp.get("a_min"), "b_min": sp.get("b_min"), "why": sp.get("why")}
+        for t_, im in tex.items():
+            flat = im.reshape(-1, 3)
+            if sp.get("boxes") or sp.get("spheres"):
+                tp = tp or texel_points(V, F, UV, TEXI, tex)
+                pos, cov = tp[t_]
+                idx = np.nonzero(cov)[0]
+                wr = _region_w(pos[idx].astype(float), sp)
+                idx, wr = idx[wr > 1e-3], wr[wr > 1e-3]
+            else:
+                idx = np.arange(len(flat)); wr = np.ones(len(flat))
+            Lb = srgb_to_lab(flat[idx].astype(float))
+            row["a_lt_-3_before"] = int((Lb[:, 1] < -3).sum()); row["a_lt_-6_before"] = int((Lb[:, 1] < -6).sum())
+            L2 = Lb.copy()
+            if sp.get("a_min") is not None:
+                L2[:, 1] = np.maximum(L2[:, 1], float(sp["a_min"]))
+            if sp.get("b_min") is not None:
+                L2[:, 2] = np.maximum(L2[:, 2], float(sp["b_min"]))
+            ch = np.any(np.abs(L2 - Lb) > 1e-9, 1)
+            new = lab_to_srgb(L2[ch])
+            src = flat[idx[ch]].astype(float)
+            flat[idx[ch]] = np.clip(np.rint(src * (1 - wr[ch, None]) + new * wr[ch, None]), 0, 255).astype(np.uint8)
+            La = srgb_to_lab(flat[idx].astype(float))
+            row.update({"texels_region": int(len(idx)), "texels_changed": int(ch.sum()),
+                        "a_lt_-3_after": int((La[:, 1] < -3).sum()), "a_lt_-6_after": int((La[:, 1] < -6).sum()),
+                        "L_max_abs_change": round(float(np.abs(La[:, 0] - Lb[:, 0]).max()), 3) if len(idx) else 0.0})
+        rows.append(row)
+    report["tint_clamp"] = rows
+    return rows
+
+
+def floor_lift(V, spec):
+    """opt-in light.floor_lift (geometry, before the remesh): a hem that hangs BELOW the refloored feet (a cloak-wing tip
+    drawn past the floor line) is lifted onto the floor by a monotone vertical squash of the bottom `band` u, weighted
+    by smooth ramps (`ramps`: [[axis, a, b], ...], axis 'x' / 'absx' / 'y' / 'z': 0 at a, 1 at b), so the feet (weight
+    0) never move: z' = z + w * d * clip(1 - (z - zmin) / (band - zmin), 0, 1), d = -zmin (zmin = the lowest z with
+    w > 0.5). The texture rides along (UVs unchanged). -> report"""
+    w = np.ones(len(V))
+    for ax, a, b in spec.get("ramps") or []:
+        x = np.abs(V[:, 0]) if ax == "absx" else V[:, "xyz".index(ax)]
+        t = np.clip((x - float(a)) / (float(b) - float(a)), 0.0, 1.0)
+        w = w * t * t * (3 - 2 * t)
+    band = float(spec.get("band", 0.4))
+    hm = w > 0.5
+    zmin = float(V[hm, 2].min()) if hm.any() else 0.0
+    if zmin >= 0.0:
+        return {"lifted": False, "zmin_u": round(zmin, 4)}
+    d = -zmin
+    t = np.clip(1.0 - (V[:, 2] - zmin) / (band - zmin), 0.0, 1.0)
+    dz = w * d * t
+    moved = dz > 1e-6
+    w_lo = w[V[:, 2] < band]
+    V[:, 2] += dz
+    return {"lifted": True, "zmin_before_u": round(zmin, 4), "band_u": band, "verts_moved": int(moved.sum()),
+            "max_lift_u": round(float(dz.max()), 4), "min_z_after_u": round(float(V[:, 2].min()), 5),
+            "weight_below_band_max_outside_hem": round(float(w_lo[w_lo <= 0.5].max()) if (w_lo <= 0.5).any() else 0.0, 4),
+            "ramps": spec.get("ramps"), "why": spec.get("why")}
+
+
 def stage_light(unit, out_npz, cfg, intake, pp, report, V, Fp, UV, TEXI, images, quiet, t0):
     """LIGHT finish (artist 2026-10-11: the raw proxy's look is the pick; "in trying to fix the symmetry and make changes
     we broke some things, like the mouth"). Stage 1 only makes the proxy WATERTIGHT: the same shell / flood-fill /
@@ -1139,6 +1330,9 @@ def stage_light(unit, out_npz, cfg, intake, pp, report, V, Fp, UV, TEXI, images,
     if lc.get("pulls"):               # opt-in, an explicit artist ask: a smooth LOCAL reshape of the proxy (a muzzle drawn
         V = V.copy()                  # longer on the sheet); geometry + texture move together (the UVs ride along)
         report["proxy"]["pulls"] = apply_pulls(V, lc["pulls"])
+    if lc.get("floor_lift"):          # opt-in: a hem drawn below the floor line lifted onto it (the feet never move)
+        V = V.copy()
+        report["proxy"]["floor_lift"] = floor_lift(V, lc["floor_lift"])
     H = float(V[:, 2].max() - V[:, 2].min())
     step = float(lc.get("step") or round(H / lc["steps_per_height"], 4))
     P, FI, Cs = sample_surface(V, Fp, UV, TEXI, images, 0.5 * step)
@@ -1222,7 +1416,24 @@ def stage_light(unit, out_npz, cfg, intake, pp, report, V, Fp, UV, TEXI, images,
             print("FACE_PAINT", json.dumps({k: _fr[k] for k in ("ops", "texels_written")}))
     if lc.get("erase3d") and tex:       # opt-in: marks on side-facing faces, refilled from the surrounding surface
         erase3d(V, Fp, UV, TEXI, tex, lc["erase3d"], report)
-    meta = {"report": report, "regs": regs, "resolved": rcfg, "cfg": cfg, "facing": facing, "mode": "light"}
+    if (lc.get("recolour3d") or lc.get("tint_clamp")) and tex:   # opt-in: 3D-masked recolours, then the hue clamp
+        tp_ = texel_points(V, Fp, UV, TEXI, tex)
+        rc_all = lc.get("recolour3d") or []
+        rc_pre = [s_ for s_ in rc_all if not s_.get("after_clamp")]
+        rc_post = [s_ for s_ in rc_all if s_.get("after_clamp")]   # opt-in per spec: a deliberate hue (a green glow
+        rows_ = []                                                  # core) painted AFTER the hue clamp, so it survives
+        if rc_pre:
+            rows_ += recolour3d(V, Fp, UV, TEXI, tex, rc_pre, report, tp_)
+        if lc.get("tint_clamp"):
+            tint_clamp(V, Fp, UV, TEXI, tex, lc["tint_clamp"], report, tp_)
+        if rc_post:
+            rows_ += [dict(r_, after_clamp=True) for r_ in recolour3d(V, Fp, UV, TEXI, tex, rc_post, report, tp_)]
+        if rc_all:
+            report["recolour3d"] = rows_
+        if not quiet:
+            print("RECOLOUR3D", json.dumps(report.get("recolour3d")))
+            print("TINT_CLAMP", json.dumps(report.get("tint_clamp")))
+    meta ={"report": report, "regs": regs, "resolved": rcfg, "cfg": cfg, "facing": facing, "mode": "light"}
     Fg = Fg.astype(np.float32)
     report["grid_sha"] = sha_arr(Fg[::2, ::2, ::2])
     report["proxy_sha"] = sha_arr(V)

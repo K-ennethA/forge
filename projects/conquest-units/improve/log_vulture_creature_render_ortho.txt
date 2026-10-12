@@ -1,0 +1,8 @@
+00:01.329  blend            | Read blend: "C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\rigged\vulture_creature.blend"
+00:03.438  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\vulture_creature\vulture_creature_ortho_front.png'
+00:03.672  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\vulture_creature\vulture_creature_ortho_back.png'
+00:04.000  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\vulture_creature\vulture_creature_ortho_side.png'
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\vulture_creature\vulture_creature_ortho_front.png
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\vulture_creature\vulture_creature_ortho_back.png
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\vulture_creature\vulture_creature_ortho_side.png
+Blender 5.0.1 (hash a3db93c5b259 built 2025-12-16 01:32:30)

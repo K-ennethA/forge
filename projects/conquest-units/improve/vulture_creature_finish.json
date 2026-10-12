@@ -1,0 +1,870 @@
+{
+ "unit": "vulture_creature",
+ "char_id": "vulture_creature",
+ "tier": "regular",
+ "tri_budget": [
+  8000,
+  22000
+ ],
+ "body_tris": 20000,
+ "mode": "light",
+ "refloor": {
+  "y_windows": [
+   [
+    -1.25,
+    -0.2
+   ]
+  ],
+  "x_abs_min": 0.15,
+  "pct": 0.0,
+  "rescale_to_front_height": true,
+  "why": "sheet_proxy floored the cloak-wing TIPS (behind the body, x +-1.5..1.9, y 1.4..2.0, z 0.00); the talons hang 0.096 u above them. The floor goes to the lowest TALON contact (the toes, y -1.25..-0.2, |x| 0.15..1.2), then x(6.84 / proxy height) to the sheet front height"
+ },
+ "light": {
+  "steps_per_height": 300,
+  "dense": [
+   {
+    "box": [
+     [
+      -0.9,
+      -2.3,
+      5.0
+     ],
+     [
+      1.0,
+      0.3,
+      7.0
+     ]
+    ],
+    "density": 2.5,
+    "why": "the skull helmet: beak, eye sockets, horns (vg_weight 0.3 so the two eye boxes below can sit denser; the calibration still gives the boxes 2.5 x the rest: share 0.1925)",
+    "vg_weight": 0.3
+   },
+   {
+    "box": [
+     [
+      -0.36,
+      -1.5,
+      5.72
+     ],
+     [
+      -0.05,
+      -1.15,
+      6.04
+     ]
+    ],
+    "density": 2.5,
+    "vg_weight": 0.0,
+    "why": "the right eye socket (x -0.207): held denser (vg_weight 0) so the glow core and the dark rim land on separate faces: 41-45 faces within 0.11 u of each socket centre (was 9-10)"
+   },
+   {
+    "box": [
+     [
+      0.2,
+      -1.5,
+      5.72
+     ],
+     [
+      0.51,
+      -1.15,
+      6.04
+     ]
+    ],
+    "density": 2.5,
+    "vg_weight": 0.0,
+    "why": "the left eye socket (x 0.357): held denser (vg_weight 0) so the glow core and the dark rim land on separate faces: 41-45 faces within 0.11 u of each socket centre (was 9-10)"
+   },
+   {
+    "box": [
+     [
+      -0.22,
+      -1.2,
+      3.33
+     ],
+     [
+      0.31,
+      -0.72,
+      4.25
+     ]
+    ],
+    "density": 2.5,
+    "vg_weight": 0.0,
+    "why": "v2.1: the chest skull pendant held as dense as the eye sockets: at 38 faces the decimated pendant lost its sockets and fused with the cord strap at its upper right (the glowing 'flap')"
+   }
+  ],
+  "ao_from_low": true,
+  "ao_samples": 64,
+  "ao_why": "AO baked on the watertight low itself: the feather soup has inner shells that black-hole AO rays (crystal_canine lesson)",
+  "ao_fill_below": 0.04,
+  "floor_lift": {
+   "ramps": [
+    [
+     "absx",
+     1.3,
+     1.5
+    ],
+    [
+     "y",
+     1.0,
+     1.3
+    ]
+   ],
+   "band": 0.45,
+   "why": "after the refloor to the talons the cloak-wing hem behind the body (|x| 1.5..1.9, y 1.4..2.0) hangs 0.1 u below the floor (the sheet draws it past the floor line); it is squashed up onto z 0 within the bottom 0.45 u, the feet (|x| < 1.2, y < 0.95) keep weight 0"
+  },
+  "recolour3d": [
+   {
+    "name": "skull_bone",
+    "boxes": [
+     [
+      [
+       -0.65,
+       -2.3,
+       5.0
+      ],
+      [
+       0.8,
+       -0.25,
+       7.0
+      ]
+     ]
+    ],
+    "feather": 0.03,
+    "select": {
+     "L": [
+      35,
+      101
+     ],
+     "b": [
+      7,
+      100
+     ],
+     "soft": 4
+    },
+    "target_rgb": [
+     223,
+     204,
+     183
+    ],
+    "detail_gamma": 0.8,
+    "detail_clip": [
+     0.5,
+     1.12
+    ],
+    "why": "spec: weathered CREAM bone helmet (sheet chip 223,204,183); the proxy's skull bakes tan / peach (median 191,155,126): bone texels (L* >= 35, b* >= 7) recoloured to the chip, the proxy's shading kept as a luminance ratio"
+   },
+   {
+    "name": "pendant_bone",
+    "boxes": [
+     [
+      [
+       -0.25,
+       -1.2,
+       3.3
+      ],
+      [
+       0.45,
+       -0.7,
+       4.3
+      ]
+     ]
+    ],
+    "feather": 0.02,
+    "select": {
+     "L": [
+      35,
+      101
+     ],
+     "b": [
+      7,
+      100
+     ],
+     "soft": 4
+    },
+    "target_rgb": [
+     223,
+     204,
+     183
+    ],
+    "detail_gamma": 0.8,
+    "detail_clip": [
+     0.5,
+     1.12
+    ],
+    "why": "v2.1 (coordinator: the skull must read first): the chest pendant stays the cream bone chip 223,204,183 (proxy median 199,161,129)"
+   },
+   {
+    "name": "pendant_sockets_dark",
+    "spheres": [
+     [
+      [
+       -0.081,
+       -1.0,
+       3.925
+      ],
+      0.05
+     ],
+     [
+      [
+       0.169,
+       -1.0,
+       3.925
+      ],
+      0.05
+     ]
+    ],
+    "feather": 0.015,
+    "target_rgb": [
+     22,
+     20,
+     19
+    ],
+    "detail_gamma": 0.5,
+    "detail_clip": [
+     0.6,
+     1.4
+    ],
+    "why": "the pendant's own eye sockets (front ortho x -0.081 / 0.169, z 3.925, mirrored about its centre x 0.044; side y -1.0) made hollow and dark like the helmet's"
+   },
+   {
+    "name": "eye_sockets",
+    "spheres": [
+     [
+      [
+       -0.17,
+       -1.36,
+       5.85
+      ],
+      0.17
+     ],
+     [
+      [
+       0.32,
+       -1.36,
+       5.85
+      ],
+      0.17
+     ]
+    ],
+    "feather": 0.04,
+    "select": {
+     "b": [
+      -100,
+      7
+     ],
+     "soft": 3
+    },
+    "target_rgb": [
+     22,
+     20,
+     19
+    ],
+    "detail_gamma": 0.5,
+    "detail_clip": [
+     0.6,
+     1.4
+    ],
+    "why": "artist: hollow DARK eye sockets, glow NONE: the proxy's grey eyeballs (front ortho x -0.21 / 0.36, z 5.88; side y -1.30 = 0.87 u behind the beak tip, where the sheet side view draws its one socket) and the teal glow around them painted near-black; bone (b* > 7) keeps its colour"
+   },
+   {
+    "name": "eye_glow_core",
+    "after_clamp": true,
+    "spheres": [
+     [
+      [
+       -0.207,
+       -1.33,
+       5.88
+      ],
+      0.075
+     ],
+     [
+      [
+       0.357,
+       -1.33,
+       5.88
+      ],
+      0.075
+     ]
+    ],
+    "feather": 0.02,
+    "select": {
+     "b": [
+      -100,
+      7
+     ],
+     "soft": 3
+    },
+    "target_rgb": [
+     156,
+     234,
+     161
+    ],
+    "detail_gamma": 0.3,
+    "detail_clip": [
+     0.8,
+     1.15
+    ],
+    "why": "artist v1 verdict: 'green glow in the eyes': the socket centres (the proxy's eyeballs, front ortho x -0.207 / 0.357, z 5.88) painted the spirit sheet's eye-glow green (front-view eye pixels, top-saturation median 156,234,161) after the hue clamp; the dark socket rim (eye_sockets, r 0.17) and the bone (b* > 7) stay"
+   },
+   {
+    "name": "upper_recess_to_bone",
+    "spheres": [
+     [
+      [
+       -0.21,
+       -1.07,
+       6.11
+      ],
+      0.13
+     ],
+     [
+      [
+       0.35,
+       -1.07,
+       6.11
+      ],
+      0.13
+     ]
+    ],
+    "feather": 0.04,
+    "select": {
+     "b": [
+      -100,
+      7
+     ],
+     "soft": 3
+    },
+    "target_rgb": [
+     200,
+     182,
+     162
+    ],
+    "detail_gamma": 0.6,
+    "detail_clip": [
+     0.6,
+     1.2
+    ],
+    "why": "the proxy invented a SECOND recess per side above / behind the eye (y -1.07, z 6.11) filled with teal glow; the sheet's side view has one socket per side, so the recess is painted bone (a shade under the chip: it is a hollow) instead of a second dark hole"
+   },
+   {
+    "name": "wrappings_to_feathers",
+    "boxes": [
+     [
+      [
+       -0.42,
+       -1.4,
+       0.3
+      ],
+      [
+       0.55,
+       0.9,
+       4.4
+      ]
+     ]
+    ],
+    "exclude": [
+     [
+      [
+       -0.24,
+       -1.16,
+       3.32
+      ],
+      [
+       0.44,
+       -0.72,
+       4.26
+      ]
+     ]
+    ],
+    "feather": 0.04,
+    "select": {
+     "L": [
+      0,
+      60
+     ],
+     "a": [
+      0.5,
+      100
+     ],
+     "b": [
+      3,
+      100
+     ],
+     "soft": 1.5
+    },
+    "target_rgb": [
+     36,
+     33,
+     31
+    ],
+    "detail_gamma": 0.8,
+    "detail_clip": [
+     0.6,
+     1.5
+    ],
+    "why": "artist: extras = the skull pendant on a cord ONLY: the brown cloth wrappings hanging under the pendant (front ortho x -0.3..0.4, z 2.2..4.4) and the brown belly panel between the legs (z 0.4..2.0) repainted as black feathers (proxy median feather 37,36,34); the pendant (excluded box) and the dark cord stay"
+   },
+   {
+    "name": "neck_shoulder_strips",
+    "spheres": [
+     [
+      [
+       -0.38,
+       -0.44,
+       5.7
+      ],
+      0.28
+     ],
+     [
+      [
+       0.48,
+       -0.44,
+       5.7
+      ],
+      0.28
+     ],
+     [
+      [
+       -0.86,
+       -0.36,
+       4.75
+      ],
+      0.32
+     ],
+     [
+      [
+       0.92,
+       -0.3,
+       4.78
+      ],
+      0.32
+     ]
+    ],
+    "feather": 0.05,
+    "select": {
+     "L": [
+      0,
+      55
+     ],
+     "a": [
+      3,
+      100
+     ],
+     "b": [
+      4,
+      100
+     ],
+     "soft": 1.5
+    },
+    "target_rgb": [
+     36,
+     33,
+     31
+    ],
+    "detail_gamma": 0.8,
+    "detail_clip": [
+     0.6,
+     1.5
+    ],
+    "why": "the proxy's red-brown strips on the neck behind the skull (x +-0.4, y -0.44, z 5.7; median 64,30,23) and on the shoulder tops (x +-0.9, z 4.75; median 72,52,41) are the spirit sheet's cloth wrappings: repainted as black feathers (the dark cord + beads are not red-brown and stay)"
+   },
+   {
+    "name": "pendant_faint_cast",
+    "after_clamp": true,
+    "boxes": [
+     [
+      [
+       -0.2,
+       -1.2,
+       3.35
+      ],
+      [
+       0.29,
+       -0.72,
+       4.22
+      ]
+     ]
+    ],
+    "feather": 0.02,
+    "select": {
+     "L": [
+      55,
+      101
+     ],
+     "b": [
+      6,
+      100
+     ],
+     "soft": 4
+    },
+    "target_rgb": [
+     176,
+     214,
+     172
+    ],
+    "strength": 0.18,
+    "detail_gamma": 0.8,
+    "detail_clip": [
+     0.5,
+     1.12
+    ],
+    "why": "a FAINT green cast on the pendant bone (18 % toward the spirit green-bone), after the clamp: the bone still reads cream"
+   },
+   {
+    "name": "pendant_socket_cores",
+    "after_clamp": true,
+    "spheres": [
+     [
+      [
+       -0.081,
+       -1.0,
+       3.925
+      ],
+      0.03
+     ],
+     [
+      [
+       0.169,
+       -1.0,
+       3.925
+      ],
+      0.03
+     ]
+    ],
+    "feather": 0.012,
+    "select": {
+     "b": [
+      -100,
+      7
+     ],
+     "soft": 3
+    },
+    "target_rgb": [
+     156,
+     234,
+     161
+    ],
+    "detail_gamma": 0.3,
+    "detail_clip": [
+     0.8,
+     1.15
+    ],
+    "why": "the spectre glow sits in the pendant's sockets: small green cores (r 0.03) inside the dark sockets (r 0.05), the helmet eye green"
+   }
+  ],
+  "tint_clamp": [
+   {
+    "a_min": -1.0,
+    "why": "NO GREEN anywhere: a* raised to -1 on every texel (the build sheet's own 10th percentile a* is -1.3; the proxy had 10.4 % of samples below -3, 24 % on the legs), L* kept"
+   },
+   {
+    "boxes": [
+     [
+      [
+       -1.15,
+       -1.35,
+       0.0
+      ],
+      [
+       1.25,
+       0.95,
+       1.45
+      ]
+     ]
+    ],
+    "exclude": [
+     [
+      [
+       -0.12,
+       -1.4,
+       0.0
+      ],
+      [
+       0.17,
+       0.95,
+       1.45
+      ]
+     ]
+    ],
+    "feather": 0.05,
+    "a_min": 1.0,
+    "b_min": 4.0,
+    "why": "the legs: scaly GREY-BROWN (spec), not teal-grey: a* >= 1, b* >= 4 on the shins / toes, L* kept"
+   }
+  ],
+  "bake_drop_interior": 0.08,
+  "bake_drop_interior_why": "v1 first run: the albedo bake (cage 0.42 u = 3 x the proxy-to-low p99 0.139) printed dark blotches on the skull / beak / pendant from the proxy's inner shells (the inside of the helmet shell, buried feather layers); proxy faces with solid on both sides are left out of the bake source (crystal_canine lesson)",
+  "ao_distance": 0.6,
+  "ao_distance_why": "v1 run 3: AO from the low with the world's default ray length occluded the whole feather cloak (AO median 0.20, 31 % of texels under 0.1): basecolor median (17,15,15) vs the proxy albedo (50,47,45) and the sheet feathers (~35); AO limited to 0.6 u (about two feather lengths) so only real crevices darken",
+  "uv_island_margin": 0.001,
+  "uv_island_margin_why": "the feather low unwraps into ~6200 islands; at the default 0.003 margin (6 px at 2048) the atlas held 4.7 % texels (check uv_health coverage 0.047): margin 0.001 (2 px at 2048, 1 px at the 1024 normal / AO) so the albedo keeps its detail",
+  "glow3d": [
+   {
+    "name": "eyes_core",
+    "spheres": [
+     [
+      [
+       -0.207,
+       -1.33,
+       5.88
+      ],
+      0.075
+     ],
+     [
+      [
+       0.357,
+       -1.33,
+       5.88
+      ],
+      0.075
+     ]
+    ],
+    "feather": 0.02,
+    "levels": [
+     [
+      0.5,
+      "eye_glow"
+     ]
+    ],
+    "why": "the eye glow: faces of the socket centres -> region eye_glow (emission 156,234,161 x 1.0)"
+   },
+   {
+    "name": "eyes_halo",
+    "spheres": [
+     [
+      [
+       -0.207,
+       -1.33,
+       5.88
+      ],
+      0.12
+     ],
+     [
+      [
+       0.357,
+       -1.33,
+       5.88
+      ],
+      0.12
+     ]
+    ],
+    "feather": 0.02,
+    "select": {
+     "L": [
+      0,
+      55
+     ],
+     "soft": 5
+    },
+    "levels": [
+     [
+      0.5,
+      "eye_glow_halo"
+     ]
+    ],
+    "why": "a faint halo on the dark socket faces just around the core (eye_glow_halo, x 0.35, out to 0.12 u); the outer socket rim (to 0.17 u) stays dark and unlit; bone faces (baked L* > 55) excluded so the bone stays cream"
+   },
+   {
+    "name": "pendant_sockets",
+    "spheres": [
+     [
+      [
+       -0.081,
+       -1.0,
+       3.925
+      ],
+      0.035
+     ],
+     [
+      [
+       0.169,
+       -1.0,
+       3.925
+      ],
+      0.035
+     ]
+    ],
+    "feather": 0.012,
+    "levels": [
+     [
+      0.5,
+      "pendant_eye_glow"
+     ]
+    ],
+    "why": "the pendant's socket cores -> pendant_eye_glow (156,234,161 x 0.8); the bone face is NOT emissive so the skull reads"
+   },
+   {
+    "name": "pendant_socket_halo",
+    "spheres": [
+     [
+      [
+       -0.081,
+       -1.0,
+       3.925
+      ],
+      0.05
+     ],
+     [
+      [
+       0.169,
+       -1.0,
+       3.925
+      ],
+      0.05
+     ]
+    ],
+    "feather": 0.012,
+    "select": {
+     "L": [
+      0,
+      55
+     ],
+     "soft": 5
+    },
+    "levels": [
+     [
+      0.5,
+      "eye_glow_halo"
+     ]
+    ],
+    "why": "v2.1: a faint halo on the dark socket faces around each pendant core (the helmet's eye_glow_halo, x 0.35). A rim glow on the dark faces around the pendant outline was tried (pendant_rim_glow x 0.15, 191 faces) and dropped: the large feather faces behind the pendant lit as flat green panels and fought the skull read"
+   }
+  ]
+ },
+ "rig": {
+  "spine_names": [
+   "hips",
+   "spine",
+   "chest",
+   "neck",
+   "head"
+  ],
+  "spine": [
+   [
+    0.0,
+    0.5,
+    2.0
+   ],
+   [
+    0.0,
+    0.45,
+    3.0
+   ],
+   [
+    0.0,
+    0.25,
+    4.0
+   ],
+   [
+    0.0,
+    -0.1,
+    4.8
+   ],
+   [
+    0.0,
+    -0.4,
+    5.55
+   ],
+   [
+    0.0,
+    -1.6,
+    5.75
+   ]
+  ],
+  "chains": [
+   {
+    "name": "wing",
+    "kind": "wing",
+    "parent": "chest",
+    "phase": {
+     "L": 0.0,
+     "R": 0.0
+    },
+    "points": [
+     [
+      0.75,
+      0.0,
+      5.0
+     ],
+     [
+      1.25,
+      0.4,
+      3.8
+     ],
+     [
+      1.35,
+      0.75,
+      2.2
+     ],
+     [
+      1.5,
+      1.4,
+      0.6
+     ]
+    ],
+    "why": "the draped cloak wings: shoulder (x 0.75, z 5.0) down the outer feather mass (slab medians x 1.3, y 0.3..0.9) to the hem behind the feet; 3 bones per side"
+   },
+   {
+    "name": "leg",
+    "kind": "leg",
+    "parent": "hips",
+    "phase": {
+     "L": 0.0,
+     "R": 0.5
+    },
+    "points": [
+     [
+      0.45,
+      0.45,
+      2.3
+     ],
+     [
+      0.5,
+      0.3,
+      1.4
+     ],
+     [
+      0.45,
+      0.0,
+      0.4
+     ],
+     [
+      0.55,
+      -0.75,
+      0.12
+     ]
+    ],
+    "why": "thigh (inside the feathers) / shin (the visible scaly tarsus: slab medians x +-0.45, y 0.05..0.27 at z 0.6..1.2) / foot to the middle toe"
+   }
+  ]
+ },
+ "clips": {
+  "idle_frames": 72,
+  "breathe_deg": 1.5,
+  "walk_frames": 32,
+  "walk_bob": 0.015,
+  "walk_roll": 3.0,
+  "leg_swing": 10.0,
+  "why": "PLACEHOLDER (OPEN-QUESTIONS N15: movement + height open). idle = breathe 1.5 deg + the kit's cloak-wing sway; walk = a short stalk-step (leg swing 10 deg: at 14 the kit's foot bend dipped the toes 0.44 u below the floor)"
+ },
+ "focus": {
+  "skull": [
+   [
+    -0.8,
+    -2.25,
+    4.9
+   ],
+   [
+    0.9,
+    0.3,
+    6.9
+   ]
+  ]
+ },
+ "bake_res": [
+  1024,
+  1024
+ ],
+ "_doc": "LIGHT finish of the raw Pixal3D proxy (seed 56, forced 3-view front / back / side, sha feabf14e). Points: stage-1 frame (refloored to the talons, x the sheet front height), sheet units."
+}

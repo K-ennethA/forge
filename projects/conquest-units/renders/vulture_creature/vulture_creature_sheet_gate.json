@@ -1,0 +1,54 @@
+{
+ "unit": "vulture_creature",
+ "views": {
+  "front": {
+   "iou": 0.7742,
+   "iou_shape": 0.7753,
+   "aspect_rel": 0.0665,
+   "row_err_u": 0.619,
+   "row_err_pct": 17.4,
+   "w_u": 3.96,
+   "h_u": 6.9,
+   "ref_w_u": 3.67,
+   "ref_h_u": 6.85,
+   "iou_in_frame": 0.7689,
+   "row_err_pct_in_frame": 17.5,
+   "proxy_iou": 0.7877,
+   "flag": false
+  },
+  "back": {
+   "iou": 0.6413,
+   "iou_shape": 0.6055,
+   "aspect_rel": 0.1313,
+   "row_err_u": 0.968,
+   "row_err_pct": 28.5,
+   "w_u": 3.96,
+   "h_u": 6.89,
+   "ref_w_u": 3.59,
+   "ref_h_u": 7.19,
+   "iou_in_frame": 0.6245,
+   "row_err_pct_in_frame": 30.1,
+   "proxy_iou": 0.6476,
+   "flag": false
+  },
+  "side": {
+   "iou": 0.7348,
+   "iou_shape": 0.6929,
+   "aspect_rel": 0.0496,
+   "row_err_u": 0.451,
+   "row_err_pct": 16.5,
+   "w_u": 4.36,
+   "h_u": 6.89,
+   "ref_w_u": 4.24,
+   "ref_h_u": 7.05,
+   "iou_in_frame": 0.7318,
+   "row_err_pct_in_frame": 16.5,
+   "proxy_iou": 0.7423,
+   "flag": false
+  }
+ },
+ "proxy_sha256": "feabf14ee7ae018cf1cc387e80269ae7fb6b056186249fba61929863cd237cd0",
+ "proxy_gate": "reliable",
+ "flagged": [],
+ "mean_iou": 0.7168
+}

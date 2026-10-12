@@ -1,0 +1,62 @@
+{
+ "unit": "vulture_creature",
+ "skin": "default",
+ "description": "vulture_creature default look, LIGHT proxy finish: the colour is the Pixal3D proxy's own texture (green hue clamped, skull bone, dark sockets with a green glow core, bone pendant with green socket cores) baked onto the low (improved/textures/vulture_creature_basecolor.png); proxy_albedo (white) tints it; three GLOW regions (eyes, eye / pendant-socket halo, pendant sockets) carry the emission (Glow -> Emission Color)",
+ "regions": {
+  "proxy_albedo": {
+   "rgb": [
+    255,
+    255,
+    255
+   ],
+   "note": "tint over the baked proxy albedo (light mode); white keeps the black feathers / bone skull as baked"
+  },
+  "eye_glow": {
+   "rgb": [
+    255,
+    255,
+    255
+   ],
+   "emission": [
+    156,
+    234,
+    161
+   ],
+   "emission_scale": 1.0,
+   "note": "the eye-socket glow core (spirit sheet eye green, top-saturation median 156,234,161); rgb white keeps the baked albedo"
+  },
+  "eye_glow_halo": {
+   "rgb": [
+    255,
+    255,
+    255
+   ],
+   "emission": [
+    118,
+    190,
+    132
+   ],
+   "emission_scale": 0.35,
+   "note": "faint halo on the dark socket faces around the core (spirit sheet palette green chip 118,190,132)"
+  },
+  "pendant_eye_glow": {
+   "rgb": [
+    255,
+    255,
+    255
+   ],
+   "emission": [
+    156,
+    234,
+    161
+   ],
+   "emission_scale": 0.8,
+   "note": "the spectre pendant's socket cores (helmet eye green, a touch dimmer)"
+  }
+ },
+ "material": {
+  "roughness": 0.85,
+  "emission_strength": 1.0,
+  "alpha": 1.0
+ }
+}

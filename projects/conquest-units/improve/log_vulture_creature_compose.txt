@@ -1,0 +1,7 @@
+﻿WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\vulture_creature\vulture_creature_sheet_vs_model.png
+GATE view=front iou=0.774 in_frame=0.769 row_err=17.4% | proxy iou=0.788
+GATE view=back  iou=0.641 in_frame=0.625 row_err=28.5% | proxy iou=0.648
+GATE view=side  iou=0.735 in_frame=0.732 row_err=16.5% | proxy iou=0.742
+GATE mean_iou=0.717 flagged=none proxy=reliable
+GATE bake_reference=none (no object.bake call found)
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\vulture_creature\vulture_creature_contact.png

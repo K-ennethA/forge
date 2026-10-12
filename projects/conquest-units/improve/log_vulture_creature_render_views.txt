@@ -1,0 +1,12 @@
+00:01.328  blend            | Read blend: "C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\rigged\vulture_creature.blend"
+00:03.562  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\vulture_creature\vulture_creature_front.png'
+00:04.031  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\vulture_creature\vulture_creature_threequarter.png'
+00:04.406  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\vulture_creature\vulture_creature_side.png'
+00:04.750  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\vulture_creature\vulture_creature_back.png'
+00:04.953  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\vulture_creature\vulture_creature_tactical.png'
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\vulture_creature\vulture_creature_front.png
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\vulture_creature\vulture_creature_threequarter.png
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\vulture_creature\vulture_creature_side.png
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\vulture_creature\vulture_creature_back.png
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\vulture_creature\vulture_creature_tactical.png
+Blender 5.0.1 (hash a3db93c5b259 built 2025-12-16 01:32:30)

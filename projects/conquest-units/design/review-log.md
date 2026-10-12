@@ -2696,3 +2696,70 @@ how it turns out"
   fe4539243ee1635f.
 - eclipse_wolf: the HAND BUILD stays in the game. The Pixal3D version goes
   back for a smear / tear cleanup and a side-by-side re-judge.
+
+## 2026-10-12 — NEW UNIT: Vulture Creature (artist reference sheets x2, mixed)
+
+Artist (verbatim): "next item to intake" / "there are two here we want a mix
+of them" / "so we want the black wings and more skull like shape, but
+without the green aura". Answers to the mix questions: head = bone skull
+helmet; feathers = black (spirit); glow = NONE; extras = skull pendant on
+a cord only.
+Sheets: design/reference/vulture_creature-spirit-sheet.png (base:
+black wings, skull helmet) and vulture_creature-natural-sheet.png (natural
+variant, NOT used except as context). The BUILD reference
+vulture_creature-character-sheet.png = the spirit sheet with the green
+aura / glow digitally removed (green-dominant pixels neutralised), so the
+proxy doesn't bake green. Intake: --region 0,115,1200,845 --cuts 400,765
+--side-facing left --ortho-views front,side (smart intake misread the dark
+sheet). Tier REGULAR [8000, 22000]; idle / walk PLACEHOLDER. Pixal3D light
+flow.
+
+VULTURE CREATURE ("vulture_creature", ~6.8 u).
+- Head: an upright vulture under a weathered BONE BIRD-SKULL HELMET.
+  - A long hooked cream bone beak (223,204,183), two horn points on top,
+    hollow dark eye sockets (NO green glow), strapped on with dark ties.
+- Body: deep black / near-black ragged feathers (27,27,27 / 106,99,96 /
+  74,77,69), with large draped WINGS hanging like a cloak to the floor,
+  covering most of the body, and ragged tattered edges.
+- Chest: a small bone SKULL PENDANT on a cord. The tattered cloth
+  wrappings the spirit sheet draws are NOT wanted (only the pendant was
+  picked); remove them if feasible and report.
+- Feet: scaly grey-brown bird legs, three front toes + one rear, dark
+  talons.
+- No glow, no aura, no wisps.
+
+## 2026-10-12 — Vulture Creature v1 verdict (artist verbatim + 1 image)
+Artist (on the v1 finish panel, side view crop): "can we add green glow in
+the eyes and then the skull necklace make it a green spectre glow"
+Binding reading (supersedes "glow = NONE" for these two parts ONLY):
+- Eyes: a green glow inside both eye sockets of the skull helmet (the spirit
+  sheet's green, sampled from vulture_creature-spirit-sheet.png), emissive.
+  The sockets stay hollow; the glow sits in them.
+- Chest skull pendant: a green SPECTRE glow: the pendant skull glows green
+  (emissive), ghostly. The cord stays dark.
+- Everything else stays as v1: black feathers, cream bone helmet, no green
+  on the body, no aura / wisps elsewhere. The other v1 decisions (skull tone,
+  talons, cloth-strip shape) not answered: v1 kept as is.
+
+## 2026-10-12 — Eclipse Wolf (Pixal3D version) mouth note (artist verbatim)
+"go ahead and import crystalline creature for eclipse wolf we need to
+correct the mouth to match ours, teeth and purple inside"
+- crystalline creature = crystal_canine: v4 is already in Conquest
+  (666d195, glb byte-identical to forge rigged/crystal_canine.glb).
+- eclipse_wolf, the Pixal3D light-finish version (scratch, not promoted):
+  the mouth is a pale painted grin. Binding reading: match the hand build's
+  v1.2 mouth (entry "2026-10-11 — Eclipse Wolf v1 note"): a recessed mouth
+  cavity with the purple interior (253,49,253, colour, not emissive) and
+  separate solid pointed teeth (upper row down, lower row up) with gaps
+  showing the purple. Reference render: renders/eclipse_wolf/eclipse_wolf_face.png
+  (hand build). Rest of the Pixal3D face kept as generated (light touch).
+
+## 2026-10-12 — Eclipse Wolf held + Vulture Creature v2.1 approved (artist verbatim)
+"lets keep ours for now and add the vulture" / "vulture height 5 ft"
+- eclipse_wolf: the HAND BUILD stays in the game. The Pixal3D v3 (carved
+  mouth, purple interior, 15 solid teeth; sandbox digest d08472a6d58ffa95)
+  stays in the session scratchpad, not promoted.
+- vulture_creature v2.1 (digest 5b3aaa03830de189: green emissive eye cores,
+  bone skull pendant with green-glowing sockets) APPROVED: commit and import
+  into Conquest at 5 ft = 1.524 m (size-table target). Movement still open
+  (N15): the idle + walk clips ship as PLACEHOLDERS.

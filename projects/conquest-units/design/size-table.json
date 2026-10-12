@@ -357,6 +357,13 @@
       "ingame_height_m": 1.799,
       "target_height_m": 0.9144,
       "note": "not in game: formula min(1.8/h, 1.9/fp) = 0.42082 (height-limited)"
+    },
+    {
+      "unit": "vulture_creature",
+      "kind": "creature",
+      "ingame_height_m": null,
+      "target_height_m": 1.524,
+      "note": "not in game yet: ARTIST SIZE 2026-10-12: 5 ft"
     }
   ]
 }

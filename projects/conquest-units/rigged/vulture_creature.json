@@ -1,0 +1,422 @@
+{
+ "unit": "vulture_creature",
+ "source": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\improved\\vulture_creature.blend",
+ "fps": 24,
+ "finish": {
+  "open_edges": 0,
+  "tris": 20000,
+  "mirror": {
+   "plane_x_u": 0.0,
+   "max_u": 0.42875,
+   "p99_u": 0.15269,
+   "p90_u": 0.08145,
+   "mean_u": 0.03798,
+   "rule": "every vertex mirrored in X about the plane -> distance to the nearest surface (0 = exactly symmetric)"
+  },
+  "tri_budget": [
+   8000,
+   22000
+  ],
+  "in_budget": true,
+  "mode": "light"
+ },
+ "weights": {
+  "max_influences": 4,
+  "unweighted": 0,
+  "sum_dev_max": 3.3306690738754696e-16,
+  "per_bone_dominant": {
+   "hips": 334,
+   "spine": 612,
+   "chest": 682,
+   "neck": 333,
+   "head": 993,
+   "wing.L.0": 843,
+   "wing.L.1": 858,
+   "wing.L.2": 772,
+   "wing.R.0": 871,
+   "wing.R.1": 762,
+   "wing.R.2": 738,
+   "leg.L.0": 279,
+   "leg.L.1": 143,
+   "leg.L.2": 95,
+   "leg.R.0": 296,
+   "leg.R.1": 127,
+   "leg.R.2": 78
+  },
+  "parts": {},
+  "rule": "shell: exp(-((d - d_min) / (0.06 H))^2) over bone-segment distances, side-aware, <= 4, normalised; parts rigid on their bone"
+ },
+ "clips": {
+  "idle": {
+   "frames": [
+    1,
+    73
+   ],
+   "seconds": 3.0,
+   "cyclic": true,
+   "seam_mm": 0.0,
+   "clearance_min_z": -0.1632
+  },
+  "walk": {
+   "frames": [
+    1,
+    33
+   ],
+   "seconds": 1.333,
+   "cyclic": true,
+   "seam_mm": 0.0,
+   "clearance_min_z": -0.3358
+  }
+ },
+ "bones": [
+  {
+   "name": "root",
+   "parent": null,
+   "deform": false,
+   "head": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "tail": [
+    0.0,
+    0.0,
+    0.4
+   ]
+  },
+  {
+   "name": "hips",
+   "parent": "root",
+   "deform": true,
+   "head": [
+    -0.0024,
+    0.5032,
+    2.0353
+   ],
+   "tail": [
+    -0.0024,
+    0.4532,
+    3.0353
+   ]
+  },
+  {
+   "name": "spine",
+   "parent": "hips",
+   "deform": true,
+   "head": [
+    -0.0024,
+    0.4532,
+    3.0353
+   ],
+   "tail": [
+    -0.0024,
+    0.2532,
+    4.0353
+   ]
+  },
+  {
+   "name": "chest",
+   "parent": "spine",
+   "deform": true,
+   "head": [
+    -0.0024,
+    0.2532,
+    4.0353
+   ],
+   "tail": [
+    -0.0024,
+    -0.0968,
+    4.8353
+   ]
+  },
+  {
+   "name": "neck",
+   "parent": "chest",
+   "deform": true,
+   "head": [
+    -0.0024,
+    -0.0968,
+    4.8353
+   ],
+   "tail": [
+    -0.0024,
+    -0.3968,
+    5.5853
+   ]
+  },
+  {
+   "name": "head",
+   "parent": "neck",
+   "deform": true,
+   "head": [
+    -0.0024,
+    -0.3968,
+    5.5853
+   ],
+   "tail": [
+    -0.0024,
+    -1.5968,
+    5.7853
+   ]
+  },
+  {
+   "name": "wing.L.0",
+   "parent": "chest",
+   "deform": true,
+   "head": [
+    0.7476,
+    0.0032,
+    5.0353
+   ],
+   "tail": [
+    1.2476,
+    0.4032,
+    3.8353
+   ]
+  },
+  {
+   "name": "wing.L.1",
+   "parent": "wing.L.0",
+   "deform": true,
+   "head": [
+    1.2476,
+    0.4032,
+    3.8353
+   ],
+   "tail": [
+    1.3476,
+    0.7532,
+    2.2353
+   ]
+  },
+  {
+   "name": "wing.L.2",
+   "parent": "wing.L.1",
+   "deform": true,
+   "head": [
+    1.3476,
+    0.7532,
+    2.2353
+   ],
+   "tail": [
+    1.4976,
+    1.4032,
+    0.6353
+   ]
+  },
+  {
+   "name": "wing.R.0",
+   "parent": "chest",
+   "deform": true,
+   "head": [
+    -0.7476,
+    0.0032,
+    5.0353
+   ],
+   "tail": [
+    -1.2476,
+    0.4032,
+    3.8353
+   ]
+  },
+  {
+   "name": "wing.R.1",
+   "parent": "wing.R.0",
+   "deform": true,
+   "head": [
+    -1.2476,
+    0.4032,
+    3.8353
+   ],
+   "tail": [
+    -1.3476,
+    0.7532,
+    2.2353
+   ]
+  },
+  {
+   "name": "wing.R.2",
+   "parent": "wing.R.1",
+   "deform": true,
+   "head": [
+    -1.3476,
+    0.7532,
+    2.2353
+   ],
+   "tail": [
+    -1.4976,
+    1.4032,
+    0.6353
+   ]
+  },
+  {
+   "name": "leg.L.0",
+   "parent": "hips",
+   "deform": true,
+   "head": [
+    0.4476,
+    0.4532,
+    2.3353
+   ],
+   "tail": [
+    0.4976,
+    0.3032,
+    1.4353
+   ]
+  },
+  {
+   "name": "leg.L.1",
+   "parent": "leg.L.0",
+   "deform": true,
+   "head": [
+    0.4976,
+    0.3032,
+    1.4353
+   ],
+   "tail": [
+    0.4476,
+    0.0032,
+    0.4353
+   ]
+  },
+  {
+   "name": "leg.L.2",
+   "parent": "leg.L.1",
+   "deform": true,
+   "head": [
+    0.4476,
+    0.0032,
+    0.4353
+   ],
+   "tail": [
+    0.5476,
+    -0.7468,
+    0.1553
+   ]
+  },
+  {
+   "name": "leg.R.0",
+   "parent": "hips",
+   "deform": true,
+   "head": [
+    -0.4476,
+    0.4532,
+    2.3353
+   ],
+   "tail": [
+    -0.4976,
+    0.3032,
+    1.4353
+   ]
+  },
+  {
+   "name": "leg.R.1",
+   "parent": "leg.R.0",
+   "deform": true,
+   "head": [
+    -0.4976,
+    0.3032,
+    1.4353
+   ],
+   "tail": [
+    -0.4476,
+    0.0032,
+    0.4353
+   ]
+  },
+  {
+   "name": "leg.R.2",
+   "parent": "leg.R.1",
+   "deform": true,
+   "head": [
+    -0.4476,
+    0.0032,
+    0.4353
+   ],
+   "tail": [
+    -0.5476,
+    -0.7468,
+    0.1553
+   ]
+  }
+ ],
+ "bone_count": 18,
+ "digest": {
+  "parts": {
+   "solid_grid": "fc857a6383bd160a",
+   "bake_normal": "c4e383893f90c469",
+   "bake_ao": "ef4e1eaa5d7012b5",
+   "bake_albedo": "c001a27faec1ff7d",
+   "glow3d": "150e7bc6a3cc79b7",
+   "geometry_colour_uv": "3b896fd219264969",
+   "weights": "9557946331058fd7",
+   "keys": "b1c48fc7dd180026",
+   "clip_samples": "4f5ad10fe7ee7803"
+  },
+  "combined": "5b3aaa03830de189"
+ },
+ "glb": {
+  "path": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\rigged\\vulture_creature.glb",
+  "bytes": 13684536,
+  "seconds": 0.8
+ },
+ "skins": {
+  "default": {
+   "file": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\rigged\\vulture_creature.blend",
+   "palette": {
+    "proxy_albedo": {
+     "rgb": [
+      255,
+      255,
+      255
+     ]
+    },
+    "eye_glow": {
+     "rgb": [
+      255,
+      255,
+      255
+     ],
+     "emission": [
+      156,
+      234,
+      161
+     ],
+     "emission_scale": 1.0
+    },
+    "eye_glow_halo": {
+     "rgb": [
+      255,
+      255,
+      255
+     ],
+     "emission": [
+      118,
+      190,
+      132
+     ],
+     "emission_scale": 0.35
+    },
+    "pendant_eye_glow": {
+     "rgb": [
+      255,
+      255,
+      255
+     ],
+     "emission": [
+      156,
+      234,
+      161
+     ],
+     "emission_scale": 0.8
+    }
+   }
+  },
+  "repaint_proof": {
+   "default_digest_before": "3b896fd219264969",
+   "after_repaint": "3b896fd219264969"
+  }
+ },
+ "improved_report": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\improved\\vulture_creature.json",
+ "seconds": 158.4
+}

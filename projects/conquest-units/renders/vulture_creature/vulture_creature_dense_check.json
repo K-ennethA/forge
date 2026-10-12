@@ -1,0 +1,61 @@
+{
+ "texels_covered": 913010,
+ "texture": [
+  2048,
+  2048
+ ],
+ "rule": "dense lattice (<= 0.5 texel spacing) over every low triangle's UV; Lab of the shipped basecolor",
+ "all_outside_glow_zones": {
+  "texels": 908142,
+  "green_a_lt_-3": 40,
+  "green_a_lt_-6": 32,
+  "green_frac_a_lt_-3": 4e-05,
+  "speckle_dark_isolated": 751,
+  "median_rgb": [
+   18.0,
+   17.0,
+   16.0
+  ]
+ },
+ "glow_zones": {
+  "texels": 4868,
+  "green_a_lt_-3": 275,
+  "green_a_lt_-6": 256,
+  "green_frac_a_lt_-3": 0.05649,
+  "speckle_dark_isolated": 138,
+  "median_rgb": [
+   51.0,
+   48.0,
+   41.0
+  ]
+ },
+ "skull(z>0.73H)_outside_glow": {
+  "texels": 88861,
+  "green_a_lt_-3": 29,
+  "green_a_lt_-6": 21,
+  "green_frac_a_lt_-3": 0.00033,
+  "speckle_dark_isolated": 199,
+  "median_rgb": [
+   26.0,
+   25.0,
+   22.0
+  ]
+ },
+ "legs(z<0.21H)": {
+  "texels": 167881,
+  "green_a_lt_-3": 6,
+  "green_a_lt_-6": 6,
+  "green_frac_a_lt_-3": 4e-05,
+  "speckle_dark_isolated": 54,
+  "median_rgb": [
+   31.0,
+   29.0,
+   26.0
+  ]
+ },
+ "skull_bone_median_rgb": [
+  218.0,
+  199.0,
+  178.0
+ ]
+}

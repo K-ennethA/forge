@@ -289,6 +289,53 @@ def despeckle(img_px, R, me, spec, channels=3):
             "left_to_median": left}
 
 
+def glow3d_regions(me, V, F, specs, pal, base_region, albedo=None):
+    """opt-in light.glow3d (artist 2026-10-12, Vulture Creature v1 verdict: "can we add green glow in the eyes and then
+    the skull necklace make it a green spectre glow"): faces of the low are moved from the one light region into GLOW
+    palette regions (palettes/<unit>/default.json: rgb white = the baked albedo kept, `emission` x `emission_scale` ->
+    the Glow corner colour -> Emission Color, glTF COLOR_1), so the glow is a palette swap like every house unit (skins
+    and the repaint proof keep working). Per spec: the weight of each face centroid = PF._region_w (spheres / boxes /
+    exclude, feather) x an optional Lab `select` on the BAKED albedo at the face's UV centroid (e.g. the bright pendant
+    bone, not the dark cord); `levels` [[min_weight, region], ...] (the highest threshold wins; e.g. a core and a
+    halo). Faces already claimed by an earlier spec keep it. V = the stage-1 frame (the config's coordinates)."""
+    cen = V[F].mean(1)
+    names = [base_region]
+    rid = np.zeros(len(F), np.int32)
+    sel_uv = None
+    if albedo is not None:
+        uv = np.empty(len(me.loops) * 2); me.uv_layers.active.data.foreach_get("uv", uv)
+        sel_uv = uv.reshape(-1, 3, 2).mean(1)
+    rows = []
+    for sp in specs:
+        w = PF._region_w(cen, sp)
+        sel_used = False
+        if sp.get("select"):
+            if albedo is None:
+                w = np.zeros_like(w) if sp.get("select_required", True) else w
+            else:
+                pc, R = albedo
+                ix = np.clip((sel_uv[:, 0] * R).astype(int), 0, R - 1); iy = np.clip((sel_uv[:, 1] * R).astype(int), 0, R - 1)
+                rgb = np.clip(pc[iy * R + ix, :3], 0, 1) * 255.0
+                w = w * PF._lab_select_w(PF.srgb_to_lab(rgb), sp["select"])
+                sel_used = True
+        for thr, reg in sorted(sp["levels"], key=lambda r: -float(r[0])):
+            assert reg in pal["regions"], "palette lacks the glow region %r" % reg
+            assert "emission" in pal["regions"][reg], "glow region %r has no emission" % reg
+            if reg not in names:
+                names.append(reg)
+            m = (w >= float(thr)) & (rid == 0)
+            rid[m] = names.index(reg)
+            rows.append({"spec": sp.get("name"), "region": reg, "min_weight": float(thr), "faces": int(m.sum()),
+                         "albedo_select": sel_used, "why": sp.get("why")})
+    PAL.store_regions(me, names, rid, np.ones(len(F)))
+    paint = PAL.paint(me, pal)
+    A = tri_area(V, F)
+    return {"faces": {n: int((rid == k).sum()) for k, n in enumerate(names)},
+            "area_share": {n: round(float(A[rid == k].sum() / A.sum()), 5) for k, n in enumerate(names)},
+            "rows": rows, "paint": paint, "face_region_sha": sha(rid),
+            "rule": "faces -> glow palette regions (emission -> Glow -> Emission Color); rgb white keeps the baked albedo"}
+
+
 def run_light(unit, cfg, raw_cfg, PREVIEW, DIGEST_ONLY, SOLID, T0):
     scene = bpy.context.scene
     lc = cfg["light"]
@@ -368,6 +415,9 @@ def run_light(unit, cfg, raw_cfg, PREVIEW, DIGEST_ONLY, SOLID, T0):
         a = float(A[inb].sum() / A.sum())
         want = a * dens / (a * dens + (1.0 - a))
         vg = np.where(in_boxes(Vp_, dense), 0.02, 1.0)
+        for b_ in dense:                 # opt-in per box "vg_weight" (new units only; list order, later boxes win): a
+            if "vg_weight" in b_:        # small box (eye sockets) held denser than the rest; absent = 0.02 for all (unchanged)
+                vg = np.where(in_boxes(Vp_, [b_]), float(b_["vg_weight"]), vg)
 
         def share(f):
             V2, F2 = decimate(Vp_, Fp_, target / len(Fp_), vg, f)
@@ -442,7 +492,9 @@ def run_light(unit, cfg, raw_cfg, PREVIEW, DIGEST_ONLY, SOLID, T0):
         o.select_set(o is low)
     bpy.ops.object.mode_set(mode="EDIT")
     bpy.ops.mesh.select_all(action="SELECT")
-    bpy.ops.uv.smart_project(angle_limit=math.radians(66.0), island_margin=0.003, area_weight=0.0,
+    UVM = float(lc.get("uv_island_margin", 0.003))   # opt-in (new units only): a many-island feather low wastes the
+    #                                                  atlas on margins at 0.003 (6215 islands: 4.7 % texel use)
+    bpy.ops.uv.smart_project(angle_limit=math.radians(66.0), island_margin=UVM, area_weight=0.0,
                              correct_aspect=True, scale_to_bounds=False)
     uvfix = lc.get("uv_fix_overlap")    # opt-in (new units only; absent = the gemwing / holly UVs, unchanged)
     if uvfix:
@@ -463,10 +515,10 @@ def run_light(unit, cfg, raw_cfg, PREVIEW, DIGEST_ONLY, SOLID, T0):
             passes.append(nsel)
             if not nsel:
                 break
-            bpy.ops.uv.smart_project(angle_limit=math.radians(float(uvfix.get("angle_deg", 30.0))), island_margin=0.003,
+            bpy.ops.uv.smart_project(angle_limit=math.radians(float(uvfix.get("angle_deg", 30.0))), island_margin=UVM,
                                      area_weight=0.0, correct_aspect=True, scale_to_bounds=False)
             bpy.ops.mesh.select_all(action="SELECT")
-            bpy.ops.uv.pack_islands(rotate=True, margin=0.003)
+            bpy.ops.uv.pack_islands(rotate=True, margin=UVM)
         bpy.ops.mesh.select_all(action="DESELECT")
         bpy.ops.uv.select_overlap(extend=False)
         bm.faces.ensure_lookup_table()
@@ -478,7 +530,7 @@ def run_light(unit, cfg, raw_cfg, PREVIEW, DIGEST_ONLY, SOLID, T0):
                                     "rule": "faces in overlapping UV (folds inside a 66 deg island) re-unwrapped alone at "
                                             "angle_deg, the rest kept; opt-in light.uv_fix_overlap"}
     bpy.ops.uv.select_all(action="SELECT")
-    bpy.ops.uv.pack_islands(rotate=True, margin=0.003)
+    bpy.ops.uv.pack_islands(rotate=True, margin=UVM)
     bpy.ops.object.mode_set(mode="OBJECT")
     mir_before = mirror_to_surface(LV, LF, 0.0)
 
@@ -540,6 +592,10 @@ def run_light(unit, cfg, raw_cfg, PREVIEW, DIGEST_ONLY, SOLID, T0):
             nt.nodes.active = node
             scene.cycles.samples = samples
             t = time.time()
+            ao_dist = lc.get("ao_distance")   # opt-in (new units only): the AO ray length in sheet units (absent = the
+            if typ == "AO" and ao_dist and scene.world is not None:   # world default, unchanged for older units)
+                ao_d0 = scene.world.light_settings.distance
+                scene.world.light_settings.distance = float(ao_dist)
             if typ == "AO" and ao_low:
                 # the proxy soup's inner shells / inward faces occlude every AO ray at some bake origins (black texels,
                 # ~15 % of a crystal-mane unit's AO map); the low is watertight and outward, so its own AO is clean
@@ -557,6 +613,9 @@ def run_light(unit, cfg, raw_cfg, PREVIEW, DIGEST_ONLY, SOLID, T0):
             else:
                 r_ = bpy.ops.object.bake(type=typ, use_selected_to_active=True, cage_extrusion=BAKE_CAGE,
                                          max_ray_distance=BAKE_CAGE * 2.0, margin=16, use_clear=False)
+            if typ == "AO" and ao_dist and scene.world is not None:
+                scene.world.light_settings.distance = ao_d0
+                bstats["ao_distance"] = {"u": float(ao_dist), "world_default": round(float(ao_d0), 4)}
             bstats[typ] = {"result": sorted(r_), "seconds": round(time.time() - t, 1)}
         if ao_low:
             bstats["ao_source"] = "the low itself (opt-in light.ao_from_low), %d samples" % int(lc.get("ao_samples", 16))
@@ -661,6 +720,14 @@ def run_light(unit, cfg, raw_cfg, PREVIEW, DIGEST_ONLY, SOLID, T0):
         low.visible_transmission = low.visible_volume_scatter = True
         print("BAKE", json.dumps({k: bstats[k] for k in ("cage_extrusion", "normal_coverage_pct", "albedo_coverage_pct",
                                                           "pixel_sha", "seconds")}))
+
+    gl = lc.get("glow3d")                # opt-in (new units only; absent = one region, Glow all off, unchanged)
+    if gl:
+        report["glow3d"] = glow3d_regions(me, LV, LF, gl, pal_default, REGION,
+                                          (pc, RC_) if (not PREVIEW and imgs) else None)
+        report["regions_faces"] = report["glow3d"]["paint"]
+        DIG["glow3d"] = report["glow3d"]["face_region_sha"]
+        print("GLOW3D", json.dumps({k: report["glow3d"][k] for k in ("faces", "rows")}))
 
     # ================================================================================================ 5. repose
     t = time.time()
