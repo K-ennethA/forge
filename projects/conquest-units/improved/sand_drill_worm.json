@@ -1,0 +1,513 @@
+{
+ "unit": "sand_drill_worm",
+ "conquest_character_id": "sand_drill_worm",
+ "tier": "regular",
+ "tri_budget": [
+  8000,
+  22000
+ ],
+ "pattern": "proxy finish LIGHT (proxy_finish.py stage_light + proxy_finish_light.py): the frozen Pixal3D sheet proxy kept as generated (geometry + texture), made watertight, decimated, baked, optionally reposed with bones",
+ "config": {
+  "unit": "sand_drill_worm",
+  "char_id": "sand_drill_worm",
+  "tier": "regular",
+  "tri_budget": [
+   8000,
+   22000
+  ],
+  "body_tris": 18000,
+  "mode": "light",
+  "refloor": {
+   "y_windows": [
+    [
+     -0.6,
+     0.1
+    ]
+   ],
+   "x_abs_min": 0.0,
+   "pct": 0.0,
+   "rescale_to_front_height": true,
+   "why": "the floor at the drill-tail TIP (the worm stands on its pointed tail as drawn; proxy tip at x -0.05 y -0.27 z 0), then x(6.69 / 6.637) to the sheet front height"
+  },
+  "light": {
+   "steps_per_height": 300,
+   "uv_fix_overlap": {
+    "angle_deg": 30.0,
+    "passes": 3
+   },
+   "uv_fix_why": "at the default 66 deg the decimated drill rings fold inside their UV islands (1.6% of texels shared by 2 faces, 305 of the 724 overlapping faces in z 2-3): sand from one face overwrote the drill bands; only the overlapping faces are re-unwrapped (a global 40 deg unwrap fixed it but shattered the atlas to ~10% texel use)",
+   "ao_fill_below": 0.04,
+   "ao_fill_why": "AO texels under 0.04 are bake origins inside the proxy soup (1.1% of the AO map after the UV repair: black streaks where the arm stalks meet the neck): refilled from valid neighbours",
+   "dense": [
+    {
+     "box": [
+      [
+       -1.0,
+       -1.0,
+       5.3
+      ],
+      [
+       1.0,
+       0.8,
+       6.8
+      ]
+     ],
+     "density": 2.5,
+     "why": "head / mouth: the teeth ring and the rim"
+    }
+   ]
+  },
+  "rig": {
+   "spine_names": [
+    "tail",
+    "lower",
+    "belly",
+    "chest",
+    "neck",
+    "head"
+   ],
+   "spine": [
+    [
+     0.0,
+     -0.27,
+     0.0
+    ],
+    [
+     0.0,
+     -0.05,
+     1.2
+    ],
+    [
+     0.0,
+     0.14,
+     2.4
+    ],
+    [
+     0.0,
+     0.2,
+     3.6
+    ],
+    [
+     0.0,
+     0.1,
+     4.75
+    ],
+    [
+     0.0,
+     -0.05,
+     5.6
+    ],
+    [
+     0.0,
+     0.05,
+     6.5
+    ]
+   ],
+   "chains": [
+    {
+     "name": "drill_fore",
+     "kind": "arm",
+     "parent": "neck",
+     "phase": {
+      "L": 0.0,
+      "R": 0.5
+     },
+     "points": [
+      [
+       1.0,
+       -0.05,
+       4.75
+      ],
+      [
+       1.45,
+       -0.25,
+       3.7
+      ],
+      [
+       1.54,
+       -0.72,
+       2.5
+      ],
+      [
+       1.59,
+       -0.95,
+       1.62
+      ]
+     ],
+     "why": "the proxy's FORE drill arm per side (L/R averaged: tip y -1.17 on +x, -0.73 on -x)"
+    },
+    {
+     "name": "drill_aft",
+     "kind": "arm",
+     "parent": "neck",
+     "phase": {
+      "L": 0.5,
+      "R": 0.0
+     },
+     "points": [
+      [
+       1.0,
+       0.05,
+       4.75
+      ],
+      [
+       1.45,
+       0.54,
+       3.7
+      ],
+      [
+       1.42,
+       0.8,
+       2.5
+      ],
+      [
+       1.44,
+       1.04,
+       1.79
+      ]
+     ],
+     "why": "the proxy's AFT drill arm per side: Pixal3D read the sheet side view's two offset drills as a fore + aft pair per shoulder (4 arms; the front / back views draw 2)"
+    }
+   ]
+  },
+  "clips": {
+   "idle_frames": 72,
+   "breathe_deg": 2.0,
+   "walk_frames": 24,
+   "walk_bob": 0.03,
+   "walk_roll": 4.0,
+   "arm_swing": 8.0
+  },
+  "_doc": "LIGHT finish of the Pixal3D proxy (sha e1a05901, seed 56): geometry, texture and face as generated; no repose (body / neck / head mirror-symmetric, the arms not yaw-posed). Points: stage-1 frame (proxy, floored at the tail tip, x1.008 to the sheet front height). Clips PLACEHOLDER (OPEN-QUESTIONS N14)."
+ },
+ "units": "sheet units: 1 unit = 100 px of the reference sheet; floor z = 0",
+ "stage1_stdout": [
+  "LIGHT_SOLID {\"grid_sha\": \"8daceebe8e2cb6cc\", \"solid\": {\"step\": 0.0223, \"grid\": [193, 127, 318], \"shell_nodes\": 279145, \"close_voxels\": 1, \"sealed_cavities\": 261, \"min_half_thickness_u\": 0.0112, \"shell_nodes_signed_outside_frac\": 0.772, \"smooth_sigma_vox\": 0.0, \"pieces\": [1, [991605]], \"rule\": \"LIGHT: watertight remesh only (no smoothing / straighten / symmetrise / cuts); the surface sits min_half_thickness x step = 0.0112 u outside the proxy\"}, \"refloor\": {\"foot_contact_z_u\": 0.0, \"rescale\": 1.008, \"y_windows\": [[-0.6, 0.1]], \"window_z_u\": [0.0], \"x_abs_min\": 0.0, \"rule\": \"sheet_proxy put the floor at the lowest point (a tail curl): the feet hung z0 above it; floor moved to the feet, then scaled to the sheet front height\"}, \"seconds\": 6.7}"
+ ],
+ "stage1": {
+  "unit": "sand_drill_worm",
+  "proxy": {
+   "glb": "proxy/sand_drill_worm_proxy.glb",
+   "sha256": "e1a05901d81a78abf8bc75ec3ac7f2fbbbbf7cc17826493f079d0b35d8dc4652",
+   "gate": "reliable",
+   "mean_iou": 0.897,
+   "refloor": {
+    "foot_contact_z_u": 0.0,
+    "rescale": 1.008,
+    "y_windows": [
+     [
+      -0.6,
+      0.1
+     ]
+    ],
+    "window_z_u": [
+     0.0
+    ],
+    "x_abs_min": 0.0,
+    "rule": "sheet_proxy put the floor at the lowest point (a tail curl): the feet hung z0 above it; floor moved to the feet, then scaled to the sheet front height"
+   },
+   "tris": 198124,
+   "verts": 145965,
+   "height_u": 6.69,
+   "samples": 4046512,
+   "textured": true,
+   "z_range_u": [
+    0.0,
+    6.69
+   ]
+  },
+  "solid": {
+   "step": 0.0223,
+   "grid": [
+    193,
+    127,
+    318
+   ],
+   "shell_nodes": 279145,
+   "close_voxels": 1,
+   "sealed_cavities": 261,
+   "min_half_thickness_u": 0.0112,
+   "shell_nodes_signed_outside_frac": 0.772,
+   "smooth_sigma_vox": 0.0,
+   "pieces": [
+    1,
+    [
+     991605
+    ]
+   ],
+   "rule": "LIGHT: watertight remesh only (no smoothing / straighten / symmetrise / cuts); the surface sits min_half_thickness x step = 0.0112 u outside the proxy"
+  },
+  "colour": {
+   "mode": "light: the proxy texture as generated",
+   "drift_fit": null,
+   "textures": {
+    "0": [
+     2048,
+     2048,
+     3
+    ]
+   }
+  },
+  "grid_sha": "8daceebe8e2cb6cc",
+  "proxy_sha": "1bd74dc7dcbfcd69"
+ },
+ "high": {
+  "tris": 968056,
+  "verts": 484020,
+  "specks_dropped": {
+   "pieces": 1,
+   "kept": 1,
+   "dropped_verts": 0
+  },
+  "open_edges": 0,
+  "nonmanifold_edges": 0,
+  "rule": "marching tets of the whole remesh grid (no mirror)",
+  "seconds": 4.9
+ },
+ "low": {
+  "method": "collapse decimation: uniform to 300000, then 18000 with the dense boxes calibrated",
+  "pre_tris": 300000,
+  "tris": 18000,
+  "verts": 8992,
+  "specks": {
+   "pieces": 1,
+   "kept": 1,
+   "dropped_verts": 0
+  },
+  "open_edges": 0,
+  "nonmanifold_edges": 0,
+  "dense": {
+   "density": 2.5,
+   "box_area_frac": 0.1825,
+   "target_tri_share": 0.3582,
+   "got_tri_share": 0.3606,
+   "factor_log10": -1.094,
+   "trials": [
+    [
+     -7.0,
+     0.2329
+    ],
+    [
+     -3.0,
+     0.2357
+    ],
+    [
+     -1.0,
+     0.3886
+    ],
+    [
+     -2.0,
+     0.2453
+    ],
+    [
+     -1.5,
+     0.2796
+    ],
+    [
+     -1.25,
+     0.3214
+    ],
+    [
+     -1.125,
+     0.3522
+    ],
+    [
+     -1.062,
+     0.3703
+    ],
+    [
+     -1.094,
+     0.3606
+    ],
+    [
+     -1.109,
+     0.3561
+    ]
+   ],
+   "rule": "dense boxes weighted 0.02 (vs 1) in the collapse decimation; the factor bisected until the boxes hold density x the rest's triangles per area"
+  },
+  "low_to_proxy": {
+   "mean": 0.01306,
+   "p99": 0.03343,
+   "max": 0.04407
+  },
+  "proxy_to_low_sampled": {
+   "mean": 0.03789,
+   "p99": 0.16248,
+   "max": 0.33053
+  },
+  "p99_over_height": 0.02429,
+  "seconds": 37.6
+ },
+ "regions_faces": {
+  "proxy_albedo": 18000
+ },
+ "uv_fix_overlap": {
+  "overlapping_faces_per_pass": [
+   1119,
+   0
+  ],
+  "left": 0,
+  "angle_deg": 30.0,
+  "rule": "faces in overlapping UV (folds inside a 66 deg island) re-unwrapped alone at angle_deg, the rest kept; opt-in light.uv_fix_overlap"
+ },
+ "albedo_source": {
+  "texture": "tex_0",
+  "size": [
+   2048,
+   2048
+  ],
+  "faces_textured": 198124,
+  "faces": 198124
+ },
+ "ao_fill": {
+  "below": 0.04,
+  "texels_filled": 2959,
+  "of_covered": 261416,
+  "rings": 5,
+  "left_to_mean": 0,
+  "rule": "AO < below = a bake origin inside the proxy soup: refilled from the covered valid 3x3 neighbours ring by ring (opt-in light.ao_fill_below)"
+ },
+ "bake": {
+  "reference": "flat",
+  "source": "the proxy mesh itself (not the remesh)",
+  "NORMAL": {
+   "result": [
+    "FINISHED"
+   ],
+   "seconds": 0.7
+  },
+  "AO": {
+   "result": [
+    "FINISHED"
+   ],
+   "seconds": 0.6
+  },
+  "EMIT": {
+   "result": [
+    "FINISHED"
+   ],
+   "seconds": 2.3
+  },
+  "cage_extrusion": 0.4874,
+  "resolution": {
+   "normal": 1024,
+   "ao": 512,
+   "albedo": 2048
+  },
+  "high_tris": 198124,
+  "normal_coverage_pct": 99.08,
+  "albedo_coverage_pct": 83.94,
+  "normal_detail_fraction_dev_gt_0.05": 0.7513,
+  "ao_mean": 0.7506,
+  "pixel_sha": {
+   "normal": "c858220658658117",
+   "ao": "843e499266aa4de1",
+   "albedo": "247dd3ec3cbb30a9"
+  },
+  "seconds": 5.5
+ },
+ "repose": {
+  "enabled": false,
+  "mirror": {
+   "plane_x_u": 0.0,
+   "max_u": 0.36738,
+   "p99_u": 0.16507,
+   "p90_u": 0.05981,
+   "mean_u": 0.02668,
+   "rule": "every vertex mirrored in X about the plane -> distance to the nearest surface (0 = exactly symmetric)"
+  },
+  "auto_chains": {}
+ },
+ "centre_shift": [
+  0.001358,
+  -0.002093,
+  -0.012155
+ ],
+ "floor": {
+  "min_z_after_repose_u": -0.01215,
+  "rule": "stage 1 floored the FEET at z 0; the centring puts the lowest point at 0"
+ },
+ "regions_area_share": {
+  "proxy_albedo": 1.0
+ },
+ "facing": {
+  "rule": "shell centroid -> the front-most midline point of the shell (proxy finish default)",
+  "anchor": [
+   0.0,
+   -0.0246,
+   4.0073
+  ],
+  "landmark": [
+   0.0444,
+   -0.8863,
+   5.6063
+  ],
+  "angle_from_minusY_deg": 2.952
+ },
+ "tris": {
+  "total": 18000,
+  "shell": 18000
+ },
+ "open_edges": {
+  "per_island": {
+   "shell": 0
+  },
+  "total": 0,
+  "nonmanifold_edges": 0,
+  "rule": "the watertight remesh, decimated (closed)"
+ },
+ "measure": {
+  "bbox": [
+   [
+    -1.9681,
+    -1.2328,
+    0.0
+   ],
+   [
+    1.9681,
+    1.2328,
+    6.7156
+   ]
+  ],
+  "height": 6.7156,
+  "width_x": 3.9362,
+  "depth_y": 2.4655,
+  "export_cell_fit_report_only": {
+   "scale": 0.26803
+  }
+ },
+ "finish": {
+  "open_edges": 0,
+  "tris": 18000,
+  "mirror": {
+   "plane_x_u": 0.0,
+   "max_u": 0.36767,
+   "p99_u": 0.16528,
+   "p90_u": 0.05965,
+   "mean_u": 0.02594,
+   "rule": "every vertex mirrored in X about the plane -> distance to the nearest surface (0 = exactly symmetric)"
+  },
+  "tri_budget": [
+   8000,
+   22000
+  ],
+  "in_budget": true,
+  "mode": "light"
+ },
+ "digest_geometry_colour_uv": "e6596e25f6c485fa",
+ "palette": {
+  "default": {
+   "proxy_albedo": {
+    "rgb": [
+     255,
+     255,
+     255
+    ]
+   }
+  },
+  "files": [
+   "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\palettes\\sand_drill_worm\\default.json"
+  ]
+ }
+}

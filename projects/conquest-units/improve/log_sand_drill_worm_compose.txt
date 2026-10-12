@@ -1,0 +1,6 @@
+﻿WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\sand_drill_worm\sand_drill_worm_sheet_vs_model.png
+GATE view=front iou=0.905 in_frame=0.885 row_err=2.2% | proxy iou=0.898
+GATE view=side  iou=0.909 in_frame=0.903 row_err=3.5% | proxy iou=0.915
+GATE mean_iou=0.907 flagged=none proxy=reliable
+GATE bake_reference=none (no object.bake call found)
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\sand_drill_worm\sand_drill_worm_contact.png

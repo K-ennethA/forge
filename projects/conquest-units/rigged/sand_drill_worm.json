@@ -1,0 +1,398 @@
+{
+ "unit": "sand_drill_worm",
+ "source": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\improved\\sand_drill_worm.blend",
+ "fps": 24,
+ "finish": {
+  "open_edges": 0,
+  "tris": 18000,
+  "mirror": {
+   "plane_x_u": 0.0,
+   "max_u": 0.36767,
+   "p99_u": 0.16528,
+   "p90_u": 0.05965,
+   "mean_u": 0.02594,
+   "rule": "every vertex mirrored in X about the plane -> distance to the nearest surface (0 = exactly symmetric)"
+  },
+  "tri_budget": [
+   8000,
+   22000
+  ],
+  "in_budget": true,
+  "mode": "light"
+ },
+ "weights": {
+  "max_influences": 4,
+  "unweighted": 0,
+  "sum_dev_max": 3.3306690738754696e-16,
+  "per_bone_dominant": {
+   "tail": 465,
+   "lower": 637,
+   "belly": 614,
+   "chest": 405,
+   "neck": 842,
+   "head": 2534,
+   "drill_fore.L.0": 234,
+   "drill_fore.L.1": 386,
+   "drill_fore.L.2": 331,
+   "drill_fore.R.0": 162,
+   "drill_fore.R.1": 337,
+   "drill_fore.R.2": 255,
+   "drill_aft.L.0": 236,
+   "drill_aft.L.1": 412,
+   "drill_aft.L.2": 275,
+   "drill_aft.R.0": 239,
+   "drill_aft.R.1": 403,
+   "drill_aft.R.2": 225
+  },
+  "parts": {},
+  "rule": "shell: exp(-((d - d_min) / (0.06 H))^2) over bone-segment distances, side-aware, <= 4, normalised; parts rigid on their bone"
+ },
+ "clips": {
+  "idle": {
+   "frames": [
+    1,
+    73
+   ],
+   "seconds": 3.0,
+   "cyclic": true,
+   "seam_mm": 0.0,
+   "clearance_min_z": -0.0002
+  },
+  "walk": {
+   "frames": [
+    1,
+    25
+   ],
+   "seconds": 1.0,
+   "cyclic": true,
+   "seam_mm": 0.0,
+   "clearance_min_z": 0.0
+  }
+ },
+ "bones": [
+  {
+   "name": "root",
+   "parent": null,
+   "deform": false,
+   "head": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "tail": [
+    0.0,
+    0.0,
+    0.4
+   ]
+  },
+  {
+   "name": "tail",
+   "parent": "root",
+   "deform": true,
+   "head": [
+    -0.0014,
+    -0.2679,
+    0.0122
+   ],
+   "tail": [
+    -0.0014,
+    -0.0479,
+    1.2122
+   ]
+  },
+  {
+   "name": "lower",
+   "parent": "tail",
+   "deform": true,
+   "head": [
+    -0.0014,
+    -0.0479,
+    1.2122
+   ],
+   "tail": [
+    -0.0014,
+    0.1421,
+    2.4122
+   ]
+  },
+  {
+   "name": "belly",
+   "parent": "lower",
+   "deform": true,
+   "head": [
+    -0.0014,
+    0.1421,
+    2.4122
+   ],
+   "tail": [
+    -0.0014,
+    0.2021,
+    3.6122
+   ]
+  },
+  {
+   "name": "chest",
+   "parent": "belly",
+   "deform": true,
+   "head": [
+    -0.0014,
+    0.2021,
+    3.6122
+   ],
+   "tail": [
+    -0.0014,
+    0.1021,
+    4.7622
+   ]
+  },
+  {
+   "name": "neck",
+   "parent": "chest",
+   "deform": true,
+   "head": [
+    -0.0014,
+    0.1021,
+    4.7622
+   ],
+   "tail": [
+    -0.0014,
+    -0.0479,
+    5.6122
+   ]
+  },
+  {
+   "name": "head",
+   "parent": "neck",
+   "deform": true,
+   "head": [
+    -0.0014,
+    -0.0479,
+    5.6122
+   ],
+   "tail": [
+    -0.0014,
+    0.0521,
+    6.5122
+   ]
+  },
+  {
+   "name": "drill_fore.L.0",
+   "parent": "neck",
+   "deform": true,
+   "head": [
+    0.9986,
+    -0.0479,
+    4.7622
+   ],
+   "tail": [
+    1.4486,
+    -0.2479,
+    3.7122
+   ]
+  },
+  {
+   "name": "drill_fore.L.1",
+   "parent": "drill_fore.L.0",
+   "deform": true,
+   "head": [
+    1.4486,
+    -0.2479,
+    3.7122
+   ],
+   "tail": [
+    1.5386,
+    -0.7179,
+    2.5122
+   ]
+  },
+  {
+   "name": "drill_fore.L.2",
+   "parent": "drill_fore.L.1",
+   "deform": true,
+   "head": [
+    1.5386,
+    -0.7179,
+    2.5122
+   ],
+   "tail": [
+    1.5886,
+    -0.9479,
+    1.6322
+   ]
+  },
+  {
+   "name": "drill_fore.R.0",
+   "parent": "neck",
+   "deform": true,
+   "head": [
+    -0.9986,
+    -0.0479,
+    4.7622
+   ],
+   "tail": [
+    -1.4486,
+    -0.2479,
+    3.7122
+   ]
+  },
+  {
+   "name": "drill_fore.R.1",
+   "parent": "drill_fore.R.0",
+   "deform": true,
+   "head": [
+    -1.4486,
+    -0.2479,
+    3.7122
+   ],
+   "tail": [
+    -1.5386,
+    -0.7179,
+    2.5122
+   ]
+  },
+  {
+   "name": "drill_fore.R.2",
+   "parent": "drill_fore.R.1",
+   "deform": true,
+   "head": [
+    -1.5386,
+    -0.7179,
+    2.5122
+   ],
+   "tail": [
+    -1.5886,
+    -0.9479,
+    1.6322
+   ]
+  },
+  {
+   "name": "drill_aft.L.0",
+   "parent": "neck",
+   "deform": true,
+   "head": [
+    0.9986,
+    0.0521,
+    4.7622
+   ],
+   "tail": [
+    1.4486,
+    0.5421,
+    3.7122
+   ]
+  },
+  {
+   "name": "drill_aft.L.1",
+   "parent": "drill_aft.L.0",
+   "deform": true,
+   "head": [
+    1.4486,
+    0.5421,
+    3.7122
+   ],
+   "tail": [
+    1.4186,
+    0.8021,
+    2.5122
+   ]
+  },
+  {
+   "name": "drill_aft.L.2",
+   "parent": "drill_aft.L.1",
+   "deform": true,
+   "head": [
+    1.4186,
+    0.8021,
+    2.5122
+   ],
+   "tail": [
+    1.4386,
+    1.0421,
+    1.8022
+   ]
+  },
+  {
+   "name": "drill_aft.R.0",
+   "parent": "neck",
+   "deform": true,
+   "head": [
+    -0.9986,
+    0.0521,
+    4.7622
+   ],
+   "tail": [
+    -1.4486,
+    0.5421,
+    3.7122
+   ]
+  },
+  {
+   "name": "drill_aft.R.1",
+   "parent": "drill_aft.R.0",
+   "deform": true,
+   "head": [
+    -1.4486,
+    0.5421,
+    3.7122
+   ],
+   "tail": [
+    -1.4186,
+    0.8021,
+    2.5122
+   ]
+  },
+  {
+   "name": "drill_aft.R.2",
+   "parent": "drill_aft.R.1",
+   "deform": true,
+   "head": [
+    -1.4186,
+    0.8021,
+    2.5122
+   ],
+   "tail": [
+    -1.4386,
+    1.0421,
+    1.8022
+   ]
+  }
+ ],
+ "bone_count": 19,
+ "digest": {
+  "parts": {
+   "solid_grid": "8daceebe8e2cb6cc",
+   "bake_normal": "c858220658658117",
+   "bake_ao": "843e499266aa4de1",
+   "bake_albedo": "247dd3ec3cbb30a9",
+   "geometry_colour_uv": "e6596e25f6c485fa",
+   "weights": "933ff35f2cde759a",
+   "keys": "ed1301b2ecc38bf2",
+   "clip_samples": "d89e0ee59b206cf4"
+  },
+  "combined": "76a6a99081748d05"
+ },
+ "glb": {
+  "path": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\rigged\\sand_drill_worm.glb",
+  "bytes": 12108808,
+  "seconds": 0.7
+ },
+ "skins": {
+  "default": {
+   "file": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\rigged\\sand_drill_worm.blend",
+   "palette": {
+    "proxy_albedo": {
+     "rgb": [
+      255,
+      255,
+      255
+     ]
+    }
+   }
+  },
+  "repaint_proof": {
+   "default_digest_before": "e6596e25f6c485fa",
+   "after_repaint": "e6596e25f6c485fa"
+  }
+ },
+ "improved_report": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\improved\\sand_drill_worm.json",
+ "seconds": 61.1
+}

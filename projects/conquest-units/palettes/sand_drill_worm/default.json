@@ -1,0 +1,9 @@
+{
+ "unit": "sand_drill_worm",
+ "skin": "default",
+ "description": "sand_drill_worm default look, LIGHT proxy finish: the colour is the Pixal3D proxy's own texture baked onto the low (improved/textures/sand_drill_worm_basecolor.png); this one white region tints it (white = as generated)",
+ "regions": {
+  "proxy_albedo": {"rgb": [255, 255, 255], "note": "tint over the baked proxy albedo (light mode); white keeps the proxy's sand / brown bands"}
+ },
+ "material": {"roughness": 0.85, "emission_strength": 1.0, "alpha": 1.0}
+}

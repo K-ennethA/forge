@@ -2592,3 +2592,35 @@ Reading:
   needed to ship: watertight / clean, budget decimation with a texture
   bake, floor + scale, rig, clips, gates. Symmetrising / overrides become
   opt-in per part, never on the head / face.
+
+## 2026-10-12 — NEW UNIT: Sand Drill Worm (artist reference sheet)
+
+Artist (verbatim): "here is the next one".
+Sheet: design/reference/sand_drill_worm-character-sheet.png (pasted inline,
+loaded off the clipboard; the original is in incoming/). Smart intake
+(intake.json intake_notes) with --side-facing right: the side view's mouth
+opens up and to image-RIGHT. Orthos FRONT + SIDE. Tier REGULAR [8000,
+22000]. Idle + walk are PLACEHOLDER. Natural sheet scale.
+FLOW (artist direction 2026-10-11): Pixal3D 3-view proxy as the BASE,
+LIGHT finish (keep the generated geometry / texture / face), bone repose
+only for posed parts, rig + clips + gates. Not a hand-written procedural
+build.
+
+SAND DRILL WORM ("sand_drill_worm", ~6.7 u).
+- Body: an upright segmented sandworm, a bowling-pin silhouette.
+  - A slender neck widening to a fat lower body, tapering to a pointed
+    drill-tail tip that the unit stands on.
+  - Ring segments in alternating light / mid sand bands (238,201,154 /
+    201,155,106 / 173,123,76); tough leathery, weathered texture.
+  - The lower tail carries dark (89,65,49) drill bands with sand edges.
+- Mouth: a WIDE CIRCULAR MOUTH at the top.
+  - A ring of sharp cream teeth (2-3 rows).
+  - A dark fleshy red interior (116,62,58).
+  - A sandy, tough rim.
+- Drill arms: two thin DRILL ARMS from the neck sides. Each hangs as a long
+  stalk into a spindle / drill bulb with spiral dark chitin striping and a
+  pointed tip. The side view shows both arms hanging behind the body; the
+  front / back show them out to the sides.
+- Palette: 238,201,154 / 201,155,106 / 173,123,76 / 138,93,58 / 89,65,49 /
+  116,62,58.
+- No glow.

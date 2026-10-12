@@ -1,0 +1,39 @@
+{
+ "unit": "sand_drill_worm",
+ "views": {
+  "front": {
+   "iou": 0.9049,
+   "iou_shape": 0.8977,
+   "aspect_rel": 0.0456,
+   "row_err_u": 0.072,
+   "row_err_pct": 2.2,
+   "w_u": 3.94,
+   "h_u": 6.72,
+   "ref_w_u": 4.11,
+   "ref_h_u": 6.69,
+   "iou_in_frame": 0.8852,
+   "row_err_pct_in_frame": 2.9,
+   "proxy_iou": 0.8984,
+   "flag": false
+  },
+  "side": {
+   "iou": 0.9089,
+   "iou_shape": 0.8638,
+   "aspect_rel": 0.045,
+   "row_err_u": 0.083,
+   "row_err_pct": 3.5,
+   "w_u": 2.47,
+   "h_u": 6.72,
+   "ref_w_u": 2.38,
+   "ref_h_u": 6.78,
+   "iou_in_frame": 0.9034,
+   "row_err_pct_in_frame": 3.7,
+   "proxy_iou": 0.9152,
+   "flag": false
+  }
+ },
+ "proxy_sha256": "e1a05901d81a78abf8bc75ec3ac7f2fbbbbf7cc17826493f079d0b35d8dc4652",
+ "proxy_gate": "reliable",
+ "flagged": [],
+ "mean_iou": 0.9069
+}

@@ -1,0 +1,57 @@
+{
+ "unit": "sand_drill_worm",
+ "char_id": "sand_drill_worm",
+ "tier": "regular",
+ "tri_budget": [8000, 22000],
+ "body_tris": 18000,
+ "mode": "light",
+ "refloor": {
+  "y_windows": [[-0.6, 0.1]],
+  "x_abs_min": 0.0,
+  "pct": 0.0,
+  "rescale_to_front_height": true,
+  "why": "the floor at the drill-tail TIP (the worm stands on its pointed tail as drawn; proxy tip at x -0.05 y -0.27 z 0), then x(6.69 / 6.637) to the sheet front height"
+ },
+ "light": {
+  "steps_per_height": 300,
+  "uv_fix_overlap": {"angle_deg": 30.0, "passes": 3},
+  "uv_fix_why": "at the default 66 deg the decimated drill rings fold inside their UV islands (1.6% of texels shared by 2 faces, 305 of the 724 overlapping faces in z 2-3): sand from one face overwrote the drill bands; only the overlapping faces are re-unwrapped (a global 40 deg unwrap fixed it but shattered the atlas to ~10% texel use)",
+  "ao_fill_below": 0.04,
+  "ao_fill_why": "AO texels under 0.04 are bake origins inside the proxy soup (1.1% of the AO map after the UV repair: black streaks where the arm stalks meet the neck): refilled from valid neighbours",
+  "dense": [
+   {"box": [[-1.0, -1.0, 5.3], [1.0, 0.8, 6.8]], "density": 2.5, "why": "head / mouth: the teeth ring and the rim"}
+  ]
+ },
+ "rig": {
+  "spine_names": ["tail", "lower", "belly", "chest", "neck", "head"],
+  "spine": [
+   [0.0, -0.27, 0.0],
+   [0.0, -0.05, 1.2],
+   [0.0, 0.14, 2.4],
+   [0.0, 0.2, 3.6],
+   [0.0, 0.1, 4.75],
+   [0.0, -0.05, 5.6],
+   [0.0, 0.05, 6.5]
+  ],
+  "chains": [
+   {
+    "name": "drill_fore",
+    "kind": "arm",
+    "parent": "neck",
+    "phase": {"L": 0.0, "R": 0.5},
+    "points": [[1.0, -0.05, 4.75], [1.45, -0.25, 3.7], [1.54, -0.72, 2.5], [1.59, -0.95, 1.62]],
+    "why": "the proxy's FORE drill arm per side (L/R averaged: tip y -1.17 on +x, -0.73 on -x)"
+   },
+   {
+    "name": "drill_aft",
+    "kind": "arm",
+    "parent": "neck",
+    "phase": {"L": 0.5, "R": 0.0},
+    "points": [[1.0, 0.05, 4.75], [1.45, 0.54, 3.7], [1.42, 0.8, 2.5], [1.44, 1.04, 1.79]],
+    "why": "the proxy's AFT drill arm per side: Pixal3D read the sheet side view's two offset drills as a fore + aft pair per shoulder (4 arms; the front / back views draw 2)"
+   }
+  ]
+ },
+ "clips": {"idle_frames": 72, "breathe_deg": 2.0, "walk_frames": 24, "walk_bob": 0.03, "walk_roll": 4.0, "arm_swing": 8.0},
+ "_doc": "LIGHT finish of the Pixal3D proxy (sha e1a05901, seed 56): geometry, texture and face as generated; no repose (body / neck / head mirror-symmetric, the arms not yaw-posed). Points: stage-1 frame (proxy, floored at the tail tip, x1.008 to the sheet front height). Clips PLACEHOLDER (OPEN-QUESTIONS N14)."
+}

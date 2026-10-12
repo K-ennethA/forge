@@ -154,3 +154,6 @@ are asked, deviations from the sheet are reported.)
 - G7 Walk right-arm... superseded: both arms swing as of the posture rework. CLOSED.
 - G8 Town buildings: ranked rebuild plan committed in survey/conquest_town_assets_audit.md
   (house family first, 1-3k tris per the world-feel research) — not started, next big lane.
+
+## Sand Drill Worm (sheet 2026-10-12)
+- N14 Movement intent (burrows? slithers upright? hops on its drill tail?) + in-game height.

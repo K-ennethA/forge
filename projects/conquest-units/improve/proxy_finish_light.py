@@ -256,6 +256,39 @@ def run_light(unit, cfg, raw_cfg, PREVIEW, DIGEST_ONLY, SOLID, T0):
     bpy.ops.mesh.select_all(action="SELECT")
     bpy.ops.uv.smart_project(angle_limit=math.radians(66.0), island_margin=0.003, area_weight=0.0,
                              correct_aspect=True, scale_to_bounds=False)
+    uvfix = lc.get("uv_fix_overlap")    # opt-in (new units only; absent = the gemwing / holly UVs, unchanged)
+    if uvfix:
+        # a ridged low (drill rings) FOLDS inside a 66 deg island: the folded faces share texels and the bake of one
+        # overwrites the other (sand printed on a drill band). The overlapping faces alone are re-unwrapped at a
+        # tighter angle (their own small islands); every other island keeps its 66 deg layout; then one pack
+        import bmesh
+        ts = scene.tool_settings
+        sync0 = ts.use_uv_select_sync
+        ts.use_uv_select_sync = True
+        bm = bmesh.from_edit_mesh(low.data)
+        passes = []
+        for _pass in range(int(uvfix.get("passes", 3))):
+            bpy.ops.mesh.select_all(action="DESELECT")
+            bpy.ops.uv.select_overlap(extend=False)
+            bm.faces.ensure_lookup_table()
+            nsel = sum(1 for f_ in bm.faces if f_.select)
+            passes.append(nsel)
+            if not nsel:
+                break
+            bpy.ops.uv.smart_project(angle_limit=math.radians(float(uvfix.get("angle_deg", 30.0))), island_margin=0.003,
+                                     area_weight=0.0, correct_aspect=True, scale_to_bounds=False)
+            bpy.ops.mesh.select_all(action="SELECT")
+            bpy.ops.uv.pack_islands(rotate=True, margin=0.003)
+        bpy.ops.mesh.select_all(action="DESELECT")
+        bpy.ops.uv.select_overlap(extend=False)
+        bm.faces.ensure_lookup_table()
+        left = sum(1 for f_ in bm.faces if f_.select)
+        bpy.ops.mesh.select_all(action="SELECT")
+        ts.use_uv_select_sync = sync0
+        report["uv_fix_overlap"] = {"overlapping_faces_per_pass": passes, "left": left,
+                                    "angle_deg": float(uvfix.get("angle_deg", 30.0)),
+                                    "rule": "faces in overlapping UV (folds inside a 66 deg island) re-unwrapped alone at "
+                                            "angle_deg, the rest kept; opt-in light.uv_fix_overlap"}
     bpy.ops.uv.select_all(action="SELECT")
     bpy.ops.uv.pack_islands(rotate=True, margin=0.003)
     bpy.ops.object.mode_set(mode="OBJECT")
@@ -330,6 +363,39 @@ def run_light(unit, cfg, raw_cfg, PREVIEW, DIGEST_ONLY, SOLID, T0):
         devn = np.linalg.norm(px[:, :3] - np.array([0.5, 0.5, 1.0]), axis=1)
         px[~cov_n, :3] = (0.5, 0.5, 1.0); img_n.pixels.foreach_set(px.ravel())
         pa[~cov_a, :3] = 1.0; img_ao.pixels.foreach_set(pa.ravel())
+        ao_fill = lc.get("ao_fill_below")   # opt-in (new units only; absent = the gemwing / holly bakes, unchanged)
+        if ao_fill:
+            # AO texels at ~0 are bake origins INSIDE the proxy soup (interior shells / fused arms: every AO ray is
+            # occluded), not real crevices; they print as black blocks through basecolor = albedo x AO. Refill them
+            # from their covered, valid 3x3 neighbours, ring by ring (numpy only, deterministic)
+            A2 = pa[:, 0].reshape(RA, RA).astype(np.float64).copy()
+            cov2 = cov_a.reshape(RA, RA)
+            bad = cov2 & (A2 < float(ao_fill))
+            nbad0 = int(bad.sum())
+            good = cov2 & ~bad
+            val = np.where(good, A2, 0.0); wgt = good.astype(np.float64)
+
+            def box3(x):
+                p_ = np.pad(x, 1, mode="edge")
+                return sum(p_[1 + dy:1 + dy + RA, 1 + dx:1 + dx + RA] for dy in (-1, 0, 1) for dx in (-1, 0, 1))
+            rings = 0
+            while bad.any() and rings < int(lc.get("ao_fill_rings", 64)):
+                s_, n_ = box3(val), box3(wgt)
+                newly = bad & (n_ > 0)
+                if not newly.any():
+                    break
+                A2[newly] = s_[newly] / n_[newly]
+                val = np.where(newly, A2, val); wgt = np.where(newly, 1.0, wgt)
+                bad = bad & ~newly
+                rings += 1
+            if bad.any():
+                A2[bad] = float(A2[good].mean()) if good.any() else 1.0
+            pa[:, 0] = pa[:, 1] = pa[:, 2] = A2.ravel().astype(np.float32)
+            img_ao.pixels.foreach_set(pa.ravel())
+            report["ao_fill"] = {"below": float(ao_fill), "texels_filled": nbad0, "of_covered": int(cov2.sum()),
+                                 "rings": rings, "left_to_mean": int(bad.sum()),
+                                 "rule": "AO < below = a bake origin inside the proxy soup: refilled from the covered "
+                                         "valid 3x3 neighbours ring by ring (opt-in light.ao_fill_below)"}
         mean_c = pc[cov_c, :3].mean(0) if cov_c.any() else np.full(3, 0.5)
         pc[~cov_c, :3] = mean_c; img_c.pixels.foreach_set(pc.ravel())
         # basecolor = albedo (sRGB) x AO (linear), back to sRGB: the one base-colour texture the glb carries

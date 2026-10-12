@@ -1,0 +1,316 @@
+{
+ "glb": "proxy/sand_drill_worm_proxy.glb",
+ "sha256": "e1a05901d81a78abf8bc75ec3ac7f2fbbbbf7cc17826493f079d0b35d8dc4652",
+ "seed": 56,
+ "model": "Pixal3D multi-view (meshgen, shared_frame)",
+ "views_sent": {
+  "front": "proxy/view_front.png",
+  "back": "proxy/view_back.png",
+  "right": "proxy/view_side.png"
+ },
+ "side_facing": "right",
+ "frame": {
+  "above_floor_px": 677,
+  "below_floor_px": 0,
+  "pad_px": 20,
+  "height_px": 718,
+  "views": {
+   "front": {
+    "crop_origin_px": [
+     22,
+     129
+    ],
+    "floor_row": 697,
+    "mask_bbox_px": [
+     42,
+     158,
+     453,
+     827
+    ]
+   },
+   "back": {
+    "crop_origin_px": [
+     462,
+     120
+    ],
+    "floor_row": 697,
+    "mask_bbox_px": [
+     482,
+     164,
+     850,
+     818
+    ]
+   },
+   "side": {
+    "crop_origin_px": [
+     884,
+     126
+    ],
+    "floor_row": 697,
+    "mask_bbox_px": [
+     904,
+     146,
+     1142,
+     824
+    ]
+   }
+  }
+ },
+ "generated": {
+  "via": "service",
+  "seed": null,
+  "duration_ms": null,
+  "wall_s": 123.5,
+  "vram": null,
+  "stats": null,
+  "framing": null,
+  "warnings": null,
+  "free_vram_gb_before": 8.86
+ },
+ "transform": {
+  "rotation": [
+   [
+    1.0,
+    0.0,
+    0.0
+   ],
+   [
+    0.0,
+    1.0,
+    0.0
+   ],
+   [
+    0.0,
+    0.0,
+    1.0
+   ]
+  ],
+  "offset": [
+   0.0012826472520828247,
+   -0.011210441589355469,
+   -0.501473069190979
+  ],
+  "scale": 6.826530612244898,
+  "rule": "v_sheet = scale * (R @ v_zup - offset); glTF (x, y, z) -> z-up (x, -z, y)",
+  "orientation_identity_iou": 0.8565,
+  "orientation_best_iou": 0.8565
+ },
+ "clipped_below_floor_px": {},
+ "scores": {
+  "front": {
+   "iou": 0.8984,
+   "iou_shape": 0.9008,
+   "aspect_rel": 0.0464,
+   "row_err_u": 0.082,
+   "row_err_pct": 2.5,
+   "w_u": 3.89,
+   "h_u": 6.64,
+   "ref_w_u": 4.11,
+   "ref_h_u": 6.69,
+   "scored": true
+  },
+  "back": {
+   "iou": 0.8773,
+   "iou_shape": 0.8812,
+   "aspect_rel": 0.0395,
+   "row_err_u": 0.155,
+   "row_err_pct": 5.1,
+   "w_u": 3.89,
+   "h_u": 6.64,
+   "ref_w_u": 3.68,
+   "ref_h_u": 6.54,
+   "scored": true
+  },
+  "side": {
+   "iou": 0.9152,
+   "iou_shape": 0.8621,
+   "aspect_rel": 0.0408,
+   "row_err_u": 0.065,
+   "row_err_pct": 2.7,
+   "w_u": 2.43,
+   "h_u": 6.64,
+   "ref_w_u": 2.38,
+   "ref_h_u": 6.78,
+   "scored": true
+  }
+ },
+ "mean_iou": 0.897,
+ "side_len_over_front_h": {
+  "mesh": 0.366,
+  "sheet": 0.356,
+  "rel_err": 0.0287
+ },
+ "front_w_over_h": {
+  "mesh": 0.586,
+  "sheet": 0.614
+ },
+ "gate": {
+  "pass": true,
+  "verdict": "reliable",
+  "rule": "mean IoU >= 0.75 and side length within 5%"
+ },
+ "sections": [
+  {
+   "z_frac": 0.06,
+   "z_u": 0.398,
+   "x_min_u": -0.2,
+   "x_max_u": 0.266,
+   "width_x_u": 0.465,
+   "y_front_u": -0.461,
+   "y_back_u": 0.053,
+   "depth_y_u": 0.514,
+   "y_centre_u": -0.204,
+   "points": 356
+  },
+  {
+   "z_frac": 0.18,
+   "z_u": 1.195,
+   "x_min_u": -0.635,
+   "x_max_u": 0.692,
+   "width_x_u": 1.327,
+   "y_front_u": -0.694,
+   "y_back_u": 0.546,
+   "depth_y_u": 1.24,
+   "y_centre_u": -0.074,
+   "points": 752
+  },
+  {
+   "z_frac": 0.3,
+   "z_u": 1.991,
+   "x_min_u": -1.77,
+   "x_max_u": 1.79,
+   "width_x_u": 3.561,
+   "y_front_u": -1.195,
+   "y_back_u": 1.083,
+   "depth_y_u": 2.278,
+   "y_centre_u": -0.056,
+   "points": 1814
+  },
+  {
+   "z_frac": 0.42,
+   "z_u": 2.787,
+   "x_min_u": -1.904,
+   "x_max_u": 1.906,
+   "width_x_u": 3.81,
+   "y_front_u": -1.014,
+   "y_back_u": 1.142,
+   "depth_y_u": 2.156,
+   "y_centre_u": 0.064,
+   "points": 3988
+  },
+  {
+   "z_frac": 0.54,
+   "z_u": 3.584,
+   "x_min_u": -1.701,
+   "x_max_u": 1.714,
+   "width_x_u": 3.414,
+   "y_front_u": -0.486,
+   "y_back_u": 0.814,
+   "depth_y_u": 1.3,
+   "y_centre_u": 0.164,
+   "points": 2246
+  },
+  {
+   "z_frac": 0.66,
+   "z_u": 4.38,
+   "x_min_u": -1.226,
+   "x_max_u": 1.237,
+   "width_x_u": 2.464,
+   "y_front_u": -0.356,
+   "y_back_u": 0.721,
+   "depth_y_u": 1.077,
+   "y_centre_u": 0.183,
+   "points": 1340
+  },
+  {
+   "z_frac": 0.78,
+   "z_u": 5.177,
+   "x_min_u": -0.862,
+   "x_max_u": 0.878,
+   "width_x_u": 1.74,
+   "y_front_u": -0.654,
+   "y_back_u": 0.664,
+   "depth_y_u": 1.319,
+   "y_centre_u": 0.005,
+   "points": 1444
+  },
+  {
+   "z_frac": 0.9,
+   "z_u": 5.973,
+   "x_min_u": -0.891,
+   "x_max_u": 0.897,
+   "width_x_u": 1.787,
+   "y_front_u": -0.583,
+   "y_back_u": 0.56,
+   "depth_y_u": 1.143,
+   "y_centre_u": -0.011,
+   "points": 1844
+  }
+ ],
+ "landmarks": {
+  "height_u": 6.637,
+  "top": {
+   "z_u": 6.637,
+   "x_u": -0.115,
+   "y_u": -0.085
+  },
+  "front_most": {
+   "y_u": -1.212,
+   "z_u": 2.015,
+   "note": "the most -Y point (snout / chest / beak tip)"
+  },
+  "rear_most": {
+   "y_u": 1.212,
+   "z_u": 2.425,
+   "note": "the most +Y point (tail)"
+  },
+  "length_y_u": 2.424,
+  "width_x_u": 3.887,
+  "widest_band": {
+   "z_u": 2.787,
+   "width_x_u": 3.81
+  },
+  "depth_at_intake_rows": {
+   "0.00": {
+    "z_u": 0.133,
+    "depth_y_u": 0.131,
+    "half_w_x_u": 0.179,
+    "sheet_half_w_u": 0.125
+   },
+   "0.10": {
+    "z_u": 0.664,
+    "depth_y_u": 0.783,
+    "half_w_x_u": 0.412,
+    "sheet_half_w_u": 0.405
+   },
+   "0.25": {
+    "z_u": 1.659,
+    "depth_y_u": 2.021,
+    "half_w_x_u": 1.624,
+    "sheet_half_w_u": 1.875
+   },
+   "0.50": {
+    "z_u": 3.318,
+    "depth_y_u": 1.649,
+    "half_w_x_u": 1.822,
+    "sheet_half_w_u": 1.955
+   },
+   "0.75": {
+    "z_u": 4.978,
+    "depth_y_u": 1.257,
+    "half_w_x_u": 0.924,
+    "sheet_half_w_u": 0.915
+   },
+   "0.90": {
+    "z_u": 5.973,
+    "depth_y_u": 1.143,
+    "half_w_x_u": 0.897,
+    "sheet_half_w_u": 0.965
+   }
+  }
+ },
+ "render": "proxy/sand_drill_worm_proxy_vs_sheet.png",
+ "notes": [],
+ "use": "3D REFERENCE ONLY: cite sections / landmark depths in the build's constants; the sheet is the spec and the rest pose stays symmetric (the proxy copies the sheet's pose)",
+ "units": "sheet units (1 u = 100 sheet px); z up from the floor, x = the creature's left/right (bbox centred), y = depth, front = -y"
+}
