@@ -13,7 +13,8 @@ views (comma list):
                                                crops out of the sheet), floor at the sheet's floor line, transparent film
 --pose: evaluate at one frame of a clip (default: the rest pose; a missing clip falls back to rest and says so).
 Cameras: front = on -Y looking +Y (the Conquest front), side = on +X (the unit's left; its front faces image-left like
-the house sheets' side view), back = on +Y.
+the house sheets' side view), back = on +Y. When intake.json's side_facing says the sheet's side view faces image-RIGHT
+(smart intake; goo_shield / soot_puff did this by hand), ortho_side moves to -X so the render still lies on the sheet.
 """
 import bpy, sys, os, math, json
 from mathutils import Vector
@@ -51,6 +52,8 @@ FOCUS_VIEWS = FOCUS.pop("views", {})
 AXIS = FOCUS.pop("axis_xy", [0.0, 0.0])
 INTAKE = os.path.join(ROOT, "design", "reference", UNIT, "intake.json")
 OF = json.load(open(INTAKE))["ortho_frame"] if os.path.exists(INTAKE) else None
+SIDE_RIGHT = (os.path.exists(INTAKE)
+              and ((json.load(open(INTAKE)).get("side_facing") or {}).get("facing") == "right"))
 dg = bpy.context.evaluated_depsgraph_get()
 lo = Vector((1e9, 1e9, 1e9)); hi = -lo
 for o in meshes:
@@ -147,6 +150,8 @@ for tag in views:
             cam.location = (ax, ay - 20.0, zc); cam.rotation_euler = (math.radians(90), 0, 0)
         elif tag == "ortho_back":                  # on +Y looking -Y: the unit's right on image right, as sheets draw it
             cam.location = (ax, ay + 20.0, zc); cam.rotation_euler = (math.radians(90), 0, math.radians(180))
+        elif SIDE_RIGHT:                           # the sheet's side view faces image-RIGHT: camera on -X
+            cam.location = (ax - 20.0, ay, zc); cam.rotation_euler = (math.radians(90), 0, math.radians(-90))
         else:
             cam.location = (ax + 20.0, ay, zc); cam.rotation_euler = (math.radians(90), 0, math.radians(90))
     else:

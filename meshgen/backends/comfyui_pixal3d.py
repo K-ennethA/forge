@@ -19,10 +19,13 @@ socket mapping and documents the azimuth convention.
 
 from __future__ import annotations
 
+import tempfile
+from pathlib import Path
+
 from . import multiview
 from .base import BackendError
-from .comfyui_base import (HF, MOGE_WEIGHT, NODE_SAVE, NODE_TRELLIS2_SWITCH,
-                           ComfyUIBackend)
+from .comfyui_base import (FRAMING_OPTIONS, HF, MOGE_WEIGHT, NODE_SAVE,
+                           NODE_TRELLIS2_SWITCH, ComfyUIBackend)
 
 
 class Pixal3DBackend(ComfyUIBackend):
@@ -40,6 +43,9 @@ class Pixal3DBackend(ComfyUIBackend):
     #: is the adapter that owns the ``views`` request surface.  Whether a given
     #: machine can RUN one is :meth:`multiview_readiness`, never this flag.
     supports_multiview = True
+    #: the multi-view framing options (shared_frame / carve_enclosed) are this
+    #: adapter's alone - they only mean something with a views block
+    option_names = ComfyUIBackend.option_names + FRAMING_OPTIONS
     diffusion_weight = (
         "diffusion_models",
         "pixal3d_int8_convrot.safetensors",
@@ -102,6 +108,15 @@ class Pixal3DBackend(ComfyUIBackend):
             "node": multiview.MULTIVIEW_NODE,
             "model": multiview.multiview_unet_name(),
             "on_unavailable": ["error", "front_only"],
+            "framing": {
+                "default": "per_view (each view cropped to its own matte at pad 1.1)",
+                "shared_frame": "options.shared_frame=true: ONE scale + vertical centre "
+                                "for every view (views cut at one px scale, rows aligned; "
+                                "alpha cut-outs used as the matte, else BiRefNet)",
+                "carve_enclosed": "options.carve_enclosed=true (with shared_frame): carve "
+                                  "background-coloured pockets out of the matte",
+                "warnings": "result.warnings[] code matte_filled_enclosed_background",
+            },
         })
         return data
 
@@ -116,8 +131,76 @@ class Pixal3DBackend(ComfyUIBackend):
     def build_multiview_graph(self, staged, plan, options, prefix) -> dict:
         graph = multiview.build_multiview_graph(
             self.load_multiview_workflow(), plan, staged,
-            fov_deg=plan["camera_angle_x_deg"])
+            fov_deg=plan["camera_angle_x_deg"],
+            framed=bool(plan.get("framing")))
         return self.finish_graph(graph, options or {}, prefix)
+
+    # -- shared framing (options.shared_frame) ----------------------------
+    def frame_views(self, plan, out_dir):
+        """Write one framed 1024 px image per view into ``out_dir``.
+
+        Masks: the image's own alpha cut-out when it has one (the caller's
+        matte wins - sheet_proxy carves its own), else BiRefNet through a
+        matte-only graph (no diffusion model loaded).  Fills
+        ``plan["framing"]`` with the layout and any enclosed-background
+        warnings; returns ``{view name: framed path}``.
+        """
+        from .. import framing
+        from PIL import Image
+
+        spec = plan["framing"]
+        loaded, sources, warnings = {}, {}, []
+        need_matte = []
+        for view in plan["views"]:
+            rgb, alpha = framing.load_rgba(view["path"])
+            mask = framing.mask_from_alpha(alpha)
+            loaded[view["name"]] = [rgb, mask]
+            sources[view["name"]] = "alpha" if mask is not None else "birefnet"
+            if mask is None:
+                need_matte.append(view)
+        if need_matte:
+            for view, mask in zip(need_matte, self._birefnet_mattes([v["path"] for v in need_matte])):
+                loaded[view["name"]][1] = mask
+        pockets = {}
+        for name, (rgb, mask) in loaded.items():
+            report = framing.enclosed_background(rgb, mask)
+            pockets[name] = {"regions": len(report["regions"]), "area_px": report["area_px"]}
+            if spec.get("carve_enclosed") and report["regions"]:
+                loaded[name][1] = framing.carve_enclosed(mask, report)
+                pockets[name]["carved"] = True
+            else:
+                warning = framing.matte_warning(name, report)
+                if warning:
+                    warnings.append(warning)
+        framed, layout = framing.shared_frame(
+            {name: (rgb, mask) for name, (rgb, mask) in loaded.items()},
+            size=spec.get("size", framing.FRAME_SIZE), pad=multiview.PAD_FACTOR)
+        paths = {}
+        for name, img in framed.items():
+            path = Path(out_dir) / f"framed_{name}.png"
+            Image.fromarray(img).save(path)
+            paths[name] = str(path)
+        layout["mask_source"] = sources
+        layout["enclosed_background"] = pockets
+        spec["layout"] = layout
+        spec["warnings"] = warnings
+        return paths
+
+    def _birefnet_mattes(self, paths):
+        """BiRefNet mattes for ``paths`` (bool masks at each image's size)."""
+        from .. import framing
+
+        loader = self.load_multiview_workflow().get(multiview.NODE_BG_REMOVAL_LOADER)
+        if loader is None:
+            raise BackendError(
+                f"{multiview.MULTIVIEW_WORKFLOW} has no node "
+                f"{multiview.NODE_BG_REMOVAL_LOADER} (background-removal loader) - "
+                "send the views with alpha cut-outs instead")
+        try:
+            return framing.birefnet_mattes(paths, config=self.config, client=self.client,
+                                           loader_node=loader)
+        except RuntimeError as exc:
+            raise BackendError(str(exc)) from None
 
     def stage_inputs(self, image_path, plan=None):
         """One staged copy per view; the handle is ``{view name: staged name}``.
@@ -130,13 +213,19 @@ class Pixal3DBackend(ComfyUIBackend):
         if plan is None:
             return super().stage_inputs(image_path, plan)
         staged = {}
+        tmp = tempfile.TemporaryDirectory(prefix="meshgen_framed_") if plan.get("framing") else None
         try:
+            sources = self.frame_views(plan, tmp.name) if tmp is not None else {}
             for view in plan["views"]:
-                staged[view["name"]] = self.client.stage_image(view["path"])
+                staged[view["name"]] = self.client.stage_image(
+                    sources.get(view["name"], view["path"]))
         except Exception:
             for name in staged.values():
                 self.client.unstage_image(name)
             raise
+        finally:
+            if tmp is not None:
+                tmp.cleanup()     # stage_image copied the framed files into ComfyUI's input dir
         return staged, list(staged.values())
 
     def graph_for(self, staged, options, prefix, plan=None):
@@ -160,7 +249,12 @@ class Pixal3DBackend(ComfyUIBackend):
         """
         options = options or {}
         views = options.get("views")
+        framing_opts = self.framing_options(options)
         if not views:
+            if framing_opts["shared_frame"]:
+                raise BackendError(
+                    "shared_frame frames MULTI-VIEW inputs on one scale; this "
+                    "request has no views block")
             return image_path, None, None
 
         records = (views if isinstance(views, list)
@@ -183,9 +277,16 @@ class Pixal3DBackend(ComfyUIBackend):
 
         # A request is worth the round-trip that /health is not: this one is
         # about to spend minutes of GPU time if it proceeds.
+        if framing_opts["shared_frame"]:
+            # one dict, shared by the plan (stage_inputs fills in the layout and
+            # warnings) and the note (so the result carries what was done)
+            plan["framing"] = {"mode": "shared",
+                               "carve_enclosed": framing_opts["carve_enclosed"],
+                               "size": 1024}
+
         state = self.multiview_readiness(use_client=True)
         if state["available"]:
-            return front, {
+            note = {
                 "requested": [record["name"] for record in records],
                 "used": True,
                 "view_count": plan["view_count"],
@@ -201,8 +302,11 @@ class Pixal3DBackend(ComfyUIBackend):
                     for view in plan["views"]
                 ],
                 "camera_rig": plan["transforms_json"],
-            }, plan
+            }
+            note["framing"] = plan.get("framing") or {"mode": "per_view"}
+            return front, note, plan
 
+        plan.pop("framing", None)       # a front-only fallback is a single-image run
         mode = options.get("on_unavailable", "error")
         if mode == "front_only":
             return front, {

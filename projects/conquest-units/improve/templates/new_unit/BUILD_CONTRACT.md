@@ -4,7 +4,8 @@ The scaffolded runner / render / clips / compose (new_unit_scaffold.py) work unc
 unit whose build honours this page. The REFERENCE IMPLEMENTATION is `firefly_build.py` +
 `firefly_parts.py` (commit f77dff6): read them first and copy their structure, helpers and idioms
 (sha, mesh_arrays, keep_islands, iso_cut, make_mat, repaint, geometry_digest, glb_carries, the
-clip keying loop). Shared kits, read-only: `magmoo_sdf.py` (SDF grid + primitives + marching
+clip keying loop) - EXCEPT its bake reference: firefly bakes against `me.shade_smooth()` (~:966) and
+ships `me.shade_flat()` (~:1009). New units bake against FLAT (step 5 below). Shared kits, read-only: `magmoo_sdf.py` (SDF grid + primitives + marching
 tets), `palettes.py`, `rigkit.py` (vine_weights / vine_wave / assign_action), `export_glb.py`.
 
 ## Files the lane writes
@@ -27,6 +28,15 @@ tets), `palettes.py`, `rigkit.py` (vine_weights / vine_wave / assign_action), `e
    sheet with a double-sided material is intended — report every open part with its reason).
 5. Palette -> Col / Glow corner colours (+ Col alpha if translucent regions), flat shaded,
    Smart UV, bake normal + AO from HIGH (+ closed parts) at seed 0.
+   **Bake against the FLAT low (the default for every new unit, 2026-10-11).** Call `me.shade_flat()`
+   BEFORE `bpy.ops.object.bake` and never switch the low to smooth for the bake: the normal map then
+   carries "flat face -> smooth high", which is exactly what the game draws (the low ships flat; the
+   contract checker's flat_shaded rule). Baked against a SMOOTH reference and shipped flat, the map
+   encodes high-vs-smooth-low, the facets stay and coarse rows read as horizontal RIBS (ember_eye v1:
+   "the coarse flame rows rendered as horizontal ribs"; the audit's popcorn / ribbed reads on holly,
+   eclipse_wolf, crystal_canine). Units already on the flat reference: ember_eye (`ember_eye_build.py`
+   ~:916), fogeist (~:879), spectormn, halo_sentinel, goo_shield. The scaffolded compose prints
+   `GATE bake_reference=flat` (or `SMOOTH` + the contract line) from the build source every run.
 6. Rig: `root` (non-deform, at origin) > deform bones; <= 4 influences, weights sum 1.
 7. Clips named from rigkit.ALLOWED_CLIP_NAMES (idle + walk minimum for clip_names), integer
    harmonics per loop (frame N+1 == frame 1), every deform bone keyed in every clip, LINEAR,
@@ -52,11 +62,28 @@ tets), `palettes.py`, `rigkit.py` (vine_weights / vine_wave / assign_action), `e
   the centring shift; `axis_xy` = the sheet's character axis in world X/Y (the ortho cameras
   centre on it).
 
+## The 3D reference (when intake.json has a `proxy` block)
+`improve/sheet_proxy.py` froze a Pixal3D 3-view mesh of the sheet (sha256 in the block), normalised to
+the sheet frame and scored against it. It is a REFERENCE ONLY: the build stays procedural (one SDF
+body, regions, closed parts, rig, digest twins) and nothing of the proxy is imported into the scene.
+- `proxy.gate.pass` true ("reliable"): cite `proxy.sections` (x / y extents at 8 height bands) and
+  `proxy.landmarks` (front-most / rear-most points, depth at the intake's half-width rows) for every
+  DEPTH constant the sheet cannot give (body depth, head length, neck / tail thickness front to back),
+  e.g. `BODY_DEPTH = 2.31  # proxy section z 1.85 u: depth_y 2.31 (sha 7faaba56)`.
+- `proxy.gate.pass` false: the verdict says why ("proxy unreliable, work from the sheet"); depths come
+  from the side view alone, and the report says so.
+- The proxy copies the sheet's POSE (a swung tail, staggered legs); the rest pose stays symmetric.
+  Where the proxy and the sheet disagree, the SHEET wins.
+
 ## Gates the lane must quote (from the runner's output)
 DIGEST line (identical=True, or except-bakes with gate PASS); both contract checkers' `N checks,
 M failed` (cell_fit is report-only: natural sheet-unit scale; clip_names fails only if a clip
 is genuinely missing); tris vs the declared tier window; open-edge table; the
-sheet_vs_model overlay looked at, with the lane's own read of where the silhouette departs.
+sheet_vs_model overlay looked at, with the lane's own read of where the silhouette departs; and
+the NUMERIC SHEET GATE lines the runner prints (`GATE view=... iou=... row_err=...% | proxy
+iou=...`, `GATE mean_iou=...`, `GATE bake_reference=flat`). A view FLAGGED "more than 0.05 below
+the proxy" is a silhouette the free 3D reference already gets closer to: fix it or say why the
+sheet wants the build's shape (the proxy also reads fused shards / thin parts badly).
 
 ## Known kit hazards (workarounds live in the BUILD unless the kit says it handles one)
 - **SDF grid values at exactly 0** (magmoo_sdf.polygonise): HANDLED IN THE KIT since 2026-10-09. polygonise pushes

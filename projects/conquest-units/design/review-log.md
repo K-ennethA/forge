@@ -2559,3 +2559,20 @@ a foot long" and "if i did not give height then those heights ae fine".
 Applied: leaf_bird target 0.1524 m (6 in) with a 1 ft (0.3048 m) length, so
 the model must be re-proportioned to L/H ~2 (v3 is 4.45). petal_cobra,
 shield_rodent and spectormn keep their lineup placeholder heights.
+
+## 2026-10-11 — Pixal3D trial verdict (artist verbatim)
+
+"all of the work it did looks better than what we did, except for the
+called out issues of model interpertation etc, but it looks 'better'"
+Binding reading: for NEW units, move toward using the Pixal3D 3-view mesh
+as the BASE (option i, "generate + finish"), with our system fixing what it
+gets wrong:
+- symmetric rest pose (mirror-average, not bisect);
+- crisp crystal / blade / horn / crown parts swapped in for its fused shard
+  noise;
+- palette-snapped colours (no drift);
+- clean topology at the tier budget;
+- rig + clips;
+- sheet-score gates.
+The reference-only lane (ii) in progress is the prerequisite (the shared
+frame fix, the proxy tool, smart intake, the numeric gate).

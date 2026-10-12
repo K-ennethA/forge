@@ -9,11 +9,15 @@ Stamps the unit-agnostic half of the firefly pattern out of improve/templates/ne
     improve/<unit>_compose.py     sheet-vs-model + contact sheet (crops from intake.json)
     improve/<unit>_bake_diff.py   the pinned two-run bake tolerance gate
     improve/<unit>_STATE.md       the per-unit STATE skeleton (lane-conventions 'context economy')
-and makes palettes/<unit>/ + renders/<unit>/. The unit-SPECIFIC half -- <unit>_build.py, <unit>_parts.py and
+    improve/<unit>_lane_brief.md  the lane brief DRAFT: templates/new_unit/lane_brief.md.tmpl with {{UNIT}}, {{SHEET}},
+                                  {{INTAKE_NOTES}} (smart intake's intake_notes) and {{PROXY}} (the sheet_proxy gate
+                                  verdict + sha, or why there is none) filled in; the orchestrator fills {{TITLE}},
+                                  {{DATE}} and {{DELTA}} before dispatching
+and makes palettes/<unit>/ + renders/<unit>/. It also prints the intake notes and the proxy status. The unit-SPECIFIC half -- <unit>_build.py, <unit>_parts.py and
 palettes/<unit>/default.json -- is the build lane's deliverable, written to templates/new_unit/BUILD_CONTRACT.md.
 Existing files are never overwritten without --force (a re-scaffold must not clobber a tuned runner).
 """
-import os, sys, datetime
+import json, os, sys, datetime
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.normpath(os.path.join(HERE, ".."))
@@ -52,5 +56,32 @@ if not os.path.exists(state) or FORCE:
     done.append((os.path.basename(state), "written"))
 for d in (os.path.join(ROOT, "palettes", UNIT), os.path.join(ROOT, "renders", UNIT)):
     os.makedirs(d, exist_ok=True)
+
+# the lane brief draft: what the smart intake and the sheet proxy know, pre-filled
+data = json.load(open(intake))
+notes = data.get("intake_notes") or ["(pre-smart intake: no notes - check intake_overlay.png yourself)"]
+proxy = data.get("proxy")
+if proxy:
+    g = proxy.get("gate") or {}
+    proxy_line = ("intake.json `proxy` block - %s (mean IoU %.2f, side length %s, sha %s, seed %s); panel: "
+                  "design/reference/%s/%s" % (g.get("verdict"), proxy.get("mean_iou", float("nan")),
+                                             "%+.1f%%" % (100 * proxy["side_len_over_front_h"]["rel_err"])
+                                             if proxy.get("side_len_over_front_h") else "n/a",
+                                             (proxy.get("sha256") or "")[:8], proxy.get("seed"), UNIT, proxy.get("render")))
+else:
+    proxy_line = ("none (sheet_proxy.py not run: GPU busy, or skipped) - work from the sheet; depths from the side "
+                  "view alone")
+brief = os.path.join(HERE, UNIT + "_lane_brief.md")
+if not os.path.exists(brief) or FORCE:
+    txt = open(os.path.join(T, "lane_brief.md.tmpl"), encoding="utf-8").read()
+    txt = (txt.replace("{{UNIT}}", UNIT).replace("{{SHEET}}", data.get("sheet", "design/reference/%s-character-sheet.*" % UNIT))
+           .replace("{{INTAKE_NOTES}}", "\n".join("  - " + n for n in notes)).replace("{{PROXY}}", proxy_line))
+    open(brief, "w", encoding="utf-8").write(txt)
+    done.append((os.path.basename(brief), "written (fill {{TITLE}} {{DATE}} {{DELTA}})"))
+else:
+    done.append((os.path.basename(brief), "kept (exists)"))
 for f, s in done:
     print("SCAFFOLD %-28s %s" % (f, s))
+for n in notes:
+    print("INTAKE_NOTE", n)
+print("PROXY", proxy_line)

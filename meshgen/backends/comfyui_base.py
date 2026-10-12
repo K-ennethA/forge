@@ -113,7 +113,16 @@ HARD_SURFACE_PRESET = {
 #: request surface; they are resolved before a graph is built.  ``hard_surface``
 #: is a macro over two graph options, expanded in :meth:`resolved_options`.
 NON_GRAPH_OPTIONS = {"backend", "views", "on_unavailable", "multiview_fov_deg",
-                     "hard_surface", "ensemble"}
+                     "hard_surface", "ensemble", "shared_frame", "carve_enclosed"}
+
+#: The multi-view framing options (meshgen.framing).  Both default OFF, so a
+#: request that names neither runs the per-view crop chain exactly as before.
+#: ``shared_frame``   frame every view on ONE scale and vertical centre in
+#:                    meshgen (views cut at one px scale, rows aligned) and
+#:                    bypass the per-view RemoveBackground + crop-to-mask.
+#: ``carve_enclosed`` with shared_frame: cut background-coloured pockets the
+#:                    subject encloses back out of the matte before framing.
+FRAMING_OPTIONS = ("shared_frame", "carve_enclosed")
 
 #: Every KSampler in both templates, as ``(stage, node id, offset)``.  ``seed``
 #: is ONE request option and reaches all four: stage seed = ``seed + offset``
@@ -407,6 +416,23 @@ class ComfyUIBackend(Backend):
     # -- capabilities -----------------------------------------------------
     option_names = tuple(OPTION_SPEC) + ("hard_surface", "ensemble")
 
+    def framing_options(self, options) -> dict:
+        """``shared_frame`` / ``carve_enclosed`` as strict booleans (both False
+        when absent - the backward-compatible default)."""
+        out = {}
+        for key in FRAMING_OPTIONS:
+            raw = (options or {}).get(key, False)
+            try:
+                out[key] = _boolean(raw)
+            except ValueError:
+                raise BackendError(f"option {key}={raw!r} is not a boolean") from None
+        if out["carve_enclosed"] and not out["shared_frame"]:
+            raise BackendError(
+                "carve_enclosed needs shared_frame: meshgen can only carve a matte it "
+                "computed itself - without shared_frame the matte is made inside the "
+                "ComfyUI graph (the job result still WARNS about enclosed pockets)")
+        return out
+
     def seed_capabilities(self) -> dict:
         data = super().seed_capabilities()
         data.update({
@@ -441,6 +467,10 @@ class ComfyUIBackend(Backend):
                 f"backend {self.name!r} does not accept multi-view input; "
                 "send a single image_path"
             )
+        if self.framing_options(options)["shared_frame"]:
+            raise BackendError(
+                "shared_frame frames MULTI-VIEW inputs on one scale; this request "
+                "has no views block")
         return image_path, None, None
 
     def stage_inputs(self, image_path, plan=None):
@@ -517,6 +547,9 @@ class ComfyUIBackend(Backend):
         report = None
 
         staged, staged_names = self.stage_inputs(image_path, multiview_plan)
+        framing = (multiview_plan or {}).get("framing") or {}
+        warnings = list(framing.get("warnings") or [])
+        entry = None
         try:
             if ensemble_options["best_of"] > 1:
                 result, report = self._run_best_of(
@@ -576,7 +609,43 @@ class ComfyUIBackend(Backend):
         if report is not None:
             report["wall_ms"] = duration_ms
             payload["ensemble"] = report
+        if entry is not None and not framing:
+            warnings += self.matte_warnings(entry, image_path, multiview_plan)
+        if warnings:
+            payload["warnings"] = warnings
         return payload
+
+    # -- matte check (meshgen.framing) -------------------------------------
+    def matte_warnings(self, entry, image_path, plan=None) -> list:
+        """Enclosed-background warnings for the mattes the graph computed.
+
+        Reads each chain's ``MaskPreview`` (the BiRefNet matte at the input's
+        own size) back out of the history entry and checks it against the
+        caller's image.  Purely advisory: any failure here (no numpy, a preview
+        that was not written) returns no warning, never a failed job.
+        """
+        try:
+            from .. import framing
+            from . import multiview, structure_probe
+            if plan:
+                views = [(v["name"], multiview.VIEW_CHAIN_MASK[v["socket"]], v["path"])
+                         for v in plan["views"]]
+            else:
+                views = [("front", structure_probe.NODE_FRONT_MASK, image_path)]
+            out = []
+            for name, node_id, path in views:
+                found = [p for p in structure_probe.find_images(entry, node_id, self.config)
+                         if Path(p).is_file()]
+                if not found or not path:
+                    continue
+                rgb, _alpha = framing.load_rgba(path)
+                mask = framing.read_mask_image(found[-1], shape=rgb.shape[:2])
+                warning = framing.matte_warning(name, framing.enclosed_background(rgb, mask))
+                if warning:
+                    out.append(warning)
+            return out
+        except Exception:                              # noqa: BLE001 - advisory only
+            return []
 
     # -- unscored fan-out (/generate_ensemble) -----------------------------
     def generate_candidates(self, image_path, options, out_path, seeds,

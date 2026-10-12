@@ -977,6 +977,45 @@ Multi-view inherits `VRAM_SAFE_DEFAULTS` unchanged, and nothing new was invented
 - **System RAM is the real multi-view budget**: 21.0 GB peak of 31.6 GB at these
   settings. A 16 GB machine should expect to swap at 4 views.
 
+### Framing: per-view crops (default) vs `shared_frame`
+
+By default each view goes through its own `RemoveBackground -> ImageCropToMask(pad 1.1)`. That means each view
+is scaled so its OWN silhouette fills the frame. The rig assumes one object at one scale, so a long quadruped's
+side view comes out shrunk against its front. The 2026-10-11 conquest-units trial measured this on gemwing: the
+side came out 0.82x.
+
+`options.shared_frame: true` (Pixal3D with `views` only) frames every view in meshgen instead (`meshgen/framing.py`):
+- **One scale for every view.** The object's largest extent spans `1/1.1` of 1024 px. That extent is either the
+  union of the views' row spans or the widest view.
+- **One vertical centre** for every view.
+- **Each view is centred on its own silhouette bbox.**
+- **The per-view chains are bypassed.** `LoadImage` feeds the pass-through preview, and the preview feeds the
+  socket.
+
+The contract: the views are cut at ONE pixel scale with their rows aligned. That means the same image height, and
+row r is the same height on the object in every view. Different heights are refused.
+
+The matte for each view comes from:
+1. the image's alpha cut-out, when it has one;
+2. otherwise a BiRefNet-only graph (no diffusion model is loaded).
+
+On the trial sheets this took mean silhouette IoU from 0.73 / 0.77 / 0.91 (per-view crops) to 0.76 / 0.79 / 0.93.
+
+**Enclosed background.** BiRefNet fills background the subject encloses: the eclipse wolf's horn ring came back
+as a disc. `framing.enclosed_background` finds such pockets.
+
+How it tells a pocket from the subject:
+- **What does not work:** distance from the background colour, and texture. Near-black fur sits as close to the
+  background as the pocket does.
+- **What does work:** chromaticity. A pocket keeps the sheet's own tint, even when a glow brightens it.
+
+What it does with the pockets:
+- **Default path:** the result carries `warnings[]` with code `matte_filled_enclosed_background`. Nothing else
+  changes. It is read back from each chain's `MaskPreview`, and it is advisory: a failure here never fails the job.
+- **With shared_frame:** `options.carve_enclosed: true` cuts the pockets out before framing.
+
+Both options default off, and a request that names neither runs exactly as before.
+
 ### If it is not available
 
 `/health` carries the verdict per backend, and `POST /generate3d` with `views` on

@@ -411,14 +411,31 @@ VIEW_CHAIN_NODES = {
 #: README's warning about "preview-looking" nodes being load-bearing here).
 VIEW_CHAIN_OUTPUT = {name: nodes["chain"][-1] for name, nodes in VIEW_CHAIN_NODES.items()}
 
+#: The ``MaskPreview`` in each chain: the background-removal matte at the input
+#: image's own size.  Read back after a run for the enclosed-background check
+#: (:func:`meshgen.framing.enclosed_background`).  ``front`` is node 303 in both
+#: templates (structure_probe.NODE_FRONT_MASK).
+VIEW_CHAIN_MASK = {name: nodes["chain"][2] for name, nodes in VIEW_CHAIN_NODES.items()}
+
+#: The template's shared ``LoadBackgroundRemovalModel`` (BiRefNet), feeding every
+#: chain's RemoveBackground.  Dropped from a FRAMED graph (nothing consumes it).
+NODE_BG_REMOVAL_LOADER = "193"
+
 
 def build_multiview_graph(graph: dict, plan: dict, staged: dict,
-                          fov_deg: float = DEFAULT_FOV_DEG) -> dict:
+                          fov_deg: float = DEFAULT_FOV_DEG,
+                          framed: bool = False) -> dict:
     """Wire a staged multi-view request into the multi-view template.
 
     ``graph``  - a loaded copy of :data:`MULTIVIEW_WORKFLOW` (all four chains).
     ``plan``   - :func:`stage_plan` output.
     ``staged`` - ``{view name: filename inside ComfyUI's input dir}``.
+    ``framed`` - the staged images are ALREADY framed (``options.shared_frame``:
+                 :func:`meshgen.framing.shared_frame`, subject on black at one
+                 scale), so each view's background removal and per-view
+                 crop-to-mask are bypassed: ``LoadImage`` feeds the chain's
+                 pass-through preview, which feeds the socket.  Re-cropping a
+                 framed view per view would undo the shared scale.
 
     Returns the graph with every requested view wired to the socket its AZIMUTH
     says it is, and every chain that was not requested deleted along with its
@@ -458,11 +475,29 @@ def build_multiview_graph(graph: dict, plan: dict, staged: dict,
         if socket in wanted:
             graph[chain["load"]]["inputs"]["image"] = wanted[socket]
             node["inputs"][socket] = [VIEW_CHAIN_OUTPUT[socket], 0]
+            if framed:
+                # the trial's measured rewire (2026-10-11, mv3B): the preview is
+                # a pass-through, so it keeps feeding the socket, now straight
+                # from the framed LoadImage
+                graph[VIEW_CHAIN_OUTPUT[socket]]["inputs"]["images"] = [chain["load"], 0]
+                for node_id in chain["chain"][:-1]:
+                    graph.pop(node_id, None)
         else:
             node["inputs"].pop(socket, None)
             for node_id in (chain["load"],) + tuple(chain["chain"]):
                 graph.pop(node_id, None)
+    if framed and not _consumed(graph, NODE_BG_REMOVAL_LOADER):
+        graph.pop(NODE_BG_REMOVAL_LOADER, None)
     return graph
+
+
+def _consumed(graph: dict, node_id: str) -> bool:
+    """Does any node still take an input from ``node_id``?"""
+    for other in graph.values():
+        for value in (other.get("inputs") or {}).values():
+            if isinstance(value, list) and len(value) == 2 and value[0] == node_id:
+                return True
+    return False
 
 
 def multiview_unet_name() -> str:
