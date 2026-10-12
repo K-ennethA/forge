@@ -1,276 +1,286 @@
-[lineup    0.0s] rigged/*.glb = 50, units (skins/probes/skips excluded) = 50
-[lineup    0.0s] conquest tree: C:\Users\kenne\OneDrive\Desktop\git\Conquest branch: feat/forge-unit-import forge glbs in game: 28
-18:00:52 | INFO: Data are loaded, start creating Blender stuff
-18:00:52 | INFO: Blender create Mesh node aquaoct
-18:00:52 | INFO: glTF import finished in 0.24s
+[lineup    0.0s] rigged/*.glb = 52, units (skins/probes/skips excluded) = 52
+[lineup    0.0s] conquest tree: C:\Users\kenne\OneDrive\Desktop\git\Conquest branch: feat/forge-unit-import forge glbs in game: 51
+15:54:16 | INFO: Data are loaded, start creating Blender stuff
+15:54:16 | INFO: Blender create Mesh node aquaoct
+15:54:17 | INFO: glTF import finished in 0.22s
 [lineup    0.4s] aquaoct          pose=idle:1     rest_h=5.5263 disp_h=5.5205 tris=21188 (0.4s)
-18:00:52 | INFO: Data are loaded, start creating Blender stuff
-18:00:52 | INFO: Blender create Mesh node barkling_mesh
-18:00:52 | INFO: glTF import finished in 0.08s
+15:54:17 | INFO: Data are loaded, start creating Blender stuff
+15:54:17 | INFO: Blender create Mesh node barkling_mesh
+15:54:17 | INFO: glTF import finished in 0.07s
 [lineup    0.5s] barkling         pose=idle:1     rest_h=1.3934 disp_h=1.3906 tris=5000 (0.1s)
-18:00:52 | INFO: Data are loaded, start creating Blender stuff
-18:00:52 | INFO: Blender create Mesh node blightcap_mesh
-18:00:52 | INFO: glTF import finished in 0.05s
+15:54:17 | INFO: Data are loaded, start creating Blender stuff
+15:54:17 | INFO: Blender create Mesh node blightcap_mesh
+15:54:17 | INFO: glTF import finished in 0.04s
 [lineup    0.6s] blightcap        pose=idle:1     rest_h=1.5690 disp_h=1.5804 tris=5000 (0.1s)
-18:00:52 | INFO: Data are loaded, start creating Blender stuff
-18:00:52 | INFO: Blender create Mesh node bombee
-18:00:53 | INFO: glTF import finished in 0.15s
-[lineup    0.8s] bombee           pose=idle:1     rest_h=4.6426 disp_h=4.7105 tris=17034 (0.2s)
-18:00:53 | INFO: Data are loaded, start creating Blender stuff
-18:00:53 | INFO: Blender create Mesh node canine_bat
-18:00:53 | INFO: glTF import finished in 0.20s
-[lineup    1.1s] canine_bat       pose=idle:1     rest_h=6.0399 disp_h=6.0604 tris=18578 (0.3s)
-18:00:53 | INFO: Data are loaded, start creating Blender stuff
-18:00:53 | INFO: Blender create Mesh node chest_monster
-18:00:53 | INFO: glTF import finished in 0.10s
-[lineup    1.2s] chest_monster    pose=idle:1     rest_h=4.8361 disp_h=4.8399 tris=13832 (0.2s)
-18:00:53 | INFO: Data are loaded, start creating Blender stuff
-18:00:53 | INFO: Blender create Mesh node crystal_canine
-18:00:53 | INFO: glTF import finished in 0.30s
-[lineup    1.6s] crystal_canine   pose=idle:1     rest_h=6.2018 disp_h=6.1972 tris=18412 (0.4s)
-18:00:53 | INFO: Data are loaded, start creating Blender stuff
-18:00:53 | INFO: Blender create Mesh node duskmaw
-18:00:54 | INFO: glTF import finished in 0.36s
-[lineup    2.1s] duskmaw          pose=idle:1     rest_h=41.7073 disp_h=41.7073 tris=29398 (0.5s)
-18:00:54 | INFO: Data are loaded, start creating Blender stuff
-18:00:54 | INFO: Blender create Mesh node eclipse_wolf
-18:00:54 | INFO: glTF import finished in 0.27s
-[lineup    2.4s] eclipse_wolf     pose=idle:1     rest_h=6.3300 disp_h=6.3255 tris=21872 (0.3s)
-18:00:54 | INFO: Data are loaded, start creating Blender stuff
-18:00:54 | INFO: Blender create Mesh node eldroot4_mesh
-18:00:55 | INFO: glTF import finished in 0.44s
-[lineup    3.0s] eldroot          pose=idle:1     rest_h=4.5605 disp_h=4.5520 tris=28996 (0.6s)
-18:00:55 | INFO: Data are loaded, start creating Blender stuff
-18:00:55 | INFO: Blender create Mesh node elias
-18:00:55 | INFO: Blender create Mesh node elias_book
-18:00:55 | INFO: Blender create Mesh node elias_staff
-18:00:55 | INFO: glTF import finished in 0.42s
-[lineup    3.5s] elias            pose=rest       rest_h=1.8605 disp_h=1.8605 tris=48519 (0.6s)
-18:00:55 | INFO: Data are loaded, start creating Blender stuff
-18:00:55 | INFO: Blender create Mesh node ember_eye
-18:00:56 | INFO: glTF import finished in 0.18s
-[lineup    3.8s] ember_eye        pose=idle:1     rest_h=6.9589 disp_h=6.9298 tris=19532 (0.2s)
-18:00:56 | INFO: Data are loaded, start creating Blender stuff
-18:00:56 | INFO: Blender create Mesh node ember_stump
-18:00:56 | INFO: glTF import finished in 0.22s
-[lineup    4.1s] ember_stump      pose=idle:1     rest_h=6.1064 disp_h=6.1575 tris=21668 (0.3s)
-18:00:56 | INFO: Data are loaded, start creating Blender stuff
-18:00:56 | INFO: Blender create Mesh node eye_totem
-18:00:56 | INFO: glTF import finished in 0.23s
-[lineup    4.4s] eye_totem        pose=idle:1     rest_h=6.7029 disp_h=6.6988 tris=19824 (0.3s)
-18:00:56 | INFO: Data are loaded, start creating Blender stuff
-18:00:56 | INFO: Blender create Mesh node firefly
-18:00:56 | INFO: Blender create Mesh node firefly_flame
-18:00:56 | INFO: glTF import finished in 0.22s
-[lineup    4.6s] firefly          pose=idle:1     rest_h=7.5131 disp_h=7.5018 tris=20798 (0.3s)
-18:00:57 | INFO: Data are loaded, start creating Blender stuff
-18:00:57 | INFO: Blender create Mesh node firesprite
-18:00:57 | INFO: Blender create Mesh node firesprite_wand
-18:00:57 | INFO: glTF import finished in 0.27s
-[lineup    5.0s] firesprite       pose=idle:1     rest_h=4.2850 disp_h=4.2618 tris=17576 (0.3s)
-18:00:57 | INFO: Data are loaded, start creating Blender stuff
-18:00:57 | INFO: Blender create Mesh node fogeist
-18:00:57 | INFO: glTF import finished in 0.25s
-[lineup    5.3s] fogeist          pose=idle:1     rest_h=3.0447 disp_h=2.9292 tris=18762 (0.3s)
-18:00:57 | INFO: Data are loaded, start creating Blender stuff
-18:00:57 | INFO: Blender create Mesh node gemwing_dragon
-18:00:58 | INFO: glTF import finished in 0.36s
-[lineup    5.8s] gemwing_dragon   pose=idle:1     rest_h=6.4828 disp_h=6.3708 tris=28248 (0.5s)
-18:00:58 | INFO: Data are loaded, start creating Blender stuff
-18:00:58 | INFO: Blender create Mesh node geode
-18:00:58 | INFO: glTF import finished in 0.07s
-[lineup    5.9s] geode            pose=idle:1     rest_h=24.0355 disp_h=24.0355 tris=5704 (0.1s)
-18:00:58 | INFO: Data are loaded, start creating Blender stuff
-18:00:58 | INFO: Blender create Mesh node goo_shield
-18:00:58 | INFO: glTF import finished in 0.16s
-[lineup    6.1s] goo_shield       pose=idle:1     rest_h=5.2139 disp_h=5.2768 tris=15428 (0.2s)
-18:00:58 | INFO: Data are loaded, start creating Blender stuff
-18:00:58 | INFO: Blender create Mesh node halo_sentinel
-18:00:58 | INFO: glTF import finished in 0.24s
-[lineup    6.4s] halo_sentinel    pose=idle:1     rest_h=6.0659 disp_h=6.0383 tris=20602 (0.3s)
-18:00:58 | INFO: Data are loaded, start creating Blender stuff
-18:00:58 | INFO: Blender create Mesh node holly_snowman
-18:00:58 | INFO: glTF import finished in 0.19s
-[lineup    6.6s] holly_snowman    pose=idle:1     rest_h=5.9200 disp_h=5.9427 tris=19214 (0.3s)
-18:00:58 | INFO: Data are loaded, start creating Blender stuff
-18:00:59 | INFO: Blender create Mesh node lava_komodo
-18:00:59 | INFO: glTF import finished in 0.22s
-[lineup    6.9s] lava_komodo      pose=idle:1     rest_h=4.5980 disp_h=4.6185 tris=19074 (0.3s)
-18:00:59 | INFO: Data are loaded, start creating Blender stuff
-18:00:59 | INFO: Blender create Mesh node leaf_bird
-18:00:59 | INFO: glTF import finished in 0.17s
-[lineup    7.2s] leaf_bird        pose=idle:1     rest_h=1.4480 disp_h=1.4478 tris=14556 (0.2s)
-18:00:59 | INFO: Data are loaded, start creating Blender stuff
-18:00:59 | INFO: Blender create Mesh node lyra
-18:00:59 | INFO: Blender create Mesh node lyra_books
-18:00:59 | INFO: glTF import finished in 0.49s
-[lineup    7.8s] lyra             pose=rest       rest_h=1.7507 disp_h=1.7507 tris=48108 (0.6s)
-18:01:00 | INFO: Data are loaded, start creating Blender stuff
-18:01:00 | INFO: Blender create Mesh node magmoo
-18:01:00 | INFO: glTF import finished in 0.66s
+15:54:17 | INFO: Data are loaded, start creating Blender stuff
+15:54:17 | INFO: Blender create Mesh node bombee
+15:54:17 | INFO: glTF import finished in 0.12s
+[lineup    0.7s] bombee           pose=idle:1     rest_h=4.6426 disp_h=4.7105 tris=17034 (0.2s)
+15:54:17 | INFO: Data are loaded, start creating Blender stuff
+15:54:17 | INFO: Blender create Mesh node canine_bat
+15:54:17 | INFO: glTF import finished in 0.16s
+[lineup    0.9s] canine_bat       pose=idle:1     rest_h=6.0399 disp_h=6.0604 tris=18578 (0.2s)
+15:54:17 | INFO: Data are loaded, start creating Blender stuff
+15:54:17 | INFO: Blender create Mesh node chest_monster
+15:54:17 | INFO: glTF import finished in 0.08s
+[lineup    1.1s] chest_monster    pose=idle:1     rest_h=4.8361 disp_h=4.8399 tris=13832 (0.1s)
+15:54:17 | INFO: Data are loaded, start creating Blender stuff
+15:54:17 | INFO: Blender create Mesh node crystal_canine
+15:54:18 | INFO: glTF import finished in 0.28s
+[lineup    1.4s] crystal_canine   pose=idle:1     rest_h=6.2367 disp_h=6.2089 tris=20000 (0.4s)
+15:54:18 | INFO: Data are loaded, start creating Blender stuff
+15:54:18 | INFO: Blender create Mesh node duskmaw
+15:54:18 | INFO: glTF import finished in 0.25s
+[lineup    1.8s] duskmaw          pose=idle:1     rest_h=41.7073 disp_h=41.7073 tris=29398 (0.3s)
+15:54:18 | INFO: Data are loaded, start creating Blender stuff
+15:54:18 | INFO: Blender create Mesh node eclipse_wolf
+15:54:18 | INFO: glTF import finished in 0.23s
+[lineup    2.1s] eclipse_wolf     pose=idle:1     rest_h=6.3300 disp_h=6.3255 tris=21872 (0.3s)
+15:54:18 | INFO: Data are loaded, start creating Blender stuff
+15:54:18 | INFO: Blender create Mesh node eldroot4_mesh
+15:54:19 | INFO: glTF import finished in 0.42s
+[lineup    2.6s] eldroot          pose=idle:1     rest_h=4.5605 disp_h=4.5520 tris=28996 (0.6s)
+15:54:19 | INFO: Data are loaded, start creating Blender stuff
+15:54:19 | INFO: Blender create Mesh node elias
+15:54:19 | INFO: Blender create Mesh node elias_book
+15:54:19 | INFO: Blender create Mesh node elias_staff
+15:54:19 | INFO: glTF import finished in 0.43s
+[lineup    3.1s] elias            pose=rest       rest_h=1.8605 disp_h=1.8605 tris=48519 (0.5s)
+15:54:19 | INFO: Data are loaded, start creating Blender stuff
+15:54:19 | INFO: Blender create Mesh node ember_eye
+15:54:19 | INFO: glTF import finished in 0.15s
+[lineup    3.4s] ember_eye        pose=idle:1     rest_h=6.9589 disp_h=6.9298 tris=19532 (0.2s)
+15:54:20 | INFO: Data are loaded, start creating Blender stuff
+15:54:20 | INFO: Blender create Mesh node ember_stump
+15:54:20 | INFO: glTF import finished in 0.20s
+[lineup    3.6s] ember_stump      pose=idle:1     rest_h=6.1064 disp_h=6.1575 tris=21668 (0.3s)
+15:54:20 | INFO: Data are loaded, start creating Blender stuff
+15:54:20 | INFO: Blender create Mesh node eye_totem
+15:54:20 | INFO: glTF import finished in 0.23s
+[lineup    3.9s] eye_totem        pose=idle:1     rest_h=6.7029 disp_h=6.6988 tris=19824 (0.3s)
+15:54:20 | INFO: Data are loaded, start creating Blender stuff
+15:54:20 | INFO: Blender create Mesh node firefly
+15:54:20 | INFO: Blender create Mesh node firefly_flame
+15:54:20 | INFO: glTF import finished in 0.19s
+[lineup    4.2s] firefly          pose=idle:1     rest_h=7.5131 disp_h=7.5018 tris=20798 (0.3s)
+15:54:20 | INFO: Data are loaded, start creating Blender stuff
+15:54:20 | INFO: Blender create Mesh node firesprite
+15:54:21 | INFO: Blender create Mesh node firesprite_wand
+15:54:21 | INFO: glTF import finished in 0.26s
+[lineup    4.5s] firesprite       pose=idle:1     rest_h=4.2850 disp_h=4.2618 tris=17576 (0.3s)
+15:54:21 | INFO: Data are loaded, start creating Blender stuff
+15:54:21 | INFO: Blender create Mesh node fogeist
+15:54:21 | INFO: glTF import finished in 0.20s
+[lineup    4.8s] fogeist          pose=idle:1     rest_h=3.0447 disp_h=2.9292 tris=18762 (0.3s)
+15:54:21 | INFO: Data are loaded, start creating Blender stuff
+15:54:21 | INFO: Blender create Mesh node gemwing_dragon
+15:54:21 | INFO: glTF import finished in 0.48s
+[lineup    5.4s] gemwing_dragon   pose=idle:1     rest_h=6.2161 disp_h=6.1822 tris=26000 (0.6s)
+15:54:22 | INFO: Data are loaded, start creating Blender stuff
+15:54:22 | INFO: Blender create Mesh node geode
+15:54:22 | INFO: glTF import finished in 0.06s
+[lineup    5.5s] geode            pose=idle:1     rest_h=24.0355 disp_h=24.0355 tris=5704 (0.1s)
+15:54:22 | INFO: Data are loaded, start creating Blender stuff
+15:54:22 | INFO: Blender create Mesh node goo_shield
+15:54:22 | INFO: glTF import finished in 0.17s
+[lineup    5.7s] goo_shield       pose=idle:1     rest_h=5.2139 disp_h=5.2768 tris=15428 (0.2s)
+15:54:22 | INFO: Data are loaded, start creating Blender stuff
+15:54:22 | INFO: Blender create Mesh node halo_sentinel
+15:54:22 | INFO: glTF import finished in 0.24s
+[lineup    6.0s] halo_sentinel    pose=idle:1     rest_h=6.0659 disp_h=6.0383 tris=20602 (0.3s)
+15:54:22 | INFO: Data are loaded, start creating Blender stuff
+15:54:22 | INFO: Blender create Mesh node holly_snowman
+15:54:22 | INFO: glTF import finished in 0.27s
+[lineup    6.4s] holly_snowman    pose=idle:1     rest_h=5.7459 disp_h=5.7355 tris=16828 (0.3s)
+15:54:23 | INFO: Data are loaded, start creating Blender stuff
+15:54:23 | INFO: Blender create Mesh node lava_komodo
+15:54:23 | INFO: glTF import finished in 0.20s
+[lineup    6.7s] lava_komodo      pose=idle:1     rest_h=4.5980 disp_h=4.6185 tris=19074 (0.3s)
+15:54:23 | INFO: Data are loaded, start creating Blender stuff
+15:54:23 | INFO: Blender create Mesh node leaf_bird
+15:54:23 | INFO: glTF import finished in 0.20s
+[lineup    7.0s] leaf_bird        pose=idle:1     rest_h=1.6097 disp_h=1.6094 tris=14584 (0.3s)
+15:54:23 | INFO: Data are loaded, start creating Blender stuff
+15:54:23 | INFO: Blender create Mesh node lyra
+15:54:24 | INFO: Blender create Mesh node lyra_books
+15:54:24 | INFO: glTF import finished in 0.47s
+[lineup    7.7s] lyra             pose=rest       rest_h=1.7507 disp_h=1.7507 tris=48108 (0.6s)
+15:54:24 | INFO: Data are loaded, start creating Blender stuff
+15:54:24 | INFO: Blender create Mesh node magmoo
+15:54:25 | INFO: glTF import finished in 0.62s
 [lineup    8.7s] magmoo           pose=idle:1     rest_h=5.2739 disp_h=5.2739 tris=49216 (0.9s)
-18:01:01 | INFO: Data are loaded, start creating Blender stuff
-18:01:01 | INFO: Blender create Mesh node mortis
-18:01:01 | INFO: glTF import finished in 0.38s
-[lineup    9.2s] mortis           pose=idle:1     rest_h=12.9988 disp_h=13.0013 tris=38640 (0.5s)
-18:01:01 | INFO: Data are loaded, start creating Blender stuff
-18:01:01 | INFO: Blender create Mesh node mycothrall_mesh
-18:01:01 | INFO: glTF import finished in 0.07s
-[lineup    9.3s] mycothrall       pose=idle:1     rest_h=0.4814 disp_h=0.4730 tris=4000 (0.1s)
-18:01:01 | INFO: Data are loaded, start creating Blender stuff
-18:01:01 | INFO: Blender create Mesh node mystic_snow_spirit
-18:01:01 | INFO: glTF import finished in 0.19s
-[lineup    9.6s] mystic_snow_spirit pose=idle:1     rest_h=7.0900 disp_h=7.1288 tris=19312 (0.3s)
-18:01:01 | INFO: Data are loaded, start creating Blender stuff
-18:01:01 | INFO: Blender create Mesh node pangolin_knight
-18:01:02 | INFO: glTF import finished in 0.28s
-[lineup    9.9s] pangolin_knight  pose=idle:1     rest_h=5.6320 disp_h=5.6418 tris=20232 (0.4s)
-18:01:02 | INFO: Data are loaded, start creating Blender stuff
-18:01:02 | INFO: Blender create Mesh node petal_cobra
-18:01:02 | INFO: glTF import finished in 0.24s
-[lineup   10.2s] petal_cobra      pose=idle:1     rest_h=5.8819 disp_h=5.8913 tris=21372 (0.3s)
-18:01:02 | INFO: Data are loaded, start creating Blender stuff
-18:01:02 | INFO: Blender create Mesh node petalfang_mesh
-18:01:02 | INFO: glTF import finished in 0.08s
-[lineup   10.4s] petalfang        pose=idle:1     rest_h=0.7602 disp_h=0.8558 tris=4978 (0.1s)
-18:01:02 | INFO: Data are loaded, start creating Blender stuff
-18:01:02 | INFO: Blender create Mesh node phoenix_hatchling
-18:01:02 | INFO: glTF import finished in 0.22s
-[lineup   10.6s] phoenix_hatchling pose=idle:1     rest_h=6.5548 disp_h=6.5553 tris=16090 (0.3s)
-18:01:03 | INFO: Data are loaded, start creating Blender stuff
-18:01:03 | INFO: Blender create Mesh node raven_rogue
-18:01:03 | INFO: glTF import finished in 0.30s
-[lineup   11.1s] raven_rogue      pose=idle:1     rest_h=5.3265 disp_h=5.3222 tris=21590 (0.4s)
-18:01:03 | INFO: Data are loaded, start creating Blender stuff
-18:01:03 | INFO: Blender create Mesh node seedant
-18:01:03 | INFO: glTF import finished in 0.18s
-[lineup   11.3s] seedant          pose=idle:1     rest_h=5.0100 disp_h=5.0154 tris=17858 (0.2s)
-18:01:03 | INFO: Data are loaded, start creating Blender stuff
-18:01:03 | INFO: Blender create Mesh node shadow_assassin
-18:01:04 | INFO: Blender create Mesh node shadow_assassin_blade
-18:01:04 | INFO: glTF import finished in 0.39s
-[lineup   11.8s] shadow_assassin  pose=rest       rest_h=1.8533 disp_h=1.8533 tris=38913 (0.5s)
-18:01:04 | INFO: Data are loaded, start creating Blender stuff
-18:01:04 | INFO: Blender create Mesh node shadow_mole
-18:01:04 | INFO: glTF import finished in 0.23s
-[lineup   12.1s] shadow_mole      pose=idle:1     rest_h=3.8327 disp_h=3.8515 tris=19204 (0.3s)
-18:01:04 | INFO: Data are loaded, start creating Blender stuff
-18:01:04 | INFO: Blender create Mesh node shadowbun
-18:01:04 | INFO: glTF import finished in 0.28s
-[lineup   12.5s] shadowbun        pose=idle:1     rest_h=5.9577 disp_h=5.9607 tris=18400 (0.4s)
-18:01:04 | INFO: Data are loaded, start creating Blender stuff
-18:01:04 | INFO: Blender create Mesh node shield_rodent
-18:01:05 | INFO: glTF import finished in 0.23s
-[lineup   12.8s] shield_rodent    pose=idle:1     rest_h=2.3810 disp_h=2.3892 tris=19482 (0.3s)
-18:01:05 | INFO: Data are loaded, start creating Blender stuff
-18:01:05 | INFO: Blender create Mesh node soot_puff
-18:01:05 | INFO: glTF import finished in 0.20s
-[lineup   13.0s] soot_puff        pose=idle:1     rest_h=4.0406 disp_h=4.0607 tris=17998 (0.3s)
-18:01:05 | INFO: Data are loaded, start creating Blender stuff
-18:01:05 | INFO: Blender create Mesh node spectormn
-18:01:05 | INFO: glTF import finished in 0.21s
-[lineup   13.3s] spectormn        pose=idle:1     rest_h=6.7301 disp_h=6.7633 tris=18832 (0.3s)
-18:01:05 | INFO: Data are loaded, start creating Blender stuff
-18:01:05 | INFO: Blender create Mesh node storm_vessel
-18:01:05 | INFO: glTF import finished in 0.20s
-[lineup   13.6s] storm_vessel     pose=idle:1     rest_h=6.6200 disp_h=6.6319 tris=19306 (0.3s)
-18:01:05 | INFO: Data are loaded, start creating Blender stuff
-18:01:06 | INFO: Blender create Mesh node supaoctto
-18:01:06 | INFO: glTF import finished in 0.38s
-[lineup   14.1s] supaoctto        pose=idle:1     rest_h=21.4540 disp_h=21.3324 tris=22336 (0.5s)
-18:01:06 | INFO: Data are loaded, start creating Blender stuff
-18:01:06 | INFO: Blender create Mesh node vampito
-18:01:06 | INFO: glTF import finished in 0.15s
-[lineup   14.3s] vampito          pose=idle:1     rest_h=12.0985 disp_h=12.9731 tris=10696 (0.2s)
-18:01:06 | INFO: Data are loaded, start creating Blender stuff
-18:01:06 | INFO: Blender create Mesh node vampwarrior
-18:01:07 | INFO: Blender create Mesh node vampwarrior_sword
-18:01:07 | INFO: glTF import finished in 0.61s
-[lineup   15.1s] vampwarrior      pose=idle:1     rest_h=1.8407 disp_h=1.8103 tris=48150 (0.8s)
-18:01:07 | INFO: Data are loaded, start creating Blender stuff
-18:01:07 | INFO: Blender create Mesh node varden
-18:01:07 | INFO: Blender create Mesh node varden_scabbard
-18:01:07 | INFO: Blender create Mesh node varden_sword
-18:01:08 | INFO: glTF import finished in 0.49s
-[lineup   15.8s] varden           pose=rest       rest_h=1.9830 disp_h=1.9830 tris=49090 (0.6s)
-18:01:08 | INFO: Data are loaded, start creating Blender stuff
-18:01:08 | INFO: Blender create Mesh node vineweave
-18:01:08 | INFO: glTF import finished in 0.46s
-[lineup   16.4s] vineweave        pose=idle:1     rest_h=5.2711 disp_h=5.2776 tris=30000 (0.6s)
-18:01:08 | INFO: Data are loaded, start creating Blender stuff
-18:01:08 | INFO: Blender create Mesh node volcano_turtle
-18:01:08 | INFO: glTF import finished in 0.25s
-[lineup   16.7s] volcano_turtle   pose=idle:1     rest_h=6.7048 disp_h=6.7907 tris=20790 (0.3s)
-18:01:09 | INFO: Data are loaded, start creating Blender stuff
-18:01:09 | INFO: Blender create Mesh node winged_cat
-18:01:09 | INFO: glTF import finished in 0.26s
-[lineup   17.0s] winged_cat       pose=idle:1     rest_h=4.2773 disp_h=4.2741 tris=17922 (0.3s)
-18:01:09 | INFO: Data are loaded, start creating Blender stuff
-18:01:09 | INFO: Blender create Mesh node wren
-18:01:10 | INFO: glTF import finished in 0.65s
-[lineup   17.9s] wren             pose=idle:0     rest_h=1.7506 disp_h=1.7453 tris=47541 (0.8s)
-00:22.969  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\lineup\lineup_ingame.png'
-[lineup   21.4s] wrote C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\lineup\lineup_ingame.png 8000 x 416
-00:24.469  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\lineup\lineup_ingame_roster.png'
-[lineup   22.9s] wrote C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\lineup\lineup_ingame_roster.png 8000 x 416
-00:25.938  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\lineup\lineup_target.png'
-[lineup   24.4s] wrote C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\lineup\lineup_target.png 8000 x 419
-00:27.328  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\lineup\lineup_target_roster.png'
-[lineup   25.8s] wrote C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\lineup\lineup_target_roster.png 8000 x 419
-00:28.844  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\lineup\lineup_ingame_tq.png'
-[lineup   27.3s] wrote C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\lineup\lineup_ingame_tq.png 8000 x 449
-[lineup   27.3s] TABLE
-[lineup   27.3s] leaf_bird        creature  nat_h=   1.4480 shown_h=   1.4478 scale=0.29481 (formula) formula=0.29481 ingame_h=0.427 fp=1.900 target=0.305 pose=idle:1
-[lineup   27.3s] mycothrall       creature  nat_h=   0.4814 shown_h=   0.4730 scale=1.00000 (measured) formula=1.00000 ingame_h=0.473 fp=1.900 target=0.473 pose=idle:1
-[lineup   27.3s] blightcap        creature  nat_h=   1.5690 shown_h=   1.5804 scale=0.38573 (measured) formula=1.00000 ingame_h=0.610 fp=0.733 target=0.610 pose=idle:1
-[lineup   27.3s] fogeist          creature  nat_h=   3.0447 shown_h=   2.9292 scale=0.23708 (formula) formula=0.23708 ingame_h=0.694 fp=1.900 target=1.422 pose=idle:1
-[lineup   27.3s] shadow_mole      creature  nat_h=   3.8327 shown_h=   3.8515 scale=0.19785 (measured) formula=0.46964 ingame_h=0.762 fp=0.770 target=0.762 pose=idle:1
-[lineup   27.3s] shield_rodent    creature  nat_h=   2.3810 shown_h=   2.3892 scale=0.34272 (formula) formula=0.34272 ingame_h=0.819 fp=1.900 target=0.819 pose=idle:1
-[lineup   27.3s] aquaoct          creature  nat_h=   5.5263 shown_h=   5.5205 scale=0.16564 (measured) formula=0.32572 ingame_h=0.914 fp=0.691 target=0.914 pose=idle:1
-[lineup   27.3s] bombee           creature  nat_h=   4.6426 shown_h=   4.7105 scale=0.19412 (measured) formula=0.38772 ingame_h=0.914 fp=0.792 target=0.914 pose=idle:1
-[lineup   27.3s] raven_rogue      creature  nat_h=   5.3265 shown_h=   5.3222 scale=0.17181 (measured) formula=0.33793 ingame_h=0.914 fp=0.778 target=0.914 pose=idle:1
-[lineup   27.3s] pangolin_knight  creature  nat_h=   5.6320 shown_h=   5.6418 scale=0.16208 (measured) formula=0.31960 ingame_h=0.914 fp=0.713 target=0.914 pose=idle:1
-[lineup   27.3s] lava_komodo      creature  nat_h=   4.5980 shown_h=   4.6185 scale=0.21792 (formula) formula=0.21792 ingame_h=1.006 fp=1.900 target=1.295 pose=idle:1
-[lineup   27.3s] canine_bat       creature  nat_h=   6.0399 shown_h=   6.0604 scale=0.17184 (measured) formula=0.29802 ingame_h=1.041 fp=0.762 target=1.041 pose=idle:1
-[lineup   27.3s] seedant          creature  nat_h=   5.0100 shown_h=   5.0154 scale=0.21270 (measured) formula=0.35928 ingame_h=1.067 fp=0.786 target=1.067 pose=idle:1
-[lineup   27.3s] vampito          creature  nat_h=  12.0985 shown_h=  12.9731 scale=0.09057 (measured) formula=0.09057 ingame_h=1.175 fp=1.900 target=1.175 pose=idle:1
-[lineup   27.3s] petalfang        creature  nat_h=   0.7602 shown_h=   0.8558 scale=1.42461 (measured) formula=1.00000 ingame_h=1.219 fp=2.707 target=1.219 pose=idle:1
-[lineup   27.3s] firesprite       creature  nat_h=   4.2850 shown_h=   4.2618 scale=0.32183 (measured) formula=0.42007 ingame_h=1.372 fp=0.893 target=1.372 pose=idle:1
-[lineup   27.3s] gemwing_dragon   creature  nat_h=   6.4828 shown_h=   6.3708 scale=0.22257 (formula) formula=0.22257 ingame_h=1.418 fp=1.900 target=3.962 pose=idle:1
-[lineup   27.3s] vineweave        creature  nat_h=   5.2711 shown_h=   5.2776 scale=0.31765 (measured) formula=0.34148 ingame_h=1.676 fp=1.547 target=1.676 pose=idle:1
-[lineup   27.3s] lyra             humanoid  nat_h=   1.7507 shown_h=   1.7507 scale=0.98658 (measured) formula=1.02816 ingame_h=1.727 fp=0.759 target=1.727 pose=rest
-[lineup   27.3s] supaoctto        creature  nat_h=  21.4540 shown_h=  21.3324 scale=0.08390 (measured) formula=0.08390 ingame_h=1.790 fp=1.740 target=1.790 pose=idle:1
-[lineup   27.3s] halo_sentinel    creature  nat_h=   6.0659 shown_h=   6.0383 scale=0.29674 (formula) formula=0.29674 ingame_h=1.792 fp=1.642 target=1.905 pose=idle:1
-[lineup   27.3s] ember_eye        creature  nat_h=   6.9589 shown_h=   6.9298 scale=0.25866 (formula) formula=0.25866 ingame_h=1.792 fp=0.916 target=1.346 pose=idle:1
-[lineup   27.3s] wren             humanoid  nat_h=   1.7506 shown_h=   1.7453 scale=1.02823 (measured) formula=1.02823 ingame_h=1.795 fp=0.960 target=1.795 pose=idle:0
-[lineup   27.3s] firefly          creature  nat_h=   7.5131 shown_h=   7.5018 scale=0.23958 (measured) formula=0.23958 ingame_h=1.797 fp=0.895 target=1.797 pose=idle:1
-[lineup   27.3s] winged_cat       creature  nat_h=   4.2773 shown_h=   4.2741 scale=0.42082 (formula) formula=0.42082 ingame_h=1.799 fp=1.702 target=0.914 pose=idle:1
-[lineup   27.3s] crystal_canine   creature  nat_h=   6.2018 shown_h=   6.1972 scale=0.29024 (formula) formula=0.29024 ingame_h=1.799 fp=1.211 target=1.524 pose=idle:1
-[lineup   27.3s] eclipse_wolf     creature  nat_h=   6.3300 shown_h=   6.3255 scale=0.28436 (formula) formula=0.28436 ingame_h=1.799 fp=1.201 target=1.219 pose=idle:1
-[lineup   27.3s] eye_totem        creature  nat_h=   6.7029 shown_h=   6.6988 scale=0.26854 (formula) formula=0.26854 ingame_h=1.799 fp=0.604 target=1.067 pose=idle:1
-[lineup   27.3s] elias            humanoid  nat_h=   1.8605 shown_h=   1.8605 scale=0.96748 (measured) formula=0.96748 ingame_h=1.800 fp=0.841 target=1.800 pose=rest
-[lineup   27.3s] geode            creature  nat_h=  24.0355 shown_h=  24.0355 scale=0.07489 (measured) formula=0.07489 ingame_h=1.800 fp=1.337 target=1.800 pose=idle:1
-[lineup   27.3s] duskmaw          creature  nat_h=  41.7073 shown_h=  41.7073 scale=0.04316 (measured) formula=0.04316 ingame_h=1.800 fp=1.250 target=1.800 pose=idle:1
-[lineup   27.3s] phoenix_hatchling creature  nat_h=   6.5548 shown_h=   6.5553 scale=0.27461 (formula) formula=0.27461 ingame_h=1.800 fp=0.966 target=0.914 pose=idle:1
-[lineup   27.3s] shadowbun        creature  nat_h=   5.9577 shown_h=   5.9607 scale=0.30215 (measured) formula=0.30213 ingame_h=1.801 fp=1.156 target=1.801 pose=idle:1
-[lineup   27.3s] chest_monster    creature  nat_h=   4.8361 shown_h=   4.8399 scale=0.37220 (formula) formula=0.37220 ingame_h=1.801 fp=1.177 target=1.219 pose=idle:1
-[lineup   27.3s] petal_cobra      creature  nat_h=   5.8819 shown_h=   5.8913 scale=0.30603 (formula) formula=0.30603 ingame_h=1.803 fp=1.334 target=1.803 pose=idle:1
-[lineup   27.3s] storm_vessel     creature  nat_h=   6.6200 shown_h=   6.6319 scale=0.27190 (formula) formula=0.27190 ingame_h=1.803 fp=1.302 target=1.905 pose=idle:1
-[lineup   27.3s] holly_snowman    creature  nat_h=   5.9200 shown_h=   5.9427 scale=0.30405 (formula) formula=0.30405 ingame_h=1.807 fp=1.277 target=1.524 pose=idle:1
-[lineup   27.3s] spectormn        creature  nat_h=   6.7301 shown_h=   6.7633 scale=0.26746 (formula) formula=0.26746 ingame_h=1.809 fp=0.994 target=1.809 pose=idle:1
-[lineup   27.3s] soot_puff        creature  nat_h=   4.0406 shown_h=   4.0607 scale=0.44547 (formula) formula=0.44547 ingame_h=1.809 fp=1.694 target=0.610 pose=idle:1
-[lineup   27.3s] mystic_snow_spirit creature  nat_h=   7.0900 shown_h=   7.1288 scale=0.25388 (formula) formula=0.25388 ingame_h=1.810 fp=1.176 target=1.727 pose=idle:1
-[lineup   27.3s] ember_stump      creature  nat_h=   6.1064 shown_h=   6.1575 scale=0.29477 (formula) formula=0.29477 ingame_h=1.815 fp=1.056 target=2.438 pose=idle:1
-[lineup   27.3s] goo_shield       creature  nat_h=   5.2139 shown_h=   5.2768 scale=0.34523 (formula) formula=0.34523 ingame_h=1.822 fp=1.751 target=1.651 pose=idle:1
-[lineup   27.3s] volcano_turtle   creature  nat_h=   6.7048 shown_h=   6.7907 scale=0.26847 (formula) formula=0.26847 ingame_h=1.823 fp=1.128 target=2.134 pose=idle:1
-[lineup   27.3s] shadow_assassin  humanoid  nat_h=   1.8533 shown_h=   1.8533 scale=0.98676 (measured) formula=0.97122 ingame_h=1.829 fp=0.946 target=1.829 pose=rest
-[lineup   27.3s] mortis           creature  nat_h=  12.9988 shown_h=  13.0013 scale=0.14457 (measured) formula=0.13847 ingame_h=1.880 fp=1.158 target=1.880 pose=idle:1
-[lineup   27.3s] vampwarrior      creature  nat_h=   1.8407 shown_h=   1.8103 scale=1.03829 (measured) formula=0.97787 ingame_h=1.880 fp=1.094 target=1.880 pose=idle:1
-[lineup   27.3s] varden           humanoid  nat_h=   1.9830 shown_h=   1.9830 scale=0.97349 (measured) formula=0.90773 ingame_h=1.930 fp=1.052 target=1.930 pose=rest
-[lineup   27.3s] magmoo           creature  nat_h=   5.2739 shown_h=   5.2739 scale=0.45552 (measured) formula=0.10753 ingame_h=2.402 fp=8.049 target=2.438 pose=idle:1
-[lineup   27.3s] barkling         creature  nat_h=   1.3934 shown_h=   1.3906 scale=1.75355 (measured) formula=1.00000 ingame_h=2.438 fp=3.332 target=2.438 pose=idle:1
-[lineup   27.3s] eldroot          boss      nat_h=   4.5605 shown_h=   4.5520 scale=1.00000 (measured) formula=1.00000 ingame_h=4.552 fp=3.800 target=4.552 pose=idle:1
-[lineup   27.3s] DONE units=50 failed=0
+15:54:25 | INFO: Data are loaded, start creating Blender stuff
+15:54:25 | INFO: Blender create Mesh node mortis
+15:54:25 | INFO: glTF import finished in 0.41s
+[lineup    9.3s] mortis           pose=idle:1     rest_h=12.9988 disp_h=13.0013 tris=38640 (0.6s)
+15:54:25 | INFO: Data are loaded, start creating Blender stuff
+15:54:26 | INFO: Blender create Mesh node mycothrall_mesh
+15:54:26 | INFO: glTF import finished in 0.07s
+[lineup    9.4s] mycothrall       pose=idle:1     rest_h=0.4814 disp_h=0.4730 tris=4000 (0.1s)
+15:54:26 | INFO: Data are loaded, start creating Blender stuff
+15:54:26 | INFO: Blender create Mesh node mystic_snow_spirit
+15:54:26 | INFO: glTF import finished in 0.18s
+[lineup    9.8s] mystic_snow_spirit pose=idle:1     rest_h=7.0900 disp_h=7.1288 tris=19312 (0.3s)
+15:54:26 | INFO: Data are loaded, start creating Blender stuff
+15:54:26 | INFO: Blender create Mesh node pangolin_knight
+15:54:26 | INFO: glTF import finished in 0.25s
+[lineup   10.3s] pangolin_knight  pose=idle:1     rest_h=5.6320 disp_h=5.6418 tris=20232 (0.5s)
+15:54:27 | INFO: Data are loaded, start creating Blender stuff
+15:54:27 | INFO: Blender create Mesh node petal_cobra
+15:54:27 | INFO: glTF import finished in 0.25s
+[lineup   10.7s] petal_cobra      pose=idle:1     rest_h=5.8819 disp_h=5.8913 tris=21372 (0.4s)
+15:54:27 | INFO: Data are loaded, start creating Blender stuff
+15:54:27 | INFO: Blender create Mesh node petalfang_mesh
+15:54:27 | INFO: glTF import finished in 0.08s
+[lineup   10.9s] petalfang        pose=idle:1     rest_h=0.7602 disp_h=0.8558 tris=4978 (0.1s)
+15:54:27 | INFO: Data are loaded, start creating Blender stuff
+15:54:27 | INFO: Blender create Mesh node phoenix_hatchling
+15:54:27 | INFO: glTF import finished in 0.23s
+[lineup   11.2s] phoenix_hatchling pose=idle:1     rest_h=6.5548 disp_h=6.5553 tris=16090 (0.3s)
+15:54:27 | INFO: Data are loaded, start creating Blender stuff
+15:54:27 | INFO: Blender create Mesh node raven_rogue
+15:54:28 | INFO: glTF import finished in 0.30s
+[lineup   11.5s] raven_rogue      pose=idle:1     rest_h=5.3265 disp_h=5.3222 tris=21590 (0.4s)
+15:54:28 | INFO: Data are loaded, start creating Blender stuff
+15:54:28 | INFO: Blender create Mesh node sand_drill_worm
+15:54:28 | INFO: glTF import finished in 0.34s
+[lineup   12.0s] sand_drill_worm  pose=idle:1     rest_h=6.7106 disp_h=6.7179 tris=18000 (0.4s)
+15:54:28 | INFO: Data are loaded, start creating Blender stuff
+15:54:28 | INFO: Blender create Mesh node seedant
+15:54:28 | INFO: glTF import finished in 0.18s
+[lineup   12.3s] seedant          pose=idle:1     rest_h=5.0100 disp_h=5.0154 tris=17858 (0.3s)
+15:54:28 | INFO: Data are loaded, start creating Blender stuff
+15:54:28 | INFO: Blender create Mesh node shadow_assassin
+15:54:29 | INFO: Blender create Mesh node shadow_assassin_blade
+15:54:29 | INFO: glTF import finished in 0.41s
+[lineup   12.8s] shadow_assassin  pose=rest       rest_h=1.8533 disp_h=1.8533 tris=38913 (0.5s)
+15:54:29 | INFO: Data are loaded, start creating Blender stuff
+15:54:29 | INFO: Blender create Mesh node shadow_mole
+15:54:29 | INFO: glTF import finished in 0.26s
+[lineup   13.1s] shadow_mole      pose=idle:1     rest_h=3.8327 disp_h=3.8515 tris=19204 (0.3s)
+15:54:29 | INFO: Data are loaded, start creating Blender stuff
+15:54:29 | INFO: Blender create Mesh node shadowbun
+15:54:30 | INFO: glTF import finished in 0.26s
+[lineup   13.5s] shadowbun        pose=idle:1     rest_h=5.9577 disp_h=5.9607 tris=18400 (0.4s)
+15:54:30 | INFO: Data are loaded, start creating Blender stuff
+15:54:30 | INFO: Blender create Mesh node shield_rodent
+15:54:30 | INFO: glTF import finished in 0.25s
+[lineup   13.8s] shield_rodent    pose=idle:1     rest_h=2.3810 disp_h=2.3892 tris=19482 (0.3s)
+15:54:30 | INFO: Data are loaded, start creating Blender stuff
+15:54:30 | INFO: Blender create Mesh node soot_puff
+15:54:30 | INFO: glTF import finished in 0.20s
+[lineup   14.1s] soot_puff        pose=idle:1     rest_h=4.0406 disp_h=4.0607 tris=17998 (0.3s)
+15:54:30 | INFO: Data are loaded, start creating Blender stuff
+15:54:30 | INFO: Blender create Mesh node spectormn
+15:54:30 | INFO: glTF import finished in 0.21s
+[lineup   14.4s] spectormn        pose=idle:1     rest_h=6.7301 disp_h=6.7633 tris=18832 (0.3s)
+15:54:31 | INFO: Data are loaded, start creating Blender stuff
+15:54:31 | INFO: Blender create Mesh node storm_vessel
+15:54:31 | INFO: glTF import finished in 0.18s
+[lineup   14.7s] storm_vessel     pose=idle:1     rest_h=6.6200 disp_h=6.6319 tris=19306 (0.3s)
+15:54:31 | INFO: Data are loaded, start creating Blender stuff
+15:54:31 | INFO: Blender create Mesh node supaoctto
+15:54:31 | INFO: glTF import finished in 0.37s
+[lineup   15.2s] supaoctto        pose=idle:1     rest_h=21.4540 disp_h=21.3324 tris=22336 (0.5s)
+15:54:31 | INFO: Data are loaded, start creating Blender stuff
+15:54:31 | INFO: Blender create Mesh node vampito
+15:54:31 | INFO: glTF import finished in 0.16s
+[lineup   15.4s] vampito          pose=idle:1     rest_h=12.0985 disp_h=12.9731 tris=10696 (0.2s)
+15:54:32 | INFO: Data are loaded, start creating Blender stuff
+15:54:32 | INFO: Blender create Mesh node vampwarrior
+15:54:32 | INFO: Blender create Mesh node vampwarrior_sword
+15:54:32 | INFO: glTF import finished in 0.73s
+[lineup   16.3s] vampwarrior      pose=idle:1     rest_h=1.8407 disp_h=1.8103 tris=48150 (0.9s)
+15:54:32 | INFO: Data are loaded, start creating Blender stuff
+15:54:33 | INFO: Blender create Mesh node varden
+15:54:33 | INFO: Blender create Mesh node varden_scabbard
+15:54:33 | INFO: Blender create Mesh node varden_sword
+15:54:33 | INFO: glTF import finished in 0.49s
+[lineup   16.9s] varden           pose=rest       rest_h=1.9830 disp_h=1.9830 tris=49090 (0.6s)
+15:54:33 | INFO: Data are loaded, start creating Blender stuff
+15:54:33 | INFO: Blender create Mesh node vineweave
+15:54:34 | INFO: glTF import finished in 0.46s
+[lineup   17.5s] vineweave        pose=idle:1     rest_h=5.2711 disp_h=5.2776 tris=30000 (0.6s)
+15:54:34 | INFO: Data are loaded, start creating Blender stuff
+15:54:34 | INFO: Blender create Mesh node volcano_turtle
+15:54:34 | INFO: glTF import finished in 0.24s
+[lineup   17.8s] volcano_turtle   pose=idle:1     rest_h=6.7048 disp_h=6.7907 tris=20790 (0.3s)
+15:54:34 | INFO: Data are loaded, start creating Blender stuff
+15:54:34 | INFO: Blender create Mesh node vulture_creature
+15:54:34 | INFO: glTF import finished in 0.41s
+[lineup   18.4s] vulture_creature pose=idle:1     rest_h=6.8991 disp_h=7.0208 tris=20000 (0.5s)
+15:54:35 | INFO: Data are loaded, start creating Blender stuff
+15:54:35 | INFO: Blender create Mesh node winged_cat
+15:54:35 | INFO: glTF import finished in 0.25s
+[lineup   18.7s] winged_cat       pose=idle:1     rest_h=4.2773 disp_h=4.2741 tris=17922 (0.3s)
+15:54:35 | INFO: Data are loaded, start creating Blender stuff
+15:54:35 | INFO: Blender create Mesh node wren
+15:54:36 | INFO: glTF import finished in 0.69s
+[lineup   19.6s] wren             pose=idle:0     rest_h=1.7506 disp_h=1.7453 tris=47541 (0.9s)
+00:24.547  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\lineup\lineup_ingame.png'
+[lineup   23.4s] wrote C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\lineup\lineup_ingame.png 8000 x 407
+00:25.813  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\lineup\lineup_ingame_roster.png'
+[lineup   24.7s] wrote C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\lineup\lineup_ingame_roster.png 8000 x 407
+00:27.141  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\lineup\lineup_target.png'
+[lineup   26.0s] wrote C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\lineup\lineup_target.png 8000 x 407
+00:28.500  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\lineup\lineup_target_roster.png'
+[lineup   27.4s] wrote C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\lineup\lineup_target_roster.png 8000 x 407
+00:30.000  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\lineup\lineup_ingame_tq.png'
+[lineup   28.9s] wrote C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\lineup\lineup_ingame_tq.png 8000 x 438
+[lineup   28.9s] TABLE
+[lineup   28.9s] leaf_bird        creature  nat_h=   1.6097 shown_h=   1.6094 scale=0.09469 (measured) formula=0.61215 ingame_h=0.152 fp=0.294 target=0.152 pose=idle:1
+[lineup   28.9s] mycothrall       creature  nat_h=   0.4814 shown_h=   0.4730 scale=1.00000 (measured) formula=1.00000 ingame_h=0.473 fp=1.900 target=0.473 pose=idle:1
+[lineup   28.9s] soot_puff        creature  nat_h=   4.0406 shown_h=   4.0607 scale=0.15012 (measured) formula=0.44547 ingame_h=0.610 fp=0.571 target=0.610 pose=idle:1
+[lineup   28.9s] blightcap        creature  nat_h=   1.5690 shown_h=   1.5804 scale=0.38573 (measured) formula=1.00000 ingame_h=0.610 fp=0.733 target=0.610 pose=idle:1
+[lineup   28.9s] shadow_mole      creature  nat_h=   3.8327 shown_h=   3.8515 scale=0.19785 (measured) formula=0.46964 ingame_h=0.762 fp=0.770 target=0.762 pose=idle:1
+[lineup   28.9s] shield_rodent    creature  nat_h=   2.3810 shown_h=   2.3892 scale=0.34279 (measured) formula=0.34272 ingame_h=0.819 fp=1.900 target=0.819 pose=idle:1
+[lineup   28.9s] aquaoct          creature  nat_h=   5.5263 shown_h=   5.5205 scale=0.16564 (measured) formula=0.32572 ingame_h=0.914 fp=0.691 target=0.914 pose=idle:1
+[lineup   28.9s] bombee           creature  nat_h=   4.6426 shown_h=   4.7105 scale=0.19412 (measured) formula=0.38772 ingame_h=0.914 fp=0.792 target=0.914 pose=idle:1
+[lineup   28.9s] winged_cat       creature  nat_h=   4.2773 shown_h=   4.2741 scale=0.21394 (measured) formula=0.42082 ingame_h=0.914 fp=0.865 target=0.914 pose=idle:1
+[lineup   28.9s] raven_rogue      creature  nat_h=   5.3265 shown_h=   5.3222 scale=0.17181 (measured) formula=0.33793 ingame_h=0.914 fp=0.778 target=0.914 pose=idle:1
+[lineup   28.9s] pangolin_knight  creature  nat_h=   5.6320 shown_h=   5.6418 scale=0.16208 (measured) formula=0.31960 ingame_h=0.914 fp=0.713 target=0.914 pose=idle:1
+[lineup   28.9s] phoenix_hatchling creature  nat_h=   6.5548 shown_h=   6.5553 scale=0.13949 (measured) formula=0.27461 ingame_h=0.914 fp=0.491 target=0.914 pose=idle:1
+[lineup   28.9s] canine_bat       creature  nat_h=   6.0399 shown_h=   6.0604 scale=0.17184 (measured) formula=0.29802 ingame_h=1.041 fp=0.762 target=1.041 pose=idle:1
+[lineup   28.9s] eye_totem        creature  nat_h=   6.7029 shown_h=   6.6988 scale=0.15925 (measured) formula=0.26854 ingame_h=1.067 fp=0.358 target=1.067 pose=idle:1
+[lineup   28.9s] seedant          creature  nat_h=   5.0100 shown_h=   5.0154 scale=0.21270 (measured) formula=0.35928 ingame_h=1.067 fp=0.786 target=1.067 pose=idle:1
+[lineup   28.9s] vampito          creature  nat_h=  12.0985 shown_h=  12.9731 scale=0.09057 (measured) formula=0.09057 ingame_h=1.175 fp=1.900 target=1.175 pose=idle:1
+[lineup   28.9s] chest_monster    creature  nat_h=   4.8361 shown_h=   4.8399 scale=0.25190 (measured) formula=0.37220 ingame_h=1.219 fp=0.797 target=1.219 pose=idle:1
+[lineup   28.9s] petalfang        creature  nat_h=   0.7602 shown_h=   0.8558 scale=1.42461 (measured) formula=1.00000 ingame_h=1.219 fp=2.707 target=1.219 pose=idle:1
+[lineup   28.9s] eclipse_wolf     creature  nat_h=   6.3300 shown_h=   6.3255 scale=0.19274 (measured) formula=0.28436 ingame_h=1.219 fp=0.814 target=1.219 pose=idle:1
+[lineup   28.9s] lava_komodo      creature  nat_h=   4.5980 shown_h=   4.6185 scale=0.28048 (measured) formula=0.21792 ingame_h=1.295 fp=2.446 target=1.295 pose=idle:1
+[lineup   28.9s] ember_eye        creature  nat_h=   6.9589 shown_h=   6.9298 scale=0.19426 (measured) formula=0.25866 ingame_h=1.346 fp=0.688 target=1.346 pose=idle:1
+[lineup   28.9s] firesprite       creature  nat_h=   4.2850 shown_h=   4.2618 scale=0.32183 (measured) formula=0.42007 ingame_h=1.372 fp=0.893 target=1.372 pose=idle:1
+[lineup   28.9s] fogeist          creature  nat_h=   3.0447 shown_h=   2.9292 scale=0.48560 (measured) formula=0.23708 ingame_h=1.422 fp=3.892 target=1.422 pose=idle:1
+[lineup   28.9s] crystal_canine   creature  nat_h=   6.2367 shown_h=   6.2089 scale=0.24545 (measured) formula=0.28861 ingame_h=1.524 fp=1.148 target=1.524 pose=idle:1
+[lineup   28.9s] holly_snowman    creature  nat_h=   5.7459 shown_h=   5.7355 scale=0.26572 (measured) formula=0.31326 ingame_h=1.524 fp=1.065 target=1.524 pose=idle:1
+[lineup   28.9s] vulture_creature creature  nat_h=   6.8991 shown_h=   7.0208 scale=0.21708 (measured) formula=0.26090 ingame_h=1.524 fp=0.944 target=1.524 pose=idle:1
+[lineup   28.9s] goo_shield       creature  nat_h=   5.2139 shown_h=   5.2768 scale=0.31288 (measured) formula=0.34523 ingame_h=1.651 fp=1.587 target=1.651 pose=idle:1
+[lineup   28.9s] vineweave        creature  nat_h=   5.2711 shown_h=   5.2776 scale=0.31765 (measured) formula=0.34148 ingame_h=1.676 fp=1.547 target=1.676 pose=idle:1
+[lineup   28.9s] mystic_snow_spirit creature  nat_h=   7.0900 shown_h=   7.1288 scale=0.24229 (measured) formula=0.25388 ingame_h=1.727 fp=1.122 target=1.727 pose=idle:1
+[lineup   28.9s] lyra             humanoid  nat_h=   1.7507 shown_h=   1.7507 scale=0.98658 (measured) formula=1.02816 ingame_h=1.727 fp=0.759 target=1.727 pose=rest
+[lineup   28.9s] supaoctto        creature  nat_h=  21.4540 shown_h=  21.3324 scale=0.08390 (measured) formula=0.08390 ingame_h=1.790 fp=1.740 target=1.790 pose=idle:1
+[lineup   28.9s] wren             humanoid  nat_h=   1.7506 shown_h=   1.7453 scale=1.02823 (measured) formula=1.02823 ingame_h=1.795 fp=0.960 target=1.795 pose=idle:0
+[lineup   28.9s] firefly          creature  nat_h=   7.5131 shown_h=   7.5018 scale=0.23958 (measured) formula=0.23958 ingame_h=1.797 fp=0.895 target=1.797 pose=idle:1
+[lineup   28.9s] elias            humanoid  nat_h=   1.8605 shown_h=   1.8605 scale=0.96748 (measured) formula=0.96748 ingame_h=1.800 fp=0.841 target=1.800 pose=rest
+[lineup   28.9s] geode            creature  nat_h=  24.0355 shown_h=  24.0355 scale=0.07489 (measured) formula=0.07489 ingame_h=1.800 fp=1.337 target=1.800 pose=idle:1
+[lineup   28.9s] duskmaw          creature  nat_h=  41.7073 shown_h=  41.7073 scale=0.04316 (measured) formula=0.04316 ingame_h=1.800 fp=1.250 target=1.800 pose=idle:1
+[lineup   28.9s] shadowbun        creature  nat_h=   5.9577 shown_h=   5.9607 scale=0.30215 (measured) formula=0.30213 ingame_h=1.801 fp=1.156 target=1.801 pose=idle:1
+[lineup   28.9s] sand_drill_worm  creature  nat_h=   6.7106 shown_h=   6.7179 scale=0.26823 (formula) formula=0.26823 ingame_h=1.802 fp=0.976 target=1.802 pose=idle:1
+[lineup   28.9s] petal_cobra      creature  nat_h=   5.8819 shown_h=   5.8913 scale=0.30604 (measured) formula=0.30603 ingame_h=1.803 fp=1.334 target=1.803 pose=idle:1
+[lineup   28.9s] spectormn        creature  nat_h=   6.7301 shown_h=   6.7633 scale=0.26747 (measured) formula=0.26746 ingame_h=1.809 fp=0.994 target=1.809 pose=idle:1
+[lineup   28.9s] shadow_assassin  humanoid  nat_h=   1.8533 shown_h=   1.8533 scale=0.98676 (measured) formula=0.97122 ingame_h=1.829 fp=0.946 target=1.829 pose=rest
+[lineup   28.9s] mortis           creature  nat_h=  12.9988 shown_h=  13.0013 scale=0.14457 (measured) formula=0.13847 ingame_h=1.880 fp=1.158 target=1.880 pose=idle:1
+[lineup   28.9s] vampwarrior      creature  nat_h=   1.8407 shown_h=   1.8103 scale=1.03829 (measured) formula=0.97787 ingame_h=1.880 fp=1.094 target=1.880 pose=idle:1
+[lineup   28.9s] halo_sentinel    creature  nat_h=   6.0659 shown_h=   6.0383 scale=0.31549 (measured) formula=0.29674 ingame_h=1.905 fp=1.746 target=1.905 pose=idle:1
+[lineup   28.9s] storm_vessel     creature  nat_h=   6.6200 shown_h=   6.6319 scale=0.28725 (measured) formula=0.27190 ingame_h=1.905 fp=1.375 target=1.905 pose=idle:1
+[lineup   28.9s] varden           humanoid  nat_h=   1.9830 shown_h=   1.9830 scale=0.97349 (measured) formula=0.90773 ingame_h=1.930 fp=1.052 target=1.930 pose=rest
+[lineup   28.9s] volcano_turtle   creature  nat_h=   6.7048 shown_h=   6.7907 scale=0.31419 (measured) formula=0.26847 ingame_h=2.134 fp=1.320 target=2.134 pose=idle:1
+[lineup   28.9s] magmoo           creature  nat_h=   5.2739 shown_h=   5.2739 scale=0.45552 (measured) formula=0.10753 ingame_h=2.402 fp=8.049 target=2.438 pose=idle:1
+[lineup   28.9s] ember_stump      creature  nat_h=   6.1064 shown_h=   6.1575 scale=0.39600 (measured) formula=0.29477 ingame_h=2.438 fp=1.418 target=2.438 pose=idle:1
+[lineup   28.9s] barkling         creature  nat_h=   1.3934 shown_h=   1.3906 scale=1.75355 (measured) formula=1.00000 ingame_h=2.438 fp=3.332 target=2.438 pose=idle:1
+[lineup   28.9s] gemwing_dragon   creature  nat_h=   6.2161 shown_h=   6.1822 scale=0.64093 (measured) formula=0.28385 ingame_h=3.962 fp=4.290 target=3.962 pose=idle:1
+[lineup   28.9s] eldroot          boss      nat_h=   4.5605 shown_h=   4.5520 scale=1.00000 (measured) formula=1.00000 ingame_h=4.552 fp=3.800 target=4.552 pose=idle:1
+[lineup   28.9s] DONE units=52 failed=0
 Blender 5.0.1 (hash a3db93c5b259 built 2025-12-16 01:32:30)
 
 Blender quit

@@ -8,362 +8,57 @@
     "'in game' / 'not in game' are auto-refreshed). The renderer never deletes a row."
   ],
   "rows": [
-    {
-      "unit": "barkling",
-      "kind": "creature",
-      "ingame_height_m": 2.438,
-      "target_height_m": 2.438,
-      "note": "in game: root_scale 1 x model_scale 1.75355 (game/characters/roster/tree_grunt.tres); formula 1.00000 (footprint-limited)"
-    },
-    {
-      "unit": "blightcap",
-      "kind": "creature",
-      "ingame_height_m": 0.61,
-      "target_height_m": 0.61,
-      "note": "in game: root_scale 1 x model_scale 0.38573 (game/characters/roster/blightcap.tres); formula 1.00000 (footprint-limited)"
-    },
-    {
-      "unit": "duskmaw",
-      "kind": "creature",
-      "ingame_height_m": 1.8,
-      "target_height_m": 1.8,
-      "note": "in game: root_scale 0.04316 x model_scale 1 (game/characters/roster/monster.tres); formula 0.04316 (height-limited)"
-    },
-    {
-      "unit": "eldroot",
-      "kind": "boss",
-      "ingame_height_m": 4.552,
-      "target_height_m": 4.552,
-      "note": "in game: root_scale 1 x model_scale 1 (game/characters/roster/eldroot.tres); formula 1.00000 (footprint-limited)"
-    },
-    {
-      "unit": "elias",
-      "kind": "humanoid",
-      "ingame_height_m": 1.8,
-      "target_height_m": 1.8,
-      "note": "in game: root_scale 0.96748 x model_scale 1 (game/characters/roster/elias.tres); formula 0.96748 (height-limited)"
-    },
-    {
-      "unit": "firefly",
-      "kind": "creature",
-      "ingame_height_m": 1.797,
-      "target_height_m": 1.797,
-      "note": "in game: root_scale 0.23958 x model_scale 1 (game/characters/roster/firefly.tres); formula 0.23958 (height-limited); WARNING delivered glb differs from rigged glb"
-    },
-    {
-      "unit": "firesprite",
-      "kind": "creature",
-      "ingame_height_m": 1.372,
-      "target_height_m": 1.372,
-      "note": "in game: root_scale 0.42007 x model_scale 0.76613 (game/characters/roster/firesprite.tres); formula 0.42007 (height-limited); WARNING delivered glb differs from rigged glb"
-    },
-    {
-      "unit": "geode",
-      "kind": "creature",
-      "ingame_height_m": 1.8,
-      "target_height_m": 1.8,
-      "note": "in game: root_scale 0.07489 x model_scale 1 (game/characters/roster/gem_knight.tres); formula 0.07489 (height-limited)"
-    },
-    {
-      "unit": "lyra",
-      "kind": "humanoid",
-      "ingame_height_m": 1.727,
-      "target_height_m": 1.727,
-      "note": "in game: root_scale 1.02816 x model_scale 0.95956 (game/characters/roster/lyra.tres); formula 1.02816 (height-limited)"
-    },
-    {
-      "unit": "magmoo",
-      "kind": "creature",
-      "ingame_height_m": 2.402,
-      "target_height_m": 2.4384,
-      "note": "in game: root_scale 0.10751 x model_scale 4.23699 (game/characters/roster/magmoo.tres); formula 0.10753 (footprint-limited); WARNING delivered glb differs from rigged glb"
-    },
-    {
-      "unit": "mortis",
-      "kind": "creature",
-      "ingame_height_m": 1.88,
-      "target_height_m": 1.88,
-      "note": "in game: root_scale 0.13847 x model_scale 1.04405 (game/characters/roster/necromancer.tres); formula 0.13847 (height-limited)"
-    },
-    {
-      "unit": "mycothrall",
-      "kind": "creature",
-      "ingame_height_m": 0.473,
-      "target_height_m": 0.473,
-      "note": "in game: root_scale 1 x model_scale 1 (game/characters/roster/mycothrall.tres); formula 1.00000 (footprint-limited)"
-    },
-    {
-      "unit": "petalfang",
-      "kind": "creature",
-      "ingame_height_m": 1.219,
-      "target_height_m": 1.219,
-      "note": "in game: root_scale 1 x model_scale 1.42461 (game/characters/roster/petalfang.tres); formula 1.00000 (footprint-limited)"
-    },
-    {
-      "unit": "seedant",
-      "kind": "creature",
-      "ingame_height_m": 1.067,
-      "target_height_m": 1.067,
-      "note": "in game: root_scale 0.35928 x model_scale 0.59203 (game/characters/roster/seedant.tres); formula 0.35928 (height-limited)"
-    },
-    {
-      "unit": "shadow_assassin",
-      "kind": "humanoid",
-      "ingame_height_m": 1.829,
-      "target_height_m": 1.829,
-      "note": "in game: root_scale 0.97122 x model_scale 1.016 (game/characters/roster/shadow_assassin.tres); formula 0.97122 (height-limited)"
-    },
-    {
-      "unit": "shadowbun",
-      "kind": "creature",
-      "ingame_height_m": 1.801,
-      "target_height_m": 1.801,
-      "note": "in game: root_scale 0.30213 x model_scale 1.00006 (game/characters/roster/shadowbun.tres); formula 0.30213 (height-limited)"
-    },
-    {
-      "unit": "supaoctto",
-      "kind": "creature",
-      "ingame_height_m": 1.79,
-      "target_height_m": 1.79,
-      "note": "in game: root_scale 0.0839 x model_scale 1 (game/characters/roster/supaoctto.tres); formula 0.08390 (height-limited)"
-    },
-    {
-      "unit": "vampito",
-      "kind": "creature",
-      "ingame_height_m": 1.175,
-      "target_height_m": 1.175,
-      "note": "in game: root_scale 0.09057 x model_scale 1 (game/characters/roster/vampito.tres); formula 0.09057 (footprint-limited)"
-    },
-    {
-      "unit": "vampwarrior",
-      "kind": "creature",
-      "ingame_height_m": 1.88,
-      "target_height_m": 1.88,
-      "note": "in game: root_scale 0.97787 x model_scale 1.06179 (game/characters/roster/vampwarrior.tres); formula 0.97787 (height-limited)"
-    },
-    {
-      "unit": "varden",
-      "kind": "humanoid",
-      "ingame_height_m": 1.93,
-      "target_height_m": 1.93,
-      "note": "in game: root_scale 0.90773 x model_scale 1.07244 (game/characters/roster/varden.tres); formula 0.90773 (height-limited)"
-    },
-    {
-      "unit": "vineweave",
-      "kind": "creature",
-      "ingame_height_m": 1.676,
-      "target_height_m": 1.676,
-      "note": "in game: root_scale 0.34149 x model_scale 0.93019 (game/characters/roster/vineweave.tres); formula 0.34148 (height-limited)"
-    },
-    {
-      "unit": "wren",
-      "kind": "humanoid",
-      "ingame_height_m": 1.795,
-      "target_height_m": 1.795,
-      "note": "in game: root_scale 1.02823 x model_scale 1 (game/characters/roster/wren.tres); formula 1.02823 (height-limited)"
-    },
-    {
-      "unit": "aquaoct",
-      "kind": "creature",
-      "ingame_height_m": 0.914,
-      "target_height_m": 0.914,
-      "note": "in game: root_scale 0.32572 x model_scale 0.50852 (game/characters/roster/aquaoct.tres); formula 0.32572 (height-limited)"
-    },
-    {
-      "unit": "bombee",
-      "kind": "creature",
-      "ingame_height_m": 0.914,
-      "target_height_m": 0.914,
-      "note": "in game: root_scale 0.38772 x model_scale 0.50067 (game/characters/roster/bombee.tres); formula 0.38772 (height-limited)"
-    },
-    {
-      "unit": "canine_bat",
-      "kind": "creature",
-      "ingame_height_m": 1.041,
-      "target_height_m": 1.041,
-      "note": "in game: root_scale 0.29802 x model_scale 0.5766 (game/characters/roster/canine_bat.tres); formula 0.29802 (height-limited)"
-    },
-    {
-      "unit": "pangolin_knight",
-      "kind": "creature",
-      "ingame_height_m": 0.914,
-      "target_height_m": 0.914,
-      "note": "in game: root_scale 0.3196 x model_scale 0.50712 (game/characters/roster/pangolin_knight.tres); formula 0.31960 (height-limited)"
-    },
-    {
-      "unit": "raven_rogue",
-      "kind": "creature",
-      "ingame_height_m": 0.914,
-      "target_height_m": 0.914,
-      "note": "in game: root_scale 0.33793 x model_scale 0.50842 (game/characters/roster/raven_rogue.tres); formula 0.33793 (height-limited)"
-    },
-    {
-      "unit": "shadow_mole",
-      "kind": "creature",
-      "ingame_height_m": 0.762,
-      "target_height_m": 0.762,
-      "note": "in game: root_scale 0.46964 x model_scale 0.42127 (game/characters/roster/shadow_mole.tres); formula 0.46964 (height-limited)"
-    },
-    {
-      "unit": "chest_monster",
-      "kind": "creature",
-      "ingame_height_m": 1.801,
-      "target_height_m": 1.2192,
-      "note": "not in game: formula min(1.8/h, 1.9/fp) = 0.37220 (height-limited)"
-    },
-    {
-      "unit": "crystal_canine",
-      "kind": "creature",
-      "ingame_height_m": 1.799,
-      "target_height_m": 1.524,
-      "note": "not in game: formula min(1.8/h, 1.9/fp) = 0.29024 (height-limited)"
-    },
-    {
-      "unit": "eclipse_wolf",
-      "kind": "creature",
-      "ingame_height_m": 1.799,
-      "target_height_m": 1.2192,
-      "note": "not in game: formula min(1.8/h, 1.9/fp) = 0.28436 (height-limited)"
-    },
-    {
-      "unit": "ember_eye",
-      "kind": "creature",
-      "ingame_height_m": 1.792,
-      "target_height_m": 1.3462,
-      "note": "not in game: formula min(1.8/h, 1.9/fp) = 0.25866 (height-limited)"
-    },
-    {
-      "unit": "ember_stump",
-      "kind": "creature",
-      "ingame_height_m": 1.815,
-      "target_height_m": 2.4384,
-      "note": "not in game: formula min(1.8/h, 1.9/fp) = 0.29477 (height-limited)"
-    },
-    {
-      "unit": "eye_totem",
-      "kind": "creature",
-      "ingame_height_m": 1.799,
-      "target_height_m": 1.0668,
-      "note": "not in game: formula min(1.8/h, 1.9/fp) = 0.26854 (height-limited)"
-    },
-    {
-      "unit": "fogeist",
-      "kind": "creature",
-      "ingame_height_m": 0.694,
-      "target_height_m": 1.4224,
-      "note": "not in game: formula min(1.8/h, 1.9/fp) = 0.23708 (footprint-limited)"
-    },
-    {
-      "unit": "gemwing_dragon",
-      "kind": "creature",
-      "ingame_height_m": 1.418,
-      "target_height_m": 3.9624,
-      "note": "not in game: formula min(1.8/h, 1.9/fp) = 0.22257 (footprint-limited)"
-    },
-    {
-      "unit": "goo_shield",
-      "kind": "creature",
-      "ingame_height_m": 1.822,
-      "target_height_m": 1.651,
-      "note": "not in game: formula min(1.8/h, 1.9/fp) = 0.34523 (height-limited)"
-    },
-    {
-      "unit": "halo_sentinel",
-      "kind": "creature",
-      "ingame_height_m": 1.792,
-      "target_height_m": 1.905,
-      "note": "not in game: formula min(1.8/h, 1.9/fp) = 0.29674 (height-limited)"
-    },
-    {
-      "unit": "holly_snowman",
-      "kind": "creature",
-      "ingame_height_m": 1.807,
-      "target_height_m": 1.524,
-      "note": "not in game: formula min(1.8/h, 1.9/fp) = 0.30405 (height-limited)"
-    },
-    {
-      "unit": "lava_komodo",
-      "kind": "creature",
-      "ingame_height_m": 1.006,
-      "target_height_m": 1.2954,
-      "note": "not in game: formula min(1.8/h, 1.9/fp) = 0.21792 (footprint-limited)"
-    },
-    {
-      "unit": "leaf_bird",
-      "kind": "creature",
-      "ingame_height_m": 0.427,
-      "target_height_m": 0.1524,
-      "note": "not in game: formula min(1.8/h, 1.9/fp) = 0.29481 (footprint-limited)"
-    },
-    {
-      "unit": "mystic_snow_spirit",
-      "kind": "creature",
-      "ingame_height_m": 1.81,
-      "target_height_m": 1.7272,
-      "note": "not in game: formula min(1.8/h, 1.9/fp) = 0.25388 (height-limited)"
-    },
-    {
-      "unit": "petal_cobra",
-      "kind": "creature",
-      "ingame_height_m": 1.803,
-      "target_height_m": 1.803,
-      "note": "not in game: formula min(1.8/h, 1.9/fp) = 0.30603 (height-limited)"
-    },
-    {
-      "unit": "phoenix_hatchling",
-      "kind": "creature",
-      "ingame_height_m": 1.8,
-      "target_height_m": 0.9144,
-      "note": "not in game: formula min(1.8/h, 1.9/fp) = 0.27461 (height-limited)"
-    },
-    {
-      "unit": "shield_rodent",
-      "kind": "creature",
-      "ingame_height_m": 0.819,
-      "target_height_m": 0.819,
-      "note": "not in game: formula min(1.8/h, 1.9/fp) = 0.34272 (footprint-limited)"
-    },
-    {
-      "unit": "soot_puff",
-      "kind": "creature",
-      "ingame_height_m": 1.809,
-      "target_height_m": 0.6096,
-      "note": "not in game: formula min(1.8/h, 1.9/fp) = 0.44547 (height-limited)"
-    },
-    {
-      "unit": "spectormn",
-      "kind": "creature",
-      "ingame_height_m": 1.809,
-      "target_height_m": 1.809,
-      "note": "not in game: formula min(1.8/h, 1.9/fp) = 0.26746 (height-limited)"
-    },
-    {
-      "unit": "storm_vessel",
-      "kind": "creature",
-      "ingame_height_m": 1.803,
-      "target_height_m": 1.905,
-      "note": "not in game: formula min(1.8/h, 1.9/fp) = 0.27190 (height-limited)"
-    },
-    {
-      "unit": "volcano_turtle",
-      "kind": "creature",
-      "ingame_height_m": 1.823,
-      "target_height_m": 2.1336,
-      "note": "not in game: formula min(1.8/h, 1.9/fp) = 0.26847 (height-limited)"
-    },
-    {
-      "unit": "winged_cat",
-      "kind": "creature",
-      "ingame_height_m": 1.799,
-      "target_height_m": 0.9144,
-      "note": "not in game: formula min(1.8/h, 1.9/fp) = 0.42082 (height-limited)"
-    },
-    {
-      "unit": "vulture_creature",
-      "kind": "creature",
-      "ingame_height_m": null,
-      "target_height_m": 1.524,
-      "note": "not in game yet: ARTIST SIZE 2026-10-12: 5 ft"
-    }
+    {"unit": "barkling", "kind": "creature", "ingame_height_m": 2.438, "target_height_m": 2.438, "note": "in game: root_scale 1 x model_scale 1.75355 (game/characters/roster/tree_grunt.tres); formula 1.00000 (footprint-limited)"},
+    {"unit": "blightcap", "kind": "creature", "ingame_height_m": 0.61, "target_height_m": 0.61, "note": "in game: root_scale 1 x model_scale 0.38573 (game/characters/roster/blightcap.tres); formula 1.00000 (footprint-limited)"},
+    {"unit": "duskmaw", "kind": "creature", "ingame_height_m": 1.8, "target_height_m": 1.8, "note": "in game: root_scale 0.04316 x model_scale 1 (game/characters/roster/monster.tres); formula 0.04316 (height-limited)"},
+    {"unit": "eldroot", "kind": "boss", "ingame_height_m": 4.552, "target_height_m": 4.552, "note": "in game: root_scale 1 x model_scale 1 (game/characters/roster/eldroot.tres); formula 1.00000 (footprint-limited)"},
+    {"unit": "elias", "kind": "humanoid", "ingame_height_m": 1.8, "target_height_m": 1.8, "note": "in game: root_scale 0.96748 x model_scale 1 (game/characters/roster/elias.tres); formula 0.96748 (height-limited)"},
+    {"unit": "firefly", "kind": "creature", "ingame_height_m": 1.797, "target_height_m": 1.797, "note": "in game: root_scale 0.23958 x model_scale 1 (game/characters/roster/firefly.tres); formula 0.23958 (height-limited); WARNING delivered glb differs from rigged glb"},
+    {"unit": "firesprite", "kind": "creature", "ingame_height_m": 1.372, "target_height_m": 1.372, "note": "in game: root_scale 0.42007 x model_scale 0.76613 (game/characters/roster/firesprite.tres); formula 0.42007 (height-limited); WARNING delivered glb differs from rigged glb"},
+    {"unit": "geode", "kind": "creature", "ingame_height_m": 1.8, "target_height_m": 1.8, "note": "in game: root_scale 0.07489 x model_scale 1 (game/characters/roster/gem_knight.tres); formula 0.07489 (height-limited)"},
+    {"unit": "lyra", "kind": "humanoid", "ingame_height_m": 1.727, "target_height_m": 1.727, "note": "in game: root_scale 1.02816 x model_scale 0.95956 (game/characters/roster/lyra.tres); formula 1.02816 (height-limited)"},
+    {"unit": "magmoo", "kind": "creature", "ingame_height_m": 2.402, "target_height_m": 2.4384, "note": "in game: root_scale 0.10751 x model_scale 4.23699 (game/characters/roster/magmoo.tres); formula 0.10753 (footprint-limited); WARNING delivered glb differs from rigged glb"},
+    {"unit": "mortis", "kind": "creature", "ingame_height_m": 1.88, "target_height_m": 1.88, "note": "in game: root_scale 0.13847 x model_scale 1.04405 (game/characters/roster/necromancer.tres); formula 0.13847 (height-limited)"},
+    {"unit": "mycothrall", "kind": "creature", "ingame_height_m": 0.473, "target_height_m": 0.473, "note": "in game: root_scale 1 x model_scale 1 (game/characters/roster/mycothrall.tres); formula 1.00000 (footprint-limited)"},
+    {"unit": "petalfang", "kind": "creature", "ingame_height_m": 1.219, "target_height_m": 1.219, "note": "in game: root_scale 1 x model_scale 1.42461 (game/characters/roster/petalfang.tres); formula 1.00000 (footprint-limited)"},
+    {"unit": "seedant", "kind": "creature", "ingame_height_m": 1.067, "target_height_m": 1.067, "note": "in game: root_scale 0.35928 x model_scale 0.59203 (game/characters/roster/seedant.tres); formula 0.35928 (height-limited)"},
+    {"unit": "shadow_assassin", "kind": "humanoid", "ingame_height_m": 1.829, "target_height_m": 1.829, "note": "in game: root_scale 0.97122 x model_scale 1.016 (game/characters/roster/shadow_assassin.tres); formula 0.97122 (height-limited)"},
+    {"unit": "shadowbun", "kind": "creature", "ingame_height_m": 1.801, "target_height_m": 1.801, "note": "in game: root_scale 0.30213 x model_scale 1.00006 (game/characters/roster/shadowbun.tres); formula 0.30213 (height-limited)"},
+    {"unit": "supaoctto", "kind": "creature", "ingame_height_m": 1.79, "target_height_m": 1.79, "note": "in game: root_scale 0.0839 x model_scale 1 (game/characters/roster/supaoctto.tres); formula 0.08390 (height-limited)"},
+    {"unit": "vampito", "kind": "creature", "ingame_height_m": 1.175, "target_height_m": 1.175, "note": "in game: root_scale 0.09057 x model_scale 1 (game/characters/roster/vampito.tres); formula 0.09057 (footprint-limited)"},
+    {"unit": "vampwarrior", "kind": "creature", "ingame_height_m": 1.88, "target_height_m": 1.88, "note": "in game: root_scale 0.97787 x model_scale 1.06179 (game/characters/roster/vampwarrior.tres); formula 0.97787 (height-limited)"},
+    {"unit": "varden", "kind": "humanoid", "ingame_height_m": 1.93, "target_height_m": 1.93, "note": "in game: root_scale 0.90773 x model_scale 1.07244 (game/characters/roster/varden.tres); formula 0.90773 (height-limited)"},
+    {"unit": "vineweave", "kind": "creature", "ingame_height_m": 1.676, "target_height_m": 1.676, "note": "in game: root_scale 0.34149 x model_scale 0.93019 (game/characters/roster/vineweave.tres); formula 0.34148 (height-limited)"},
+    {"unit": "wren", "kind": "humanoid", "ingame_height_m": 1.795, "target_height_m": 1.795, "note": "in game: root_scale 1.02823 x model_scale 1 (game/characters/roster/wren.tres); formula 1.02823 (height-limited)"},
+    {"unit": "aquaoct", "kind": "creature", "ingame_height_m": 0.914, "target_height_m": 0.914, "note": "in game: root_scale 0.32572 x model_scale 0.50852 (game/characters/roster/aquaoct.tres); formula 0.32572 (height-limited)"},
+    {"unit": "bombee", "kind": "creature", "ingame_height_m": 0.914, "target_height_m": 0.914, "note": "in game: root_scale 0.38772 x model_scale 0.50067 (game/characters/roster/bombee.tres); formula 0.38772 (height-limited)"},
+    {"unit": "canine_bat", "kind": "creature", "ingame_height_m": 1.041, "target_height_m": 1.041, "note": "in game: root_scale 0.29802 x model_scale 0.5766 (game/characters/roster/canine_bat.tres); formula 0.29802 (height-limited)"},
+    {"unit": "pangolin_knight", "kind": "creature", "ingame_height_m": 0.914, "target_height_m": 0.914, "note": "in game: root_scale 0.3196 x model_scale 0.50712 (game/characters/roster/pangolin_knight.tres); formula 0.31960 (height-limited)"},
+    {"unit": "raven_rogue", "kind": "creature", "ingame_height_m": 0.914, "target_height_m": 0.914, "note": "in game: root_scale 0.33793 x model_scale 0.50842 (game/characters/roster/raven_rogue.tres); formula 0.33793 (height-limited)"},
+    {"unit": "shadow_mole", "kind": "creature", "ingame_height_m": 0.762, "target_height_m": 0.762, "note": "in game: root_scale 0.46964 x model_scale 0.42127 (game/characters/roster/shadow_mole.tres); formula 0.46964 (height-limited)"},
+    {"unit": "chest_monster", "kind": "creature", "ingame_height_m": 1.219, "target_height_m": 1.2192, "note": "in game: root_scale 0.3722 x model_scale 0.6768 (game/characters/roster/chest_monster.tres); formula 0.37220 (height-limited)"},
+    {"unit": "crystal_canine", "kind": "creature", "ingame_height_m": 1.524, "target_height_m": 1.524, "note": "in game: root_scale 0.28861 x model_scale 0.85047 (game/characters/roster/crystal_canine.tres); formula 0.28861 (height-limited)"},
+    {"unit": "eclipse_wolf", "kind": "creature", "ingame_height_m": 1.219, "target_height_m": 1.2192, "note": "in game: root_scale 0.28436 x model_scale 0.67782 (game/characters/roster/eclipse_wolf.tres); formula 0.28436 (height-limited)"},
+    {"unit": "ember_eye", "kind": "creature", "ingame_height_m": 1.346, "target_height_m": 1.3462, "note": "in game: root_scale 0.25866 x model_scale 0.75104 (game/characters/roster/ember_eye.tres); formula 0.25866 (height-limited)"},
+    {"unit": "ember_stump", "kind": "creature", "ingame_height_m": 2.438, "target_height_m": 2.4384, "note": "in game: root_scale 0.29477 x model_scale 1.34343 (game/characters/roster/ember_stump.tres); formula 0.29477 (height-limited)"},
+    {"unit": "eye_totem", "kind": "creature", "ingame_height_m": 1.067, "target_height_m": 1.0668, "note": "in game: root_scale 0.26854 x model_scale 0.59303 (game/characters/roster/eye_totem.tres); formula 0.26854 (height-limited)"},
+    {"unit": "fogeist", "kind": "creature", "ingame_height_m": 1.422, "target_height_m": 1.4224, "note": "in game: root_scale 0.59119 x model_scale 0.8214 (game/characters/roster/fogeist.tres); formula 0.23708 (footprint-limited)"},
+    {"unit": "gemwing_dragon", "kind": "creature", "ingame_height_m": 3.962, "target_height_m": 3.9624, "note": "in game: root_scale 0.28957 x model_scale 2.2134 (game/characters/roster/gemwing_dragon.tres); formula 0.28385 (footprint-limited)"},
+    {"unit": "goo_shield", "kind": "creature", "ingame_height_m": 1.651, "target_height_m": 1.651, "note": "in game: root_scale 0.34523 x model_scale 0.9063 (game/characters/roster/goo_shield.tres); formula 0.34523 (height-limited)"},
+    {"unit": "halo_sentinel", "kind": "creature", "ingame_height_m": 1.905, "target_height_m": 1.905, "note": "in game: root_scale 0.29674 x model_scale 1.06317 (game/characters/roster/halo_sentinel.tres); formula 0.29674 (height-limited)"},
+    {"unit": "holly_snowman", "kind": "creature", "ingame_height_m": 1.524, "target_height_m": 1.524, "note": "in game: root_scale 0.31326 x model_scale 0.84823 (game/characters/roster/holly_snowman.tres); formula 0.31326 (height-limited)"},
+    {"unit": "lava_komodo", "kind": "creature", "ingame_height_m": 1.295, "target_height_m": 1.2954, "note": "in game: root_scale 0.39147 x model_scale 0.71648 (game/characters/roster/lava_komodo.tres); formula 0.21792 (footprint-limited)"},
+    {"unit": "leaf_bird", "kind": "creature", "ingame_height_m": 0.152, "target_height_m": 0.1524, "note": "in game: root_scale 1.11825 x model_scale 0.08468 (game/characters/roster/leaf_bird.tres); formula 0.61215 (footprint-limited)"},
+    {"unit": "mystic_snow_spirit", "kind": "creature", "ingame_height_m": 1.727, "target_height_m": 1.7272, "note": "in game: root_scale 0.25388 x model_scale 0.95433 (game/characters/roster/mystic_snow_spirit.tres); formula 0.25388 (height-limited)"},
+    {"unit": "petal_cobra", "kind": "creature", "ingame_height_m": 1.803, "target_height_m": 1.803, "note": "in game: root_scale 0.30603 x model_scale 1.00004 (game/characters/roster/petal_cobra.tres); formula 0.30603 (height-limited)"},
+    {"unit": "phoenix_hatchling", "kind": "creature", "ingame_height_m": 0.914, "target_height_m": 0.9144, "note": "in game: root_scale 0.27461 x model_scale 0.50796 (game/characters/roster/phoenix_hatchling.tres); formula 0.27461 (height-limited)"},
+    {"unit": "shield_rodent", "kind": "creature", "ingame_height_m": 0.819, "target_height_m": 0.819, "note": "in game: root_scale 0.75598 x model_scale 0.45344 (game/characters/roster/shield_rodent.tres); formula 0.34272 (footprint-limited)"},
+    {"unit": "soot_puff", "kind": "creature", "ingame_height_m": 0.61, "target_height_m": 0.6096, "note": "in game: root_scale 0.44547 x model_scale 0.33699 (game/characters/roster/soot_puff.tres); formula 0.44547 (height-limited)"},
+    {"unit": "spectormn", "kind": "creature", "ingame_height_m": 1.809, "target_height_m": 1.809, "note": "in game: root_scale 0.26746 x model_scale 1.00005 (game/characters/roster/spectormn.tres); formula 0.26746 (height-limited)"},
+    {"unit": "storm_vessel", "kind": "creature", "ingame_height_m": 1.905, "target_height_m": 1.905, "note": "in game: root_scale 0.2719 x model_scale 1.05645 (game/characters/roster/storm_vessel.tres); formula 0.27190 (height-limited)"},
+    {"unit": "volcano_turtle", "kind": "creature", "ingame_height_m": 2.134, "target_height_m": 2.1336, "note": "in game: root_scale 0.26847 x model_scale 1.17031 (game/characters/roster/volcano_turtle.tres); formula 0.26847 (height-limited)"},
+    {"unit": "winged_cat", "kind": "creature", "ingame_height_m": 0.914, "target_height_m": 0.9144, "note": "in game: root_scale 0.42082 x model_scale 0.50839 (game/characters/roster/winged_cat.tres); formula 0.42082 (height-limited)"},
+    {"unit": "vulture_creature", "kind": "creature", "ingame_height_m": 1.524, "target_height_m": 1.524, "note": "in game: root_scale 0.2609 x model_scale 0.83203 (game/characters/roster/vulture_creature.tres); formula 0.26090 (height-limited)"},
+    {"unit": "sand_drill_worm", "kind": "creature", "ingame_height_m": 1.802, "target_height_m": 1.802, "note": "not in game: formula min(1.8/h, 1.9/fp) = 0.26823 (height-limited)"}
   ]
 }
