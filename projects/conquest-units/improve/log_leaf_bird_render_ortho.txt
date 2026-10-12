@@ -1,7 +1,7 @@
-00:01.406  blend            | Read blend: "C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\rigged\leaf_bird.blend"
-00:03.562  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\leaf_bird\leaf_bird_ortho_front.png'
-00:03.797  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\leaf_bird\leaf_bird_ortho_back.png'
-00:04.031  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\leaf_bird\leaf_bird_ortho_side.png'
+00:01.281  blend            | Read blend: "C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\rigged\leaf_bird.blend"
+00:03.406  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\leaf_bird\leaf_bird_ortho_front.png'
+00:03.656  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\leaf_bird\leaf_bird_ortho_back.png'
+00:03.937  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\leaf_bird\leaf_bird_ortho_side.png'
 WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\leaf_bird\leaf_bird_ortho_front.png
 WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\leaf_bird\leaf_bird_ortho_back.png
 WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\leaf_bird\leaf_bird_ortho_side.png

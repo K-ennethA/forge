@@ -78,7 +78,7 @@ SPINE = [(-2.02, 0.56, 0.15), (-1.90, 0.588, 0.241), (-1.60, 0.548, 0.489), (-1.
          (-0.70, 0.823, 0.759), (-0.40, 0.946, 0.827), (-0.10, 1.117, 0.860), (0.20, 1.271, 0.890), (0.50, 1.470, 0.890),
          (0.80, 1.751, 0.844), (1.10, 2.046, 0.684), (1.40, 2.427, 0.516), (1.60, 2.706, 0.405), (1.80, 3.035, 0.287),
          (1.95, 3.323, 0.192), (2.05, 3.617, 0.110), (2.11, 3.95, 0.05), (2.13, 4.21, 0.012)]
-SPINE_RSCALE = 0.80                   # "body depth" (v2 slim): every medial radius x this (the side silhouette slims; the
+SPINE_RSCALE = 0.90                   # "body depth" (v2 slim 0.80; v4 0.90: the shorter body plumps a little): every medial radius x this (the side silhouette slims; the
                                       #   tail tip stays a sharp point)
 SPINE_DENSE = 4                       # catmull samples per knot span (smooth chain, no ribbing)
 BODY_KX = 0.50                        # "body width": lateral half-width / side half-depth. v1 0.78 (the FRONT view's body
@@ -139,8 +139,16 @@ LOBE_NS, LOBE_NT = 12, 4
 GLIDE_PITCH = 5.0                     # "glide pitch": the head -> tail chord rises this many deg (nose slightly down)
 BEND_KEEP = 0.35                      # "body curve": share of the sheet's medial bend kept (1 = the drawn dive's banana
                                       #   curve, 0 = a straight leaf); 0.35 keeps a gentle leaf curve, tail up
-WING_DIHEDRAL = 8.0                   # "wing dihedral": deg the wings rise outboard of WING_DIH_X0
+WING_DIHEDRAL = 12.0                  # "wing dihedral": deg the wings rise outboard of WING_DIH_X0 (v3 8; v4 12 so the
+                                      #   compact bird's height reads)
 WING_DIH_X0 = 0.35                    # the dihedral starts at this |X| (inside the body: the root stays buried)
+# v4 (artist size: "half a foot in height and a foot long" -> length / height ~ 2.0; v3 was 6.445 / 1.448 = 4.45): a
+#   COMPACT bird, not a squash -- the body is SHORTENED along its medial curve (cross-sections kept: depth + width stay),
+#   the head less than the body so it stays round and readable; the wings + tail lobes shrink outboard to suit
+LEN_SCALE = 0.42                      # "body length": the medial curve behind the head keeps this share of its length
+LEN_HEAD = 0.72                       # "head length": the head + beak keep this share (the head reads round, not long)
+LEN_RAMP_Y = (-1.50, -0.90)           # sheet Y over which the length scale ramps from LEN_HEAD to LEN_SCALE
+SPAN_SCALE = 0.55                     # "wing / lobe span": outboard |X| scale (the wingspan shrinks with the body)
 # ---- MARKINGS on the shell
 MIDRIB_W, MIDRIB_Y0 = 0.035, -1.40    # "midrib": half width; it runs from behind the eyes (front view: the dark centre line
                                       #   x 230-240 from y 265 to 570; back view x 586-592 full length)
@@ -626,12 +634,14 @@ BP = np.vstack([[SPY[0] - _t0[0] * _EXT, SPZ[0] - _t0[1] * _EXT], np.stack([SPY,
 _seg = np.diff(BP, axis=0); _len = np.linalg.norm(_seg, axis=1); _dir = _seg / _len[:, None]
 _th = np.unwrap(np.arctan2(_dir[:, 1], _dir[:, 0]))
 _i_head, _i_tail = 1, len(BP) - 2                                          # first / last real medial point
+_ymid = 0.5 * (BP[:-1, 0] + BP[1:, 0])
+_f = LEN_HEAD + (LEN_SCALE - LEN_HEAD) * smoothstep(LEN_RAMP_Y[0], LEN_RAMP_Y[1], _ymid)   # per-segment length scale
 
 
 def _bent(c):
     th2 = BEND_KEEP * _th + c
     d2 = np.stack([np.cos(th2), np.sin(th2)], 1)
-    pts = np.vstack([[0.0, 0.0], np.cumsum(d2 * _len[:, None], 0)])
+    pts = np.vstack([[0.0, 0.0], np.cumsum(d2 * (_len * _f)[:, None], 0)])
     return pts, d2
 
 
@@ -642,7 +652,7 @@ BP2, BD2 = _bent(BEND_C)
 _ch = BP2[_i_tail] - BP2[_i_head]
 
 
-def glide_map(P, wing=False):
+def glide_map(P, wing=False, lobe=False):
     """sheet coords -> rest (glide) coords: per medial segment a rigid YZ transform (the point's nearest segment,
     along-param and signed normal offset are kept; X is untouched). Wing points then rise WING_DIHEDRAL outboard of
     WING_DIH_X0."""
@@ -659,7 +669,12 @@ def glide_map(P, wing=False):
     n = _dir[kk, 0] * R[:, 1] - _dir[kk, 1] * R[:, 0]                          # left normal offset
     d2 = BD2[kk]; n2 = np.stack([-d2[:, 1], d2[:, 0]], 1)
     out = P.copy()
-    out[:, 1:3] = BP2[kk] + a[:, None] * d2 + n[:, None] * n2
+    out[:, 1:3] = BP2[kk] + (a * _f[kk])[:, None] * d2 + n[:, None] * n2
+    if wing:
+        ax_ = np.abs(out[:, 0])
+        out[:, 0] = np.sign(out[:, 0]) * np.where(ax_ > WING_DIH_X0, WING_DIH_X0 + (ax_ - WING_DIH_X0) * SPAN_SCALE, ax_)
+    if lobe:
+        out[:, 0] *= SPAN_SCALE
     if wing:
         out[:, 2] += math.tan(math.radians(WING_DIHEDRAL)) * np.maximum(np.abs(out[:, 0]) - WING_DIH_X0, 0.0)
     return out
@@ -668,7 +683,7 @@ def glide_map(P, wing=False):
 CV_SHEET = CV.copy()
 for p in PARTS:
     p.Vs = p.V.copy()
-    p.V = glide_map(p.V, wing=p.name.startswith("wing"))
+    p.V = glide_map(p.V, wing=p.name.startswith("wing"), lobe=p.name.startswith("lobe"))
 CV = glide_map(CV)
 HV = glide_map(HV)
 for s in WING:
@@ -681,7 +696,7 @@ report["orientation"] = {
     "sheet_chord_deg": round(math.degrees(math.atan2(BP[_i_tail, 1] - BP[_i_head, 1], BP[_i_tail, 0] - BP[_i_head, 0])), 3),
     "head_end_tangent_deg": round(math.degrees(math.atan2(BD2[_i_head, 1], BD2[_i_head, 0])), 3),
     "tail_end_tangent_deg": round(math.degrees(math.atan2(BD2[_i_tail - 1, 1], BD2[_i_tail - 1, 0])), 3),
-    "bend_keep": BEND_KEEP, "wing_dihedral_deg": WING_DIHEDRAL,
+    "bend_keep": BEND_KEEP, "wing_dihedral_deg": WING_DIHEDRAL, "len_scale": LEN_SCALE, "span_scale": SPAN_SCALE,
     "sheet_bend_total_deg": round(math.degrees(_th[_i_tail - 1] - _th[_i_head]), 2)}
 print("ORIENT", json.dumps(report["orientation"]))
 

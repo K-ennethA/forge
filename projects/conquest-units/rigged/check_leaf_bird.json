@@ -4,17 +4,17 @@
   {
    "check": "cell_fit",
    "pass": false,
-   "footprint": 6.4449,
-   "height": 1.448,
-   "width": 3.84,
-   "depth": 6.4449,
+   "footprint": 3.1038,
+   "height": 1.6097,
+   "width": 2.427,
+   "depth": 3.1038,
    "max_footprint": 1.9,
    "max_height": 1.8
   },
   {
    "check": "feet_origin",
    "pass": true,
-   "min_z": 0.0,
+   "min_z": -0.0,
    "centre_xy": [
     0.0,
     0.0
@@ -32,7 +32,7 @@
   {
    "check": "tri_budget",
    "pass": true,
-   "tris": 14556,
+   "tris": 14584,
    "budget": [
     8000,
     22000
@@ -50,12 +50,12 @@
     {
      "mesh": "leaf_bird",
      "layers": 1,
-     "islands": 136,
+     "islands": 150,
      "flipped": 0,
      "overlap": false,
-     "overlap_note": "summed UV area is 9% below the rasterised coverage at 512x512 \u2014 consistent with no overlap. A raster quantises every island edge, so anything under 8% is counted as clean.",
-     "coverage": 0.492,
-     "area_distortion_p95": 1.07
+     "overlap_note": "summed UV area is 10% below the rasterised coverage at 512x512 \u2014 consistent with no overlap. A raster quantises every island edge, so anything under 8% is counted as clean.",
+     "coverage": 0.6593,
+     "area_distortion_p95": 1.15
     }
    ]
   },
@@ -63,7 +63,7 @@
    "check": "flat_shaded",
    "pass": true,
    "smooth_faces": 0,
-   "faces": 13668,
+   "faces": 13696,
    "smooth_outside_exemption": 0,
    "smooth_exempt": 0,
    "exemption": null,
@@ -119,9 +119,9 @@
      "manual_range": true,
      "seam_mm": 0.0,
      "extent": {
-      "footprint": 6.4932,
-      "height": 1.714,
-      "min_z": 0.0634
+      "footprint": 3.126,
+      "height": 1.6772,
+      "min_z": 0.0911
      }
     },
     {
@@ -134,9 +134,9 @@
      "manual_range": true,
      "seam_mm": 0.0,
      "extent": {
-      "footprint": 6.5009,
-      "height": 1.7945,
-      "min_z": 0.0927
+      "footprint": 3.1301,
+      "height": 1.6379,
+      "min_z": 0.1147
      }
     }
    ]

@@ -18,54 +18,54 @@
    223
   ],
   "ops": 73,
-  "high_tris": 299176,
-  "high_verts": 149590,
+  "high_tris": 334788,
+  "high_verts": 167396,
   "spine_knots": 19,
   "spine_dense": 73,
   "crumbs": {
    "pieces": 1,
    "dropped_verts": 0
   },
-  "seconds": 4.6
+  "seconds": 5.8
  },
  "retopo": {
   "method": "SDF marching tetrahedra (step 0.020) -> collapse decimation (deterministic)",
-  "decimated_tris": 8000,
+  "decimated_tris": 7998,
   "specks": {
    "pieces": 1,
    "dropped_verts": 0
   },
   "doubled_faces_removed": 0,
   "low_to_high": {
-   "mean": 0.00023,
-   "p99": 0.00066,
-   "max": 0.00096
+   "mean": 0.00024,
+   "p99": 0.0007,
+   "max": 0.00093
   },
   "high_to_low_sampled": {
-   "p99": 0.0006,
-   "max": 0.00139
+   "p99": 0.00063,
+   "max": 0.00147
   },
   "bbox_high": [
-   0.7998,
-   4.3429,
-   4.1117
+   0.8053,
+   4.3542,
+   4.1499
   ],
   "bbox_low": [
-   0.8,
-   4.3431,
-   4.1115
+   0.8054,
+   4.3539,
+   4.1502
   ],
   "bbox_low_over_high": [
-   1.00023,
-   1.00005,
-   0.99995
+   1.00017,
+   0.99994,
+   1.00009
   ],
-  "seconds": 3.5
+  "seconds": 3.6
  },
  "slim": {
-  "shell_max_half_width": 0.4,
-  "mid_body_Y0.35_half_width": 0.358,
-  "mid_body_Y0.35_depth_z": 1.663,
+  "shell_max_half_width": 0.403,
+  "mid_body_Y0.35_half_width": 0.403,
+  "mid_body_Y0.35_depth_z": 1.891,
   "head_Y-1.6_half_width": 0.4,
   "v1": {
    "shell_max_half_width": 0.698,
@@ -75,7 +75,7 @@
   },
   "knobs": {
    "BODY_KX": 0.5,
-   "SPINE_RSCALE": 0.8,
+   "SPINE_RSCALE": 0.9,
    "HEAD_R": [
     0.4,
     0.58,
@@ -88,128 +88,130 @@
    {
     "field": "x",
     "tau": 0.035,
-    "edge_splits": 161,
-    "face_connects": 162
+    "edge_splits": 147,
+    "face_connects": 151
    },
    {
     "field": "x",
     "tau": -0.035,
-    "edge_splits": 159,
-    "face_connects": 161
+    "edge_splits": 136,
+    "face_connects": 142
    },
    {
     "field": "y",
     "tau": -1.4,
-    "edge_splits": 29,
-    "face_connects": 30
+    "edge_splits": 35,
+    "face_connects": 37
    },
    {
     "field": "x",
     "tau": 0.08,
-    "edge_splits": 30,
+    "edge_splits": 25,
     "face_connects": 32
    },
    {
     "field": "x",
     "tau": -0.08,
     "edge_splits": 29,
-    "face_connects": 34
+    "face_connects": 38
    },
    {
     "field": "bs0",
     "tau": 0.035,
-    "edge_splits": 84,
-    "face_connects": 97
+    "edge_splits": 85,
+    "face_connects": 104
    },
    {
     "field": "bs0",
     "tau": -0.035,
-    "edge_splits": 98,
-    "face_connects": 116
+    "edge_splits": 105,
+    "face_connects": 125
    },
    {
     "field": "bs1",
     "tau": 0.035,
-    "edge_splits": 35,
-    "face_connects": 42
+    "edge_splits": 46,
+    "face_connects": 50
    },
    {
     "field": "bs1",
     "tau": -0.035,
-    "edge_splits": 58,
-    "face_connects": 63
-   },
-   {
-    "field": "bs2",
-    "tau": 0.035,
-    "edge_splits": 36,
-    "face_connects": 41
-   },
-   {
-    "field": "bs2",
-    "tau": -0.035,
-    "edge_splits": 73,
-    "face_connects": 73
-   },
-   {
-    "field": "bs3",
-    "tau": 0.035,
     "edge_splits": 56,
     "face_connects": 58
    },
    {
+    "field": "bs2",
+    "tau": 0.035,
+    "edge_splits": 50,
+    "face_connects": 52
+   },
+   {
+    "field": "bs2",
+    "tau": -0.035,
+    "edge_splits": 84,
+    "face_connects": 84
+   },
+   {
+    "field": "bs3",
+    "tau": 0.035,
+    "edge_splits": 58,
+    "face_connects": 62
+   },
+   {
     "field": "bs3",
     "tau": -0.035,
-    "edge_splits": 29,
-    "face_connects": 35
+    "edge_splits": 33,
+    "face_connects": 38
    },
    {
     "field": "ax",
     "tau": 0.12,
-    "edge_splits": 1,
-    "face_connects": 1
+    "edge_splits": 4,
+    "face_connects": 5
    }
   ],
-  "seconds": 4.0,
-  "shell_tris_after_cuts": 9756,
+  "seconds": 3.9,
+  "shell_tris_after_cuts": 9784,
   "shell_region_faces": {
-   "body": 7376,
-   "highlight": 779,
-   "marking": 1601
+   "body": 7490,
+   "highlight": 691,
+   "marking": 1603
   },
   "feature_faces": {
-   "midrib": 922,
-   "highlight": 779,
-   "bands": 679
+   "midrib": 871,
+   "highlight": 691,
+   "bands": 732
   }
  },
  "orientation": {
   "rule": "built in sheet coords (the drawn dive), mapped by a piecewise-rigid bend along the medial curve",
   "glide_pitch_deg_chord_head_to_tail": 5.0,
   "sheet_chord_deg": 41.332,
-  "head_end_tangent_deg": -3.013,
-  "tail_end_tangent_deg": 20.75,
+  "head_end_tangent_deg": -1.898,
+  "tail_end_tangent_deg": 21.864,
   "bend_keep": 0.35,
-  "wing_dihedral_deg": 8.0,
+  "wing_dihedral_deg": 12.0,
+  "len_scale": 0.42,
+  "span_scale": 0.55,
   "sheet_bend_total_deg": 67.89
  },
  "centre_shift": [
   0.0,
-  4.71675,
-  -0.953321
+  2.629072,
+  -0.914066
  ],
  "mirror_test": {
-  "max": 0.02174,
-  "p99": 0.00436,
+  "max": 0.01722,
+  "p99": 0.00381,
   "rule": "distance from each vertex's X-mirror to the rest mesh surface (the decimated shell is not vertex-symmetric; its surface is)",
   "worst": "shell",
   "per_island_max": {
-   "shell": 0.02174,
+   "shell": 0.01722,
    "beak": 0.0,
-   "eye.L": 0.00497,
-   "iris.L": 0.00842,
-   "eye.R": 0.00819,
-   "iris.R": 0.00795,
+   "eye.L": 0.00357,
+   "iris.L": 0.00472,
+   "eye.R": 0.00631,
+   "iris.R": 0.00601,
    "wing.L": 0.0,
    "wing.R": 0.0,
    "lobe.L": 0.0,
@@ -224,33 +226,33 @@
  },
  "regions_faces": {
   "leaf_bird": {
-   "body": 9904,
-   "highlight": 779,
-   "marking": 2001,
+   "body": 10018,
+   "highlight": 691,
+   "marking": 2003,
    "beak": 144,
    "eye": 504,
    "iris": 336
   }
  },
  "regions_area_share": {
-  "body": 0.8516,
-  "highlight": 0.0216,
-  "marking": 0.0815,
-  "beak": 0.0257,
-  "eye": 0.0139,
-  "iris": 0.0057
+  "body": 0.8148,
+  "highlight": 0.0273,
+  "marking": 0.0734,
+  "beak": 0.0479,
+  "eye": 0.0259,
+  "iris": 0.0106
  },
  "facing": {
   "rule": "head centre (HEAD_C) -> the beak tip on the midline",
   "anchor": [
    0.0,
-   -2.2721,
-   0.8001
+   -0.8663,
+   0.8461
   ],
   "landmark": [
    0.0,
-   -3.2225,
-   0.7987
+   -1.5519,
+   0.8024
   ],
   "angle_from_minusY_deg": 0.0
  },
@@ -284,39 +286,39 @@
   "L": {
    "hinge": [
     [
-     0.72,
-     -2.0649,
-     0.8055
+     0.5535,
+     -0.7189,
+     0.8507
     ],
     [
-     0.61,
-     0.9188,
-     0.8603
+     0.493,
+     0.5885,
+     0.8893
     ]
    ],
    "tip": [
-    1.92,
-    2.1496,
-    1.2614
+    1.2135,
+    1.1036,
+    1.1436
    ]
   },
   "R": {
    "hinge": [
     [
-     -0.72,
-     -2.0649,
-     0.8055
+     -0.5535,
+     -0.7189,
+     0.8507
     ],
     [
-     -0.61,
-     0.9188,
-     0.8603
+     -0.493,
+     0.5885,
+     0.8893
     ]
    ],
    "tip": [
-    -1.92,
-    2.1496,
-    1.2614
+    -1.2135,
+    1.1036,
+    1.1436
    ]
   }
  },
@@ -333,9 +335,9 @@
   }
  },
  "tris": {
-  "total": 14556,
-  "shell": 9756,
-  "shell_before_cuts": 8000,
+  "total": 14584,
+  "shell": 9784,
+  "shell_before_cuts": 7998,
   "beak": 240,
   "eyes": 896,
   "irises": 576,
@@ -373,23 +375,23 @@
  "measure": {
   "bbox": [
    [
-    -1.92,
-    -3.2225,
+    -1.2135,
+    -1.5519,
     0.0
    ],
    [
-    1.92,
-    3.2225,
-    1.448
+    1.2135,
+    1.5519,
+    1.6097
    ]
   ],
-  "height": 1.448,
-  "width_x": 3.84,
-  "depth_y": 6.4449,
+  "height": 1.6097,
+  "width_x": 2.427,
+  "depth_y": 3.1038,
   "sheet_px_equivalent": {
-   "height_px": 144.8,
-   "width_px": 384.0,
-   "depth_px": 644.5
+   "height_px": 161.0,
+   "width_px": 242.7,
+   "depth_px": 310.4
   },
   "sheet": {
    "front_view_height_px": 450,
@@ -400,8 +402,8 @@
    "side_view_length_px": 500
   },
   "export_cell_fit_report_only": {
-   "scale": 0.29481,
-   "height_m": 0.4269,
+   "scale": 0.61215,
+   "height_m": 0.9853,
    "footprint_m": 1.9,
    "bound_by": "footprint"
   }
@@ -411,13 +413,13 @@
    "result": [
     "FINISHED"
    ],
-   "seconds": 0.6
+   "seconds": 0.5
   },
   "AO": {
    "result": [
     "FINISHED"
    ],
-   "seconds": 0.6
+   "seconds": 0.5
   },
   "cage_extrusion": 0.02,
   "cage_rule": "3 x the sampled high->low p99 distance (floor 0.02)",
@@ -425,21 +427,21 @@
    "normal": 1024,
    "ao": 512
   },
-  "high_tris": 303088,
+  "high_tris": 338700,
   "high_rule": "SDF shell (marching tets) + every closed part",
-  "body_uv_texels_normal": 515938,
-  "normal_baked_pct_of_body_texels": 99.85,
-  "normal_detail_fraction_dev_gt_0.05": 0.1542,
+  "body_uv_texels_normal": 691222,
+  "normal_baked_pct_of_body_texels": 99.95,
+  "normal_detail_fraction_dev_gt_0.05": 0.186,
   "ao_baked_pct_of_body_texels": 100.0,
-  "ao_mean": 0.8218,
+  "ao_mean": 0.7915,
   "ao_p05": 0.0,
   "pixel_sha": {
-   "normal": "d0f199ec4b29e1fc",
-   "ao": "adc9a43d679dea0d"
+   "normal": "d19ed8fe5ea495cd",
+   "ao": "784011ffed7180b4"
   },
-  "seconds": 3.9
+  "seconds": 4.1
  },
- "digest_geometry_colour_uv": "d2bd89cda2b45c6f",
+ "digest_geometry_colour_uv": "ce2d5262458ee95a",
  "palette": {
   "default": {
    "body": {
