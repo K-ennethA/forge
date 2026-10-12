@@ -2576,3 +2576,19 @@ gets wrong:
 - sheet-score gates.
 The reference-only lane (ii) in progress is the prerequisite (the shared
 frame fix, the proxy tool, smart intake, the numeric gate).
+
+## 2026-10-11 — Generate-and-finish prototype verdict (artist verbatim)
+
+"for the snowman i like column 3 / for gem dragon column 2 is better,
+because it seems in trying to fix the symmetry and make changes we broke
+some things, like the mouth"
+Reading:
+- Holly Snowman: the PROXY-FINISHED version (column 3) is preferred over
+  the raw proxy and the hand build.
+- Gemwing Dragon: the RAW Pixal3D proxy (column 2) is preferred. Heavy
+  finishing (mirror-averaging, cuts, part overrides) broke detail such as
+  the mouth / face. Lesson: the finish stage needs a LIGHT mode that keeps
+  the proxy's geometry and face detail as generated, and only does what is
+  needed to ship: watertight / clean, budget decimation with a texture
+  bake, floor + scale, rig, clips, gates. Symmetrising / overrides become
+  opt-in per part, never on the head / face.

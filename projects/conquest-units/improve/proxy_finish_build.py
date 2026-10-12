@@ -121,6 +121,9 @@ def run(unit):
     DIGEST_ONLY = argv[argv.index("--digest-only") + 1] if "--digest-only" in argv else None
     SOLID = argv[argv.index("--solid") + 1] if "--solid" in argv else None
     cfg, raw_cfg = PF.load_cfg(unit)
+    if cfg["mode"] == "light":                    # the proxy as generated, made shippable (+ optional bone repose)
+        import proxy_finish_light as PFL
+        return PFL.run_light(unit, cfg, raw_cfg, PREVIEW, DIGEST_ONLY, SOLID, T0)
     CC = cfg["colour"]
     OUT_IMPROVED = os.path.join(ROOT, "improved", unit + ".blend")
     OUT_RIGGED = os.path.join(ROOT, "rigged", unit + ".blend")
@@ -780,6 +783,15 @@ def run(unit):
                   default=lambda o: o.tolist() if hasattr(o, "tolist") else str(o))
     print("IMPROVED_SAVED", OUT_IMPROVED, round(time.time() - T0, 1))
 
+    rig_clips_export(unit, cfg, RC, report, DIG, low, me, VALL, RANGE, PARTS, sv, H, SHIFT, pal_default, set_tex_paths,
+                     geometry_digest, OUT_IMPROVED, OUT_RIGGED, OUT_GLB, DIGEST_ONLY, T0)
+
+
+def rig_clips_export(unit, cfg, RC, report, DIG, low, me, VALL, RANGE, PARTS, sv, H, SHIFT, pal_default, set_tex_paths,
+                     geometry_digest, OUT_IMPROVED, OUT_RIGGED, OUT_GLB, DIGEST_ONLY, T0):
+    """stages 8-9, shared by the full and the light finish: the rig from the config's joints (RC['rig'], stage-1 frame;
+    SHIFT = the centring shift), weights, PLACEHOLDER clips, digest, rigged blend, glb, repaint proof. Exits the process."""
+    scene = bpy.context.scene
     # ================================================================================================ 8. rig
     rep = {"unit": unit, "source": OUT_IMPROVED, "fps": K.FPS, "finish": report["finish"]}
     scene.render.fps = K.FPS; scene.render.fps_base = 1.0

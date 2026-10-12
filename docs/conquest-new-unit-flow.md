@@ -170,3 +170,23 @@ Kit gaps found:
    0.46 u up and the body 9 % small. The finish's `refloor` works around it.
 2. The scaffolded compose's `GATE bake_reference` reads only `<unit>_build.py`, so for a stub build it prints `none`.
    It should follow the stub into `proxy_finish_build.py`, which does bake against the FLAT low.
+
+### 5b. Light mode and repose (2026-10-11, after the artist's pick)
+
+The artist preferred the RAW proxy for gemwing ("in trying to fix the symmetry and make changes we broke some things,
+like the mouth"). Set `"mode": "light"` in `<unit>_finish.json` to keep the proxy's geometry and texture
+(`proxy_finish_light.py`):
+- a watertight remesh on a fine grid (no smoothing, symmetrising, straightening, cuts or parts), then a collapse
+  decimation to `body_tris`; the `light.dense` boxes (head / face) are calibrated to `density` x the rest's triangles;
+- normal, AO and the proxy texture (albedo) are baked from the PROXY ITSELF onto the FLAT low. The glb carries
+  `basecolor = albedo x AO` as its base-colour texture, times one white palette region (`Col`), so colour lives in a
+  texture, not in the palette;
+- `refloor.y_windows` puts the floor at the lowest FOOT contact, not at a tail curl.
+
+`"repose"` (opt-in, `proxy_finish_repose.py`) straightens a posed chain with bones instead of reshaping geometry. It
+skins the low with the contract rig's weights, yaws each target bone to a heading (`+y` tail, `-y` head; `distribute`
+spreads a head turn up the neck), and lifts a chain that dips below the floor. A `rigid` box pins the face to its bone,
+so the face moves as a rigid body. The result is applied as the rest mesh, and the bakes ride along on the UVs. The
+report gives edge stretch, self-intersections, the rigid-face check and the mirror test before and after.
+`proxy_finish.py gate <unit> [--ref <glb>]` adds the IoU against the artist-picked version;
+`panel <unit> [--ref <blend>]` renders sheet | picked | new, with a face row in light mode.
