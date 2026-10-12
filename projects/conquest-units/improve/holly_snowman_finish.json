@@ -1,0 +1,25 @@
+{
+ "unit": "holly_snowman",
+ "char_id": "holly_snowman",
+ "tier": "regular",
+ "tri_budget": [8000, 22000],
+ "body_tris": 13000,
+ "colour": {
+  "chip_names": ["snow_base", "snow_shadow", "leaf_green", "berry_red", "eye", "snow_highlight"],
+  "merge": {"snow_shadow": "snow_base", "snow_highlight": "snow_base"},
+  "keep_small": ["eye", "berry_red"]
+ },
+ "straighten": [],
+ "cuts": [],
+ "parts": [],
+ "rig": {
+  "spine_names": ["body", "chest", "head"],
+  "spine": [{"side": [1040, 690]}, {"side": [1040, 520]}, {"side": [1035, 440]}, {"side": [1032, 285]}],
+  "chains": [
+   {"name": "arm", "kind": "arm", "parent": "chest", "points": [{"front": [320, 470], "side": [1040, 470]}, {"front": [385, 495], "side": [1060, 500]}, {"front": [440, 545], "side": [1090, 560]}]},
+   {"name": "ear", "kind": "ear", "parent": "head", "points": [{"front": [300, 300], "side": [1050, 300]}, {"front": [330, 235], "side": [1065, 235]}, {"front": [350, 180], "side": [1085, 178]}]},
+   {"name": "leg", "kind": "leg", "parent": "body", "points": [{"front": [300, 660], "side": [1030, 660]}, {"front": [305, 748], "side": [1030, 748]}]}
+  ]
+ },
+ "_doc": "points: [x, y, z] sheet units, or {'side': [u, v], 'front': [u, v]} SHEET PX (holly sheet; side view faces image-left)"
+}

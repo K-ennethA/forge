@@ -1,7 +1,7 @@
-00:01.781  blend            | Read blend: "C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\rigged\holly_snowman.blend"
-00:03.969  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\holly_snowman\holly_snowman_ortho_front.png'
-00:04.344  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\holly_snowman\holly_snowman_ortho_back.png'
-00:04.640  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\holly_snowman\holly_snowman_ortho_side.png'
+00:01.219  blend            | Read blend: "C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\rigged\holly_snowman.blend"
+00:03.141  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\holly_snowman\holly_snowman_ortho_front.png'
+00:03.375  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\holly_snowman\holly_snowman_ortho_back.png'
+00:03.703  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\holly_snowman\holly_snowman_ortho_side.png'
 WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\holly_snowman\holly_snowman_ortho_front.png
 WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\holly_snowman\holly_snowman_ortho_back.png
 WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\holly_snowman\holly_snowman_ortho_side.png

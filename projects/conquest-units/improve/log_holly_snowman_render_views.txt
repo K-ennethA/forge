@@ -1,9 +1,9 @@
-00:01.766  blend            | Read blend: "C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\rigged\holly_snowman.blend"
-00:04.547  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\holly_snowman\holly_snowman_front.png'
-00:05.063  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\holly_snowman\holly_snowman_threequarter.png'
-00:05.547  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\holly_snowman\holly_snowman_side.png'
-00:06.078  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\holly_snowman\holly_snowman_back.png'
-00:06.328  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\holly_snowman\holly_snowman_tactical.png'
+00:01.219  blend            | Read blend: "C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\rigged\holly_snowman.blend"
+00:03.281  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\holly_snowman\holly_snowman_front.png'
+00:03.765  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\holly_snowman\holly_snowman_threequarter.png'
+00:04.187  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\holly_snowman\holly_snowman_side.png'
+00:04.562  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\holly_snowman\holly_snowman_back.png'
+00:04.719  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\holly_snowman\holly_snowman_tactical.png'
 WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\holly_snowman\holly_snowman_front.png
 WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\holly_snowman\holly_snowman_threequarter.png
 WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\holly_snowman\holly_snowman_side.png

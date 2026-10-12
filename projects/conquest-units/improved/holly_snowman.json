@@ -1,361 +1,1081 @@
 {
  "unit": "holly_snowman",
  "conquest_character_id": "holly_snowman",
- "source": "none: from-scratch unit (sheet design/reference/holly_snowman-character-sheet.png)",
  "tier": "regular",
  "tri_budget": [
   8000,
   22000
  ],
- "units": "sheet units: 1 unit = 100 px; floor z = 0 at the sheet floor line (front y 759); X from the front view (axis 250), Y from the side view (axis 1010)",
- "overrides": {},
- "axes": {
-  "front": 250.0,
-  "side": 1010.0,
-  "back": 668.0,
-  "rule": "intake axes kept (the side axis = the feet centre; the head and belly sit behind it as drawn)"
- },
- "scallops": {
-  "seed": 3,
-  "candidates_half": 53329,
-  "placed_half": 129,
-  "total_mirrored": 249,
-  "per_zone": {
-   "head": 112,
-   "body": 91,
-   "feet": 46
-  },
-  "skipped": {
-   "face": 1635,
-   "buttons": 668,
-   "fringe": 33495,
-   "spacing": 16527,
-   "own_mirror": 875
-  },
-  "k": 0.06,
-  "spacing": 1.3
- },
- "sdf": {
-  "step": 0.02,
-  "band": 0.16,
-  "grid": [
-   177,
-   175,
-   260
+ "pattern": "proxy finish (proxy_finish.py + proxy_finish_build.py): a frozen Pixal3D sheet proxy as the base, finished to the contract",
+ "config": {
+  "unit": "holly_snowman",
+  "char_id": "holly_snowman",
+  "tier": "regular",
+  "tri_budget": [
+   8000,
+   22000
   ],
-  "high_tris": 893524,
+  "body_tris": 13000,
+  "colour": {
+   "chip_names": [
+    "snow_base",
+    "snow_shadow",
+    "leaf_green",
+    "berry_red",
+    "eye",
+    "snow_highlight"
+   ],
+   "merge": {
+    "snow_shadow": "snow_base",
+    "snow_highlight": "snow_base"
+   },
+   "keep_small": [
+    "eye",
+    "berry_red"
+   ]
+  },
+  "straighten": [],
+  "cuts": [],
+  "parts": [],
+  "rig": {
+   "spine_names": [
+    "body",
+    "chest",
+    "head"
+   ],
+   "spine": [
+    {
+     "side": [
+      1040,
+      690
+     ]
+    },
+    {
+     "side": [
+      1040,
+      520
+     ]
+    },
+    {
+     "side": [
+      1035,
+      440
+     ]
+    },
+    {
+     "side": [
+      1032,
+      285
+     ]
+    }
+   ],
+   "chains": [
+    {
+     "name": "arm",
+     "kind": "arm",
+     "parent": "chest",
+     "points": [
+      {
+       "front": [
+        320,
+        470
+       ],
+       "side": [
+        1040,
+        470
+       ]
+      },
+      {
+       "front": [
+        385,
+        495
+       ],
+       "side": [
+        1060,
+        500
+       ]
+      },
+      {
+       "front": [
+        440,
+        545
+       ],
+       "side": [
+        1090,
+        560
+       ]
+      }
+     ]
+    },
+    {
+     "name": "ear",
+     "kind": "ear",
+     "parent": "head",
+     "points": [
+      {
+       "front": [
+        300,
+        300
+       ],
+       "side": [
+        1050,
+        300
+       ]
+      },
+      {
+       "front": [
+        330,
+        235
+       ],
+       "side": [
+        1065,
+        235
+       ]
+      },
+      {
+       "front": [
+        350,
+        180
+       ],
+       "side": [
+        1085,
+        178
+       ]
+      }
+     ]
+    },
+    {
+     "name": "leg",
+     "kind": "leg",
+     "parent": "body",
+     "points": [
+      {
+       "front": [
+        300,
+        660
+       ],
+       "side": [
+        1030,
+        660
+       ]
+      },
+      {
+       "front": [
+        305,
+        748
+       ],
+       "side": [
+        1030,
+        748
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  "_doc": "points: [x, y, z] sheet units, or {'side': [u, v], 'front': [u, v]} SHEET PX (holly sheet; side view faces image-left)"
+ },
+ "units": "sheet units: 1 unit = 100 px of the reference sheet; floor z = 0",
+ "stage1_stdout": [
+  "SOLID {\"grid_sha\": \"7851b1227e9bbfcb\", \"solid\": {\"step\": 0.0244, \"grid\": [199, 132, 258], \"shell_nodes\": 251432, \"close_voxels\": 1, \"sealed_cavities\": 74, \"min_half_thickness_u\": 0.0122, \"shell_nodes_signed_outside_frac\": 0.804, \"smooth_sigma_vox\": 0.6, \"pieces_before\": [1, [1149755]], \"pieces_after\": [1, [1139430]]}, \"symmetrise\": {\"enabled\": true, \"plane_x_u\": 0.0366, \"mirror_iou_before\": 0.9177, \"rule\": \"F_sym = (F + F mirrored in X) / 2 (an average, not a bisect)\"}, \"straighten\": [], \"cuts\": [], \"seconds\": 10.9}",
+  "MELT {\"rule\": \"solid parts thinner than 2 x 0.070 u (a ball that radius cannot enter): the blades / crowns / horns / wings Pixal3D fuses; replace them via cuts + parts in the finish config\", \"thin_volume_frac\": 0.0075, \"components\": [{\"volume_u3\": 0.0035, \"lo_u\": [1.513, -0.933, 1.415], \"hi_u\": [1.708, -0.713, 1.83], \"front_px\": [402, 568, 421, 610], \"side_px\": [944, 569, 966, 611]}, {\"volume_u3\": 0.0035, \"lo_u\": [-1.708, -0.933, 1.415], \"hi_u\": [-1.513, -0.713, 1.83], \"front_px\": [79, 568, 99, 610], \"side_px\": [944, 569, 966, 611]}, {\"volume_u3\": 0.0028, \"lo_u\": [1.025, -0.152, 1.879], \"hi_u\": [1.147, 0.067, 2.22], \"front_px\": [353, 529, 365, 563], \"side_px\": [1022, 530, 1044, 564]}, {\"volume_u3\": 0.0028, \"lo_u\": [-1.147, -0.152, 1.879], \"hi_u\": [-1.025, 0.067, 2.22], \"front_px\": [136, 529, 148, 563], \"side_px\": [1022, 530, 1044, 564]}, {\"volume_u3\": 0.0028, \"lo_u\": [-1.562, 0.263, 1.562], \"hi_u\": [-1.415, 0.458, 1.928], \"front_px\": [94, 559, 109, 595], \"side_px\": [1063, 560, 1083, 596]}, {\"volume_u3\": 0.0028, \"lo_u\": [1.415, 0.263, 1.562], \"hi_u\": [1.562, 0.458, 1.928], \"front_px\": [392, 559, 406, 595], \"side_px\": [1063, 560, 1083, 596]}, {\"volume_u3\": 0.0023, \"lo_u\": [1.22, 0.629, 2.489], \"hi_u\": [1.513, 0.97, 2.586], \"front_px\": [372, 493, 402, 502], \"side_px\": [1100, 494, 1134, 503]}, {\"volume_u3\": 0.0023, \"lo_u\": [-1.513, 0.629, 2.489], \"hi_u\": [-1.22, 0.97, 2.586], \"front_px\": [99, 493, 128, 502], \"side_px\": [1100, 494, 1134, 503]}]}"
+ ],
+ "stage1": {
+  "unit": "holly_snowman",
+  "proxy": {
+   "glb": "proxy/holly_snowman_proxy.glb",
+   "sha256": "6f7a61b46c39d919007b1658b71947e9c2fda164352c31d85ccfbc655613568b",
+   "gate": "reliable",
+   "mean_iou": 0.9187,
+   "tris": 199430,
+   "verts": 147843,
+   "height_u": 5.8637,
+   "samples": 3849074,
+   "textured": true
+  },
+  "solid": {
+   "step": 0.0244,
+   "grid": [
+    199,
+    132,
+    258
+   ],
+   "shell_nodes": 251432,
+   "close_voxels": 1,
+   "sealed_cavities": 74,
+   "min_half_thickness_u": 0.0122,
+   "shell_nodes_signed_outside_frac": 0.804,
+   "smooth_sigma_vox": 0.6,
+   "pieces_before": [
+    1,
+    [
+     1149755
+    ]
+   ],
+   "pieces_after": [
+    1,
+    [
+     1139430
+    ]
+   ]
+  },
+  "straighten": [],
+  "symmetrise": {
+   "enabled": true,
+   "plane_x_u": 0.0366,
+   "mirror_iou_before": 0.9177,
+   "rule": "F_sym = (F + F mirrored in X) / 2 (an average, not a bisect)"
+  },
+  "silhouette_fans": [],
+  "cuts": [],
+  "melt_candidates": {
+   "rule": "solid parts thinner than 2 x 0.070 u (a ball that radius cannot enter): the blades / crowns / horns / wings Pixal3D fuses; replace them via cuts + parts in the finish config",
+   "thin_volume_frac": 0.0075,
+   "components": [
+    {
+     "volume_u3": 0.0035,
+     "lo_u": [
+      1.513,
+      -0.933,
+      1.415
+     ],
+     "hi_u": [
+      1.708,
+      -0.713,
+      1.83
+     ],
+     "front_px": [
+      402,
+      568,
+      421,
+      610
+     ],
+     "side_px": [
+      944,
+      569,
+      966,
+      611
+     ]
+    },
+    {
+     "volume_u3": 0.0035,
+     "lo_u": [
+      -1.708,
+      -0.933,
+      1.415
+     ],
+     "hi_u": [
+      -1.513,
+      -0.713,
+      1.83
+     ],
+     "front_px": [
+      79,
+      568,
+      99,
+      610
+     ],
+     "side_px": [
+      944,
+      569,
+      966,
+      611
+     ]
+    },
+    {
+     "volume_u3": 0.0028,
+     "lo_u": [
+      1.025,
+      -0.152,
+      1.879
+     ],
+     "hi_u": [
+      1.147,
+      0.067,
+      2.22
+     ],
+     "front_px": [
+      353,
+      529,
+      365,
+      563
+     ],
+     "side_px": [
+      1022,
+      530,
+      1044,
+      564
+     ]
+    },
+    {
+     "volume_u3": 0.0028,
+     "lo_u": [
+      -1.147,
+      -0.152,
+      1.879
+     ],
+     "hi_u": [
+      -1.025,
+      0.067,
+      2.22
+     ],
+     "front_px": [
+      136,
+      529,
+      148,
+      563
+     ],
+     "side_px": [
+      1022,
+      530,
+      1044,
+      564
+     ]
+    },
+    {
+     "volume_u3": 0.0028,
+     "lo_u": [
+      -1.562,
+      0.263,
+      1.562
+     ],
+     "hi_u": [
+      -1.415,
+      0.458,
+      1.928
+     ],
+     "front_px": [
+      94,
+      559,
+      109,
+      595
+     ],
+     "side_px": [
+      1063,
+      560,
+      1083,
+      596
+     ]
+    },
+    {
+     "volume_u3": 0.0028,
+     "lo_u": [
+      1.415,
+      0.263,
+      1.562
+     ],
+     "hi_u": [
+      1.562,
+      0.458,
+      1.928
+     ],
+     "front_px": [
+      392,
+      559,
+      406,
+      595
+     ],
+     "side_px": [
+      1063,
+      560,
+      1083,
+      596
+     ]
+    },
+    {
+     "volume_u3": 0.0023,
+     "lo_u": [
+      1.22,
+      0.629,
+      2.489
+     ],
+     "hi_u": [
+      1.513,
+      0.97,
+      2.586
+     ],
+     "front_px": [
+      372,
+      493,
+      402,
+      502
+     ],
+     "side_px": [
+      1100,
+      494,
+      1134,
+      503
+     ]
+    },
+    {
+     "volume_u3": 0.0023,
+     "lo_u": [
+      -1.513,
+      0.629,
+      2.489
+     ],
+     "hi_u": [
+      -1.22,
+      0.97,
+      2.586
+     ],
+     "front_px": [
+      99,
+      493,
+      128,
+      502
+     ],
+     "side_px": [
+      1100,
+      494,
+      1134,
+      503
+     ]
+    }
+   ]
+  },
+  "colour": {
+   "chips": {
+    "snow_base": [
+     192,
+     210,
+     253
+    ],
+    "snow_shadow": [
+     133,
+     167,
+     252
+    ],
+    "leaf_green": [
+     16,
+     47,
+     29
+    ],
+    "berry_red": [
+     178,
+     37,
+     38
+    ],
+    "eye": [
+     34,
+     36,
+     40
+    ],
+    "snow_highlight": [
+     227,
+     240,
+     254
+    ]
+   },
+   "chip_source": "swatches",
+   "drift_fit": {
+    "pairs": 731194,
+    "median_residual_rgb": 13.52,
+    "A": [
+     [
+      0.5938,
+      -0.0068,
+      -0.0507
+     ],
+     [
+      -0.1598,
+      0.3272,
+      -0.0958
+     ],
+     [
+      0.3406,
+      0.4189,
+      1.0433
+     ],
+     [
+      10.1438,
+      23.5539,
+      18.675
+     ]
+    ],
+    "applied": true,
+    "rule": "sheet_rgb ~ [proxy_rgb, 1] @ A, front-visible samples, trimmed lstsq; applied only when the median residual <= 35 (a prismatic / multi-hue texture is not affine)"
+   },
+   "proxy_chip_share_raw": {
+    "snow_base": 0.3501,
+    "snow_shadow": 0.1547,
+    "leaf_green": 0.2788,
+    "berry_red": 0.0277,
+    "eye": 0.0015,
+    "snow_highlight": 0.1872
+   },
+   "proxy_chip_share_fitted": {
+    "snow_base": 0.5334,
+    "snow_shadow": 0.1577,
+    "leaf_green": 0.2796,
+    "berry_red": 0.027,
+    "eye": 0.0024,
+    "snow_highlight": 0.0
+   },
+   "sheet_views": [
+    "front",
+    "back",
+    "side"
+   ]
+  },
+  "grid_sha": "7851b1227e9bbfcb"
+ },
+ "high": {
+  "tris": 855792,
+  "verts": 427894,
+  "half_tris": 427896,
   "crumbs": {
    "pieces": 1,
    "kept": 1,
    "dropped_verts": 0
   },
-  "seconds": 23.8
+  "open_edges": 0,
+  "plane_verts": 1246,
+  "rule": "polygonise the +X half grid, mirror, weld on x = 0 (exact symmetry)",
+  "seconds": 2.8
  },
- "retopo": {
-  "method": "SDF marching tetrahedra (step 0.020) -> collapse decimation of the scalloped high (deterministic) -> mirror-halved",
-  "decimated_tris": 13238,
+ "colour_votes": {
+  "views": {
+   "front": {
+    "faces_voted": 254926,
+    "visible": 275487
+   },
+   "back": {
+    "faces_voted": 297980,
+    "visible": 340324
+   },
+   "side": {
+    "faces_voted": 230789,
+    "visible": 238452
+   }
+  },
+  "proxy_faces": 812311,
+  "unvoted_faces": 4080,
+  "regions": [
+   "snow_base",
+   "leaf_green",
+   "berry_red",
+   "eye"
+  ],
+  "merge": {
+   "snow_shadow": "snow_base",
+   "snow_highlight": "snow_base"
+  }
+ },
+ "decal_specks_merged": 92,
+ "decals_auto": [
+  {
+   "region": "berry_red",
+   "at": [
+    -1.0956,
+    0.7189,
+    1.3355
+   ],
+   "size_u": [
+    0.0341,
+    0.0729
+   ],
+   "high_area_u2": 0.00633,
+   "purity": 1.0,
+   "contrast": 90.4,
+   "fill": 0.812,
+   "flatness": 0.976
+  },
+  {
+   "region": "berry_red",
+   "at": [
+    1.0956,
+    0.7189,
+    1.3355
+   ],
+   "size_u": [
+    0.0341,
+    0.0729
+   ],
+   "high_area_u2": 0.00633,
+   "purity": 1.0,
+   "contrast": 90.4,
+   "fill": 0.812,
+   "flatness": 0.976
+  },
+  {
+   "region": "berry_red",
+   "at": [
+    -1.1006,
+    0.5893,
+    1.5173
+   ],
+   "size_u": [
+    0.0802,
+    0.1874
+   ],
+   "high_area_u2": 0.04801,
+   "purity": 1.0,
+   "contrast": 90.4,
+   "fill": 1.017,
+   "flatness": 0.924
+  },
+  {
+   "region": "berry_red",
+   "at": [
+    1.1006,
+    0.5893,
+    1.5173
+   ],
+   "size_u": [
+    0.0802,
+    0.1874
+   ],
+   "high_area_u2": 0.04801,
+   "purity": 1.0,
+   "contrast": 90.4,
+   "fill": 1.017,
+   "flatness": 0.924
+  },
+  {
+   "region": "berry_red",
+   "at": [
+    -1.7888,
+    -0.8311,
+    1.8303
+   ],
+   "size_u": [
+    0.0551,
+    0.1149
+   ],
+   "high_area_u2": 0.01744,
+   "purity": 1.0,
+   "contrast": 90.4,
+   "fill": 0.878,
+   "flatness": 0.943
+  },
+  {
+   "region": "berry_red",
+   "at": [
+    1.7888,
+    -0.8311,
+    1.8303
+   ],
+   "size_u": [
+    0.0551,
+    0.1149
+   ],
+   "high_area_u2": 0.01744,
+   "purity": 1.0,
+   "contrast": 90.4,
+   "fill": 0.878,
+   "flatness": 0.943
+  },
+  {
+   "region": "berry_red",
+   "at": [
+    0.0,
+    -1.1872,
+    1.9041
+   ],
+   "size_u": [
+    0.1011,
+    0.1271
+   ],
+   "high_area_u2": 0.04247,
+   "purity": 1.0,
+   "contrast": 90.4,
+   "fill": 1.052,
+   "flatness": 0.943
+  },
+  {
+   "region": "berry_red",
+   "at": [
+    -1.8469,
+    -0.8036,
+    2.1572
+   ],
+   "size_u": [
+    0.0821,
+    0.1623
+   ],
+   "high_area_u2": 0.04052,
+   "purity": 1.0,
+   "contrast": 90.4,
+   "fill": 0.968,
+   "flatness": 0.898
+  },
+  {
+   "region": "berry_red",
+   "at": [
+    1.8469,
+    -0.8036,
+    2.1572
+   ],
+   "size_u": [
+    0.0821,
+    0.1623
+   ],
+   "high_area_u2": 0.04052,
+   "purity": 1.0,
+   "contrast": 90.4,
+   "fill": 0.968,
+   "flatness": 0.898
+  },
+  {
+   "region": "berry_red",
+   "at": [
+    -0.0,
+    -1.0417,
+    2.2962
+   ],
+   "size_u": [
+    0.1069,
+    0.1101
+   ],
+   "high_area_u2": 0.04402,
+   "purity": 1.0,
+   "contrast": 90.4,
+   "fill": 1.191,
+   "flatness": 0.776
+  },
+  {
+   "region": "berry_red",
+   "at": [
+    0.0,
+    -0.9253,
+    2.7019
+   ],
+   "size_u": [
+    0.1029,
+    0.1143
+   ],
+   "high_area_u2": 0.04049,
+   "purity": 1.0,
+   "contrast": 90.4,
+   "fill": 1.096,
+   "flatness": 0.859
+  },
+  {
+   "region": "eye",
+   "at": [
+    -0.2921,
+    -1.023,
+    3.9934
+   ],
+   "size_u": [
+    0.062,
+    0.1785
+   ],
+   "high_area_u2": 0.03642,
+   "purity": 1.0,
+   "contrast": 72.9,
+   "fill": 1.047,
+   "flatness": 0.939
+  },
+  {
+   "region": "eye",
+   "at": [
+    0.2921,
+    -1.023,
+    3.9934
+   ],
+   "size_u": [
+    0.062,
+    0.1785
+   ],
+   "high_area_u2": 0.03642,
+   "purity": 1.0,
+   "contrast": 72.9,
+   "fill": 1.047,
+   "flatness": 0.939
+  }
+ ],
+ "colour_high": {
+  "islands": 35,
+  "merged_islands": 1263,
+  "area_share": {
+   "snow_base": 0.7134,
+   "leaf_green": 0.2721,
+   "berry_red": 0.0145,
+   "eye": 0.0
+  },
+  "symmetric_labels": true,
+  "seconds": 9.0
+ },
+ "low": {
+  "method": "collapse decimation (deterministic, use_symmetry X; colour-border protection 0.000)",
+  "tris": 13000,
+  "verts": 6498,
   "specks": {
    "pieces": 1,
    "kept": 1,
    "dropped_verts": 0
   },
-  "floor_snap": {
-   "verts_snapped_to_floor": 1,
-   "worst_dip": 0.00029
-  },
-  "mirror_halved": {
-   "seam_verts": 347,
-   "rule": "X >= 0 half + its mirror (symmetric rest mesh)"
-  },
   "low_to_high": {
-   "mean": 0.00102,
-   "p99": 0.0028,
-   "max": 0.00504
+   "mean": 0.0028,
+   "p99": 0.0083,
+   "max": 0.01514
   },
   "high_to_low_sampled": {
-   "p99": 0.00259,
-   "max": 0.00489
+   "p99": 0.00816,
+   "max": 0.0226
+  },
+  "mirror_vertex_to_surface": {
+   "max": 0.0,
+   "p99": 0.0
   },
   "bbox_low_over_high": [
-   1.00127,
-   1.0003,
-   0.99998
-  ]
+   1.0019,
+   1.0042,
+   1.0027
+  ],
+  "seconds": 9.9
  },
- "snow_grade": {
-  "rule": "per-vertex weights from the smooth base normal; corner colours = snow -> snow_hi (w_hi), -> snow_shade (w_shade), -> blush (w_blush), blended in linear RGB",
-  "w_hi": {
-   "max": 1.0,
-   "share_gt_0.5": 0.0955
+ "regions_low": {
+  "transfer_radius_u": 0.0509,
+  "iso_cut_edges": {
+   "leaf_green": 296,
+   "berry_red": 58
   },
-  "w_shade": {
-   "max": 0.85,
-   "share_gt_0.5": 0.2299
+  "tris_after_cuts": 13708,
+  "islands": 17,
+  "area_share": {
+   "snow_base": 0.7214,
+   "leaf_green": 0.2669,
+   "berry_red": 0.0117,
+   "eye": 0.0
   },
-  "w_blush": {
-   "max": 0.9,
-   "verts_gt_0.05": 64,
-   "verts_gt_0.5": 30
-  }
+  "seconds": 1.0
  },
- "iso_cuts": {
-  "body": {
-   "cuts": [
-    {
-     "degenerate_dissolved_faces": 0,
-     "sliver_edge_flips": 0,
-     "min_face_area": 3.137575674827531e-07
-    }
-   ],
-   "tris_after": 13238,
-   "seconds": 0.2
-  }
- },
- "part_clearance_vs_base_body": {
-  "frond_a": {
-   "min_sd": 0.1316,
-   "verts_inside": 0
+ "parts": {
+  "decal_berry_red.0": {
+   "tris": 240,
+   "open_edges": 0,
+   "kind": "decal_auto",
+   "bone": null
   },
-  "frond_b": {
-   "min_sd": 0.1578,
-   "verts_inside": 0
+  "decal_berry_red.1": {
+   "tris": 240,
+   "open_edges": 0,
+   "kind": "decal_auto",
+   "bone": null
   },
-  "frond_c": {
-   "min_sd": 0.2672,
-   "verts_inside": 0
+  "decal_berry_red.2": {
+   "tris": 240,
+   "open_edges": 0,
+   "kind": "decal_auto",
+   "bone": null
   },
-  "frond_d": {
-   "min_sd": 0.1585,
-   "verts_inside": 0
+  "decal_berry_red.3": {
+   "tris": 240,
+   "open_edges": 0,
+   "kind": "decal_auto",
+   "bone": null
   },
-  "frond_e": {
-   "min_sd": 0.1776,
-   "verts_inside": 0
+  "decal_berry_red.4": {
+   "tris": 240,
+   "open_edges": 0,
+   "kind": "decal_auto",
+   "bone": null
   },
-  "frond_f": {
-   "min_sd": 0.2114,
-   "verts_inside": 0
+  "decal_berry_red.5": {
+   "tris": 240,
+   "open_edges": 0,
+   "kind": "decal_auto",
+   "bone": null
   },
-  "berry.1": {
-   "min_sd": 0.7864,
-   "verts_inside": 0
+  "decal_berry_red.6": {
+   "tris": 240,
+   "open_edges": 0,
+   "kind": "decal_auto",
+   "bone": null
   },
-  "berry.2": {
-   "min_sd": 0.8758,
-   "verts_inside": 0
+  "decal_berry_red.7": {
+   "tris": 240,
+   "open_edges": 0,
+   "kind": "decal_auto",
+   "bone": null
   },
-  "berry.3": {
-   "min_sd": 0.8212,
-   "verts_inside": 0
+  "decal_berry_red.8": {
+   "tris": 240,
+   "open_edges": 0,
+   "kind": "decal_auto",
+   "bone": null
   },
-  "berry.4": {
-   "min_sd": 0.8796,
-   "verts_inside": 0
+  "decal_berry_red.9": {
+   "tris": 240,
+   "open_edges": 0,
+   "kind": "decal_auto",
+   "bone": null
   },
-  "berry.5": {
-   "min_sd": 0.8463,
-   "verts_inside": 0
+  "decal_berry_red.10": {
+   "tris": 240,
+   "open_edges": 0,
+   "kind": "decal_auto",
+   "bone": null
   },
-  "berry.6": {
-   "min_sd": 0.6061,
-   "verts_inside": 0
+  "decal_eye.11": {
+   "tris": 240,
+   "open_edges": 0,
+   "kind": "decal_auto",
+   "bone": null
   },
-  "berry.7": {
-   "min_sd": 0.5787,
-   "verts_inside": 0
-  },
-  "berry.8": {
-   "min_sd": 0.6255,
-   "verts_inside": 0
+  "decal_eye.12": {
+   "tris": 240,
+   "open_edges": 0,
+   "kind": "decal_auto",
+   "bone": null
   }
  },
  "centre_shift": [
   0.0,
-  0.268272,
-  0.0
+  -0.001068,
+  0.009774
  ],
- "mirror_test": {
-  "rule": "every rest vertex mirrored across X = 0 -> distance to the nearest point of the mesh",
-  "max_abs_asymmetry": 0.0,
-  "p99": 0.0,
-  "mean": 0.0,
-  "shift_x": 0.0,
-  "bbox_x": [
-   -2.1,
-   2.1
-  ]
- },
- "glow": {
-  "default": {
-   "emitting_regions": [],
-   "rule": "the sheet draws no glow (brief: no glow)"
-  }
- },
  "regions_faces": {
-  "holly_snowman": {
-   "snow": 13238,
-   "eye": 160,
-   "leaf": 864,
-   "leaf_light": 932,
-   "leaf_rim": 108,
-   "berry": 1140,
-   "berry_hi": 190
-  },
-  "holly_snowman:graded_snow_corners": 39714
+  "snow_base": 10319,
+  "leaf_green": 3083,
+  "berry_red": 2946,
+  "eye": 480
  },
  "regions_area_share": {
-  "snow": 0.7027,
-  "eye": 0.0035,
-  "leaf": 0.1292,
-  "leaf_light": 0.1256,
-  "leaf_rim": 0.0062,
-  "berry": 0.0311,
-  "berry_hi": 0.0016
+  "snow_base": 0.704,
+  "leaf_green": 0.2605,
+  "berry_red": 0.0315,
+  "eye": 0.004
  },
  "facing": {
-  "rule": "head centre at eye height -> the head's front surface between the eyes (the face looks -Y)",
+  "rule": "shell centroid -> the front-most midline point of the shell (proxy finish default)",
   "anchor": [
    0.0,
-   -0.0783,
-   4.065
+   -0.0248,
+   2.396
   ],
   "landmark": [
-   0.0,
-   -1.0463,
-   4.0649
+   0.0313,
+   -1.3657,
+   1.4359
   ],
-  "angle_from_minusY_deg": 0.0
+  "angle_from_minusY_deg": 1.336
  },
  "tris": {
-  "total": 19214,
-  "window": [
-   8000,
-   22000
-  ],
-  "per_part_family": {
-   "body": 13238,
-   "eye": 240,
-   "button": 360,
-   "ear": 1200,
-   "stalk": 96,
-   "frond_a": 360,
-   "frond_b": 360,
-   "frond_c": 360,
-   "frond_d": 360,
-   "frond_e": 360,
-   "frond_f": 360,
-   "berry": 1920
-  },
-  "per_region": {
-   "snow": 13238,
-   "eye": 160,
-   "leaf": 864,
-   "leaf_light": 932,
-   "leaf_rim": 108,
-   "berry": 1140,
-   "berry_hi": 190
-  }
+  "total": 16828,
+  "shell": 13708,
+  "decal_berry_red.0": 240,
+  "decal_berry_red.1": 240,
+  "decal_berry_red.2": 240,
+  "decal_berry_red.3": 240,
+  "decal_berry_red.4": 240,
+  "decal_berry_red.5": 240,
+  "decal_berry_red.6": 240,
+  "decal_berry_red.7": 240,
+  "decal_berry_red.8": 240,
+  "decal_berry_red.9": 240,
+  "decal_berry_red.10": 240,
+  "decal_eye.11": 240,
+  "decal_eye.12": 240
  },
- "tier_rationale": "REGULAR role (a line unit): window [8000, 22000]. The scalloped SDF snow shell (head, pear body, feet; iso-cut grading) carries the largest share; two leaf ears, two plant arms of six frond leaves + 8 berries each, three buttons and the eyes the rest.",
  "open_edges": {
-  "closed_parts": 38,
-  "parts": 38,
-  "open_parts": {},
-  "rule": "every part is closed: the SDF shell (mirror-welded), leaf pillows, stalk tubes, berry / button spheres, eye domes"
+  "per_island": {
+   "shell": 0,
+   "decal_berry_red.0": 0,
+   "decal_berry_red.1": 0,
+   "decal_berry_red.2": 0,
+   "decal_berry_red.3": 0,
+   "decal_berry_red.4": 0,
+   "decal_berry_red.5": 0,
+   "decal_berry_red.6": 0,
+   "decal_berry_red.7": 0,
+   "decal_berry_red.8": 0,
+   "decal_berry_red.9": 0,
+   "decal_berry_red.10": 0,
+   "decal_eye.11": 0,
+   "decal_eye.12": 0
+  },
+  "total": 0,
+  "rule": "every piece closed (marching-tets shell + closed parts)"
  },
  "measure": {
   "bbox": [
    [
-    -2.1,
-    -1.4314,
+    -2.0034,
+    -1.4062,
     0.0
    ],
    [
-    2.1,
-    1.4314,
-    5.92
+    2.0034,
+    1.4062,
+    5.7459
    ]
   ],
-  "height": 5.92,
-  "width_x": 4.2,
-  "depth_y": 2.8627,
-  "sheet_height_units": {
-   "front": 5.9,
-   "back": 5.89,
-   "side": 6.01
-  },
-  "sheet_width_units_front": 4.32,
+  "height": 5.7459,
+  "width_x": 4.0068,
+  "depth_y": 2.8124,
   "export_cell_fit_report_only": {
-   "scale": 0.30405,
-   "height_m": 1.8,
-   "footprint_m": 1.277,
-   "bound_by": "height"
+   "scale": 0.31326
   }
  },
+ "finish": {
+  "open_edges": 0,
+  "tris": 16828,
+  "mirror": {
+   "max_u": 0.0,
+   "p99_u": 0.0,
+   "rule": "every vertex mirrored in X -> distance to the nearest surface of the unit"
+  },
+  "tri_budget": [
+   8000,
+   22000
+  ],
+  "in_budget": true
+ },
  "bake": {
+  "reference": "flat",
   "NORMAL": {
    "result": [
     "FINISHED"
    ],
-   "seconds": 1.3
+   "seconds": 0.7
   },
   "AO": {
    "result": [
     "FINISHED"
    ],
-   "seconds": 0.9
+   "seconds": 0.6
   },
-  "cage_extrusion": 0.02,
-  "cage_rule": "3 x the body's sampled high->low p99 distance (floor 0.02)",
+  "cage_extrusion": 0.0245,
   "resolution": {
    "normal": 1024,
    "ao": 512
   },
-  "high_tris": 896918,
-  "high_rule": "the scalloped body SDF high + every closed part",
-  "body_uv_texels_normal": 393670,
-  "normal_baked_pct_of_body_texels": 100.0,
-  "normal_detail_fraction_dev_gt_0.05": 0.2771,
-  "normal_dev_p99": 0.1664,
-  "ao_baked_pct_of_body_texels": 100.0,
-  "ao_mean_raw": 0.8602,
-  "ao_p05_raw": 0.4392,
-  "ao_floor": 0.62,
+  "high_tris": 858912,
+  "normal_coverage_pct": 99.05,
+  "normal_detail_fraction_dev_gt_0.05": 0.7633,
+  "ao_mean": 0.7216,
   "pixel_sha": {
-   "normal": "cb4ae98f4efc27c2",
-   "ao": "7234c7133ad0637e"
+   "normal": "a8147127d56f1108",
+   "ao": "1f0c0fa1c456a431"
   },
-  "seconds": 4.3
+  "seconds": 1.7
  },
- "digest_geometry_colour_uv": "f009d0a85962d427",
+ "digest_geometry_colour_uv": "25125337c55c187e",
  "palette": {
   "default": {
-   "snow": {
+   "snow_base": {
     "rgb": [
      192,
      210,
      253
     ]
    },
-   "snow_hi": {
+   "leaf_green": {
     "rgb": [
-     227,
-     240,
-     254
+     16,
+     47,
+     29
     ]
    },
-   "snow_shade": {
+   "berry_red": {
     "rgb": [
-     133,
-     167,
-     252
-    ]
-   },
-   "blush": {
-    "rgb": [
-     144,
-     176,
-     252
+     178,
+     37,
+     38
     ]
    },
    "eye": {
@@ -364,101 +1084,10 @@
      36,
      40
     ]
-   },
-   "leaf": {
-    "rgb": [
-     16,
-     47,
-     29
-    ]
-   },
-   "leaf_light": {
-    "rgb": [
-     21,
-     58,
-     38
-    ]
-   },
-   "leaf_rim": {
-    "rgb": [
-     144,
-     163,
-     110
-    ]
-   },
-   "berry": {
-    "rgb": [
-     178,
-     37,
-     38
-    ]
-   },
-   "berry_hi": {
-    "rgb": [
-     251,
-     179,
-     170
-    ]
    }
   },
   "files": [
    "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\palettes\\holly_snowman\\default.json"
-  ],
-  "provenance": "pixel-sampled from the sheet's palette chips (intake swatches) + drawn-surface samples (see the palette notes)"
- },
- "face": {
-  "eye_L": {
-   "surface": [
-    0.2808,
-    -0.7453,
-    4.0636
-   ],
-   "normal": [
-    0.2311,
-    -0.972,
-    0.0415
-   ],
-   "half_uv": [
-    0.062,
-    0.17
-   ]
-  },
-  "buttons": [
-   [
-    0.0,
-    -0.4927,
-    2.773
-   ],
-   [
-    0.0,
-    -0.6472,
-    2.372
-   ],
-   [
-    0.0,
-    -0.8306,
-    1.98
-   ]
   ]
- },
- "fronds": {
-  "a": {
-   "length": 1.625
-  },
-  "b": {
-   "length": 1.791
-  },
-  "c": {
-   "length": 1.952
-  },
-  "d": {
-   "length": 1.701
-  },
-  "e": {
-   "length": 1.208
-  },
-  "f": {
-   "length": 1.049
-  }
  }
 }

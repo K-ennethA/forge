@@ -1,0 +1,259 @@
+{
+ "unit": "gemwing_dragon",
+ "char_id": "gemwing_dragon",
+ "tier": "boss",
+ "tri_budget": [
+  20000,
+  30000
+ ],
+ "body_tris": 26000,
+ "mode": "light",
+ "refloor": {
+  "y_windows": [
+   [
+    -2.6,
+    -1.6
+   ],
+   [
+    -0.6,
+    0.4
+   ]
+  ],
+  "x_abs_min": 0.3,
+  "pct": 0.0,
+  "rescale_to_front_height": true,
+  "why": "the floor at the lowest FOOT contact (hind feet), not the tail curl; front feet measured 0.19 u higher"
+ },
+ "light": {
+  "steps_per_height": 300,
+  "dense": [
+   {
+    "box": [
+     [
+      -0.85,
+      -3.2,
+      3.6
+     ],
+     [
+      0.95,
+      -1.9,
+      5.5
+     ]
+    ],
+    "density": 2.5,
+    "why": "head / face: mouth, eyes, crown"
+   }
+  ]
+ },
+ "rig": {
+  "spine_names": [
+   "hips",
+   "belly",
+   "chest",
+   "neck",
+   "head"
+  ],
+  "spine": [
+   [
+    0.0,
+    1.049,
+    1.961
+   ],
+   [
+    0.0,
+    -0.286,
+    2.276
+   ],
+   [
+    0.0,
+    -1.526,
+    2.59
+   ],
+   [
+    0.0,
+    -2.002,
+    3.534
+   ],
+   [
+    0.0,
+    -2.31,
+    4.27
+   ],
+   [
+    0.335,
+    -3.03,
+    4.05
+   ]
+  ],
+  "chains": [
+   {
+    "name": "tail",
+    "kind": "tail",
+    "mirror": false,
+    "parent": "hips",
+    "auto": {
+     "axis": "y",
+     "from": 1.35,
+     "to": 3.0,
+     "start": [
+      0.0,
+      1.3,
+      1.85
+     ],
+     "radius": 0.6,
+     "zmin": -0.5,
+     "zmax": 2.3,
+     "n": 7,
+     "slabs": 24,
+     "fit": 2
+    }
+   },
+   {
+    "name": "arm",
+    "kind": "leg",
+    "parent": "chest",
+    "phase": {
+     "L": 0.0,
+     "R": 0.5
+    },
+    "points": [
+     [
+      0.472,
+      -1.669,
+      2.276
+     ],
+     [
+      0.577,
+      -1.764,
+      1.122
+     ],
+     [
+      0.53,
+      -2.11,
+      0.33
+     ]
+    ]
+   },
+   {
+    "name": "leg",
+    "kind": "leg",
+    "parent": "hips",
+    "phase": {
+     "L": 0.5,
+     "R": 0.0
+    },
+    "points": [
+     [
+      0.55,
+      0.75,
+      1.7
+     ],
+     [
+      0.7,
+      0.35,
+      0.9
+     ],
+     [
+      0.65,
+      0.0,
+      0.15
+     ]
+    ],
+    "why": "hind legs (foot y 0)"
+   },
+   {
+    "name": "leg2",
+    "kind": "leg",
+    "parent": "hips",
+    "phase": {
+     "L": 0.0,
+     "R": 0.5
+    },
+    "points": [
+     [
+      0.6,
+      1.0,
+      1.6
+     ],
+     [
+      0.95,
+      1.3,
+      0.9
+     ],
+     [
+      1.2,
+      1.5,
+      0.25
+     ]
+    ],
+    "why": "the proxy's SECOND hind pair (foot y 1.5, x 1.24): Pixal3D read the sheet's staggered hind legs as two pairs"
+   },
+   {
+    "name": "wing",
+    "kind": "wing",
+    "parent": "chest",
+    "points": [
+     [
+      0.44,
+      -0.81,
+      3.534
+     ],
+     [
+      1.154,
+      0.191,
+      4.793
+     ],
+     [
+      1.364,
+      0.763,
+      5.842
+     ]
+    ]
+   }
+  ]
+ },
+ "repose": {
+  "targets": [
+   {
+    "chain": "tail",
+    "heading": "+y",
+    "lift_to_floor": true,
+    "falloff": 0.08,
+    "radius": [
+     1.3,
+     0.35
+    ],
+    "why": "the sheet swings the tail ~25 deg to the creature's right and curls it 0.25 u below the feet"
+   },
+   {
+    "bones": [
+     "neck",
+     "head"
+    ],
+    "heading": "-y",
+    "distribute": true,
+    "why": "the sheet turns the head ~25 deg to the creature's left: the neck twists half, the head the rest"
+   }
+  ],
+  "rigid": [
+   {
+    "box": [
+     [
+      -0.85,
+      -3.2,
+      3.75
+     ],
+     [
+      0.95,
+      -2.05,
+      5.5
+     ]
+    ],
+    "bone": "head",
+    "margin": 0.35,
+    "why": "the face moves as a rigid body: never deformed"
+   }
+  ]
+ },
+ "_doc": "LIGHT finish of the artist-picked raw proxy (2026-10-11 verdict: gemwing column 2). Points: stage-1 frame (proxy kept, feet floored, x1.0488 to the sheet front height)."
+}

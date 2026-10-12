@@ -8,8 +8,13 @@ renders/gemwing_dragon/gemwing_dragon_sheet_vs_model.png
     silhouette outline (cyan) | one column per extra skin at the same framing. Proportions compare 1:1.
 renders/gemwing_dragon/gemwing_dragon_contact.png
     every still that exists (views, close-ups, skin fronts) + every clip contact sheet, labelled.
+renders/gemwing_dragon/gemwing_dragon_sheet_gate.json + stdout 'GATE ...' lines: the NUMERIC sheet gate (the lane quotes them)
+    per true-ortho view: IoU of the build's ortho silhouette against the sheet's (best translation - the same
+    sheet_proxy.view_metrics the proxy was scored with - and as rendered, in frame), row width error %, and the
+    proxy's IoU next to it when intake.json has a `proxy` block; a view more than 0.05 IoU below the proxy is FLAGGED.
+    Also 'GATE bake_reference': which shading the build bakes its normal map against (contract: FLAT).
 """
-import glob, json, os
+import glob, json, os, re, sys
 
 import numpy as np
 from PIL import Image, ImageDraw, ImageFilter
@@ -82,6 +87,73 @@ if rows:
         out.paste(r, (0, i * (H + 6)))
     out.convert("RGB").save(os.path.join(R, UNIT + "_sheet_vs_model.png"))
     print("WROTE", os.path.join(R, UNIT + "_sheet_vs_model.png"))
+
+
+def numeric_gate():
+    """Per ortho view: build silhouette vs sheet silhouette, the proxy's IoU beside it (sheet_proxy.view_metrics)."""
+    sys.path.insert(0, HERE)
+    import sheet_proxy as SP
+    intake_dir = os.path.join(ROOT, "design", "reference", UNIT)
+    masks = SP.view_masks(INTAKE, intake_dir)
+    SP.clip_below_floor(INTAKE, masks)     # the build stands on its floor; the proxy was scored on the same clip
+    proxy = INTAKE.get("proxy") or {}
+    pscores = proxy.get("scores") or {}
+    out = {"unit": UNIT, "views": {}, "proxy_sha256": proxy.get("sha256"),
+           "proxy_gate": (proxy.get("gate") or {}).get("verdict"), "flagged": []}
+    for view in OF.get("views", ["front", "side"]):
+        p = os.path.join(R, "%s_ortho_%s.png" % (UNIT, view))
+        if view not in OF["crops"] or view not in masks or not os.path.exists(p):
+            continue
+        x0, y0, x1, y1 = OF["crops"][view]
+        full = masks[view]
+        ref = np.zeros((y1 - y0, x1 - x0), bool)
+        sy0, sx0, sy1, sx1 = max(y0, 0), max(x0, 0), min(y1, full.shape[0]), min(x1, full.shape[1])
+        ref[sy0 - y0:sy1 - y0, sx0 - x0:sx1 - x0] = full[sy0:sy1, sx0:sx1]
+        build = np.array(Image.open(p).convert("RGBA"))[:, :, 3] > 40
+        if not build.any() or not ref.any():
+            continue
+        met, _A, _B = SP.view_metrics(build, ref, in_frame=True)
+        pv = (pscores.get(view) or {}).get("iou")
+        met["proxy_iou"] = pv
+        met["flag"] = bool(pv is not None and met["iou"] < pv - 0.05)
+        if met["flag"]:
+            out["flagged"].append(view)
+        out["views"][view] = met
+        print("GATE view=%-5s iou=%.3f in_frame=%.3f row_err=%.1f%% | proxy iou=%s%s"
+              % (view, met["iou"], met.get("iou_in_frame", float("nan")), met["row_err_pct"],
+                 "%.3f" % pv if pv is not None else "-",
+                 "  FLAG: more than 0.05 below the proxy" if met["flag"] else ""))
+    if out["views"]:
+        out["mean_iou"] = round(float(np.mean([v["iou"] for v in out["views"].values()])), 4)
+        print("GATE mean_iou=%.3f flagged=%s proxy=%s" % (out["mean_iou"], ",".join(out["flagged"]) or "none",
+                                                        out["proxy_gate"] or "none"))
+    json.dump(out, open(os.path.join(R, UNIT + "_sheet_gate.json"), "w"), indent=1)
+
+
+def bake_reference():
+    """Which shading the build's normal-map bake runs against: the last shade_flat / shade_smooth call before the
+    first bpy.ops.object.bake in <unit>_build.py. The contract default is FLAT (BUILD_CONTRACT step 5)."""
+    p = os.path.join(HERE, UNIT + "_build.py")
+    if not os.path.exists(p):
+        return
+    src = open(p, encoding="utf-8").read()
+    i = src.find("object.bake(")
+    if i < 0:
+        print("GATE bake_reference=none (no object.bake call found)")
+        return
+    calls = [(m.start(), m.group(1)) for m in re.finditer(r"\.shade_(flat|smooth)\(", src[:i])]
+    ref = calls[-1][1] if calls else "unset"
+    print("GATE bake_reference=%s%s" % (ref.upper() if ref == "smooth" else ref,
+                                        "  CONTRACT: bake against the FLAT low (BUILD_CONTRACT step 5) - the normal map "
+                                        "then carries flat face -> smooth high; a smooth reference leaves ribs"
+                                        if ref != "flat" else ""))
+
+
+try:
+    numeric_gate()
+except Exception as exc:                       # the images above are still written; the gate says why it did not run
+    print("GATE skipped: %s: %s" % (type(exc).__name__, exc))
+bake_reference()
 
 T = 400
 fixed = ["front", "threequarter", "side", "back", "tactical"]

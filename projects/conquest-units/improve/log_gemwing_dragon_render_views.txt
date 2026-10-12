@@ -1,9 +1,9 @@
-00:01.422  blend            | Read blend: "C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\rigged\gemwing_dragon.blend"
-00:03.515  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\gemwing_dragon\gemwing_dragon_front.png'
-00:04.015  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\gemwing_dragon\gemwing_dragon_threequarter.png'
-00:04.453  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\gemwing_dragon\gemwing_dragon_side.png'
-00:04.812  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\gemwing_dragon\gemwing_dragon_back.png'
-00:05.015  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\gemwing_dragon\gemwing_dragon_tactical.png'
+00:01.141  blend            | Read blend: "C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\rigged\gemwing_dragon.blend"
+00:02.906  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\gemwing_dragon\gemwing_dragon_front.png'
+00:03.406  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\gemwing_dragon\gemwing_dragon_threequarter.png'
+00:03.875  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\gemwing_dragon\gemwing_dragon_side.png'
+00:04.266  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\gemwing_dragon\gemwing_dragon_back.png'
+00:04.422  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\gemwing_dragon\gemwing_dragon_tactical.png'
 WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\gemwing_dragon\gemwing_dragon_front.png
 WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\gemwing_dragon\gemwing_dragon_threequarter.png
 WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\gemwing_dragon\gemwing_dragon_side.png

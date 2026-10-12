@@ -1,7 +1,7 @@
 # holly_snowman (from-scratch unit, scaffolded by new_unit_scaffold.py from the firefly pattern), one command (hidden, headless).
 # Reads no source blend (the sheet only). Writes improved/holly_snowman.*, improved/textures/holly_snowman_*, rigged/holly_snowman.{blend,json,glb},
 # rigged/holly_snowman__<skin>.blend per extra palette, improved/check_holly_snowman.json, rigged/check_holly_snowman.json, renders/holly_snowman/,
-# improve/log_holly_snowman_*.
+# improve/log_holly_snowman_*. Prints the GATE lines (numeric sheet gate + bake reference) at the end.
 #   -SkipBuild re-runs only the gates + renders. The build runs TWICE in parallel: the real build and a --digest-only twin
 #   (saves nothing but its digest); every digest part must match, except the two bakes, which are held to the pinned
 #   tolerance gate (holly_snowman_bake_diff.py) if they differ.
@@ -60,5 +60,8 @@ foreach ($j in $vJobs) {
 foreach ($x in $vProcs) { $x[1].WaitForExit(); "$($x[0]) exit=$($x[1].ExitCode)" }
 & $VPY -P "$I\$($U)_compose.py" 2>&1 | Out-File -Encoding utf8 "$I\log_$($U)_compose.txt"
 "compose exit=$LASTEXITCODE"
+# the numeric sheet gate (compose: per ortho view IoU + row error vs the sheet, the proxy's IoU beside it, FLAG when a
+#   view is > 0.05 below the proxy) and the bake-reference check - the lane quotes these lines in its report
+(Get-Content "$I\log_$($U)_compose.txt" | Select-String "^GATE").Line | % { $_ }
 foreach ($c in @("check_improved","check_rigged")) { (Get-Content "$I\log_$($U)_$c.txt" | Select-String "checks, ").Line | % { "$c : $_" } }
 "ALL DONE total_wall_s=$([math]::Round(((Get-Date)-$T0).TotalSeconds,1))"

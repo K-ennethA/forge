@@ -1,2 +1,6 @@
 ﻿WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\gemwing_dragon\gemwing_dragon_sheet_vs_model.png
+GATE view=front iou=0.825 in_frame=0.815 row_err=10.1% | proxy iou=0.839
+GATE view=side  iou=0.807 in_frame=0.806 row_err=8.8% | proxy iou=0.782
+GATE mean_iou=0.816 flagged=none proxy=proxy unreliable, work from the sheet (side length off by -9.1%)
+GATE bake_reference=none (no object.bake call found)
 WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\gemwing_dragon\gemwing_dragon_contact.png

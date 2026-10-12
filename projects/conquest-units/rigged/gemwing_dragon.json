@@ -2,124 +2,83 @@
  "unit": "gemwing_dragon",
  "source": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\improved\\gemwing_dragon.blend",
  "fps": 24,
+ "finish": {
+  "open_edges": 0,
+  "tris": 26000,
+  "mirror": {
+   "plane_x_u": 0.0,
+   "max_u": 0.53527,
+   "p99_u": 0.2085,
+   "p90_u": 0.06575,
+   "mean_u": 0.02837,
+   "rule": "every vertex mirrored in X about the plane -> distance to the nearest surface (0 = exactly symmetric)"
+  },
+  "tri_budget": [
+   20000,
+   30000
+  ],
+  "in_budget": true,
+  "mode": "light"
+ },
  "weights": {
   "max_influences": 4,
   "unweighted": 0,
-  "sum_dev_max": 2.220446049250313e-16,
+  "sum_dev_max": 3.3306690738754696e-16,
   "per_bone_dominant": {
-   "hips": 717,
-   "spine.001": 810,
-   "spine.002": 929,
-   "spine.003": 1563,
-   "neck.001": 361,
-   "neck.002": 263,
-   "head": 1619,
-   "wing_L.001": 246,
-   "wing_L.002": 280,
-   "wing_L.003": 162,
-   "wing_R.001": 246,
-   "wing_R.002": 280,
-   "wing_R.003": 162,
-   "foreleg_L.upper": 225,
-   "foreleg_L.lower": 418,
-   "foreleg_L.foot": 318,
-   "hindleg_L.upper": 439,
-   "hindleg_L.lower": 410,
-   "hindleg_L.foot": 463,
-   "foreleg_R.upper": 225,
-   "foreleg_R.lower": 418,
-   "foreleg_R.foot": 318,
-   "hindleg_R.upper": 439,
-   "hindleg_R.lower": 410,
-   "hindleg_R.foot": 463,
-   "tail.001": 583,
-   "tail.002": 584,
-   "tail.003": 502,
-   "tail.004": 425
+   "hips": 832,
+   "belly": 549,
+   "chest": 692,
+   "neck": 1194,
+   "head": 393,
+   "tail.0": 189,
+   "tail.1": 168,
+   "tail.2": 159,
+   "tail.3": 139,
+   "tail.4": 176,
+   "tail.5": 132,
+   "tail.6": 120,
+   "arm.L.0": 752,
+   "arm.L.1": 190,
+   "arm.R.0": 789,
+   "arm.R.1": 203,
+   "leg.L.0": 350,
+   "leg.L.1": 253,
+   "leg.R.0": 347,
+   "leg.R.1": 262,
+   "leg2.L.0": 200,
+   "leg2.L.1": 243,
+   "leg2.R.0": 261,
+   "leg2.R.1": 233,
+   "wing.L.0": 1514,
+   "wing.L.1": 319,
+   "wing.R.0": 1843,
+   "wing.R.1": 368
   },
-  "rule": "shell: soft SDF ownership (tau 0.06) between chest, body, neck, head, snout, jaw, haunches, four legs, tail; trunk hips / spine.001-.003 hat weights along the spine; neck spine.003 -> neck.001 -> neck.002 -> head along the neck chain; legs + haunches: parent -> upper -> lower -> foot by the leg-chain arc (the foot rigid below the ankle); tail: rigkit.vine_weights along tail.001-.004 (parent hips); irises, pupils, crown spikes rigid on the head; neck / back / tail / leg spikes rigid on the bone at their root; wing blades rigid on the wing-arm bone at their base (wing_X.001 / .002 / .003); claws rigid on the foot"
+  "parts": {},
+  "rule": "shell: exp(-((d - d_min) / (0.06 H))^2) over bone-segment distances, side-aware, <= 4, normalised; parts rigid on their bone"
  },
  "clips": {
   "idle": {
    "frames": [
     1,
-    97
+    49
    ],
-   "period_frames": 96,
-   "seconds": 4.0,
+   "seconds": 2.0,
    "cyclic": true,
-   "seam_main_mm": 0.0,
-   "root_offset_max": 0.0,
-   "clearance_min_z": -0.0,
-   "hips_lift": [
-    0.0,
-    0.0
-   ],
-   "floor_guard_lift": {
-    "frames_lifted": 0,
-    "max": 0.0
-   },
-   "ik_reach_shortfall_max": 0.0,
-   "sole_verts": 184,
-   "planted_sole_slide_max_vs_ground": 0.0,
-   "sole_min_z": -0.0,
-   "tail_tip_p2p_xyz": [
-    1.3045,
-    0.0778,
-    0.0
-   ],
-   "head_top_p2p_xyz": [
-    0.0251,
-    0.0183,
-    0.021
-   ],
-   "wing_L_tip_p2p_xyz": [
-    0.4271,
-    0.2938,
-    0.2876
-   ]
+   "seam_mm": 0.0,
+   "clearance_min_z": -0.0291
   },
   "walk": {
    "frames": [
     1,
-    49
+    25
    ],
-   "period_frames": 48,
-   "seconds": 2.0,
+   "seconds": 1.0,
    "cyclic": true,
-   "seam_main_mm": 0.0,
-   "root_offset_max": 0.0,
-   "clearance_min_z": -0.0,
-   "hips_lift": [
-    -0.02,
-    0.02
-   ],
-   "floor_guard_lift": {
-    "frames_lifted": 0,
-    "max": 0.0
-   },
-   "ik_reach_shortfall_max": 0.0,
-   "sole_verts": 184,
-   "planted_sole_slide_max_vs_ground": 0.0,
-   "sole_min_z": -0.0,
-   "tail_tip_p2p_xyz": [
-    1.0552,
-    0.0538,
-    0.04
-   ],
-   "head_top_p2p_xyz": [
-    0.0,
-    0.0139,
-    0.0481
-   ],
-   "wing_L_tip_p2p_xyz": [
-    0.1832,
-    0.0754,
-    0.0693
-   ]
+   "seam_mm": 0.0,
+   "clearance_min_z": -0.2145
   }
  },
- "clip_seconds": 1.3,
  "bones": [
   {
    "name": "root",
@@ -141,609 +100,460 @@
    "parent": "root",
    "deform": true,
    "head": [
-    0.0,
-    -0.6661,
-    2.35
+    -0.0021,
+    0.8328,
+    1.9711
    ],
    "tail": [
-    0.0,
-    0.2339,
-    2.35
+    -0.0021,
+    -0.5022,
+    2.2861
    ]
   },
   {
-   "name": "spine.001",
+   "name": "belly",
    "parent": "hips",
    "deform": true,
    "head": [
-    0.0,
-    -0.6661,
-    2.35
+    -0.0021,
+    -0.5022,
+    2.2861
    ],
    "tail": [
-    0.0,
-    -1.5661,
-    2.4
+    -0.0021,
+    -1.7422,
+    2.6001
    ]
   },
   {
-   "name": "spine.002",
-   "parent": "spine.001",
+   "name": "chest",
+   "parent": "belly",
    "deform": true,
    "head": [
-    0.0,
-    -1.5661,
-    2.4
+    -0.0021,
+    -1.7422,
+    2.6001
    ],
    "tail": [
-    0.0,
-    -2.3161,
-    2.45
+    -0.0021,
+    -2.2182,
+    3.5441
    ]
   },
   {
-   "name": "spine.003",
-   "parent": "spine.002",
+   "name": "neck",
+   "parent": "chest",
    "deform": true,
    "head": [
-    0.0,
-    -2.3161,
-    2.45
+    -0.0021,
+    -2.2182,
+    3.5441
    ],
    "tail": [
-    0.0,
-    -2.5161,
-    2.8
-   ]
-  },
-  {
-   "name": "neck.001",
-   "parent": "spine.003",
-   "deform": true,
-   "head": [
-    0.0,
-    -2.5161,
-    2.8
-   ],
-   "tail": [
-    0.0,
-    -2.8661,
-    3.38
-   ]
-  },
-  {
-   "name": "neck.002",
-   "parent": "neck.001",
-   "deform": true,
-   "head": [
-    0.0,
-    -2.8661,
-    3.38
-   ],
-   "tail": [
-    0.0,
-    -3.0861,
-    3.95
+    -0.0686,
+    -2.519,
+    4.2801
    ]
   },
   {
    "name": "head",
-   "parent": "neck.002",
+   "parent": "neck",
    "deform": true,
    "head": [
-    0.0,
-    -3.0861,
-    3.95
+    -0.0686,
+    -2.519,
+    4.2801
    ],
    "tail": [
-    0.0,
-    -3.3661,
-    4.35
+    -0.0686,
+    -3.3131,
+    4.0601
    ]
   },
   {
-   "name": "foreleg_L.upper",
-   "parent": "spine.003",
+   "name": "arm.L.0",
+   "parent": "chest",
    "deform": true,
    "head": [
-    0.5,
-    -2.5661,
-    2.3
+    0.4699,
+    -1.8852,
+    2.2861
    ],
    "tail": [
-    0.66,
-    -2.2161,
-    1.4
+    0.5749,
+    -1.9802,
+    1.1321
    ]
   },
   {
-   "name": "foreleg_L.lower",
-   "parent": "foreleg_L.upper",
+   "name": "arm.L.1",
+   "parent": "arm.L.0",
    "deform": true,
    "head": [
-    0.66,
-    -2.2161,
-    1.4
+    0.5749,
+    -1.9802,
+    1.1321
    ],
    "tail": [
-    0.68,
-    -2.9661,
-    0.5
+    0.5279,
+    -2.3262,
+    0.3401
    ]
   },
   {
-   "name": "foreleg_L.foot",
-   "parent": "foreleg_L.lower",
+   "name": "arm.R.0",
+   "parent": "chest",
    "deform": true,
    "head": [
-    0.68,
-    -2.9661,
-    0.5
+    -0.4699,
+    -1.8852,
+    2.2861
    ],
    "tail": [
-    0.7,
-    -3.5661,
-    0.08
+    -0.5749,
+    -1.9802,
+    1.1321
    ]
   },
   {
-   "name": "foreleg_R.upper",
-   "parent": "spine.003",
+   "name": "arm.R.1",
+   "parent": "arm.R.0",
    "deform": true,
    "head": [
-    -0.5,
-    -2.5661,
-    2.3
+    -0.5749,
+    -1.9802,
+    1.1321
    ],
    "tail": [
-    -0.66,
-    -2.2161,
-    1.4
+    -0.5279,
+    -2.3262,
+    0.3401
    ]
   },
   {
-   "name": "foreleg_R.lower",
-   "parent": "foreleg_R.upper",
+   "name": "wing.L.0",
+   "parent": "chest",
    "deform": true,
    "head": [
-    -0.66,
-    -2.2161,
-    1.4
+    0.4379,
+    -1.0262,
+    3.5441
    ],
    "tail": [
-    -0.68,
-    -2.9661,
-    0.5
+    1.1519,
+    -0.0252,
+    4.8031
    ]
   },
   {
-   "name": "foreleg_R.foot",
-   "parent": "foreleg_R.lower",
+   "name": "wing.L.1",
+   "parent": "wing.L.0",
    "deform": true,
    "head": [
-    -0.68,
-    -2.9661,
-    0.5
+    1.1519,
+    -0.0252,
+    4.8031
    ],
    "tail": [
-    -0.7,
-    -3.5661,
-    0.08
+    1.3619,
+    0.5468,
+    5.8521
    ]
   },
   {
-   "name": "wing_L.001",
-   "parent": "spine.002",
+   "name": "wing.R.0",
+   "parent": "chest",
    "deform": true,
    "head": [
-    0.45,
-    -1.9661,
-    2.95
+    -0.4379,
+    -1.0262,
+    3.5441
    ],
    "tail": [
-    0.8,
-    -1.3161,
-    4.55
+    -1.1519,
+    -0.0252,
+    4.8031
    ]
   },
   {
-   "name": "wing_L.002",
-   "parent": "wing_L.001",
+   "name": "wing.R.1",
+   "parent": "wing.R.0",
    "deform": true,
    "head": [
-    0.8,
-    -1.3161,
-    4.55
+    -1.1519,
+    -0.0252,
+    4.8031
    ],
    "tail": [
-    1.1,
-    -0.5161,
-    5.7
+    -1.3619,
+    0.5468,
+    5.8521
    ]
   },
   {
-   "name": "wing_L.003",
-   "parent": "wing_L.002",
-   "deform": true,
-   "head": [
-    1.1,
-    -0.5161,
-    5.7
-   ],
-   "tail": [
-    1.4,
-    0.6339,
-    6.45
-   ]
-  },
-  {
-   "name": "wing_R.001",
-   "parent": "spine.002",
-   "deform": true,
-   "head": [
-    -0.45,
-    -1.9661,
-    2.95
-   ],
-   "tail": [
-    -0.8,
-    -1.3161,
-    4.55
-   ]
-  },
-  {
-   "name": "wing_R.002",
-   "parent": "wing_R.001",
-   "deform": true,
-   "head": [
-    -0.8,
-    -1.3161,
-    4.55
-   ],
-   "tail": [
-    -1.1,
-    -0.5161,
-    5.7
-   ]
-  },
-  {
-   "name": "wing_R.003",
-   "parent": "wing_R.002",
-   "deform": true,
-   "head": [
-    -1.1,
-    -0.5161,
-    5.7
-   ],
-   "tail": [
-    -1.4,
-    0.6339,
-    6.45
-   ]
-  },
-  {
-   "name": "hindleg_L.upper",
+   "name": "tail.0",
    "parent": "hips",
    "deform": true,
    "head": [
-    0.52,
-    -0.1161,
-    2.2
+    -0.0021,
+    1.0838,
+    1.8601
    ],
    "tail": [
-    0.66,
-    -0.4661,
-    1.3
+    -0.0021,
+    1.4045,
+    1.7634
    ]
   },
   {
-   "name": "hindleg_L.lower",
-   "parent": "hindleg_L.upper",
+   "name": "tail.1",
+   "parent": "tail.0",
    "deform": true,
    "head": [
-    0.66,
-    -0.4661,
-    1.3
+    -0.0021,
+    1.4045,
+    1.7634
    ],
    "tail": [
-    0.8,
-    0.4839,
-    0.78
+    -0.0021,
+    1.7141,
+    1.6353
    ]
   },
   {
-   "name": "hindleg_L.foot",
-   "parent": "hindleg_L.lower",
+   "name": "tail.2",
+   "parent": "tail.1",
    "deform": true,
    "head": [
-    0.8,
-    0.4839,
-    0.78
+    -0.0021,
+    1.7141,
+    1.6353
    ],
    "tail": [
-    0.84,
-    0.0139,
-    0.08
+    -0.0021,
+    2.0118,
+    1.4816
    ]
   },
   {
-   "name": "hindleg_R.upper",
+   "name": "tail.3",
+   "parent": "tail.2",
+   "deform": true,
+   "head": [
+    -0.0021,
+    2.0118,
+    1.4816
+   ],
+   "tail": [
+    -0.0021,
+    2.2978,
+    1.3071
+   ]
+  },
+  {
+   "name": "tail.4",
+   "parent": "tail.3",
+   "deform": true,
+   "head": [
+    -0.0021,
+    2.2978,
+    1.3071
+   ],
+   "tail": [
+    -0.0021,
+    2.5728,
+    1.1155
+   ]
+  },
+  {
+   "name": "tail.5",
+   "parent": "tail.4",
+   "deform": true,
+   "head": [
+    -0.0021,
+    2.5728,
+    1.1155
+   ],
+   "tail": [
+    -0.0021,
+    2.8375,
+    0.91
+   ]
+  },
+  {
+   "name": "tail.6",
+   "parent": "tail.5",
+   "deform": true,
+   "head": [
+    -0.0021,
+    2.8375,
+    0.91
+   ],
+   "tail": [
+    -0.0021,
+    3.0928,
+    0.693
+   ]
+  },
+  {
+   "name": "leg.L.0",
    "parent": "hips",
    "deform": true,
    "head": [
-    -0.52,
-    -0.1161,
-    2.2
+    0.5479,
+    0.5338,
+    1.7101
    ],
    "tail": [
-    -0.66,
-    -0.4661,
-    1.3
+    0.6979,
+    0.1338,
+    0.9101
    ]
   },
   {
-   "name": "hindleg_R.lower",
-   "parent": "hindleg_R.upper",
+   "name": "leg.L.1",
+   "parent": "leg.L.0",
    "deform": true,
    "head": [
-    -0.66,
-    -0.4661,
-    1.3
+    0.6979,
+    0.1338,
+    0.9101
    ],
    "tail": [
-    -0.8,
-    0.4839,
-    0.78
+    0.6479,
+    -0.2162,
+    0.1601
    ]
   },
   {
-   "name": "hindleg_R.foot",
-   "parent": "hindleg_R.lower",
-   "deform": true,
-   "head": [
-    -0.8,
-    0.4839,
-    0.78
-   ],
-   "tail": [
-    -0.84,
-    0.0139,
-    0.08
-   ]
-  },
-  {
-   "name": "tail.001",
+   "name": "leg.R.0",
    "parent": "hips",
    "deform": true,
    "head": [
-    0.0,
-    0.0839,
-    2.4
+    -0.5479,
+    0.5338,
+    1.7101
    ],
    "tail": [
-    0.0,
-    1.0885,
-    1.9566
+    -0.6979,
+    0.1338,
+    0.9101
    ]
   },
   {
-   "name": "tail.002",
-   "parent": "tail.001",
+   "name": "leg.R.1",
+   "parent": "leg.R.0",
    "deform": true,
    "head": [
-    0.0,
-    1.0885,
-    1.9566
+    -0.6979,
+    0.1338,
+    0.9101
    ],
    "tail": [
-    0.0,
-    1.9458,
-    1.2696
+    -0.6479,
+    -0.2162,
+    0.1601
    ]
   },
   {
-   "name": "tail.003",
-   "parent": "tail.002",
+   "name": "leg2.L.0",
+   "parent": "hips",
    "deform": true,
    "head": [
-    0.0,
-    1.9458,
-    1.2696
+    0.5979,
+    0.7838,
+    1.6101
    ],
    "tail": [
-    0.0,
-    2.762,
-    0.5365
+    0.9479,
+    1.0838,
+    0.9101
    ]
   },
   {
-   "name": "tail.004",
-   "parent": "tail.003",
+   "name": "leg2.L.1",
+   "parent": "leg2.L.0",
    "deform": true,
    "head": [
-    0.0,
-    2.762,
-    0.5365
+    0.9479,
+    1.0838,
+    0.9101
    ],
    "tail": [
-    0.0,
-    3.7839,
-    0.17
+    1.1979,
+    1.2838,
+    0.2601
+   ]
+  },
+  {
+   "name": "leg2.R.0",
+   "parent": "hips",
+   "deform": true,
+   "head": [
+    -0.5979,
+    0.7838,
+    1.6101
+   ],
+   "tail": [
+    -0.9479,
+    1.0838,
+    0.9101
+   ]
+  },
+  {
+   "name": "leg2.R.1",
+   "parent": "leg2.R.0",
+   "deform": true,
+   "head": [
+    -0.9479,
+    1.0838,
+    0.9101
+   ],
+   "tail": [
+    -1.1979,
+    1.2838,
+    0.2601
    ]
   }
  ],
- "bone_count": 30,
- "deform_bone_count": 29,
+ "bone_count": 29,
  "digest": {
   "parts": {
-   "bake_normal": "b8f971b76d64e62f",
-   "bake_ao": "15e0001a79e4ddeb",
-   "geometry_colour_uv": "65032152af635b5c",
-   "weights": "82fc61cd8ded80e0",
-   "keys": "aeb7246db77b87b8",
-   "clip_samples": "f4ce83e46e2dd49f"
+   "solid_grid": "fa248124e32efe21",
+   "bake_normal": "91381d6b5c0f20e3",
+   "bake_ao": "bb497dff87dff70d",
+   "bake_albedo": "cffbb14e3f66df0a",
+   "repose": "f2a31167692a617d",
+   "geometry_colour_uv": "b43c95121440d222",
+   "weights": "b115cab05a16e80d",
+   "keys": "e6b45b3d4a684124",
+   "clip_samples": "f6b459026b6de9dc"
   },
-  "combined": "5eb956eb01dd49fd"
+  "combined": "37f6e49aa1ee47b9"
  },
  "glb": {
   "path": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\rigged\\gemwing_dragon.glb",
-  "bytes": 8000292,
-  "seconds": 0.8,
-  "carries": {
-   "materials": [
-    {
-     "name": "gemwing_dragon_body",
-     "alphaMode": "OPAQUE",
-     "doubleSided": false,
-     "textures": [
-      "baseColorTexture",
-      "normalTexture"
-     ]
-    }
-   ],
-   "primitives": [
-    {
-     "mesh": "gemwing_dragon",
-     "material": "gemwing_dragon_body",
-     "attributes": [
-      "COLOR_0",
-      "COLOR_1",
-      "JOINTS_0",
-      "NORMAL",
-      "POSITION",
-      "TEXCOORD_0",
-      "WEIGHTS_0",
-      "_GLOW"
-     ]
-    }
-   ],
-   "animations": [
-    "idle",
-    "walk"
-   ],
-   "skins": 1,
-   "joints": 30
-  },
-  "structure": "armature identity + skinned 'gemwing_dragon' (one opaque body material); natural scale; report-only cell fit 0.44513"
+  "bytes": 15219512,
+  "seconds": 0.7
  },
  "skins": {
   "default": {
    "file": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\rigged\\gemwing_dragon.blend",
    "palette": {
-    "body_lit": {
+    "proxy_albedo": {
      "rgb": [
-      241,
-      233,
-      247
-     ]
-    },
-    "body": {
-     "rgb": [
-      209,
-      212,
-      246
-     ]
-    },
-    "body_shade": {
-     "rgb": [
-      183,
-      191,
-      241
-     ]
-    },
-    "body_accent_cool": {
-     "rgb": [
-      156,
-      160,
-      236
-     ]
-    },
-    "body_accent_warm": {
-     "rgb": [
-      243,
-      195,
-      187
-     ]
-    },
-    "iris": {
-     "rgb": [
-      129,
-      104,
-      205
-     ]
-    },
-    "pupil": {
-     "rgb": [
-      45,
-      17,
-      67
-     ]
-    },
-    "claw": {
-     "rgb": [
-      114,
-      77,
-      162
-     ]
-    },
-    "gem_indigo": {
-     "rgb": [
-      86,
-      89,
-      247
-     ]
-    },
-    "gem_blue": {
-     "rgb": [
-      79,
-      147,
-      253
-     ]
-    },
-    "gem_sky": {
-     "rgb": [
-      123,
-      167,
-      254
-     ]
-    },
-    "gem_violet": {
-     "rgb": [
-      166,
-      112,
-      253
-     ]
-    },
-    "gem_lilac": {
-     "rgb": [
-      193,
-      143,
-      252
-     ]
-    },
-    "gem_pink": {
-     "rgb": [
-      250,
-      140,
-      174
-     ]
-    },
-    "gem_peach": {
-     "rgb": [
-      253,
-      185,
-      111
+      255,
+      255,
+      255
      ]
     }
-   },
-   "glow": {
-    "skin": "default",
-    "glowing_regions": [],
-    "rule": "no glow (the sheet's sheen is colour, not light): zero Glow"
    }
   },
-  "rule": "default skin only (brief)"
+  "repaint_proof": {
+   "default_digest_before": "b43c95121440d222",
+   "after_repaint": "b43c95121440d222"
+  }
  },
  "improved_report": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\improved\\gemwing_dragon.json",
- "seconds": 63.1
+ "seconds": 92.3
 }

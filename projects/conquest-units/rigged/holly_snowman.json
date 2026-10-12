@@ -2,56 +2,76 @@
  "unit": "holly_snowman",
  "source": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\improved\\holly_snowman.blend",
  "fps": 24,
- "weights": {
-  "max_influences": 2,
-  "unweighted": 0,
-  "sum_dev_max": 0.0,
-  "per_bone_dominant": {
-   "body": 3466,
-   "head": 2487,
-   "ear_L": 302,
-   "arm_L": 1074,
-   "foot_L": 489,
-   "ear_R": 302,
-   "arm_R": 1074,
-   "foot_R": 489
+ "finish": {
+  "open_edges": 0,
+  "tris": 16828,
+  "mirror": {
+   "max_u": 0.0,
+   "p99_u": 0.0,
+   "rule": "every vertex mirrored in X -> distance to the nearest surface of the unit"
   },
-  "rule": "shell: head smoothstep at z 3.15 +- 0.12; feet = (1 - smoothstep z 0.30..0.46) x smoothstep |X| 0.10..0.28 on each side; the rest body. Eyes 1.0 head; buttons 1.0 body; ears 1.0 ear_*; stalk / fronds / berries 1.0 arm_*"
+  "tri_budget": [
+   8000,
+   22000
+  ],
+  "in_budget": true
+ },
+ "weights": {
+  "max_influences": 4,
+  "unweighted": 0,
+  "sum_dev_max": 2.220446049250313e-16,
+  "per_bone_dominant": {
+   "body": 938,
+   "chest": 386,
+   "head": 827,
+   "arm.L.0": 858,
+   "arm.L.1": 963,
+   "arm.R.0": 858,
+   "arm.R.1": 963,
+   "ear.L.0": 428,
+   "ear.L.1": 58,
+   "ear.R.0": 425,
+   "ear.R.1": 58,
+   "leg.L.0": 838,
+   "leg.R.0": 838
+  },
+  "parts": {
+   "decal_berry_red.0": "leg.R.0",
+   "decal_berry_red.1": "leg.L.0",
+   "decal_berry_red.2": "arm.R.1",
+   "decal_berry_red.3": "arm.L.1",
+   "decal_berry_red.4": "arm.R.1",
+   "decal_berry_red.5": "arm.L.1",
+   "decal_berry_red.6": "body",
+   "decal_berry_red.7": "arm.R.1",
+   "decal_berry_red.8": "arm.L.1",
+   "decal_berry_red.9": "body",
+   "decal_berry_red.10": "chest",
+   "decal_eye.11": "head",
+   "decal_eye.12": "head"
+  },
+  "rule": "shell: exp(-((d - d_min) / (0.06 H))^2) over bone-segment distances, side-aware, <= 4, normalised; parts rigid on their bone"
  },
  "clips": {
   "idle": {
    "frames": [
     1,
-    97
+    49
    ],
-   "period_frames": 96,
-   "seconds": 4.0,
+   "seconds": 2.0,
    "cyclic": true,
-   "seam_main_mm": 0.0,
-   "root_offset_max": 0.0,
-   "clearance_min_z": 0.0,
-   "soles": {
-    "min_z": 0.0,
-    "slide_xy_max": 0.0,
-    "sole_verts": 108
-   }
+   "seam_mm": 0.0,
+   "clearance_min_z": -0.0021
   },
   "walk": {
    "frames": [
     1,
-    49
+    25
    ],
-   "period_frames": 48,
-   "seconds": 2.0,
+   "seconds": 1.0,
    "cyclic": true,
-   "seam_main_mm": 0.0,
-   "root_offset_max": 0.0,
-   "clearance_min_z": 0.0,
-   "soles": {
-    "min_z": 0.0,
-    "slide_xy_max": 0.0,
-    "sole_verts": 108
-   }
+   "seam_mm": 0.0,
+   "clearance_min_z": -0.0175
   }
  },
  "bones": [
@@ -76,205 +96,237 @@
    "deform": true,
    "head": [
     0.0,
-    -0.0072,
-    0.0
+    0.0271,
+    0.618
    ],
    "tail": [
     0.0,
-    -0.0072,
-    3.15
+    0.0271,
+    2.318
+   ]
+  },
+  {
+   "name": "chest",
+   "parent": "body",
+   "deform": true,
+   "head": [
+    0.0,
+    0.0271,
+    2.318
+   ],
+   "tail": [
+    0.0,
+    -0.0229,
+    3.118
    ]
   },
   {
    "name": "head",
-   "parent": "body",
+   "parent": "chest",
    "deform": true,
    "head": [
     0.0,
-    -0.0783,
-    3.15
+    -0.0229,
+    3.118
    ],
    "tail": [
     0.0,
-    -0.0783,
-    4.91
+    -0.0529,
+    4.668
    ]
   },
   {
-   "name": "ear_L",
+   "name": "ear.L.0",
    "parent": "head",
    "deform": true,
    "head": [
-    0.72,
-    0.1317,
-    4.58
+    0.4922,
+    0.1271,
+    4.508
    ],
    "tail": [
-    1.11,
-    0.5817,
-    5.92
+    0.7922,
+    0.2771,
+    5.158
    ]
   },
   {
-   "name": "ear_R",
+   "name": "ear.L.1",
+   "parent": "ear.L.0",
+   "deform": true,
+   "head": [
+    0.7922,
+    0.2771,
+    5.158
+   ],
+   "tail": [
+    0.9922,
+    0.4771,
+    5.708
+   ]
+  },
+  {
+   "name": "ear.R.0",
    "parent": "head",
    "deform": true,
    "head": [
-    -0.72,
-    0.1317,
-    4.58
+    -0.4922,
+    0.1271,
+    4.508
    ],
    "tail": [
-    -1.11,
-    0.5817,
-    5.92
+    -0.7922,
+    0.2771,
+    5.158
    ]
   },
   {
-   "name": "arm_L",
+   "name": "ear.R.1",
+   "parent": "ear.R.0",
+   "deform": true,
+   "head": [
+    -0.7922,
+    0.2771,
+    5.158
+   ],
+   "tail": [
+    -0.9922,
+    0.4771,
+    5.708
+   ]
+  },
+  {
+   "name": "arm.L.0",
+   "parent": "chest",
+   "deform": true,
+   "head": [
+    0.6922,
+    0.0271,
+    2.808
+   ],
+   "tail": [
+    1.3422,
+    0.2271,
+    2.558
+   ]
+  },
+  {
+   "name": "arm.L.1",
+   "parent": "arm.L.0",
+   "deform": true,
+   "head": [
+    1.3422,
+    0.2271,
+    2.558
+   ],
+   "tail": [
+    1.8922,
+    0.5271,
+    2.058
+   ]
+  },
+  {
+   "name": "arm.R.0",
+   "parent": "chest",
+   "deform": true,
+   "head": [
+    -0.6922,
+    0.0271,
+    2.808
+   ],
+   "tail": [
+    -1.3422,
+    0.2271,
+    2.558
+   ]
+  },
+  {
+   "name": "arm.R.1",
+   "parent": "arm.R.0",
+   "deform": true,
+   "head": [
+    -1.3422,
+    0.2271,
+    2.558
+   ],
+   "tail": [
+    -1.8922,
+    0.5271,
+    2.058
+   ]
+  },
+  {
+   "name": "leg.L.0",
    "parent": "body",
    "deform": true,
    "head": [
-    0.4,
-    -0.1483,
-    3.08
+    0.4922,
+    -0.0729,
+    0.908
    ],
    "tail": [
-    1.8438,
-    0.738,
-    1.9475
+    0.5422,
+    -0.0729,
+    0.028
    ]
   },
   {
-   "name": "arm_R",
+   "name": "leg.R.0",
    "parent": "body",
    "deform": true,
    "head": [
-    -0.4,
-    -0.1483,
-    3.08
+    -0.4922,
+    -0.0729,
+    0.908
    ],
    "tail": [
-    -1.8438,
-    0.738,
-    1.9475
-   ]
-  },
-  {
-   "name": "foot_L",
-   "parent": "root",
-   "deform": true,
-   "head": [
-    0.67,
-    -0.2683,
-    0.0
-   ],
-   "tail": [
-    0.67,
-    -0.2683,
-    0.45
-   ]
-  },
-  {
-   "name": "foot_R",
-   "parent": "root",
-   "deform": true,
-   "head": [
-    -0.67,
-    -0.2683,
-    0.0
-   ],
-   "tail": [
-    -0.67,
-    -0.2683,
-    0.45
+    -0.5422,
+    -0.0729,
+    0.028
    ]
   }
  ],
- "bone_count": 9,
- "deform_bone_count": 8,
+ "bone_count": 14,
  "digest": {
   "parts": {
-   "bake_normal": "cb4ae98f4efc27c2",
-   "bake_ao": "7234c7133ad0637e",
-   "geometry_colour_uv": "f009d0a85962d427",
-   "weights": "a45f93afe6c2303a",
-   "keys": "998fd22e4f950ad4",
-   "clip_samples": "d1b3b6e8d5819819"
+   "solid_grid": "7851b1227e9bbfcb",
+   "bake_normal": "a8147127d56f1108",
+   "bake_ao": "1f0c0fa1c456a431",
+   "geometry_colour_uv": "25125337c55c187e",
+   "weights": "ca7ca45200ecab9f",
+   "keys": "4f1285af855011ac",
+   "clip_samples": "6ce620040edbcc4c"
   },
-  "combined": "030149e0f9a3b44c"
+  "combined": "327760ac3ff2b94d"
  },
  "glb": {
   "path": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\rigged\\holly_snowman.glb",
-  "bytes": 6039532,
-  "seconds": 0.7,
-  "carries": {
-   "materials": [
-    {
-     "name": "holly_snowman_body",
-     "alphaMode": "OPAQUE",
-     "doubleSided": false,
-     "textures": [
-      "baseColorTexture",
-      "normalTexture"
-     ]
-    }
-   ],
-   "primitives": [
-    {
-     "mesh": "holly_snowman",
-     "material": "holly_snowman_body",
-     "attributes": [
-      "COLOR_0",
-      "COLOR_1",
-      "JOINTS_0",
-      "NORMAL",
-      "POSITION",
-      "TEXCOORD_0",
-      "WEIGHTS_0",
-      "_GLOW"
-     ]
-    }
-   ],
-   "animations": [
-    "idle",
-    "walk"
-   ],
-   "skins": 1,
-   "joints": 9
-  },
-  "structure": "armature identity + skinned 'holly_snowman' (one opaque primitive); natural scale; report-only cell fit 0.30405"
+  "bytes": 6287304,
+  "seconds": 0.5
  },
  "skins": {
   "default": {
    "file": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\rigged\\holly_snowman.blend",
    "palette": {
-    "snow": {
+    "snow_base": {
      "rgb": [
       192,
       210,
       253
      ]
     },
-    "snow_hi": {
+    "leaf_green": {
      "rgb": [
-      227,
-      240,
-      254
+      16,
+      47,
+      29
      ]
     },
-    "snow_shade": {
+    "berry_red": {
      "rgb": [
-      133,
-      167,
-      252
-     ]
-    },
-    "blush": {
-     "rgb": [
-      144,
-      176,
-      252
+      178,
+      37,
+      38
      ]
     },
     "eye": {
@@ -283,46 +335,14 @@
       36,
       40
      ]
-    },
-    "leaf": {
-     "rgb": [
-      16,
-      47,
-      29
-     ]
-    },
-    "leaf_light": {
-     "rgb": [
-      21,
-      58,
-      38
-     ]
-    },
-    "leaf_rim": {
-     "rgb": [
-      144,
-      163,
-      110
-     ]
-    },
-    "berry": {
-     "rgb": [
-      178,
-      37,
-      38
-     ]
-    },
-    "berry_hi": {
-     "rgb": [
-      251,
-      179,
-      170
-     ]
     }
    }
   },
-  "rule": "default skin only (brief)"
+  "repaint_proof": {
+   "default_digest_before": "25125337c55c187e",
+   "after_repaint": "25125337c55c187e"
+  }
  },
  "improved_report": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\improved\\holly_snowman.json",
- "seconds": 35.5
+ "seconds": 40.3
 }

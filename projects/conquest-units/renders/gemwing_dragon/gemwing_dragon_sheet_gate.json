@@ -1,0 +1,39 @@
+{
+ "unit": "gemwing_dragon",
+ "views": {
+  "front": {
+   "iou": 0.8245,
+   "iou_shape": 0.8076,
+   "aspect_rel": 0.0173,
+   "row_err_u": 0.298,
+   "row_err_pct": 10.1,
+   "w_u": 3.16,
+   "h_u": 6.22,
+   "ref_w_u": 3.2,
+   "ref_h_u": 6.19,
+   "iou_in_frame": 0.8147,
+   "row_err_pct_in_frame": 10.2,
+   "proxy_iou": 0.8386,
+   "flag": false
+  },
+  "side": {
+   "iou": 0.8068,
+   "iou_shape": 0.6742,
+   "aspect_rel": 0.0383,
+   "row_err_u": 0.447,
+   "row_err_pct": 8.8,
+   "w_u": 6.32,
+   "h_u": 6.22,
+   "ref_w_u": 6.42,
+   "ref_h_u": 6.57,
+   "iou_in_frame": 0.8064,
+   "row_err_pct_in_frame": 8.8,
+   "proxy_iou": 0.782,
+   "flag": false
+  }
+ },
+ "proxy_sha256": "78bb91e1afef961d794c40eeaf00db3f23b2da5ad407bb4a69e06d66d0f85d81",
+ "proxy_gate": "proxy unreliable, work from the sheet (side length off by -9.1%)",
+ "flagged": [],
+ "mean_iou": 0.8156
+}

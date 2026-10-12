@@ -1,18 +1,44 @@
 {
  "unit": "holly_snowman",
  "skin": "default",
- "description": "Holly Snowman default look, PIXEL-SAMPLED from design/reference/holly_snowman-character-sheet.png: the palette chips (intake.json swatches snow base 192,210,253 / snow shadow 133,167,252 / leaf green 16,47,29 / berry red 178,37,38 / eye 34,36,40 inferred by spacing / snow highlight 227,240,254) cross-checked against the drawn surfaces (service venv PIL, median of a box per surface; front-view boxes x0,y0,x1,y1 in each note). The sheet draws NO glow: no region emits.",
+ "description": "holly_snowman default look: one region per sheet palette chip (proxy_finish.py init; chips from intake.json swatches)",
  "regions": {
-  "snow":       {"rgb": [192, 210, 253], "note": "the one snow region (the graded shell's base tone): chip 192,210,253; drawn head top (235,275,265,300) median 185,206,253, head side (170,320,200,345) 183,204,253, feet (170,725,210,745) 183,203,252"},
-  "snow_hi":    {"rgb": [227, 240, 254], "note": "GRADIENT TONE (v1.1: blended per vertex onto the snow by up-facing weight, no faces carry it) -- snow highlight on the upper lit areas: chip 227,240,254; drawn head top-left (185,295,200,305) 211,224,253, foot top (330,718,345,728) 206,220,253"},
-  "snow_shade": {"rgb": [133, 167, 252], "note": "GRADIENT TONE (blended per vertex by down-facing weight) -- snow shadow under the head / belly / feet: chip 133,167,252; drawn lower belly (230,680,270,700) median 143,175,252, under-head min 125,153,226"},
-  "blush":      {"rgb": [144, 176, 252], "note": "GRADIENT TONE (a feathered per-vertex glow on the lower face) -- soft blue blush round / below the eyes: drawn face centre (240,395,260,415) median 144,176,252 -- NOT a chip (it sits between the base and the shadow chip)"},
-  "eye":        {"rgb": [34, 36, 40],    "note": "simple black oval eyes: chip 34,36,40 (inferred by spacing in the intake); drawn eye blobs x 216-227 / 274-285, y 336-369 (sum < 250)"},
-  "leaf":       {"rgb": [16, 47, 29],    "note": "leaf green, the darker half of every leaf: chip 16,47,29; drawn ear outer halves (335,230,360,260) / (140,230,165,260) median 14,42,29"},
-  "leaf_light": {"rgb": [21, 58, 38],    "note": "the lighter half of every leaf (the rim side of the midrib): drawn ear inner halves (300,240,320,265) 21,57,38 / (180,240,200,265) 21,59,37; side ear front half (1030,235,1050,260) 20,53,33 -- NOT a chip"},
-  "leaf_rim":   {"rgb": [144, 163, 110], "note": "the light green leaf rim: drawn ear rim pixels (G > 110, G > B + 20, G > R + 10 in the ear box 125-375 x 165-300) median 144,163,110; arm-leaf rims (300-470 x 440-520) 124,148,97 -- NOT a chip"},
-  "berry":      {"rgb": [178, 37, 38],   "note": "berry red (berry clusters + the three buttons): chip 178,37,38; drawn berry (426,537,434,545) median 171,35,39, button (246,478,254,486) 168,32,37"},
-  "berry_hi":   {"rgb": [251, 179, 170], "note": "the white-ish highlight dot on each berry / button: drawn brightest berry pixels (sum > 500 in 400-465 x 515-595) median 251,179,170 -- NOT a chip"}
+  "snow_base": {
+   "rgb": [
+    192,
+    210,
+    253
+   ],
+   "note": "sheet chip (intake swatches), pixel-sampled by sheet_intake.py"
+  },
+  "leaf_green": {
+   "rgb": [
+    16,
+    47,
+    29
+   ],
+   "note": "sheet chip (intake swatches), pixel-sampled by sheet_intake.py"
+  },
+  "berry_red": {
+   "rgb": [
+    178,
+    37,
+    38
+   ],
+   "note": "sheet chip (intake swatches), pixel-sampled by sheet_intake.py"
+  },
+  "eye": {
+   "rgb": [
+    34,
+    36,
+    40
+   ],
+   "note": "sheet chip (intake swatches), pixel-sampled by sheet_intake.py"
+  }
  },
- "material": {"roughness": 0.85, "emission_strength": 1.0, "alpha": 1.0}
+ "material": {
+  "roughness": 0.85,
+  "emission_strength": 1.0,
+  "alpha": 1.0
+ }
 }

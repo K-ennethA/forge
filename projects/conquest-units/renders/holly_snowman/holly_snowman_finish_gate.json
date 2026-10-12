@@ -1,0 +1,118 @@
+{
+ "unit": "holly_snowman",
+ "views_scored": [
+  "front",
+  "back",
+  "side"
+ ],
+ "facing": "left",
+ "finished": {
+  "front": {
+   "iou": 0.9136,
+   "row_err_pct": 3.0,
+   "w_u": 4.01,
+   "h_u": 5.75
+  },
+  "back": {
+   "iou": 0.9109,
+   "row_err_pct": 3.8,
+   "w_u": 4.01,
+   "h_u": 5.75
+  },
+  "side": {
+   "iou": 0.9318,
+   "row_err_pct": 3.9,
+   "w_u": 2.82,
+   "h_u": 5.75
+  },
+  "_mean_iou": 0.9188
+ },
+ "proxy_raw": {
+  "front": {
+   "iou": 0.9074,
+   "row_err_pct": 3.3,
+   "w_u": 4.03,
+   "h_u": 5.87
+  },
+  "back": {
+   "iou": 0.9131,
+   "row_err_pct": 3.6,
+   "w_u": 4.03,
+   "h_u": 5.87
+  },
+  "side": {
+   "iou": 0.9357,
+   "row_err_pct": 3.4,
+   "w_u": 2.8,
+   "h_u": 5.87
+  },
+  "_mean_iou": 0.9187
+ },
+ "finished_vs_proxy": {
+  "front": {
+   "iou": 0.9701,
+   "row_err_pct": 0.8
+  },
+  "back": {
+   "iou": 0.9706,
+   "row_err_pct": 0.8
+  },
+  "side": {
+   "iou": 0.9799,
+   "row_err_pct": 1.2
+  }
+ },
+ "picked_ref": {
+  "front": {
+   "iou": 0.9136,
+   "row_err_pct": 3.0,
+   "w_u": 4.01,
+   "h_u": 5.75
+  },
+  "back": {
+   "iou": 0.9109,
+   "row_err_pct": 3.8,
+   "w_u": 4.01,
+   "h_u": 5.75
+  },
+  "side": {
+   "iou": 0.9318,
+   "row_err_pct": 3.9,
+   "w_u": 2.82,
+   "h_u": 5.75
+  },
+  "_glb": "C:/Users/kenne/AppData/Local/Temp/claude/C--Users-kenne-OneDrive-Desktop-git-forge/c52f52c2-4a47-4d0c-9098-1fc754dd670d/scratchpad/proxy_finish/picked/holly_col3/holly_snowman.glb",
+  "_mean_iou": 0.9188
+ },
+ "finished_vs_picked": {
+  "front": {
+   "iou": 1.0,
+   "row_err_pct": 0.0
+  },
+  "back": {
+   "iou": 1.0,
+   "row_err_pct": 0.0
+  },
+  "side": {
+   "iou": 1.0,
+   "row_err_pct": 0.0
+  },
+  "_mean_iou": 1.0
+ },
+ "mesh": {
+  "glb_tris": 16828,
+  "glb_open_edges_welded": 0,
+  "glb_nonmanifold_edges_welded": 0,
+  "build_open_edges": 0,
+  "mirror": {
+   "max_u": 0.0,
+   "p99_u": 0.0,
+   "mean_u": 0.0
+  },
+  "build_mirror": {
+   "max_u": 0.0,
+   "p99_u": 0.0,
+   "rule": "every vertex mirrored in X -> distance to the nearest surface of the unit"
+  }
+ }
+}

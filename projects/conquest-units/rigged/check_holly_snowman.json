@@ -4,17 +4,17 @@
   {
    "check": "cell_fit",
    "pass": false,
-   "footprint": 4.2,
-   "height": 5.92,
-   "width": 4.2,
-   "depth": 2.8627,
+   "footprint": 4.0068,
+   "height": 5.7459,
+   "width": 4.0068,
+   "depth": 2.8124,
    "max_footprint": 1.9,
    "max_height": 1.8
   },
   {
    "check": "feet_origin",
    "pass": true,
-   "min_z": 0.0,
+   "min_z": -0.0,
    "centre_xy": [
     0.0,
     0.0
@@ -24,15 +24,15 @@
   {
    "check": "facing_-Y",
    "pass": true,
-   "angle_from_minusY_deg": 0.0,
+   "angle_from_minusY_deg": 1.34,
    "tolerance_deg": 30.0,
-   "rule": "head centre at eye height -> the head's front surface between the eyes (the face looks -Y)",
+   "rule": "shell centroid -> the front-most midline point of the shell (proxy finish default)",
    "yaw_fix_deg": 0.0
   },
   {
    "check": "tri_budget",
    "pass": true,
-   "tris": 19214,
+   "tris": 16828,
    "budget": [
     8000,
     22000
@@ -50,12 +50,12 @@
     {
      "mesh": "holly_snowman",
      "layers": 1,
-     "islands": 458,
+     "islands": 1172,
      "flipped": 0,
      "overlap": false,
-     "overlap_note": "summed UV area is 18% below the rasterised coverage at 512x512 \u2014 consistent with no overlap. A raster quantises every island edge, so anything under 8% is counted as clean.",
-     "coverage": 0.5272,
-     "area_distortion_p95": 1.203
+     "overlap_note": "summed UV area is 34% below the rasterised coverage at 512x512 \u2014 consistent with no overlap. A raster quantises every island edge, so anything under 8% is counted as clean.",
+     "coverage": 0.26,
+     "area_distortion_p95": 1.177
     }
    ]
   },
@@ -63,7 +63,7 @@
    "check": "flat_shaded",
    "pass": true,
    "smooth_faces": 0,
-   "faces": 16632,
+   "faces": 16828,
    "smooth_outside_exemption": 0,
    "smooth_exempt": 0,
    "exemption": null,
@@ -85,7 +85,7 @@
    ],
    "armature_identity": true,
    "root_max_offset_over_clips": 0.0,
-   "bones": 9
+   "bones": 14
   },
   {
    "check": "clip_names",
@@ -113,30 +113,30 @@
      "clip": "idle",
      "frames": [
       1,
-      97
-     ],
-     "cyclic": true,
-     "manual_range": true,
-     "seam_mm": 0.0,
-     "extent": {
-      "footprint": 4.3301,
-      "height": 6.0625,
-      "min_z": 0.0
-     }
-    },
-    {
-     "clip": "walk",
-     "frames": [
-      1,
       49
      ],
      "cyclic": true,
      "manual_range": true,
      "seam_mm": 0.0,
      "extent": {
-      "footprint": 4.45,
-      "height": 6.0161,
-      "min_z": 0.0
+      "footprint": 4.0068,
+      "height": 5.7987,
+      "min_z": -0.0021
+     }
+    },
+    {
+     "clip": "walk",
+     "frames": [
+      1,
+      25
+     ],
+     "cyclic": true,
+     "manual_range": true,
+     "seam_mm": 0.0,
+     "extent": {
+      "footprint": 4.1849,
+      "height": 5.8723,
+      "min_z": -0.0175
      }
     }
    ]
@@ -148,8 +148,8 @@
    "weight_sum_min": 1.0,
    "weight_sum_max": 1.0,
    "unweighted": 0,
-   "max_influences": 2,
-   "deform_bones": 8
+   "max_influences": 4,
+   "deform_bones": 13
   }
  ],
  "passed": 10,

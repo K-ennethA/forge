@@ -1,7 +1,7 @@
-00:01.437  blend            | Read blend: "C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\rigged\gemwing_dragon.blend"
-00:03.484  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\gemwing_dragon\gemwing_dragon_ortho_front.png'
-00:03.890  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\gemwing_dragon\gemwing_dragon_ortho_back.png'
-00:04.172  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\gemwing_dragon\gemwing_dragon_ortho_side.png'
+00:01.172  blend            | Read blend: "C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\rigged\gemwing_dragon.blend"
+00:02.922  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\gemwing_dragon\gemwing_dragon_ortho_front.png'
+00:03.359  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\gemwing_dragon\gemwing_dragon_ortho_back.png'
+00:03.718  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\gemwing_dragon\gemwing_dragon_ortho_side.png'
 WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\gemwing_dragon\gemwing_dragon_ortho_front.png
 WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\gemwing_dragon\gemwing_dragon_ortho_back.png
 WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\gemwing_dragon\gemwing_dragon_ortho_side.png
