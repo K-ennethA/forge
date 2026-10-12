@@ -222,6 +222,73 @@ def recolour_albedo(pc, R, me, specs):
     return out
 
 
+def despeckle(img_px, R, me, spec, channels=3):
+    """opt-in light.despeckle (artist 2026-10-12, Sand Drill Worm v2: "a disjoint on the arms where there is leftover"):
+    inside the `capsules` region (sheet units, the build frame; texels whose 3D point lies within `pad` of a capsule and
+    below `zmax`), texels darker than `frac` x the region's median luminance are bake hits on the proxy soup's INNER faces
+    next to a cut / re-joined part; they are refilled from the region's valid 4-neighbours ring by ring (fallback: the
+    median). img_px: (R*R, 4) floats edited in place -> report"""
+    uv = np.empty(len(me.loops) * 2); me.uv_layers.active.data.foreach_get("uv", uv); uv = uv.reshape(-1, 3, 2)
+    co = np.empty(len(me.vertices) * 3); me.vertices.foreach_get("co", co); co = co.reshape(-1, 3)
+    lv = np.empty(len(me.loops), dtype=np.int64); me.loops.foreach_get("vertex_index", lv); T3 = co[lv.reshape(-1, 3)]
+    caps = [c["capsule"] for c in spec["capsules"]]
+    pad = float(spec.get("pad", 0.04)); zmax = float(spec.get("zmax", 1e9))
+
+    def sdu(X):
+        return np.min([PF.sd_capsule(X, *c) for c in caps], axis=0)
+    cen = T3.mean(1)
+    cand = np.nonzero((sdu(cen) < pad + 0.1) & (cen[:, 2] < zmax + 0.1))[0]
+    idx = []
+    for f in cand:
+        t2 = uv[f] * R
+        x0, y0 = np.floor(t2.min(0)).astype(int); x1, y1 = np.ceil(t2.max(0)).astype(int)
+        xs, ys = np.meshgrid(np.arange(max(x0, 0), min(x1, R)) + 0.5, np.arange(max(y0, 0), min(y1, R)) + 0.5)
+        Pq = np.stack([xs.ravel(), ys.ravel()], 1)
+        if not len(Pq):
+            continue
+        a_, b_, c_ = t2
+        den = (b_[1] - c_[1]) * (a_[0] - c_[0]) + (c_[0] - b_[0]) * (a_[1] - c_[1])
+        if abs(den) < 1e-12:
+            continue
+        l0 = ((b_[1] - c_[1]) * (Pq[:, 0] - c_[0]) + (c_[0] - b_[0]) * (Pq[:, 1] - c_[1])) / den
+        l1 = ((c_[1] - a_[1]) * (Pq[:, 0] - c_[0]) + (a_[0] - c_[0]) * (Pq[:, 1] - c_[1])) / den
+        ins = (l0 >= -1e-6) & (l1 >= -1e-6) & (1.0 - l0 - l1 >= -1e-6)
+        if not ins.any():
+            continue
+        X3 = np.stack([l0[ins], l1[ins], 1.0 - l0[ins] - l1[ins]], 1) @ T3[f]
+        ok = (sdu(X3) < pad) & (X3[:, 2] < zmax)
+        idx.append((Pq[ins][ok, 1].astype(int)) * R + Pq[ins][ok, 0].astype(int))
+    if not idx:
+        return {"texels_region": 0}
+    reg = np.unique(np.concatenate(idx))
+    L = img_px[reg, :channels].mean(1)
+    med = float(np.median(L))
+    bad = L < float(spec.get("frac", 0.6)) * med
+    nbad = int(bad.sum())
+    inreg = np.zeros(R * R, bool); inreg[reg] = True
+    good = np.zeros(R * R, bool); good[reg[~bad]] = True
+    todo = np.zeros(R * R, bool); todo[reg[bad]] = True
+    img = img_px.reshape(R, R, -1)
+    rings = 0
+    while todo.any() and rings < int(spec.get("rings", 24)):
+        g2 = good.reshape(R, R); acc = np.zeros((R, R, channels)); cnt = np.zeros((R, R))
+        for dy, dx in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+            sh = np.roll(g2, (dy, dx), (0, 1))
+            acc += np.roll(img[..., :channels], (dy, dx), (0, 1)) * sh[..., None]; cnt += sh
+        grow = todo & (cnt.ravel() > 0)
+        if not grow.any():
+            break
+        gi = np.nonzero(grow)[0]
+        img_px[gi, :channels] = acc.reshape(-1, channels)[gi] / cnt.ravel()[gi][:, None]
+        good[gi] = True; todo[gi] = False
+        rings += 1
+    left = int(todo.sum())
+    if left:
+        img_px[np.nonzero(todo)[0], :channels] = np.median(img_px[reg[~bad], :channels], 0)
+    return {"texels_region": int(len(reg)), "region_median": round(med, 4), "texels_refilled": nbad, "rings": rings,
+            "left_to_median": left}
+
+
 def run_light(unit, cfg, raw_cfg, PREVIEW, DIGEST_ONLY, SOLID, T0):
     scene = bpy.context.scene
     lc = cfg["light"]
@@ -522,6 +589,11 @@ def run_light(unit, cfg, raw_cfg, PREVIEW, DIGEST_ONLY, SOLID, T0):
         if lc.get("recolour"):              # opt-in (new units only): targeted texture recolours on a GEOMETRY mask
             report["recolour"] = recolour_albedo(pc, RC_, me, lc["recolour"])
             img_c.pixels.foreach_set(pc.ravel())
+        if lc.get("despeckle"):             # opt-in (new units only): dark bake hits on the soup's inner faces, refilled
+            dsp = lc["despeckle"]
+            report["despeckle"] = {"albedo": despeckle(pc, RC_, me, dsp, 3), "ao": despeckle(pa, RA, me, dsp, 1)}
+            pa[:, 1] = pa[:, 0]; pa[:, 2] = pa[:, 0]
+            img_c.pixels.foreach_set(pc.ravel()); img_ao.pixels.foreach_set(pa.ravel())
         # basecolor = albedo (sRGB) x AO (linear), back to sRGB: the one base-colour texture the glb carries
         ao_up = np.asarray(pa[:, 0]).reshape(RA, RA)
         if RA != RC_:

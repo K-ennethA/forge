@@ -728,14 +728,14 @@
        4.62
       ],
       [
-       0.97,
-       -0.19,
-       4.82
+       0.9,
+       -0.17,
+       5.0
       ],
       0.12
      ],
      "k": 0.06,
-     "why": "the front half of the common stalk below the aft branch (z 4.62-4.82): the fore arm's root, so the stalk bends into the aft arm with no stump (+x side)"
+     "why": "v2 note 'a disjoint on the arms where there is leftover': the straight common stalk below the socket (z 4.62-5.0, its front part) is the FORE arm's line; cut so the aft arm can be re-joined (+x side)"
     },
     {
      "capsule": [
@@ -745,14 +745,65 @@
        4.62
       ],
       [
-       -0.97,
-       -0.15,
-       4.82
+       -0.9,
+       -0.13,
+       5.0
       ],
       0.12
      ],
      "k": 0.06,
-     "why": "the front half of the common stalk below the aft branch (z 4.62-4.82): the fore arm's root, so the stalk bends into the aft arm with no stump (-x side)"
+     "why": "v2 note 'a disjoint on the arms where there is leftover': the straight common stalk below the socket (z 4.62-5.0, its front part) is the FORE arm's line; cut so the aft arm can be re-joined (-x side)"
+    },
+    {
+     "capsule": [
+      [
+       0.86,
+       -0.15,
+       4.5
+      ],
+      [
+       0.82,
+       -0.14,
+       4.95
+      ],
+      0.13
+     ],
+     "k": 0.05,
+     "why": "the inner wall of the old straight stalk (x 0.76-0.96, y -0.25..0, z 4.55-4.85) left as a fin in front of the re-joined stalk (+x side)"
+    },
+    {
+     "capsule": [
+      [
+       -0.86,
+       -0.15,
+       4.5
+      ],
+      [
+       -0.82,
+       -0.14,
+       4.95
+      ],
+      0.13
+     ],
+     "k": 0.05,
+     "why": "the inner wall of the old straight stalk (x 0.76-0.96, y -0.25..0, z 4.55-4.85) left as a fin in front of the re-joined stalk (-x side)"
+    },
+    {
+     "capsule": [
+      [
+       -1.0,
+       -0.1,
+       4.38
+      ],
+      [
+       -0.97,
+       -0.09,
+       4.6
+      ],
+      0.08
+     ],
+     "k": 0.03,
+     "why": "-x only: a sliver of the fore stalk's inner wall (x -1.0, y -0.05..-0.09, z 4.42-4.55) in front of the kept aft arm"
     }
    ],
    "cuts_why": "capsules along the fore arm centreline (proxy samples, z 1.55-4.25 per 0.15, radius = p99.5 + 0.05); stop below the shoulder fork (z ~4.45): 0 body / 0 aft-arm samples inside, 113 shoulder samples",
@@ -815,7 +866,211 @@
      ],
      "why": "artist v1 verdict 'mouth dark red': the cup inside the rim (front lip y -0.83 z 5.93, back rim y +0.3 z 6.63, bottom y -0.2 z 5.35) repainted rim -> deep with the sheet mouth-detail panel's radial medians (non-tooth pixels: 124,67,46 at the gums / 92,42,33 / 69,30,26 / 57,25,21 at the centre); the chip 116,62,58 read mauve in the render; teeth (bright) kept"
     }
-   ]
+   ],
+   "adds": [
+    {
+     "capsule": [
+      [
+       0.84,
+       -0.08,
+       5.3
+      ],
+      [
+       0.88,
+       0.0,
+       4.9
+      ],
+      0.12
+     ],
+     "k": 0.05,
+     "why": "one continuous stalk from the shoulder socket (z 5.3) into the kept AFT arm (z 4.45), smooth union: replaces the straight stub + side branch the cut left (+x side)"
+    },
+    {
+     "capsule": [
+      [
+       0.88,
+       0.0,
+       4.9
+      ],
+      [
+       0.97,
+       0.13,
+       4.6
+      ],
+      0.12
+     ],
+     "k": 0.05,
+     "why": "one continuous stalk from the shoulder socket (z 5.3) into the kept AFT arm (z 4.45), smooth union: replaces the straight stub + side branch the cut left (+x side)"
+    },
+    {
+     "capsule": [
+      [
+       0.97,
+       0.13,
+       4.6
+      ],
+      [
+       1.09,
+       0.22,
+       4.45
+      ],
+      0.12
+     ],
+     "k": 0.05,
+     "why": "one continuous stalk from the shoulder socket (z 5.3) into the kept AFT arm (z 4.45), smooth union: replaces the straight stub + side branch the cut left (+x side)"
+    },
+    {
+     "capsule": [
+      [
+       -0.84,
+       -0.05,
+       5.3
+      ],
+      [
+       -0.88,
+       0.03,
+       4.9
+      ],
+      0.12
+     ],
+     "k": 0.05,
+     "why": "one continuous stalk from the shoulder socket (z 5.3) into the kept AFT arm (z 4.45), smooth union: replaces the straight stub + side branch the cut left (-x side)"
+    },
+    {
+     "capsule": [
+      [
+       -0.88,
+       0.03,
+       4.9
+      ],
+      [
+       -0.97,
+       0.16,
+       4.6
+      ],
+      0.12
+     ],
+     "k": 0.05,
+     "why": "one continuous stalk from the shoulder socket (z 5.3) into the kept AFT arm (z 4.45), smooth union: replaces the straight stub + side branch the cut left (-x side)"
+    },
+    {
+     "capsule": [
+      [
+       -0.97,
+       0.16,
+       4.6
+      ],
+      [
+       -1.09,
+       0.25,
+       4.45
+      ],
+      0.12
+     ],
+     "k": 0.05,
+     "why": "one continuous stalk from the shoulder socket (z 5.3) into the kept AFT arm (z 4.45), smooth union: replaces the straight stub + side branch the cut left (-x side)"
+    }
+   ],
+   "adds_why": "after the cuts; the stalk path follows the proxy: socket y -0.08 / -0.05, aft centreline z 4.6 (0.97, 0.13 / 0.18), z 4.45 (1.09, 0.22 / 0.27); r 0.12 = the stalk's half-span at the socket",
+   "despeckle": {
+    "capsules": [
+     {
+      "capsule": [
+       [
+        0.84,
+        -0.08,
+        5.3
+       ],
+       [
+        0.88,
+        0.0,
+        4.9
+       ],
+       0.12
+      ]
+     },
+     {
+      "capsule": [
+       [
+        0.88,
+        0.0,
+        4.9
+       ],
+       [
+        0.97,
+        0.13,
+        4.6
+       ],
+       0.12
+      ]
+     },
+     {
+      "capsule": [
+       [
+        0.97,
+        0.13,
+        4.6
+       ],
+       [
+        1.09,
+        0.22,
+        4.45
+       ],
+       0.12
+      ]
+     },
+     {
+      "capsule": [
+       [
+        -0.84,
+        -0.05,
+        5.3
+       ],
+       [
+        -0.88,
+        0.03,
+        4.9
+       ],
+       0.12
+      ]
+     },
+     {
+      "capsule": [
+       [
+        -0.88,
+        0.03,
+        4.9
+       ],
+       [
+        -0.97,
+        0.16,
+        4.6
+       ],
+       0.12
+      ]
+     },
+     {
+      "capsule": [
+       [
+        -0.97,
+        0.16,
+        4.6
+       ],
+       [
+        -1.09,
+        0.25,
+        4.45
+       ],
+       0.12
+      ]
+     }
+    ],
+    "pad": 0.05,
+    "zmax": 5.2,
+    "frac": 0.6,
+    "rings": 24,
+    "why": "the re-joined stalk (light.adds) bakes partly from the proxy's inner stalk faces: dark blocky texels along its front; refilled from the stalk's own valid texels (the dark socket above z 5.2 kept)"
+   }
   },
   "rig": {
    "spine_names": [
@@ -910,7 +1165,7 @@
  },
  "units": "sheet units: 1 unit = 100 px of the reference sheet; floor z = 0",
  "stage1_stdout": [
-  "LIGHT_SOLID {\"grid_sha\": \"8de43358bab4bfae\", \"solid\": {\"step\": 0.0223, \"grid\": [193, 127, 318], \"shell_nodes\": 279145, \"close_voxels\": 1, \"sealed_cavities\": 261, \"min_half_thickness_u\": 0.0112, \"shell_nodes_signed_outside_frac\": 0.772, \"smooth_sigma_vox\": 0.0, \"pieces\": [1, [991605]], \"rule\": \"LIGHT: watertight remesh only (no smoothing / straighten / symmetrise / cuts); the surface sits min_half_thickness x step = 0.0112 u outside the proxy\", \"light_cuts\": [{\"shape\": \"capsule\", \"nodes_inside\": 3723, \"why\": \"artist v1 verdict 'yes only 2 arms': the proxy's FORE drill arm (+x side) removed; the AFT pair kept\"}, {\"shape\": \"capsule\", \"nodes_inside\": 11309, \"why\": \"artist v1 verdict 'yes only 2 arms': the proxy's FORE drill arm (+x side) removed; the AFT pair kept\"}, {\"shape\": \"capsule\", \"nodes_inside\": 18574, \"why\": \"artist v1 verdict 'yes only 2 arms': the proxy's FORE drill arm (+x side) removed; the AFT pair kept\"}, {\"shape\": \"capsule\", \"nodes_inside\": 27908, \"why\": \"artist v1 verdict 'yes only 2 arms': the proxy's FORE drill arm (+x side) removed; the AFT pair kept\"}, {\"shape\": \"capsule\", \"nodes_inside\": 41227, \"why\": \"artist v1 verdict 'yes only 2 arms': the proxy's FORE drill arm (+x side) removed; the AFT pair kept\"}, {\"shape\": \"capsule\", \"nodes_inside\": 47980, \"why\": \"artist v1 verdict 'yes only 2 arms': the proxy's FORE drill arm (+x side) removed; the AFT pair kept\"}, {\"shape\": \"capsule\", \"nodes_inside\": 67676, \"why\": \"artist v1 verdict 'yes only 2 arms': the proxy's FORE drill arm (+x side) removed; the AFT pair kept\"}, {\"shape\": \"capsule\", \"nodes_inside\": 67745, \"why\": \"artist v1 verdict 'yes only 2 arms': the proxy's FORE drill arm (+x side) removed; the AFT pair kept\"}, {\"shape\": \"capsule\", \"nodes_inside\": 74714, \"why\": \"artist v1 verdict 'yes only 2 arms': the proxy's FORE drill arm (+x side) removed; the AFT pair kept\"}, {\"shape\": \"capsule\", \"nodes_inside\": 83154, \"why\": \"artist v1 verdict 'yes only 2 arms': the proxy's FORE drill arm (+x side) removed; the AFT pair kept\"}, {\"shape\": \"capsule\", \"nodes_inside\": 87477, \"why\": \"artist v1 verdict 'yes only 2 arms': the proxy's FORE drill arm (+x side) removed; the AFT pair kept\"}, {\"shape\": \"capsule\", \"nodes_inside\": 56683, \"why\": \"artist v1 verdict 'yes only 2 arms': the proxy's FORE drill arm (+x side) removed; the AFT pair kept\"}, {\"shape\": \"capsule\", \"nodes_inside\": 41948, \"why\": \"artist v1 verdict 'yes only 2 arms': the proxy's FORE drill arm (+x side) removed; the AFT pair kept\"}, {\"shape\": \"capsule\", \"nodes_inside\": 28918, \"why\": \"artist v1 verdict 'yes only 2 arms': the proxy's FORE drill arm (+x side) removed; the AFT pair kept\"}, {\"shape\": \"capsule\", \"nodes_inside\": 19377, \"why\": \"artist v1 verdict 'yes only 2 arms': the proxy's FORE drill arm (+x side) removed; the AFT pair kept\"}, {\"shape\": \"capsule\", \"nodes_inside\": 13825, \"why\": \"artist v1 verdict 'yes only 2 arms': the proxy's FORE drill arm (+x side) removed; the AFT pair kept\"}, {\"shape\": \"capsule\", \"nodes_inside\": 9203, \"why\": \"artist v1 verdict 'yes only 2 arms': the proxy's FORE drill arm (+x side) removed; the AFT pair kept\"}, {\"shape\": \"capsule\", \"nodes_inside\": 6993, \"why\": \"artist v1 verdict 'yes only 2 arms': the proxy's FORE drill arm (+x side) removed; the AFT pair kept\"}, {\"shape\": \"capsule\", \"nodes_inside\": 154, \"why\": \"artist v1 verdict 'yes only 2 arms': the proxy's FORE drill arm (-x side) removed; the AFT pair kept\"}, {\"shape\": \"capsule\", \"nodes_inside\": 1747, \"why\": \"artist v1 verdict 'yes only 2 arms': the proxy's FORE drill arm (-x side) removed; the AFT pair kept\"}, {\"shape\": \"capsule\", \"nodes_inside\": 4452, \"why\": \"artist v1 verdict 'yes only 2 arms': the proxy's FORE drill arm (-x side) removed; the AFT pair kept\"}, {\"shape\": \"capsule\", \"nodes_inside\": 14656, \"why\": \"artist v1 verdict 'yes only 2 arms': the proxy's FORE drill arm (-x side) removed; the AFT pair kept\"}, {\"shape\": \"capsule\", \"nodes_inside\": 24435, \"why\": \"artist v1 verdict 'yes only 2 arms': the proxy's FORE drill arm (-x side) removed; the AFT pair kept\"}, {\"shape\": \"capsule\", \"nodes_inside\": 36215, \"why\": \"artist v1 verdict 'yes only 2 arms': the proxy's FORE drill arm (-x side) removed; the AFT pair kept\"}, {\"shape\": \"capsule\", \"nodes_inside\": 42112, \"why\": \"artist v1 verdict 'yes only 2 arms': the proxy's FORE drill arm (-x side) removed; the AFT pair kept\"}, {\"shape\": \"capsule\", \"nodes_inside\": 63641, \"why\": \"artist v1 verdict 'yes only 2 arms': the proxy's FORE drill arm (-x side) removed; the AFT pair kept\"}, {\"shape\": \"capsule\", \"nodes_inside\": 64022, \"why\": \"artist v1 verdict 'yes only 2 arms': the proxy's FORE drill arm (-x side) removed; the AFT pair kept\"}, {\"shape\": \"capsule\", \"nodes_inside\": 67241, \"why\": \"artist v1 verdict 'yes only 2 arms': the proxy's FORE drill arm (-x side) removed; the AFT pair kept\"}, {\"shape\": \"capsule\", \"nodes_inside\": 74744, \"why\": \"artist v1 verdict 'yes only 2 arms': the proxy's FORE drill arm (-x side) removed; the AFT pair kept\"}, {\"shape\": \"capsule\", \"nodes_inside\": 78442, \"why\": \"artist v1 verdict 'yes only 2 arms': the proxy's FORE drill arm (-x side) removed; the AFT pair kept\"}, {\"shape\": \"capsule\", \"nodes_inside\": 52460, \"why\": \"artist v1 verdict 'yes only 2 arms': the proxy's FORE drill arm (-x side) removed; the AFT pair kept\"}, {\"shape\": \"capsule\", \"nodes_inside\": 39792, \"why\": \"artist v1 verdict 'yes only 2 arms': the proxy's FORE drill arm (-x side) removed; the AFT pair kept\"}, {\"shape\": \"capsule\", \"nodes_inside\": 28519, \"why\": \"artist v1 verdict 'yes only 2 arms': the proxy's FORE drill arm (-x side) removed; the AFT pair kept\"}, {\"shape\": \"capsule\", \"nodes_inside\": 18296, \"why\": \"artist v1 verdict 'yes only 2 arms': the proxy's FORE drill arm (-x side) removed; the AFT pair kept\"}, {\"shape\": \"capsule\", \"nodes_inside\": 12499, \"why\": \"artist v1 verdict 'yes only 2 arms': the proxy's FORE drill arm (-x side) removed; the AFT pair kept\"}, {\"shape\": \"capsule\", \"nodes_inside\": 8926, \"why\": \"artist v1 verdict 'yes only 2 arms': the proxy's FORE drill arm (-x side) removed; the AFT pair kept\"}, {\"shape\": \"capsule\", \"nodes_inside\": 7203, \"why\": \"artist v1 verdict 'yes only 2 arms': the proxy's FORE drill arm (-x side) removed; the AFT pair kept\"}, {\"shape\": \"capsule\", \"nodes_inside\": 3818, \"why\": \"the fore stalk's root up to the shoulder fork (z ~4.55), blended (k 0.06): no stump (+x side)\"}, {\"shape\": \"capsule\", \"nodes_inside\": 3816, \"why\": \"the fore stalk's root up to the shoulder fork (z ~4.55), blended (k 0.06): no stump (-x side)\"}, {\"shape\": \"capsule\", \"nodes_inside\": 1642, \"why\": \"the front half of the common stalk below the aft branch (z 4.62-4.82): the fore arm's root, so the stalk bends into the aft arm with no stump (+x side)\"}, {\"shape\": \"capsule\", \"nodes_inside\": 1615, \"why\": \"the front half of the common stalk below the aft branch (z 4.62-4.82): the fore arm's root, so the stalk bends into the aft arm with no stump (-x side)\"}]}, \"refloor\": {\"foot_contact_z_u\": 0.0, \"rescale\": 1.008, \"y_windows\": [[-0.6, 0.1]], \"window_z_u\": [0.0], \"x_abs_min\": 0.0, \"rule\": \"sheet_proxy put the floor at the lowest point (a tail curl): the feet hung z0 above it; floor moved to the feet, then scaled to the sheet front height\"}, \"seconds\": 6.3}"
+  "LIGHT_SOLID {\"grid_sha\": \"2e0a49aff0747e69\", \"solid\": {\"step\": 0.0223, \"grid\": [193, 127, 318], \"shell_nodes\": 279145, \"close_voxels\": 1, \"sealed_cavities\": 261, \"min_half_thickness_u\": 0.0112, \"shell_nodes_signed_outside_frac\": 0.772, \"smooth_sigma_vox\": 0.0, \"pieces\": [1, [991605]], \"rule\": \"LIGHT: watertight remesh only (no smoothing / straighten / symmetrise / cuts); the surface sits min_half_thickness x step = 0.0112 u outside the proxy\", \"light_cuts\": [{\"shape\": \"capsule\", \"nodes_inside\": 3723, \"why\": \"artist v1 verdict 'yes only 2 arms': the proxy's FORE drill arm (+x side) removed; the AFT pair kept\"}, {\"shape\": \"capsule\", \"nodes_inside\": 11309, \"why\": \"artist v1 verdict 'yes only 2 arms': the proxy's FORE drill arm (+x side) removed; the AFT pair kept\"}, {\"shape\": \"capsule\", \"nodes_inside\": 18574, \"why\": \"artist v1 verdict 'yes only 2 arms': the proxy's FORE drill arm (+x side) removed; the AFT pair kept\"}, {\"shape\": \"capsule\", \"nodes_inside\": 27908, \"why\": \"artist v1 verdict 'yes only 2 arms': the proxy's FORE drill arm (+x side) removed; the AFT pair kept\"}, {\"shape\": \"capsule\", \"nodes_inside\": 41227, \"why\": \"artist v1 verdict 'yes only 2 arms': the proxy's FORE drill arm (+x side) removed; the AFT pair kept\"}, {\"shape\": \"capsule\", \"nodes_inside\": 47980, \"why\": \"artist v1 verdict 'yes only 2 arms': the proxy's FORE drill arm (+x side) removed; the AFT pair kept\"}, {\"shape\": \"capsule\", \"nodes_inside\": 67676, \"why\": \"artist v1 verdict 'yes only 2 arms': the proxy's FORE drill arm (+x side) removed; the AFT pair kept\"}, {\"shape\": \"capsule\", \"nodes_inside\": 67745, \"why\": \"artist v1 verdict 'yes only 2 arms': the proxy's FORE drill arm (+x side) removed; the AFT pair kept\"}, {\"shape\": \"capsule\", \"nodes_inside\": 74714, \"why\": \"artist v1 verdict 'yes only 2 arms': the proxy's FORE drill arm (+x side) removed; the AFT pair kept\"}, {\"shape\": \"capsule\", \"nodes_inside\": 83154, \"why\": \"artist v1 verdict 'yes only 2 arms': the proxy's FORE drill arm (+x side) removed; the AFT pair kept\"}, {\"shape\": \"capsule\", \"nodes_inside\": 87477, \"why\": \"artist v1 verdict 'yes only 2 arms': the proxy's FORE drill arm (+x side) removed; the AFT pair kept\"}, {\"shape\": \"capsule\", \"nodes_inside\": 56683, \"why\": \"artist v1 verdict 'yes only 2 arms': the proxy's FORE drill arm (+x side) removed; the AFT pair kept\"}, {\"shape\": \"capsule\", \"nodes_inside\": 41948, \"why\": \"artist v1 verdict 'yes only 2 arms': the proxy's FORE drill arm (+x side) removed; the AFT pair kept\"}, {\"shape\": \"capsule\", \"nodes_inside\": 28918, \"why\": \"artist v1 verdict 'yes only 2 arms': the proxy's FORE drill arm (+x side) removed; the AFT pair kept\"}, {\"shape\": \"capsule\", \"nodes_inside\": 19377, \"why\": \"artist v1 verdict 'yes only 2 arms': the proxy's FORE drill arm (+x side) removed; the AFT pair kept\"}, {\"shape\": \"capsule\", \"nodes_inside\": 13825, \"why\": \"artist v1 verdict 'yes only 2 arms': the proxy's FORE drill arm (+x side) removed; the AFT pair kept\"}, {\"shape\": \"capsule\", \"nodes_inside\": 9203, \"why\": \"artist v1 verdict 'yes only 2 arms': the proxy's FORE drill arm (+x side) removed; the AFT pair kept\"}, {\"shape\": \"capsule\", \"nodes_inside\": 6993, \"why\": \"artist v1 verdict 'yes only 2 arms': the proxy's FORE drill arm (+x side) removed; the AFT pair kept\"}, {\"shape\": \"capsule\", \"nodes_inside\": 154, \"why\": \"artist v1 verdict 'yes only 2 arms': the proxy's FORE drill arm (-x side) removed; the AFT pair kept\"}, {\"shape\": \"capsule\", \"nodes_inside\": 1747, \"why\": \"artist v1 verdict 'yes only 2 arms': the proxy's FORE drill arm (-x side) removed; the AFT pair kept\"}, {\"shape\": \"capsule\", \"nodes_inside\": 4452, \"why\": \"artist v1 verdict 'yes only 2 arms': the proxy's FORE drill arm (-x side) removed; the AFT pair kept\"}, {\"shape\": \"capsule\", \"nodes_inside\": 14656, \"why\": \"artist v1 verdict 'yes only 2 arms': the proxy's FORE drill arm (-x side) removed; the AFT pair kept\"}, {\"shape\": \"capsule\", \"nodes_inside\": 24435, \"why\": \"artist v1 verdict 'yes only 2 arms': the proxy's FORE drill arm (-x side) removed; the AFT pair kept\"}, {\"shape\": \"capsule\", \"nodes_inside\": 36215, \"why\": \"artist v1 verdict 'yes only 2 arms': the proxy's FORE drill arm (-x side) removed; the AFT pair kept\"}, {\"shape\": \"capsule\", \"nodes_inside\": 42112, \"why\": \"artist v1 verdict 'yes only 2 arms': the proxy's FORE drill arm (-x side) removed; the AFT pair kept\"}, {\"shape\": \"capsule\", \"nodes_inside\": 63641, \"why\": \"artist v1 verdict 'yes only 2 arms': the proxy's FORE drill arm (-x side) removed; the AFT pair kept\"}, {\"shape\": \"capsule\", \"nodes_inside\": 64022, \"why\": \"artist v1 verdict 'yes only 2 arms': the proxy's FORE drill arm (-x side) removed; the AFT pair kept\"}, {\"shape\": \"capsule\", \"nodes_inside\": 67241, \"why\": \"artist v1 verdict 'yes only 2 arms': the proxy's FORE drill arm (-x side) removed; the AFT pair kept\"}, {\"shape\": \"capsule\", \"nodes_inside\": 74744, \"why\": \"artist v1 verdict 'yes only 2 arms': the proxy's FORE drill arm (-x side) removed; the AFT pair kept\"}, {\"shape\": \"capsule\", \"nodes_inside\": 78442, \"why\": \"artist v1 verdict 'yes only 2 arms': the proxy's FORE drill arm (-x side) removed; the AFT pair kept\"}, {\"shape\": \"capsule\", \"nodes_inside\": 52460, \"why\": \"artist v1 verdict 'yes only 2 arms': the proxy's FORE drill arm (-x side) removed; the AFT pair kept\"}, {\"shape\": \"capsule\", \"nodes_inside\": 39792, \"why\": \"artist v1 verdict 'yes only 2 arms': the proxy's FORE drill arm (-x side) removed; the AFT pair kept\"}, {\"shape\": \"capsule\", \"nodes_inside\": 28519, \"why\": \"artist v1 verdict 'yes only 2 arms': the proxy's FORE drill arm (-x side) removed; the AFT pair kept\"}, {\"shape\": \"capsule\", \"nodes_inside\": 18296, \"why\": \"artist v1 verdict 'yes only 2 arms': the proxy's FORE drill arm (-x side) removed; the AFT pair kept\"}, {\"shape\": \"capsule\", \"nodes_inside\": 12499, \"why\": \"artist v1 verdict 'yes only 2 arms': the proxy's FORE drill arm (-x side) removed; the AFT pair kept\"}, {\"shape\": \"capsule\", \"nodes_inside\": 8926, \"why\": \"artist v1 verdict 'yes only 2 arms': the proxy's FORE drill arm (-x side) removed; the AFT pair kept\"}, {\"shape\": \"capsule\", \"nodes_inside\": 7203, \"why\": \"artist v1 verdict 'yes only 2 arms': the proxy's FORE drill arm (-x side) removed; the AFT pair kept\"}, {\"shape\": \"capsule\", \"nodes_inside\": 3818, \"why\": \"the fore stalk's root up to the shoulder fork (z ~4.55), blended (k 0.06): no stump (+x side)\"}, {\"shape\": \"capsule\", \"nodes_inside\": 3816, \"why\": \"the fore stalk's root up to the shoulder fork (z ~4.55), blended (k 0.06): no stump (-x side)\"}, {\"shape\": \"capsule\", \"nodes_inside\": 2394, \"why\": \"v2 note 'a disjoint on the arms where there is leftover': the straight common stalk below the socket (z 4.62-5.0, its front part) is the FORE arm's line; cut so the aft arm can be re-joined (+x side)\"}, {\"shape\": \"capsule\", \"nodes_inside\": 2397, \"why\": \"v2 note 'a disjoint on the arms where there is leftover': the straight common stalk below the socket (z 4.62-5.0, its front part) is the FORE arm's line; cut so the aft arm can be re-joined (-x side)\"}, {\"shape\": \"capsule\", \"nodes_inside\": 2982, \"why\": \"the inner wall of the old straight stalk (x 0.76-0.96, y -0.25..0, z 4.55-4.85) left as a fin in front of the re-joined stalk (+x side)\"}, {\"shape\": \"capsule\", \"nodes_inside\": 2982, \"why\": \"the inner wall of the old straight stalk (x 0.76-0.96, y -0.25..0, z 4.55-4.85) left as a fin in front of the re-joined stalk (-x side)\"}, {\"shape\": \"capsule\", \"nodes_inside\": 594, \"why\": \"-x only: a sliver of the fore stalk's inner wall (x -1.0, y -0.05..-0.09, z 4.42-4.55) in front of the kept aft arm\"}], \"light_adds\": [{\"shape\": \"capsule\", \"nodes_inside\": 2322, \"why\": \"one continuous stalk from the shoulder socket (z 5.3) into the kept AFT arm (z 4.45), smooth union: replaces the straight stub + side branch the cut left (+x side)\"}, {\"shape\": \"capsule\", \"nodes_inside\": 2035, \"why\": \"one continuous stalk from the shoulder socket (z 5.3) into the kept AFT arm (z 4.45), smooth union: replaces the straight stub + side branch the cut left (+x side)\"}, {\"shape\": \"capsule\", \"nodes_inside\": 1520, \"why\": \"one continuous stalk from the shoulder socket (z 5.3) into the kept AFT arm (z 4.45), smooth union: replaces the straight stub + side branch the cut left (+x side)\"}, {\"shape\": \"capsule\", \"nodes_inside\": 2326, \"why\": \"one continuous stalk from the shoulder socket (z 5.3) into the kept AFT arm (z 4.45), smooth union: replaces the straight stub + side branch the cut left (-x side)\"}, {\"shape\": \"capsule\", \"nodes_inside\": 2030, \"why\": \"one continuous stalk from the shoulder socket (z 5.3) into the kept AFT arm (z 4.45), smooth union: replaces the straight stub + side branch the cut left (-x side)\"}, {\"shape\": \"capsule\", \"nodes_inside\": 1520, \"why\": \"one continuous stalk from the shoulder socket (z 5.3) into the kept AFT arm (z 4.45), smooth union: replaces the straight stub + side branch the cut left (-x side)\"}]}, \"refloor\": {\"foot_contact_z_u\": 0.0, \"rescale\": 1.008, \"y_windows\": [[-0.6, 0.1]], \"window_z_u\": [0.0], \"x_abs_min\": 0.0, \"rule\": \"sheet_proxy put the floor at the lowest point (a tail curl): the feet hung z0 above it; floor moved to the feet, then scaled to the sheet front height\"}, \"seconds\": 6.4}"
  ],
  "stage1": {
   "unit": "sand_drill_worm",
@@ -1162,13 +1417,60 @@
     },
     {
      "shape": "capsule",
-     "nodes_inside": 1642,
-     "why": "the front half of the common stalk below the aft branch (z 4.62-4.82): the fore arm's root, so the stalk bends into the aft arm with no stump (+x side)"
+     "nodes_inside": 2394,
+     "why": "v2 note 'a disjoint on the arms where there is leftover': the straight common stalk below the socket (z 4.62-5.0, its front part) is the FORE arm's line; cut so the aft arm can be re-joined (+x side)"
     },
     {
      "shape": "capsule",
-     "nodes_inside": 1615,
-     "why": "the front half of the common stalk below the aft branch (z 4.62-4.82): the fore arm's root, so the stalk bends into the aft arm with no stump (-x side)"
+     "nodes_inside": 2397,
+     "why": "v2 note 'a disjoint on the arms where there is leftover': the straight common stalk below the socket (z 4.62-5.0, its front part) is the FORE arm's line; cut so the aft arm can be re-joined (-x side)"
+    },
+    {
+     "shape": "capsule",
+     "nodes_inside": 2982,
+     "why": "the inner wall of the old straight stalk (x 0.76-0.96, y -0.25..0, z 4.55-4.85) left as a fin in front of the re-joined stalk (+x side)"
+    },
+    {
+     "shape": "capsule",
+     "nodes_inside": 2982,
+     "why": "the inner wall of the old straight stalk (x 0.76-0.96, y -0.25..0, z 4.55-4.85) left as a fin in front of the re-joined stalk (-x side)"
+    },
+    {
+     "shape": "capsule",
+     "nodes_inside": 594,
+     "why": "-x only: a sliver of the fore stalk's inner wall (x -1.0, y -0.05..-0.09, z 4.42-4.55) in front of the kept aft arm"
+    }
+   ],
+   "light_adds": [
+    {
+     "shape": "capsule",
+     "nodes_inside": 2322,
+     "why": "one continuous stalk from the shoulder socket (z 5.3) into the kept AFT arm (z 4.45), smooth union: replaces the straight stub + side branch the cut left (+x side)"
+    },
+    {
+     "shape": "capsule",
+     "nodes_inside": 2035,
+     "why": "one continuous stalk from the shoulder socket (z 5.3) into the kept AFT arm (z 4.45), smooth union: replaces the straight stub + side branch the cut left (+x side)"
+    },
+    {
+     "shape": "capsule",
+     "nodes_inside": 1520,
+     "why": "one continuous stalk from the shoulder socket (z 5.3) into the kept AFT arm (z 4.45), smooth union: replaces the straight stub + side branch the cut left (+x side)"
+    },
+    {
+     "shape": "capsule",
+     "nodes_inside": 2326,
+     "why": "one continuous stalk from the shoulder socket (z 5.3) into the kept AFT arm (z 4.45), smooth union: replaces the straight stub + side branch the cut left (-x side)"
+    },
+    {
+     "shape": "capsule",
+     "nodes_inside": 2030,
+     "why": "one continuous stalk from the shoulder socket (z 5.3) into the kept AFT arm (z 4.45), smooth union: replaces the straight stub + side branch the cut left (-x side)"
+    },
+    {
+     "shape": "capsule",
+     "nodes_inside": 1520,
+     "why": "one continuous stalk from the shoulder socket (z 5.3) into the kept AFT arm (z 4.45), smooth union: replaces the straight stub + side branch the cut left (-x side)"
     }
    ]
   },
@@ -1183,17 +1485,17 @@
     ]
    }
   },
-  "grid_sha": "8de43358bab4bfae",
+  "grid_sha": "2e0a49aff0747e69",
   "proxy_sha": "1bd74dc7dcbfcd69"
  },
  "proxy_faces_cut": {
-  "faces_removed": 44302,
-  "faces_kept": 153822,
+  "faces_removed": 45819,
+  "faces_kept": 152305,
   "rule": "proxy faces whose centroid lies inside a light.cuts volume leave the bake source (normal / AO / albedo) and the proxy-distance metrics"
  },
  "high": {
-  "tris": 782632,
-  "verts": 391306,
+  "tris": 784492,
+  "verts": 392238,
   "specks_dropped": {
    "pieces": 1,
    "kept": 1,
@@ -1208,7 +1510,7 @@
   "method": "collapse decimation: uniform to 300000, then 18000 with the dense boxes calibrated",
   "pre_tris": 300000,
   "tris": 18000,
-  "verts": 8990,
+  "verts": 8992,
   "specks": {
    "pieces": 1,
    "kept": 1,
@@ -1218,73 +1520,73 @@
   "nonmanifold_edges": 0,
   "dense": {
    "density": 2.5,
-   "box_area_frac": 0.2288,
-   "target_tri_share": 0.4258,
-   "got_tri_share": 0.4271,
-   "factor_log10": -1.141,
+   "box_area_frac": 0.2295,
+   "target_tri_share": 0.4268,
+   "got_tri_share": 0.4291,
+   "factor_log10": -1.172,
    "trials": [
     [
      -7.0,
-     0.2843
+     0.2908
     ],
     [
      -3.0,
-     0.286
+     0.2938
     ],
     [
      -1.0,
-     0.4684
+     0.4778
     ],
     [
      -2.0,
-     0.3014
+     0.3106
     ],
     [
      -1.5,
-     0.3454
+     0.3547
     ],
     [
      -1.25,
-     0.3977
+     0.4089
     ],
     [
      -1.125,
-     0.431
+     0.4414
     ],
     [
      -1.188,
-     0.414
+     0.4246
     ],
     [
      -1.156,
-     0.4226
+     0.4339
     ],
     [
-     -1.141,
-     0.4271
+     -1.172,
+     0.4291
     ]
    ],
    "rule": "dense boxes weighted 0.02 (vs 1) in the collapse decimation; the factor bisected until the boxes hold density x the rest's triangles per area"
   },
   "low_to_proxy": {
-   "mean": 0.01276,
-   "p99": 0.03459,
-   "max": 0.07491
+   "mean": 0.01343,
+   "p99": 0.04411,
+   "max": 0.14379
   },
   "proxy_to_low_sampled": {
-   "mean": 0.03779,
-   "p99": 0.15546,
-   "max": 0.29838
+   "mean": 0.03843,
+   "p99": 0.15686,
+   "max": 0.29776
   },
-  "p99_over_height": 0.02324,
-  "seconds": 34.5
+  "p99_over_height": 0.02345,
+  "seconds": 34.2
  },
  "regions_faces": {
   "proxy_albedo": 18000
  },
  "uv_fix_overlap": {
   "overlapping_faces_per_pass": [
-   386,
+   383,
    0
   ],
   "left": 0,
@@ -1297,33 +1599,33 @@
    2048,
    2048
   ],
-  "faces_textured": 153822,
-  "faces": 153822
+  "faces_textured": 152305,
+  "faces": 152305
  },
  "ao_fill": {
   "below": 0.04,
-  "texels_filled": 2901,
-  "of_covered": 262125,
-  "rings": 8,
+  "texels_filled": 3804,
+  "of_covered": 261646,
+  "rings": 5,
   "left_to_mean": 0,
   "rule": "AO < below = a bake origin inside the proxy soup: refilled from the covered valid 3x3 neighbours ring by ring (opt-in light.ao_fill_below)"
  },
  "recolour": [
   {
    "name": "mouth_flesh",
-   "texels_in_mask": 68766,
-   "texels_painted_ge_half": 51023,
-   "teeth_kept_texels": 11635,
-   "margin_texels": 32104,
+   "texels_in_mask": 82653,
+   "texels_painted_ge_half": 57228,
+   "teeth_kept_texels": 14372,
+   "margin_texels": 34765,
    "median_src_rgb": [
-    98.0,
-    64.0,
-    36.0
+    99.0,
+    65.0,
+    37.0
    ],
    "median_new_rgb": [
     108.0,
     52.0,
-    40.0
+    39.0
    ],
    "stops": [
     [
@@ -1359,9 +1661,25 @@
      ]
     ]
    ],
-   "faces_considered": 7705
+   "faces_considered": 7775
   }
  ],
+ "despeckle": {
+  "albedo": {
+   "texels_region": 46996,
+   "region_median": 0.532,
+   "texels_refilled": 6023,
+   "rings": 24,
+   "left_to_median": 1689
+  },
+  "ao": {
+   "texels_region": 2965,
+   "region_median": 0.6837,
+   "texels_refilled": 713,
+   "rings": 15,
+   "left_to_median": 37
+  }
+ },
  "bake": {
   "reference": "flat",
   "source": "the proxy mesh itself (not the remesh)",
@@ -1369,7 +1687,7 @@
    "result": [
     "FINISHED"
    ],
-   "seconds": 0.5
+   "seconds": 0.6
   },
   "AO": {
    "result": [
@@ -1381,45 +1699,45 @@
    "result": [
     "FINISHED"
    ],
-   "seconds": 2.4
+   "seconds": 2.0
   },
-  "cage_extrusion": 0.4664,
+  "cage_extrusion": 0.4706,
   "resolution": {
    "normal": 1024,
    "ao": 512,
    "albedo": 2048
   },
-  "high_tris": 153822,
-  "normal_coverage_pct": 97.92,
-  "albedo_coverage_pct": 84.26,
-  "normal_detail_fraction_dev_gt_0.05": 0.7989,
-  "ao_mean": 0.745,
+  "high_tris": 152305,
+  "normal_coverage_pct": 97.94,
+  "albedo_coverage_pct": 82.85,
+  "normal_detail_fraction_dev_gt_0.05": 0.7903,
+  "ao_mean": 0.7464,
   "pixel_sha": {
-   "normal": "03d4a1440f3cf1e6",
-   "ao": "6d0bf32878cc565c",
-   "albedo": "69b596bd5e9c893a"
+   "normal": "cef5f01f9cc9fe74",
+   "ao": "ecc19c85c05ee405",
+   "albedo": "f5a4f2e0f99bfd6d"
   },
-  "seconds": 6.8
+  "seconds": 13.6
  },
  "repose": {
   "enabled": false,
   "mirror": {
    "plane_x_u": 0.0,
    "max_u": 0.09994,
-   "p99_u": 0.06134,
-   "p90_u": 0.04168,
-   "mean_u": 0.01759,
+   "p99_u": 0.06058,
+   "p90_u": 0.0411,
+   "mean_u": 0.01737,
    "rule": "every vertex mirrored in X about the plane -> distance to the nearest surface (0 = exactly symmetric)"
   },
   "auto_chains": {}
  },
  "centre_shift": [
-  0.009786,
-  0.171275,
-  -0.010185
+  0.009493,
+  0.171266,
+  -0.010274
  ],
  "floor": {
-  "min_z_after_repose_u": -0.01018,
+  "min_z_after_repose_u": -0.01027,
   "rule": "stage 1 floored the FEET at z 0; the centring puts the lowest point at 0"
  },
  "regions_area_share": {
@@ -1429,15 +1747,15 @@
   "rule": "shell centroid -> the front-most midline point of the shell (proxy finish default)",
   "anchor": [
    0.0,
-   -0.08,
-   4.2462
+   -0.0768,
+   4.2265
   ],
   "landmark": [
-   0.0359,
+   0.0363,
    -1.0588,
-   5.6045
+   5.6046
   ],
-  "angle_from_minusY_deg": 2.103
+  "angle_from_minusY_deg": 2.114
  },
  "tris": {
   "total": 18000,
@@ -1454,18 +1772,18 @@
  "measure": {
   "bbox": [
    [
-    -1.8186,
+    -1.8189,
     -1.0588,
     0.0
    ],
    [
-    1.8186,
+    1.8189,
     1.0588,
     6.7106
    ]
   ],
   "height": 6.7106,
-  "width_x": 3.6371,
+  "width_x": 3.6377,
   "depth_y": 2.1176,
   "export_cell_fit_report_only": {
    "scale": 0.26823
@@ -1476,10 +1794,10 @@
   "tris": 18000,
   "mirror": {
    "plane_x_u": 0.0,
-   "max_u": 0.09816,
-   "p99_u": 0.05259,
-   "p90_u": 0.0305,
-   "mean_u": 0.01329,
+   "max_u": 0.09064,
+   "p99_u": 0.04894,
+   "p90_u": 0.03017,
+   "mean_u": 0.01296,
    "rule": "every vertex mirrored in X about the plane -> distance to the nearest surface (0 = exactly symmetric)"
   },
   "tri_budget": [
@@ -1489,7 +1807,7 @@
   "in_budget": true,
   "mode": "light"
  },
- "digest_geometry_colour_uv": "0b744b5707042542",
+ "digest_geometry_colour_uv": "f621804227ff7690",
  "palette": {
   "default": {
    "proxy_albedo": {

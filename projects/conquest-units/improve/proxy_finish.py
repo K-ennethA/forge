@@ -348,6 +348,30 @@ def apply_cut(F, lo, step, cut, mirror=True):
     return int(np.count_nonzero(d < 0))
 
 
+def apply_add(F, lo, step, add):
+    """smooth UNION of a capsule / sphere into the SDF grid (light.adds): F = smin(F, d, k); never mirrored"""
+    k = float(add.get("k", 0.04))
+    if "capsule" in add:
+        a, b, r = add["capsule"]; pts = np.array([a, b], float); rad = float(r)
+        fn = lambda P: sd_capsule(P, a, b, r)
+    elif "sphere" in add:
+        c, r = add["sphere"]; pts = np.array([c], float); rad = float(r)
+        fn = lambda P: np.linalg.norm(P - np.asarray(c, float), axis=1) - r
+    else:
+        raise ValueError(add)
+    g = rad + k + 3 * step
+    i0 = np.clip(np.floor((pts.min(0) - g - lo) / step).astype(int), 0, np.array(F.shape) - 1)
+    i1 = np.clip(np.ceil((pts.max(0) + g - lo) / step).astype(int) + 1, 0, np.array(F.shape))
+    axes = [lo[d] + step * np.arange(i0[d], i1[d]) for d in range(3)]
+    X, Y, Z = np.meshgrid(*axes, indexing="ij")
+    d = fn(np.stack([X.ravel(), Y.ravel(), Z.ravel()], 1)).reshape(X.shape)
+    sl = tuple(slice(a_, b_) for a_, b_ in zip(i0, i1))
+    cur = F[sl]
+    h = np.clip(0.5 + 0.5 * (d - cur) / k, 0.0, 1.0)
+    F[sl] = d * (1 - h) + cur * h - k * h * (1 - h)
+    return int(np.count_nonzero(d < 0))
+
+
 def build_solid(V, F, P, FI, cfg, report):
     from scipy import ndimage
     from scipy.spatial import cKDTree
@@ -871,6 +895,10 @@ def stage_light(unit, out_npz, cfg, intake, pp, report, V, Fp, UV, TEXI, images,
         report["solid"]["light_cuts"] = [{"shape": [k for k in ("capsule", "sphere", "box") if k in c][0],
                                           "nodes_inside": apply_cut(Fg, lo, step, c, mirror=False), "why": c.get("why")}
                                          for c in lc["cuts"]]
+    if lc.get("adds"):                # opt-in, after the cuts: a smooth UNION that re-joins what a cut left disjoint (a
+        report["solid"]["light_adds"] = [{"shape": [k for k in ("capsule", "sphere") if k in c][0],   # kept limb's stalk)
+                                          "nodes_inside": apply_add(Fg, lo, step, c), "why": c.get("why")}
+                                         for c in lc["adds"]]
     if lc["floor_clip"]:
         z = lo[2] + step * np.arange(Fg.shape[2])
         Fg = np.maximum(Fg, (0.0 - z)[None, None, :])

@@ -719,14 +719,14 @@
       4.62
      ],
      [
-      0.97,
-      -0.19,
-      4.82
+      0.9,
+      -0.17,
+      5.0
      ],
      0.12
     ],
     "k": 0.06,
-    "why": "the front half of the common stalk below the aft branch (z 4.62-4.82): the fore arm's root, so the stalk bends into the aft arm with no stump (+x side)"
+    "why": "v2 note 'a disjoint on the arms where there is leftover': the straight common stalk below the socket (z 4.62-5.0, its front part) is the FORE arm's line; cut so the aft arm can be re-joined (+x side)"
    },
    {
     "capsule": [
@@ -736,14 +736,65 @@
       4.62
      ],
      [
-      -0.97,
-      -0.15,
-      4.82
+      -0.9,
+      -0.13,
+      5.0
      ],
      0.12
     ],
     "k": 0.06,
-    "why": "the front half of the common stalk below the aft branch (z 4.62-4.82): the fore arm's root, so the stalk bends into the aft arm with no stump (-x side)"
+    "why": "v2 note 'a disjoint on the arms where there is leftover': the straight common stalk below the socket (z 4.62-5.0, its front part) is the FORE arm's line; cut so the aft arm can be re-joined (-x side)"
+   },
+   {
+    "capsule": [
+     [
+      0.86,
+      -0.15,
+      4.5
+     ],
+     [
+      0.82,
+      -0.14,
+      4.95
+     ],
+     0.13
+    ],
+    "k": 0.05,
+    "why": "the inner wall of the old straight stalk (x 0.76-0.96, y -0.25..0, z 4.55-4.85) left as a fin in front of the re-joined stalk (+x side)"
+   },
+   {
+    "capsule": [
+     [
+      -0.86,
+      -0.15,
+      4.5
+     ],
+     [
+      -0.82,
+      -0.14,
+      4.95
+     ],
+     0.13
+    ],
+    "k": 0.05,
+    "why": "the inner wall of the old straight stalk (x 0.76-0.96, y -0.25..0, z 4.55-4.85) left as a fin in front of the re-joined stalk (-x side)"
+   },
+   {
+    "capsule": [
+     [
+      -1.0,
+      -0.1,
+      4.38
+     ],
+     [
+      -0.97,
+      -0.09,
+      4.6
+     ],
+     0.08
+    ],
+    "k": 0.03,
+    "why": "-x only: a sliver of the fore stalk's inner wall (x -1.0, y -0.05..-0.09, z 4.42-4.55) in front of the kept aft arm"
    }
   ],
   "cuts_why": "capsules along the fore arm centreline (proxy samples, z 1.55-4.25 per 0.15, radius = p99.5 + 0.05); stop below the shoulder fork (z ~4.45): 0 body / 0 aft-arm samples inside, 113 shoulder samples",
@@ -806,7 +857,211 @@
     ],
     "why": "artist v1 verdict 'mouth dark red': the cup inside the rim (front lip y -0.83 z 5.93, back rim y +0.3 z 6.63, bottom y -0.2 z 5.35) repainted rim -> deep with the sheet mouth-detail panel's radial medians (non-tooth pixels: 124,67,46 at the gums / 92,42,33 / 69,30,26 / 57,25,21 at the centre); the chip 116,62,58 read mauve in the render; teeth (bright) kept"
    }
-  ]
+  ],
+  "adds": [
+   {
+    "capsule": [
+     [
+      0.84,
+      -0.08,
+      5.3
+     ],
+     [
+      0.88,
+      0.0,
+      4.9
+     ],
+     0.12
+    ],
+    "k": 0.05,
+    "why": "one continuous stalk from the shoulder socket (z 5.3) into the kept AFT arm (z 4.45), smooth union: replaces the straight stub + side branch the cut left (+x side)"
+   },
+   {
+    "capsule": [
+     [
+      0.88,
+      0.0,
+      4.9
+     ],
+     [
+      0.97,
+      0.13,
+      4.6
+     ],
+     0.12
+    ],
+    "k": 0.05,
+    "why": "one continuous stalk from the shoulder socket (z 5.3) into the kept AFT arm (z 4.45), smooth union: replaces the straight stub + side branch the cut left (+x side)"
+   },
+   {
+    "capsule": [
+     [
+      0.97,
+      0.13,
+      4.6
+     ],
+     [
+      1.09,
+      0.22,
+      4.45
+     ],
+     0.12
+    ],
+    "k": 0.05,
+    "why": "one continuous stalk from the shoulder socket (z 5.3) into the kept AFT arm (z 4.45), smooth union: replaces the straight stub + side branch the cut left (+x side)"
+   },
+   {
+    "capsule": [
+     [
+      -0.84,
+      -0.05,
+      5.3
+     ],
+     [
+      -0.88,
+      0.03,
+      4.9
+     ],
+     0.12
+    ],
+    "k": 0.05,
+    "why": "one continuous stalk from the shoulder socket (z 5.3) into the kept AFT arm (z 4.45), smooth union: replaces the straight stub + side branch the cut left (-x side)"
+   },
+   {
+    "capsule": [
+     [
+      -0.88,
+      0.03,
+      4.9
+     ],
+     [
+      -0.97,
+      0.16,
+      4.6
+     ],
+     0.12
+    ],
+    "k": 0.05,
+    "why": "one continuous stalk from the shoulder socket (z 5.3) into the kept AFT arm (z 4.45), smooth union: replaces the straight stub + side branch the cut left (-x side)"
+   },
+   {
+    "capsule": [
+     [
+      -0.97,
+      0.16,
+      4.6
+     ],
+     [
+      -1.09,
+      0.25,
+      4.45
+     ],
+     0.12
+    ],
+    "k": 0.05,
+    "why": "one continuous stalk from the shoulder socket (z 5.3) into the kept AFT arm (z 4.45), smooth union: replaces the straight stub + side branch the cut left (-x side)"
+   }
+  ],
+  "adds_why": "after the cuts; the stalk path follows the proxy: socket y -0.08 / -0.05, aft centreline z 4.6 (0.97, 0.13 / 0.18), z 4.45 (1.09, 0.22 / 0.27); r 0.12 = the stalk's half-span at the socket",
+  "despeckle": {
+   "capsules": [
+    {
+     "capsule": [
+      [
+       0.84,
+       -0.08,
+       5.3
+      ],
+      [
+       0.88,
+       0.0,
+       4.9
+      ],
+      0.12
+     ]
+    },
+    {
+     "capsule": [
+      [
+       0.88,
+       0.0,
+       4.9
+      ],
+      [
+       0.97,
+       0.13,
+       4.6
+      ],
+      0.12
+     ]
+    },
+    {
+     "capsule": [
+      [
+       0.97,
+       0.13,
+       4.6
+      ],
+      [
+       1.09,
+       0.22,
+       4.45
+      ],
+      0.12
+     ]
+    },
+    {
+     "capsule": [
+      [
+       -0.84,
+       -0.05,
+       5.3
+      ],
+      [
+       -0.88,
+       0.03,
+       4.9
+      ],
+      0.12
+     ]
+    },
+    {
+     "capsule": [
+      [
+       -0.88,
+       0.03,
+       4.9
+      ],
+      [
+       -0.97,
+       0.16,
+       4.6
+      ],
+      0.12
+     ]
+    },
+    {
+     "capsule": [
+      [
+       -0.97,
+       0.16,
+       4.6
+      ],
+      [
+       -1.09,
+       0.25,
+       4.45
+      ],
+      0.12
+     ]
+    }
+   ],
+   "pad": 0.05,
+   "zmax": 5.2,
+   "frac": 0.6,
+   "rings": 24,
+   "why": "the re-joined stalk (light.adds) bakes partly from the proxy's inner stalk faces: dark blocky texels along its front; refilled from the stalk's own valid texels (the dark socket above z 5.2 kept)"
+  }
  },
  "rig": {
   "spine_names": [

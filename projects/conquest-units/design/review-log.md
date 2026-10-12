@@ -2652,3 +2652,14 @@ Binding reading:
    to the sheet's dark red (sheet interior ~63,28,24; chip 116,62,58 for
    the lighter flesh). The teeth and the sandy rim keep their colour.
 3. The teeth stay as generated.
+
+## 2026-10-12 — Sand Drill Worm v2 note (artist verbatim + markup)
+
+"seems a disjoint on the arms here where there is leftove"
+Markup: design/reference/sand_drill_worm-v2-arm-seam-annotation.png (a red
+line along the arm stalk from the shoulder down: a seam / leftover where
+the cut fore arm was joined to the kept aft arm).
+Binding reading: clean up the cut. No leftover sliver, ridge or texture
+seam of the removed arm along the kept arm's stalk. The kept arm reads as
+one smooth continuous stalk from the shoulder socket down to the drill
+bulb.

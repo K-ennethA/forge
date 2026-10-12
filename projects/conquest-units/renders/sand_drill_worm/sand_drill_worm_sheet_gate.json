@@ -2,31 +2,31 @@
  "unit": "sand_drill_worm",
  "views": {
   "front": {
-   "iou": 0.8579,
-   "iou_shape": 0.8336,
+   "iou": 0.856,
+   "iou_shape": 0.832,
    "aspect_rel": 0.117,
-   "row_err_u": 0.15,
-   "row_err_pct": 4.5,
+   "row_err_u": 0.155,
+   "row_err_pct": 4.7,
    "w_u": 3.64,
    "h_u": 6.71,
    "ref_w_u": 4.11,
    "ref_h_u": 6.69,
-   "iou_in_frame": 0.8436,
-   "row_err_pct_in_frame": 4.9,
+   "iou_in_frame": 0.8405,
+   "row_err_pct_in_frame": 5.0,
    "proxy_iou": 0.8984,
    "flag": false
   },
   "side": {
-   "iou": 0.8814,
-   "iou_shape": 0.8403,
-   "aspect_rel": 0.0957,
+   "iou": 0.8816,
+   "iou_shape": 0.8379,
+   "aspect_rel": 0.1,
    "row_err_u": 0.135,
    "row_err_pct": 5.7,
-   "w_u": 2.13,
+   "w_u": 2.12,
    "h_u": 6.71,
    "ref_w_u": 2.38,
    "ref_h_u": 6.78,
-   "iou_in_frame": 0.8813,
+   "iou_in_frame": 0.8815,
    "row_err_pct_in_frame": 5.7,
    "proxy_iou": 0.9152,
    "flag": false
@@ -35,5 +35,5 @@
  "proxy_sha256": "e1a05901d81a78abf8bc75ec3ac7f2fbbbbf7cc17826493f079d0b35d8dc4652",
  "proxy_gate": "reliable",
  "flagged": [],
- "mean_iou": 0.8697
+ "mean_iou": 0.8688
 }

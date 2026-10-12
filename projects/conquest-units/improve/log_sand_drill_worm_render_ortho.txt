@@ -1,7 +1,7 @@
-00:01.422  blend            | Read blend: "C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\rigged\sand_drill_worm.blend"
-00:03.438  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\sand_drill_worm\sand_drill_worm_ortho_front.png'
-00:03.781  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\sand_drill_worm\sand_drill_worm_ortho_back.png'
-00:04.109  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\sand_drill_worm\sand_drill_worm_ortho_side.png'
+00:01.406  blend            | Read blend: "C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\rigged\sand_drill_worm.blend"
+00:03.594  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\sand_drill_worm\sand_drill_worm_ortho_front.png'
+00:03.906  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\sand_drill_worm\sand_drill_worm_ortho_back.png'
+00:04.281  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\sand_drill_worm\sand_drill_worm_ortho_side.png'
 WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\sand_drill_worm\sand_drill_worm_ortho_front.png
 WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\sand_drill_worm\sand_drill_worm_ortho_back.png
 WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\sand_drill_worm\sand_drill_worm_ortho_side.png
