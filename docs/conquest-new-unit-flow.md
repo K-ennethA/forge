@@ -115,3 +115,58 @@ build's shape. The lane brief requires quoting these lines.
   `matte_filled_enclosed_background` when the in-graph BiRefNet matte fills a background pocket the subject
   encloses, such as the wolf's horn ring.
 - **Code and tests:** `meshgen/framing.py` and `meshgen/tests/test_framing.py`.
+
+## 5. Proxy finish (prototype, 2026-10-11): the Pixal3D proxy as the BASE mesh
+
+This is opt-in, for NEW units only. The artist's verdict on the Pixal3D trial: "all of the work it did looks better than
+what we did, except for the called out issues of model interpertation". So the frozen proxy becomes the base mesh,
+and the house rules are applied on top. It has been prototyped on scratch copies of holly_snowman and gemwing_dragon
+only. Code: `improve/proxy_finish.py` (stage 1 + CLI), `improve/proxy_finish_build.py` (the Blender half) and
+`improve/proxy_finish_parts.py` (closed procedural parts).
+
+Commands, after intake + `sheet_proxy.py` + `new_unit_scaffold.py`:
+1. `improve/proxy_finish.py init <unit>` writes three files:
+   - the stub `improve/<unit>_build.py`, which the scaffolded runner runs unchanged;
+   - `improve/<unit>_finish.json`, the per-unit config;
+   - `palettes/<unit>/default.json`, with one region per sheet chip.
+2. Edit `<unit>_finish.json`: chip names, tone merges, the tier, and the "interpretation fixes" (`straighten`, `refloor`,
+   `cuts`, `parts`, rig joints). Points are `[x, y, z]` sheet units, or `{"side": [u, v], "front": [u, v]}` SHEET PX.
+   `proxy_finish.py solid <unit> --out <npz>` prints the solid, melt, colour and registration report while you tune.
+3. `improve/<unit>_run.ps1`: the usual digest twins, bake gate, both contract checkers, renders and numeric gate.
+4. `improve/proxy_finish.py gate <unit> [--hand <glb>]` scores the finished unit against the sheet AND against the raw
+   proxy, and also reports the mirror test and open edges.
+5. `improve/proxy_finish.py panel <unit> [--hand <blend>]` renders sheet | raw proxy | finished | hand build.
+
+What the finish does:
+- **Solid.** The proxy soup becomes a watertight SDF: shell nodes, a closing, an exterior flood fill, and the exact
+  near-band distance offset by half a voxel so blades survive.
+- **Symmetry.** The SDF is averaged with its X mirror (`F_sym = (F + F_mirrored) / 2`; no bisect). The HIGH is the +X
+  half, polygonised, mirrored and welded, so the mirror test is exactly 0.
+- **Low and bake.** COLLAPSE decimation with `use_symmetry` gives the LOW. Normal + AO are baked against the FLAT low.
+- **Colour.** Sheet pixels are projected onto the high, with an ortho z-buffer per view. The proxy texture fills
+  unseen faces. Colours snap to the chips; small islands are merged, and region borders are iso-cut into the low
+  (`colour.mode: facet` keeps one flat tone per facet instead, for crystal units). Small high-contrast flat sheet
+  marks (eyes, buttons) become closed conforming decals automatically.
+- **Parts.** `silhouette_fan` places crystal blades along the SHEET's own side and front wing silhouette.
+- **Rig and clips.** The rig comes from config joints. Clips are PLACEHOLDERS.
+
+Measured (scratch, mean IoU vs the sheet over front / back / side):
+
+| unit | raw proxy | finished | current hand build |
+|---|---|---|---|
+| holly_snowman | 0.919 | 0.919 | 0.862 |
+| gemwing_dragon | 0.807 | 0.762 | 0.631 |
+
+Both units: digest twins identical, every contract check passes except the report-only cell_fit, 0 open edges, and
+the mirror test is 0. Still manual:
+- part placement;
+- cut boxes;
+- `refloor` windows;
+- rig joints;
+- the choice between replacing melted parts and overlaying them (see the lane report).
+
+Kit gaps found:
+1. `sheet_proxy.normalise` puts the floor at the lowest point. On gemwing that is the tail curl, which leaves the feet
+   0.46 u up and the body 9 % small. The finish's `refloor` works around it.
+2. The scaffolded compose's `GATE bake_reference` reads only `<unit>_build.py`, so for a stub build it prints `none`.
+   It should follow the stub into `proxy_finish_build.py`, which does bake against the FLAT low.
