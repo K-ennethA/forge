@@ -26,7 +26,7 @@
    "pieces": 1,
    "dropped_verts": 0
   },
-  "seconds": 5.1
+  "seconds": 4.6
  },
  "retopo": {
   "method": "SDF marching tetrahedra (step 0.020) -> collapse decimation (deterministic)",
@@ -60,7 +60,7 @@
    1.00005,
    0.99995
   ],
-  "seconds": 5.1
+  "seconds": 3.5
  },
  "slim": {
   "shell_max_half_width": 0.4,
@@ -170,7 +170,7 @@
     "face_connects": 1
    }
   ],
-  "seconds": 4.7,
+  "seconds": 4.0,
   "shell_tris_after_cuts": 9756,
   "shell_region_faces": {
    "body": 7376,
@@ -183,11 +183,40 @@
    "bands": 679
   }
  },
+ "orientation": {
+  "rule": "built in sheet coords (the drawn dive), mapped by a piecewise-rigid bend along the medial curve",
+  "glide_pitch_deg_chord_head_to_tail": 5.0,
+  "sheet_chord_deg": 41.332,
+  "head_end_tangent_deg": -3.013,
+  "tail_end_tangent_deg": 20.75,
+  "bend_keep": 0.35,
+  "wing_dihedral_deg": 8.0,
+  "sheet_bend_total_deg": 67.89
+ },
  "centre_shift": [
   0.0,
-  0.015,
-  0.107778
+  4.71675,
+  -0.953321
  ],
+ "mirror_test": {
+  "max": 0.02174,
+  "p99": 0.00436,
+  "rule": "distance from each vertex's X-mirror to the rest mesh surface (the decimated shell is not vertex-symmetric; its surface is)",
+  "worst": "shell",
+  "per_island_max": {
+   "shell": 0.02174,
+   "beak": 0.0,
+   "eye.L": 0.00497,
+   "iris.L": 0.00842,
+   "eye.R": 0.00819,
+   "iris.R": 0.00795,
+   "wing.L": 0.0,
+   "wing.R": 0.0,
+   "lobe.L": 0.0,
+   "lobe.R": 0.0
+  },
+  "tolerance": "one SDF step (0.020): the kit's marching-tets Kuhn split (0->7 diagonal) is not X-mirror symmetric, so the extracted shell differs by up to a grid step where the surface is sharper than the step (the tail-leaf tip)"
+ },
  "glow": {
   "skin": "default",
   "glowing_regions": [],
@@ -204,24 +233,24 @@
   }
  },
  "regions_area_share": {
-  "body": 0.8532,
-  "highlight": 0.0203,
-  "marking": 0.0824,
-  "beak": 0.0234,
-  "eye": 0.0145,
-  "iris": 0.0062
+  "body": 0.8516,
+  "highlight": 0.0216,
+  "marking": 0.0815,
+  "beak": 0.0257,
+  "eye": 0.0139,
+  "iris": 0.0057
  },
  "facing": {
   "rule": "head centre (HEAD_C) -> the beak tip on the midline",
   "anchor": [
    0.0,
-   -1.595,
-   0.4722
+   -2.2721,
+   0.8001
   ],
   "landmark": [
    0.0,
-   -2.485,
-   0.2222
+   -3.2225,
+   0.7987
   ],
   "angle_from_minusY_deg": 0.0
  },
@@ -256,38 +285,38 @@
    "hinge": [
     [
      0.72,
-     -1.3858,
-     0.4922
+     -2.0649,
+     0.8055
     ],
     [
      0.61,
-     1.139,
-     2.0022
+     0.9188,
+     0.8603
     ]
    ],
    "tip": [
     1.92,
-    1.8437,
-    3.0322
+    2.1496,
+    1.2614
    ]
   },
   "R": {
    "hinge": [
     [
      -0.72,
-     -1.3858,
-     0.4922
+     -2.0649,
+     0.8055
     ],
     [
      -0.61,
-     1.139,
-     2.0022
+     0.9188,
+     0.8603
     ]
    ],
    "tip": [
     -1.92,
-    1.8437,
-    3.0322
+    2.1496,
+    1.2614
    ]
   }
  },
@@ -345,22 +374,22 @@
   "bbox": [
    [
     -1.92,
-    -2.485,
+    -3.2225,
     0.0
    ],
    [
     1.92,
-    2.485,
-    4.1115
+    3.2225,
+    1.448
    ]
   ],
-  "height": 4.1115,
+  "height": 1.448,
   "width_x": 3.84,
-  "depth_y": 4.97,
+  "depth_y": 6.4449,
   "sheet_px_equivalent": {
-   "height_px": 411.1,
+   "height_px": 144.8,
    "width_px": 384.0,
-   "depth_px": 497.0
+   "depth_px": 644.5
   },
   "sheet": {
    "front_view_height_px": 450,
@@ -371,8 +400,8 @@
    "side_view_length_px": 500
   },
   "export_cell_fit_report_only": {
-   "scale": 0.38229,
-   "height_m": 1.5718,
+   "scale": 0.29481,
+   "height_m": 0.4269,
    "footprint_m": 1.9,
    "bound_by": "footprint"
   }
@@ -382,13 +411,13 @@
    "result": [
     "FINISHED"
    ],
-   "seconds": 0.7
+   "seconds": 0.6
   },
   "AO": {
    "result": [
     "FINISHED"
    ],
-   "seconds": 0.5
+   "seconds": 0.6
   },
   "cage_extrusion": 0.02,
   "cage_rule": "3 x the sampled high->low p99 distance (floor 0.02)",
@@ -398,19 +427,19 @@
   },
   "high_tris": 303088,
   "high_rule": "SDF shell (marching tets) + every closed part",
-  "body_uv_texels_normal": 520942,
-  "normal_baked_pct_of_body_texels": 99.86,
-  "normal_detail_fraction_dev_gt_0.05": 0.133,
+  "body_uv_texels_normal": 515938,
+  "normal_baked_pct_of_body_texels": 99.85,
+  "normal_detail_fraction_dev_gt_0.05": 0.1542,
   "ao_baked_pct_of_body_texels": 100.0,
-  "ao_mean": 0.8237,
+  "ao_mean": 0.8218,
   "ao_p05": 0.0,
   "pixel_sha": {
-   "normal": "cbff3b10d2bba27c",
-   "ao": "eb861358924307d9"
+   "normal": "d0f199ec4b29e1fc",
+   "ao": "adc9a43d679dea0d"
   },
-  "seconds": 3.8
+  "seconds": 3.9
  },
- "digest_geometry_colour_uv": "a9e7c8e0d831947a",
+ "digest_geometry_colour_uv": "d2bd89cda2b45c6f",
  "palette": {
   "default": {
    "body": {

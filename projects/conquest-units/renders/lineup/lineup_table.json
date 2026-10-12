@@ -1,13 +1,32 @@
 {
- "generated": "2026-10-09T21:52:12",
+ "generated": "2026-10-11T18:01:19",
  "conquest_tree": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\Conquest",
  "conquest_branch": "feat/forge-unit-import",
- "rigged_glbs": 28,
- "units_discovered": 28,
- "units_rendered": 28,
+ "rigged_glbs": 50,
+ "units_discovered": 50,
+ "units_rendered": 50,
  "failed": {},
  "targets_edited_by_artist": [
-  "magmoo"
+  "magmoo",
+  "chest_monster",
+  "crystal_canine",
+  "eclipse_wolf",
+  "ember_eye",
+  "ember_stump",
+  "eye_totem",
+  "fogeist",
+  "gemwing_dragon",
+  "goo_shield",
+  "halo_sentinel",
+  "holly_snowman",
+  "lava_komodo",
+  "leaf_bird",
+  "mystic_snow_spirit",
+  "phoenix_hatchling",
+  "soot_puff",
+  "storm_vessel",
+  "volcano_turtle",
+  "winged_cat"
  ],
  "fit_rule": {
   "cell": "min(1.8/h, 1.9/fp)",
@@ -16,27 +35,49 @@
   "fp": "max(x, y) rest-pose bbox extent"
  },
  "order_by_ingame_height": [
+  "leaf_bird",
   "mycothrall",
   "blightcap",
+  "fogeist",
+  "shadow_mole",
+  "shield_rodent",
+  "aquaoct",
+  "bombee",
+  "raven_rogue",
+  "pangolin_knight",
+  "lava_komodo",
+  "canine_bat",
   "seedant",
   "vampito",
   "petalfang",
   "firesprite",
+  "gemwing_dragon",
   "vineweave",
   "lyra",
   "supaoctto",
+  "halo_sentinel",
+  "ember_eye",
   "wren",
   "firefly",
-  "aquaoct",
-  "raven_rogue",
+  "winged_cat",
+  "crystal_canine",
+  "eclipse_wolf",
+  "eye_totem",
   "elias",
   "geode",
   "duskmaw",
+  "phoenix_hatchling",
   "shadowbun",
-  "pangolin_knight",
-  "canine_bat",
-  "shadow_mole",
-  "bombee",
+  "chest_monster",
+  "petal_cobra",
+  "storm_vessel",
+  "holly_snowman",
+  "spectormn",
+  "soot_puff",
+  "mystic_snow_spirit",
+  "ember_stump",
+  "goo_shield",
+  "volcano_turtle",
   "shadow_assassin",
   "mortis",
   "vampwarrior",
@@ -73,7 +114,29 @@
   "canine_bat",
   "pangolin_knight",
   "raven_rogue",
-  "shadow_mole"
+  "shadow_mole",
+  "chest_monster",
+  "crystal_canine",
+  "eclipse_wolf",
+  "ember_eye",
+  "ember_stump",
+  "eye_totem",
+  "fogeist",
+  "gemwing_dragon",
+  "goo_shield",
+  "halo_sentinel",
+  "holly_snowman",
+  "lava_komodo",
+  "leaf_bird",
+  "mystic_snow_spirit",
+  "petal_cobra",
+  "phoenix_hatchling",
+  "shield_rodent",
+  "soot_puff",
+  "spectormn",
+  "storm_vessel",
+  "volcano_turtle",
+  "winged_cat"
  ],
  "renders": {
   "lineup_ingame": {
@@ -996,19 +1059,21 @@
     "footprint": 4.1712
    },
    "natural_shown_height_units": 5.5205,
-   "scale_source": "not in game: formula",
-   "root_scale_import": null,
-   "model_scale_roster": null,
-   "roster_tres": null,
-   "roster_all": [],
-   "game_glb_identical": null,
+   "scale_source": "measured",
+   "root_scale_import": 0.32572,
+   "model_scale_roster": 0.50852,
+   "roster_tres": "game/characters/roster/aquaoct.tres",
+   "roster_all": [
+    "game/characters/roster/aquaoct.tres"
+   ],
+   "game_glb_identical": true,
    "formula_scale": 0.32572,
    "formula_limit": "height",
-   "ingame_scale": 0.32572,
-   "ingame_height_m": 1.7981,
-   "ingame_footprint_m": 1.3586,
-   "target_height_m": 1.798,
-   "target_scale": 0.32569
+   "ingame_scale": 0.16564,
+   "ingame_height_m": 0.9144,
+   "ingame_footprint_m": 0.6909,
+   "target_height_m": 0.914,
+   "target_scale": 0.16556
   },
   "bombee": {
    "kind": "creature",
@@ -1034,19 +1099,21 @@
     "footprint": 4.08
    },
    "natural_shown_height_units": 4.7105,
-   "scale_source": "not in game: formula",
-   "root_scale_import": null,
-   "model_scale_roster": null,
-   "roster_tres": null,
-   "roster_all": [],
-   "game_glb_identical": null,
+   "scale_source": "measured",
+   "root_scale_import": 0.38772,
+   "model_scale_roster": 0.50067,
+   "roster_tres": "game/characters/roster/bombee.tres",
+   "roster_all": [
+    "game/characters/roster/bombee.tres"
+   ],
+   "game_glb_identical": true,
    "formula_scale": 0.38772,
    "formula_limit": "height",
-   "ingame_scale": 0.38772,
-   "ingame_height_m": 1.8263,
-   "ingame_footprint_m": 1.5819,
-   "target_height_m": 1.826,
-   "target_scale": 0.38764
+   "ingame_scale": 0.19412,
+   "ingame_height_m": 0.9144,
+   "ingame_footprint_m": 0.792,
+   "target_height_m": 0.914,
+   "target_scale": 0.19403
   },
   "canine_bat": {
    "kind": "creature",
@@ -1072,19 +1139,21 @@
     "footprint": 4.4345
    },
    "natural_shown_height_units": 6.0604,
-   "scale_source": "not in game: formula",
-   "root_scale_import": null,
-   "model_scale_roster": null,
-   "roster_tres": null,
-   "roster_all": [],
-   "game_glb_identical": null,
+   "scale_source": "measured",
+   "root_scale_import": 0.29802,
+   "model_scale_roster": 0.5766,
+   "roster_tres": "game/characters/roster/canine_bat.tres",
+   "roster_all": [
+    "game/characters/roster/canine_bat.tres"
+   ],
+   "game_glb_identical": true,
    "formula_scale": 0.29802,
    "formula_limit": "height",
-   "ingame_scale": 0.29802,
-   "ingame_height_m": 1.8061,
-   "ingame_footprint_m": 1.3216,
-   "target_height_m": 1.806,
-   "target_scale": 0.298
+   "ingame_scale": 0.17184,
+   "ingame_height_m": 1.0414,
+   "ingame_footprint_m": 0.762,
+   "target_height_m": 1.041,
+   "target_scale": 0.17177
   },
   "pangolin_knight": {
    "kind": "creature",
@@ -1110,19 +1179,21 @@
     "footprint": 4.4006
    },
    "natural_shown_height_units": 5.6418,
-   "scale_source": "not in game: formula",
-   "root_scale_import": null,
-   "model_scale_roster": null,
-   "roster_tres": null,
-   "roster_all": [],
-   "game_glb_identical": null,
+   "scale_source": "measured",
+   "root_scale_import": 0.3196,
+   "model_scale_roster": 0.50712,
+   "roster_tres": "game/characters/roster/pangolin_knight.tres",
+   "roster_all": [
+    "game/characters/roster/pangolin_knight.tres"
+   ],
+   "game_glb_identical": true,
    "formula_scale": 0.3196,
    "formula_limit": "height",
-   "ingame_scale": 0.3196,
-   "ingame_height_m": 1.8031,
-   "ingame_footprint_m": 1.4064,
-   "target_height_m": 1.803,
-   "target_scale": 0.31958
+   "ingame_scale": 0.16208,
+   "ingame_height_m": 0.9144,
+   "ingame_footprint_m": 0.7132,
+   "target_height_m": 0.914,
+   "target_scale": 0.162
   },
   "raven_rogue": {
    "kind": "creature",
@@ -1148,23 +1219,25 @@
     "footprint": 4.5309
    },
    "natural_shown_height_units": 5.3222,
-   "scale_source": "not in game: formula",
-   "root_scale_import": null,
-   "model_scale_roster": null,
-   "roster_tres": null,
-   "roster_all": [],
-   "game_glb_identical": null,
+   "scale_source": "measured",
+   "root_scale_import": 0.33793,
+   "model_scale_roster": 0.50842,
+   "roster_tres": "game/characters/roster/raven_rogue.tres",
+   "roster_all": [
+    "game/characters/roster/raven_rogue.tres"
+   ],
+   "game_glb_identical": true,
    "formula_scale": 0.33793,
    "formula_limit": "height",
-   "ingame_scale": 0.33793,
-   "ingame_height_m": 1.7985,
-   "ingame_footprint_m": 1.5312,
-   "target_height_m": 1.799,
-   "target_scale": 0.33802
+   "ingame_scale": 0.17181,
+   "ingame_height_m": 0.9144,
+   "ingame_footprint_m": 0.7785,
+   "target_height_m": 0.914,
+   "target_scale": 0.17173
   },
   "shadow_mole": {
    "kind": "creature",
-   "glb_sha1": "be2ed801004f",
+   "glb_sha1": "8550e1951479",
    "tris": 19204,
    "clips": [
     "idle",
@@ -1186,19 +1259,857 @@
     "footprint": 3.8947
    },
    "natural_shown_height_units": 3.8515,
+   "scale_source": "measured",
+   "root_scale_import": 0.46964,
+   "model_scale_roster": 0.42127,
+   "roster_tres": "game/characters/roster/shadow_mole.tres",
+   "roster_all": [
+    "game/characters/roster/shadow_mole.tres"
+   ],
+   "game_glb_identical": true,
+   "formula_scale": 0.46964,
+   "formula_limit": "height",
+   "ingame_scale": 0.19785,
+   "ingame_height_m": 0.762,
+   "ingame_footprint_m": 0.7705,
+   "target_height_m": 0.762,
+   "target_scale": 0.19784
+  },
+  "chest_monster": {
+   "kind": "creature",
+   "glb_sha1": "92b22663256e",
+   "tris": 13832,
+   "clips": [
+    "idle",
+    "walk"
+   ],
+   "pose_shown": "idle:1",
+   "natural_rest_bbox_units": {
+    "min": [
+     -1.5818,
+     -1.3169,
+     -0.0
+    ],
+    "max": [
+     1.5818,
+     1.3169,
+     4.8361
+    ],
+    "height": 4.8361,
+    "footprint": 3.1635
+   },
+   "natural_shown_height_units": 4.8399,
    "scale_source": "not in game: formula",
    "root_scale_import": null,
    "model_scale_roster": null,
    "roster_tres": null,
    "roster_all": [],
    "game_glb_identical": null,
-   "formula_scale": 0.46964,
+   "formula_scale": 0.3722,
    "formula_limit": "height",
-   "ingame_scale": 0.46964,
-   "ingame_height_m": 1.8088,
-   "ingame_footprint_m": 1.8291,
+   "ingame_scale": 0.3722,
+   "ingame_height_m": 1.8014,
+   "ingame_footprint_m": 1.1775,
+   "target_height_m": 1.2192,
+   "target_scale": 0.25191
+  },
+  "crystal_canine": {
+   "kind": "creature",
+   "glb_sha1": "ac77cfb91461",
+   "tris": 18412,
+   "clips": [
+    "idle",
+    "walk"
+   ],
+   "pose_shown": "idle:1",
+   "natural_rest_bbox_units": {
+    "min": [
+     -1.8444,
+     -2.0866,
+     -0.0
+    ],
+    "max": [
+     1.8444,
+     2.0866,
+     6.2018
+    ],
+    "height": 6.2018,
+    "footprint": 4.1733
+   },
+   "natural_shown_height_units": 6.1972,
+   "scale_source": "not in game: formula",
+   "root_scale_import": null,
+   "model_scale_roster": null,
+   "roster_tres": null,
+   "roster_all": [],
+   "game_glb_identical": null,
+   "formula_scale": 0.29024,
+   "formula_limit": "height",
+   "ingame_scale": 0.29024,
+   "ingame_height_m": 1.7987,
+   "ingame_footprint_m": 1.2113,
+   "target_height_m": 1.524,
+   "target_scale": 0.24592
+  },
+  "eclipse_wolf": {
+   "kind": "creature",
+   "glb_sha1": "6ed7a63d1e47",
+   "tris": 21872,
+   "clips": [
+    "idle",
+    "walk"
+   ],
+   "pose_shown": "idle:1",
+   "natural_rest_bbox_units": {
+    "min": [
+     -1.7643,
+     -2.1116,
+     -0.0
+    ],
+    "max": [
+     1.7643,
+     2.1116,
+     6.33
+    ],
+    "height": 6.33,
+    "footprint": 4.2232
+   },
+   "natural_shown_height_units": 6.3255,
+   "scale_source": "not in game: formula",
+   "root_scale_import": null,
+   "model_scale_roster": null,
+   "roster_tres": null,
+   "roster_all": [],
+   "game_glb_identical": null,
+   "formula_scale": 0.28436,
+   "formula_limit": "height",
+   "ingame_scale": 0.28436,
+   "ingame_height_m": 1.7987,
+   "ingame_footprint_m": 1.2009,
+   "target_height_m": 1.2192,
+   "target_scale": 0.19274
+  },
+  "ember_eye": {
+   "kind": "creature",
+   "glb_sha1": "fd918450b195",
+   "tris": 19532,
+   "clips": [
+    "idle",
+    "walk"
+   ],
+   "pose_shown": "idle:1",
+   "natural_rest_bbox_units": {
+    "min": [
+     -1.7713,
+     -0.4265,
+     0.0
+    ],
+    "max": [
+     1.7713,
+     0.4265,
+     6.9589
+    ],
+    "height": 6.9589,
+    "footprint": 3.5425
+   },
+   "natural_shown_height_units": 6.9298,
+   "scale_source": "not in game: formula",
+   "root_scale_import": null,
+   "model_scale_roster": null,
+   "roster_tres": null,
+   "roster_all": [],
+   "game_glb_identical": null,
+   "formula_scale": 0.25866,
+   "formula_limit": "height",
+   "ingame_scale": 0.25866,
+   "ingame_height_m": 1.7925,
+   "ingame_footprint_m": 0.9163,
+   "target_height_m": 1.3462,
+   "target_scale": 0.19426
+  },
+  "ember_stump": {
+   "kind": "creature",
+   "glb_sha1": "601c7acee28b",
+   "tris": 21668,
+   "clips": [
+    "idle",
+    "walk"
+   ],
+   "pose_shown": "idle:1",
+   "natural_rest_bbox_units": {
+    "min": [
+     -1.7904,
+     -1.6382,
+     -0.0
+    ],
+    "max": [
+     1.7904,
+     1.6382,
+     6.1064
+    ],
+    "height": 6.1064,
+    "footprint": 3.5807
+   },
+   "natural_shown_height_units": 6.1575,
+   "scale_source": "not in game: formula",
+   "root_scale_import": null,
+   "model_scale_roster": null,
+   "roster_tres": null,
+   "roster_all": [],
+   "game_glb_identical": null,
+   "formula_scale": 0.29477,
+   "formula_limit": "height",
+   "ingame_scale": 0.29477,
+   "ingame_height_m": 1.8151,
+   "ingame_footprint_m": 1.0555,
+   "target_height_m": 2.4384,
+   "target_scale": 0.396
+  },
+  "eye_totem": {
+   "kind": "creature",
+   "glb_sha1": "f50d4e99121d",
+   "tris": 19824,
+   "clips": [
+    "idle",
+    "walk"
+   ],
+   "pose_shown": "idle:1",
+   "natural_rest_bbox_units": {
+    "min": [
+     -1.125,
+     -0.6512,
+     -0.0
+    ],
+    "max": [
+     1.125,
+     0.6512,
+     6.7029
+    ],
+    "height": 6.7029,
+    "footprint": 2.2499
+   },
+   "natural_shown_height_units": 6.6988,
+   "scale_source": "not in game: formula",
+   "root_scale_import": null,
+   "model_scale_roster": null,
+   "roster_tres": null,
+   "roster_all": [],
+   "game_glb_identical": null,
+   "formula_scale": 0.26854,
+   "formula_limit": "height",
+   "ingame_scale": 0.26854,
+   "ingame_height_m": 1.7989,
+   "ingame_footprint_m": 0.6042,
+   "target_height_m": 1.0668,
+   "target_scale": 0.15925
+  },
+  "fogeist": {
+   "kind": "creature",
+   "glb_sha1": "d4eae36f59d8",
+   "tris": 18762,
+   "clips": [
+    "idle",
+    "walk"
+   ],
+   "pose_shown": "idle:1",
+   "natural_rest_bbox_units": {
+    "min": [
+     -2.2192,
+     -4.0072,
+     0.0
+    ],
+    "max": [
+     2.2192,
+     4.0072,
+     3.0447
+    ],
+    "height": 3.0447,
+    "footprint": 8.0143
+   },
+   "natural_shown_height_units": 2.9292,
+   "scale_source": "not in game: formula",
+   "root_scale_import": null,
+   "model_scale_roster": null,
+   "roster_tres": null,
+   "roster_all": [],
+   "game_glb_identical": null,
+   "formula_scale": 0.23708,
+   "formula_limit": "footprint",
+   "ingame_scale": 0.23708,
+   "ingame_height_m": 0.6944,
+   "ingame_footprint_m": 1.9,
+   "target_height_m": 1.4224,
+   "target_scale": 0.48559
+  },
+  "gemwing_dragon": {
+   "kind": "creature",
+   "glb_sha1": "1825f8a4fae4",
+   "tris": 28248,
+   "clips": [
+    "idle",
+    "walk"
+   ],
+   "pose_shown": "idle:1",
+   "natural_rest_bbox_units": {
+    "min": [
+     -1.4862,
+     -4.2684,
+     -0.0
+    ],
+    "max": [
+     1.4862,
+     4.2684,
+     6.4828
+    ],
+    "height": 6.4828,
+    "footprint": 8.5368
+   },
+   "natural_shown_height_units": 6.3708,
+   "scale_source": "not in game: formula",
+   "root_scale_import": null,
+   "model_scale_roster": null,
+   "roster_tres": null,
+   "roster_all": [],
+   "game_glb_identical": null,
+   "formula_scale": 0.22257,
+   "formula_limit": "footprint",
+   "ingame_scale": 0.22257,
+   "ingame_height_m": 1.4179,
+   "ingame_footprint_m": 1.9,
+   "target_height_m": 3.9624,
+   "target_scale": 0.62197
+  },
+  "goo_shield": {
+   "kind": "creature",
+   "glb_sha1": "1866f833b0b1",
+   "tris": 15428,
+   "clips": [
+    "idle",
+    "walk"
+   ],
+   "pose_shown": "idle:1",
+   "natural_rest_bbox_units": {
+    "min": [
+     -1.7796,
+     -2.5365,
+     0.0
+    ],
+    "max": [
+     1.7796,
+     2.5365,
+     5.2139
+    ],
+    "height": 5.2139,
+    "footprint": 5.073
+   },
+   "natural_shown_height_units": 5.2768,
+   "scale_source": "not in game: formula",
+   "root_scale_import": null,
+   "model_scale_roster": null,
+   "roster_tres": null,
+   "roster_all": [],
+   "game_glb_identical": null,
+   "formula_scale": 0.34523,
+   "formula_limit": "height",
+   "ingame_scale": 0.34523,
+   "ingame_height_m": 1.8217,
+   "ingame_footprint_m": 1.7514,
+   "target_height_m": 1.651,
+   "target_scale": 0.31288
+  },
+  "halo_sentinel": {
+   "kind": "creature",
+   "glb_sha1": "a742da4fb133",
+   "tris": 20602,
+   "clips": [
+    "idle",
+    "walk"
+   ],
+   "pose_shown": "idle:1",
+   "natural_rest_bbox_units": {
+    "min": [
+     -2.7666,
+     -1.2576,
+     -0.0
+    ],
+    "max": [
+     2.7666,
+     1.2576,
+     6.0659
+    ],
+    "height": 6.0659,
+    "footprint": 5.5333
+   },
+   "natural_shown_height_units": 6.0383,
+   "scale_source": "not in game: formula",
+   "root_scale_import": null,
+   "model_scale_roster": null,
+   "roster_tres": null,
+   "roster_all": [],
+   "game_glb_identical": null,
+   "formula_scale": 0.29674,
+   "formula_limit": "height",
+   "ingame_scale": 0.29674,
+   "ingame_height_m": 1.7918,
+   "ingame_footprint_m": 1.6419,
+   "target_height_m": 1.905,
+   "target_scale": 0.31549
+  },
+  "holly_snowman": {
+   "kind": "creature",
+   "glb_sha1": "8a429d66b8b6",
+   "tris": 19214,
+   "clips": [
+    "idle",
+    "walk"
+   ],
+   "pose_shown": "idle:1",
+   "natural_rest_bbox_units": {
+    "min": [
+     -2.1,
+     -1.4314,
+     -0.0
+    ],
+    "max": [
+     2.1,
+     1.4314,
+     5.92
+    ],
+    "height": 5.92,
+    "footprint": 4.2
+   },
+   "natural_shown_height_units": 5.9427,
+   "scale_source": "not in game: formula",
+   "root_scale_import": null,
+   "model_scale_roster": null,
+   "roster_tres": null,
+   "roster_all": [],
+   "game_glb_identical": null,
+   "formula_scale": 0.30405,
+   "formula_limit": "height",
+   "ingame_scale": 0.30405,
+   "ingame_height_m": 1.8069,
+   "ingame_footprint_m": 1.277,
+   "target_height_m": 1.524,
+   "target_scale": 0.25645
+  },
+  "lava_komodo": {
+   "kind": "creature",
+   "glb_sha1": "e44fd1f9ef62",
+   "tris": 19074,
+   "clips": [
+    "idle",
+    "walk"
+   ],
+   "pose_shown": "idle:1",
+   "natural_rest_bbox_units": {
+    "min": [
+     -1.7493,
+     -4.3594,
+     -0.0
+    ],
+    "max": [
+     1.7493,
+     4.3594,
+     4.598
+    ],
+    "height": 4.598,
+    "footprint": 8.7188
+   },
+   "natural_shown_height_units": 4.6185,
+   "scale_source": "not in game: formula",
+   "root_scale_import": null,
+   "model_scale_roster": null,
+   "roster_tres": null,
+   "roster_all": [],
+   "game_glb_identical": null,
+   "formula_scale": 0.21792,
+   "formula_limit": "footprint",
+   "ingame_scale": 0.21792,
+   "ingame_height_m": 1.0065,
+   "ingame_footprint_m": 1.9,
+   "target_height_m": 1.2954,
+   "target_scale": 0.28048
+  },
+  "leaf_bird": {
+   "kind": "creature",
+   "glb_sha1": "2a2b9397ea41",
+   "tris": 14556,
+   "clips": [
+    "idle",
+    "walk"
+   ],
+   "pose_shown": "idle:1",
+   "natural_rest_bbox_units": {
+    "min": [
+     -1.92,
+     -3.2225,
+     0.0
+    ],
+    "max": [
+     1.92,
+     3.2225,
+     1.448
+    ],
+    "height": 1.448,
+    "footprint": 6.4449
+   },
+   "natural_shown_height_units": 1.4478,
+   "scale_source": "not in game: formula",
+   "root_scale_import": null,
+   "model_scale_roster": null,
+   "roster_tres": null,
+   "roster_all": [],
+   "game_glb_identical": null,
+   "formula_scale": 0.29481,
+   "formula_limit": "footprint",
+   "ingame_scale": 0.29481,
+   "ingame_height_m": 0.4268,
+   "ingame_footprint_m": 1.9,
+   "target_height_m": 0.3048,
+   "target_scale": 0.21052
+  },
+  "mystic_snow_spirit": {
+   "kind": "creature",
+   "glb_sha1": "0f24d8aff8c4",
+   "tris": 19312,
+   "clips": [
+    "idle",
+    "walk"
+   ],
+   "pose_shown": "idle:1",
+   "natural_rest_bbox_units": {
+    "min": [
+     -2.3156,
+     -1.5576,
+     0.0
+    ],
+    "max": [
+     2.3156,
+     1.5576,
+     7.09
+    ],
+    "height": 7.09,
+    "footprint": 4.6311
+   },
+   "natural_shown_height_units": 7.1288,
+   "scale_source": "not in game: formula",
+   "root_scale_import": null,
+   "model_scale_roster": null,
+   "roster_tres": null,
+   "roster_all": [],
+   "game_glb_identical": null,
+   "formula_scale": 0.25388,
+   "formula_limit": "height",
+   "ingame_scale": 0.25388,
+   "ingame_height_m": 1.8098,
+   "ingame_footprint_m": 1.1757,
+   "target_height_m": 1.7272,
+   "target_scale": 0.24229
+  },
+  "petal_cobra": {
+   "kind": "creature",
+   "glb_sha1": "2082b1e94f6b",
+   "tris": 21372,
+   "clips": [
+    "idle",
+    "walk"
+   ],
+   "pose_shown": "idle:1",
+   "natural_rest_bbox_units": {
+    "min": [
+     -2.1802,
+     -1.4757,
+     -0.0
+    ],
+    "max": [
+     2.1802,
+     1.4757,
+     5.8819
+    ],
+    "height": 5.8819,
+    "footprint": 4.3603
+   },
+   "natural_shown_height_units": 5.8913,
+   "scale_source": "not in game: formula",
+   "root_scale_import": null,
+   "model_scale_roster": null,
+   "roster_tres": null,
+   "roster_all": [],
+   "game_glb_identical": null,
+   "formula_scale": 0.30603,
+   "formula_limit": "height",
+   "ingame_scale": 0.30603,
+   "ingame_height_m": 1.8029,
+   "ingame_footprint_m": 1.3344,
+   "target_height_m": 1.803,
+   "target_scale": 0.30604
+  },
+  "phoenix_hatchling": {
+   "kind": "creature",
+   "glb_sha1": "b48d483bad25",
+   "tris": 16090,
+   "clips": [
+    "idle",
+    "walk"
+   ],
+   "pose_shown": "idle:1",
+   "natural_rest_bbox_units": {
+    "min": [
+     -1.6408,
+     -1.759,
+     -0.0
+    ],
+    "max": [
+     1.6408,
+     1.759,
+     6.5548
+    ],
+    "height": 6.5548,
+    "footprint": 3.518
+   },
+   "natural_shown_height_units": 6.5553,
+   "scale_source": "not in game: formula",
+   "root_scale_import": null,
+   "model_scale_roster": null,
+   "roster_tres": null,
+   "roster_all": [],
+   "game_glb_identical": null,
+   "formula_scale": 0.27461,
+   "formula_limit": "height",
+   "ingame_scale": 0.27461,
+   "ingame_height_m": 1.8001,
+   "ingame_footprint_m": 0.9661,
+   "target_height_m": 0.9144,
+   "target_scale": 0.13949
+  },
+  "shield_rodent": {
+   "kind": "creature",
+   "glb_sha1": "c7ef2b28beea",
+   "tris": 19482,
+   "clips": [
+    "idle",
+    "walk"
+   ],
+   "pose_shown": "idle:1",
+   "natural_rest_bbox_units": {
+    "min": [
+     -1.48,
+     -2.7719,
+     0.0
+    ],
+    "max": [
+     1.48,
+     2.7719,
+     2.381
+    ],
+    "height": 2.381,
+    "footprint": 5.5438
+   },
+   "natural_shown_height_units": 2.3892,
+   "scale_source": "not in game: formula",
+   "root_scale_import": null,
+   "model_scale_roster": null,
+   "roster_tres": null,
+   "roster_all": [],
+   "game_glb_identical": null,
+   "formula_scale": 0.34272,
+   "formula_limit": "footprint",
+   "ingame_scale": 0.34272,
+   "ingame_height_m": 0.8188,
+   "ingame_footprint_m": 1.9,
+   "target_height_m": 0.819,
+   "target_scale": 0.34279
+  },
+  "soot_puff": {
+   "kind": "creature",
+   "glb_sha1": "edf468486800",
+   "tris": 17998,
+   "clips": [
+    "idle",
+    "walk"
+   ],
+   "pose_shown": "idle:1",
+   "natural_rest_bbox_units": {
+    "min": [
+     -1.9012,
+     -1.5174,
+     -0.0
+    ],
+    "max": [
+     1.9012,
+     1.5174,
+     4.0406
+    ],
+    "height": 4.0406,
+    "footprint": 3.8025
+   },
+   "natural_shown_height_units": 4.0607,
+   "scale_source": "not in game: formula",
+   "root_scale_import": null,
+   "model_scale_roster": null,
+   "roster_tres": null,
+   "roster_all": [],
+   "game_glb_identical": null,
+   "formula_scale": 0.44547,
+   "formula_limit": "height",
+   "ingame_scale": 0.44547,
+   "ingame_height_m": 1.8089,
+   "ingame_footprint_m": 1.6939,
+   "target_height_m": 0.6096,
+   "target_scale": 0.15012
+  },
+  "spectormn": {
+   "kind": "creature",
+   "glb_sha1": "717d618dba6b",
+   "tris": 18832,
+   "clips": [
+    "idle",
+    "walk"
+   ],
+   "pose_shown": "idle:1",
+   "natural_rest_bbox_units": {
+    "min": [
+     -1.8588,
+     -1.0297,
+     -0.0
+    ],
+    "max": [
+     1.8588,
+     1.0297,
+     6.7301
+    ],
+    "height": 6.7301,
+    "footprint": 3.7176
+   },
+   "natural_shown_height_units": 6.7633,
+   "scale_source": "not in game: formula",
+   "root_scale_import": null,
+   "model_scale_roster": null,
+   "roster_tres": null,
+   "roster_all": [],
+   "game_glb_identical": null,
+   "formula_scale": 0.26746,
+   "formula_limit": "height",
+   "ingame_scale": 0.26746,
+   "ingame_height_m": 1.8089,
+   "ingame_footprint_m": 0.9943,
    "target_height_m": 1.809,
-   "target_scale": 0.46969
+   "target_scale": 0.26747
+  },
+  "storm_vessel": {
+   "kind": "creature",
+   "glb_sha1": "b940b0ee2480",
+   "tris": 19306,
+   "clips": [
+    "idle",
+    "walk"
+   ],
+   "pose_shown": "idle:1",
+   "natural_rest_bbox_units": {
+    "min": [
+     -2.3943,
+     -1.4347,
+     -0.0
+    ],
+    "max": [
+     2.3943,
+     1.4347,
+     6.62
+    ],
+    "height": 6.62,
+    "footprint": 4.7886
+   },
+   "natural_shown_height_units": 6.6319,
+   "scale_source": "not in game: formula",
+   "root_scale_import": null,
+   "model_scale_roster": null,
+   "roster_tres": null,
+   "roster_all": [],
+   "game_glb_identical": null,
+   "formula_scale": 0.2719,
+   "formula_limit": "height",
+   "ingame_scale": 0.2719,
+   "ingame_height_m": 1.8032,
+   "ingame_footprint_m": 1.302,
+   "target_height_m": 1.905,
+   "target_scale": 0.28725
+  },
+  "volcano_turtle": {
+   "kind": "creature",
+   "glb_sha1": "22b8aab05425",
+   "tris": 20790,
+   "clips": [
+    "idle",
+    "walk"
+   ],
+   "pose_shown": "idle:1",
+   "natural_rest_bbox_units": {
+    "min": [
+     -2.1004,
+     -1.5175,
+     0.0
+    ],
+    "max": [
+     2.1004,
+     1.5175,
+     6.7048
+    ],
+    "height": 6.7048,
+    "footprint": 4.2008
+   },
+   "natural_shown_height_units": 6.7907,
+   "scale_source": "not in game: formula",
+   "root_scale_import": null,
+   "model_scale_roster": null,
+   "roster_tres": null,
+   "roster_all": [],
+   "game_glb_identical": null,
+   "formula_scale": 0.26847,
+   "formula_limit": "height",
+   "ingame_scale": 0.26847,
+   "ingame_height_m": 1.8231,
+   "ingame_footprint_m": 1.1278,
+   "target_height_m": 2.1336,
+   "target_scale": 0.31419
+  },
+  "winged_cat": {
+   "kind": "creature",
+   "glb_sha1": "8bbab8681a7f",
+   "tris": 17922,
+   "clips": [
+    "idle",
+    "walk"
+   ],
+   "pose_shown": "idle:1",
+   "natural_rest_bbox_units": {
+    "min": [
+     -1.5,
+     -2.0224,
+     0.0
+    ],
+    "max": [
+     1.5,
+     2.0224,
+     4.2773
+    ],
+    "height": 4.2773,
+    "footprint": 4.0448
+   },
+   "natural_shown_height_units": 4.2741,
+   "scale_source": "not in game: formula",
+   "root_scale_import": null,
+   "model_scale_roster": null,
+   "roster_tres": null,
+   "roster_all": [],
+   "game_glb_identical": null,
+   "formula_scale": 0.42082,
+   "formula_limit": "height",
+   "ingame_scale": 0.42082,
+   "ingame_height_m": 1.7986,
+   "ingame_footprint_m": 1.7022,
+   "target_height_m": 0.9144,
+   "target_scale": 0.21394
   }
  }
 }

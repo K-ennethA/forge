@@ -2539,3 +2539,18 @@ Binding reading:
    large facets and one root-to-tip gradient, tips forming an even
    stepped edge; no per-facet colour speckle, no streak noise, no tips
    poking out of a fused blob.
+
+## 2026-10-11 — Artist sizes for the new units (verbatim)
+
+"crystalline creatue 5 feet, eclipse wolf 4 ft, eye totem, 3 and half feet,
+winged cat 3 feet, phienix hatchling 3 feet, chest monster 4 feet, storm
+vessel 6 feet 3 inch, soot puff 2 ft, holly snowman 5 ft, mystic snowman
+5ft 8, ember stump 8ft, goo shield 5ft 5, volvano turtle 7 ft, gemwing
+dragon 13ft, leaf bird 1ft and its orientation needs to be fixed, right
+now thats a top view so height may be wrong, ember eye 4ft 5 in, halo
+sentinel 6ft 3 inch, foggeist 4 feet 8 inches, lava komodo 4 ft 3 inches"
+Applied: design/size-table.json target_height_m for 19 units (crystalline
+creature = crystal_canine; mystic snowman = mystic_snow_spirit).
+Still unsized: petal_cobra, shield_rodent, spectormn (asked).
+Leaf Bird: re-orient (the rest pose reads as a top view from the front),
+then size it at 1 ft.

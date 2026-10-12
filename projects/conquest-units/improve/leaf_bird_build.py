@@ -15,6 +15,14 @@ leaf likle" + markup design/reference/leaf_bird-v1-crest-annotation.png, a red X
 REMOVED (part, vein net, bone, clip keys); the body is SLIMMED to a leaf (BODY_KX, SPINE_RSCALE, a slimmer pointed
 head), the wings / tail lobes / belly bands refitted to it.
 
+v3 (review-log 2026-10-11 "Artist sizes for the new units", artist: "leaf bird 1ft and its orientation needs to be fixed,
+right now thats a top view so height may be wrong"): the REST POSE is re-oriented to a game unit in a level GLIDE. The
+whole model is still BUILT in sheet coordinates (every sheet measurement keeps its meaning), then mapped by a piecewise-
+rigid BEND along the body's medial curve: each medial segment keeps BEND_KEEP of its sheet tangent angle and the curve is
+rotated so its head -> tail chord rises GLIDE_PITCH deg (a slight nose-down). The wings, laid on the medial surface, come
+out spread to +-X (near horizontal), then get WING_DIHEDRAL. Front camera: the face + a thin wing line; side: the leaf
+body in profile.
+
 UNITS: 'sheet units' -- 1 unit = 100 px of the sheet. The sheet draws the bird in a DIVE (nose-down). Every constant is
 measured off the SIDE view (the reconciliation view: the three views' drawn heights differ, front 4.5 / back 5.1 / side
 4.3 u); the FRONT view supplies only what the side cannot show (the wings, the lateral widths, the eye spacing):
@@ -127,6 +135,12 @@ WING_NS, WING_NT = 28, 10             # "wing detail": rows root -> tip / column
 LOBE_BASE, LOBE_TIP = (0.06, 1.72, 2.55), (0.65, 2.50, 3.00)   # L side (base inside the slimmer tail; v1 base (0.12, 1.78, 2.42))
 LOBE_W, LOBE_T = 0.22, 0.025          # "lobe width" (half, max; side view lobe ~33 px wide) / thickness (half)
 LOBE_NS, LOBE_NT = 12, 4
+# ---- REST ORIENTATION (v3: a game unit in a level glide; the sheet draws a steep dive seen partly from above)
+GLIDE_PITCH = 5.0                     # "glide pitch": the head -> tail chord rises this many deg (nose slightly down)
+BEND_KEEP = 0.35                      # "body curve": share of the sheet's medial bend kept (1 = the drawn dive's banana
+                                      #   curve, 0 = a straight leaf); 0.35 keeps a gentle leaf curve, tail up
+WING_DIHEDRAL = 8.0                   # "wing dihedral": deg the wings rise outboard of WING_DIH_X0
+WING_DIH_X0 = 0.35                    # the dihedral starts at this |X| (inside the body: the root stays buried)
 # ---- MARKINGS on the shell
 MIDRIB_W, MIDRIB_Y0 = 0.035, -1.40    # "midrib": half width; it runs from behind the eyes (front view: the dark centre line
                                       #   x 230-240 from y 265 to 570; back view x 586-592 full length)
@@ -604,6 +618,73 @@ for s, sg in SIDES:
     V, F, R, IJ = FP.pillow(P, np.broadcast_to(Nn, P.shape), Hh, lambda i, j, top_: "body")
     PARTS.append(FP.Part("lobe." + s, V, F, R, bone="tail.002"))
 
+# =========================================================================== 4b. rest orientation: the glide bend
+_EXT = 2.0
+_t0 = unit([SPY[1] - SPY[0], SPZ[1] - SPZ[0]]); _t1 = unit([SPY[-1] - SPY[-2], SPZ[-1] - SPZ[-2]])
+BP = np.vstack([[SPY[0] - _t0[0] * _EXT, SPZ[0] - _t0[1] * _EXT], np.stack([SPY, SPZ], 1),
+                [SPY[-1] + _t1[0] * _EXT, SPZ[-1] + _t1[1] * _EXT]])          # medial curve, straight-extended ends
+_seg = np.diff(BP, axis=0); _len = np.linalg.norm(_seg, axis=1); _dir = _seg / _len[:, None]
+_th = np.unwrap(np.arctan2(_dir[:, 1], _dir[:, 0]))
+_i_head, _i_tail = 1, len(BP) - 2                                          # first / last real medial point
+
+
+def _bent(c):
+    th2 = BEND_KEEP * _th + c
+    d2 = np.stack([np.cos(th2), np.sin(th2)], 1)
+    pts = np.vstack([[0.0, 0.0], np.cumsum(d2 * _len[:, None], 0)])
+    return pts, d2
+
+
+_p0, _ = _bent(0.0)
+_alpha = math.atan2(_p0[_i_tail, 1] - _p0[_i_head, 1], _p0[_i_tail, 0] - _p0[_i_head, 0])
+BEND_C = math.radians(GLIDE_PITCH) - _alpha
+BP2, BD2 = _bent(BEND_C)
+_ch = BP2[_i_tail] - BP2[_i_head]
+
+
+def glide_map(P, wing=False):
+    """sheet coords -> rest (glide) coords: per medial segment a rigid YZ transform (the point's nearest segment,
+    along-param and signed normal offset are kept; X is untouched). Wing points then rise WING_DIHEDRAL outboard of
+    WING_DIH_X0."""
+    P = np.atleast_2d(np.asarray(P, float))
+    Q = P[:, 1:3]
+    best = np.full(len(P), 1e18); kk = np.zeros(len(P), int)
+    for k in range(len(_seg)):
+        u = np.clip(((Q - BP[k]) @ _seg[k]) / (_len[k] ** 2), 0.0, 1.0)
+        d = np.linalg.norm(Q - BP[k] - np.outer(u, _seg[k]), axis=1)
+        m = d < best
+        best[m] = d[m]; kk[m] = k
+    R = Q - BP[kk]
+    a = np.einsum("ij,ij->i", R, _dir[kk])                                     # along the segment
+    n = _dir[kk, 0] * R[:, 1] - _dir[kk, 1] * R[:, 0]                          # left normal offset
+    d2 = BD2[kk]; n2 = np.stack([-d2[:, 1], d2[:, 0]], 1)
+    out = P.copy()
+    out[:, 1:3] = BP2[kk] + a[:, None] * d2 + n[:, None] * n2
+    if wing:
+        out[:, 2] += math.tan(math.radians(WING_DIHEDRAL)) * np.maximum(np.abs(out[:, 0]) - WING_DIH_X0, 0.0)
+    return out
+
+
+CV_SHEET = CV.copy()
+for p in PARTS:
+    p.Vs = p.V.copy()
+    p.V = glide_map(p.V, wing=p.name.startswith("wing"))
+CV = glide_map(CV)
+HV = glide_map(HV)
+for s in WING:
+    WING[s]["hinge"] = tuple(glide_map(h, wing=True)[0] for h in WING[s]["hinge"])
+    WING[s]["bones"] = [glide_map(b, wing=True)[0] for b in WING[s]["bones"]]
+    WING[s]["tip"] = glide_map(WING[s]["tip"], wing=True)[0]
+report["orientation"] = {
+    "rule": "built in sheet coords (the drawn dive), mapped by a piecewise-rigid bend along the medial curve",
+    "glide_pitch_deg_chord_head_to_tail": round(math.degrees(math.atan2(_ch[1], _ch[0])), 3),
+    "sheet_chord_deg": round(math.degrees(math.atan2(BP[_i_tail, 1] - BP[_i_head, 1], BP[_i_tail, 0] - BP[_i_head, 0])), 3),
+    "head_end_tangent_deg": round(math.degrees(math.atan2(BD2[_i_head, 1], BD2[_i_head, 0])), 3),
+    "tail_end_tangent_deg": round(math.degrees(math.atan2(BD2[_i_tail - 1, 1], BD2[_i_tail - 1, 0])), 3),
+    "bend_keep": BEND_KEEP, "wing_dihedral_deg": WING_DIHEDRAL,
+    "sheet_bend_total_deg": round(math.degrees(_th[_i_tail - 1] - _th[_i_head]), 2)}
+print("ORIENT", json.dumps(report["orientation"]))
+
 # =========================================================================== 5. assemble + centre
 ISL = [("shell", CV, CF, list(shell_reg), None)] + [(p.name, p.V, p.F, p.R, p) for p in PARTS]
 _shell_lo = float(CV[:, 2].min())
@@ -613,16 +694,31 @@ allV = np.vstack([i[1] for i in ISL])
 lo0, hi0 = allV.min(0), allV.max(0)
 SHIFT = np.array([(lo0[0] + hi0[0]) / 2, (lo0[1] + hi0[1]) / 2, lo0[2]])
 report["centre_shift"] = SHIFT.round(6).tolist()
-VALL, FALL, RNAME, RANGE = [], [], [], {}
+VALL, FALL, RNAME, RANGE, VSHEET = [], [], [], {}, []
 nv_ = 0
 for name, V, F, R, p in ISL:
     RANGE[name] = (nv_, nv_ + len(V))
     VALL.append(V - SHIFT)
+    VSHEET.append(CV_SHEET if p is None else p.Vs)
     FALL += [[i + nv_ for i in f] for f in F]
     RNAME += list(R)
     nv_ += len(V)
 VALL = np.vstack(VALL)
+VSHEET = np.vstack(VSHEET)                       # the same vertices in sheet coords (weights + sheet-drawn fields)
 assert float(VALL[:, 2].min()) >= -1e-9, "floor"
+# mirror test (memory 'symmetric rest pose'): every vertex mirrored in X lands on the rest mesh's surface
+_bvh_m = BVHTree.FromPolygons(VALL.tolist(), FALL)
+_mir = np.array([_bvh_m.find_nearest(Vector((-p_[0], p_[1], p_[2])))[3] for p_ in VALL])
+report["mirror_test"] = {"max": round(float(_mir.max()), 5), "p99": round(float(np.percentile(_mir, 99)), 5),
+                         "rule": "distance from each vertex's X-mirror to the rest mesh surface (the decimated shell "
+                                 "is not vertex-symmetric; its surface is)"}
+_imax = int(np.argmax(_mir)); report["mirror_test"]["worst"] = [k for k, (a0, a1) in RANGE.items() if a0 <= _imax < a1][0]
+report["mirror_test"]["per_island_max"] = {k: round(float(_mir[a0:a1].max()), 5) for k, (a0, a1) in RANGE.items()}
+report["mirror_test"]["tolerance"] = ("one SDF step (%.3f): the kit's marching-tets Kuhn split (0->7 diagonal) is not "
+                                        "X-mirror symmetric, so the extracted shell differs by up to a grid step where the "
+                                        "surface is sharper than the step (the tail-leaf tip)" % SDF_STEP)
+assert _mir.max() < 1.5 * SDF_STEP, report["mirror_test"]
+print("MIRROR", json.dumps(report["mirror_test"]))
 HV_s = HV - SHIFT
 REG = ["body", "highlight", "marking", "beak", "eye", "iris"]
 assert set(RNAME) <= set(REG), sorted(set(RNAME) - set(REG))
@@ -677,8 +773,8 @@ report["regions_area_share"] = {n: round(float(fa[rid == j].sum() / fa.sum()), 4
 me["conquest_islands"] = json.dumps({k: list(v) for k, v in RANGE.items()})
 
 # facing landmark: the head centre -> the beak tip (on the midline)
-anchor = np.array(HEAD_C, float) - SHIFT
-landmark = _bt - SHIFT
+anchor = glide_map(HEAD_C)[0] - SHIFT
+landmark = glide_map(_bt)[0] - SHIFT
 dvec = landmark - anchor
 report["facing"] = {"rule": "head centre (HEAD_C) -> the beak tip on the midline",
                     "anchor": anchor.round(4).tolist(), "landmark": landmark.round(4).tolist(),
@@ -742,14 +838,20 @@ low["conquest_scale_policy"] = "natural proportions in sheet units (1 = 100 shee
 low["conquest_emission_channel"] = "Glow colour attribute (2nd colour set, glTF COLOR_1) -> Emission Color; Col -> Base Color (all zero: no glow)"
 # focus boxes for the close-ups (world, after the centre shift) = the sheet's four detail panels
 _wing_pts = np.vstack([p.V for p in PARTS if p.name == "wing.L"]) - SHIFT
-_tail_pts = np.vstack([p.V for p in PARTS if p.name.startswith("lobe")] + [SPINE3[SPY > 1.3]]) - SHIFT
+_tail_pts = np.vstack([p.V for p in PARTS if p.name.startswith("lobe")] + [glide_map(SPINE3[SPY > 1.3])]) - SHIFT
+
+
+def _mbox(lo, hi):
+    c = np.array([[x, y, z] for x in (lo[0], hi[0]) for y in (lo[1], hi[1]) for z in (lo[2], hi[2])], float)
+    m = glide_map(c) - SHIFT
+    return [m.min(0).tolist(), m.max(0).tolist()]
 low["conquest_focus"] = json.dumps({
-    "face": [(np.array([-0.7, -2.6, 0.0]) - SHIFT).tolist(), (np.array([0.7, -1.1, 1.25]) - SHIFT).tolist()],
+    "face": _mbox((-0.7, -2.6, 0.0), (0.7, -1.1, 1.25)),
     "wing": [_wing_pts.min(0).tolist(), _wing_pts.max(0).tolist()],
-    "markings": [(np.array([-0.7, -0.6, 0.0]) - SHIFT).tolist(), (np.array([0.7, 1.6, 1.9]) - SHIFT).tolist()],
+    "markings": _mbox((-0.7, -0.6, 0.0), (0.7, 1.6, 1.9)),
     "tail": [(_tail_pts.min(0) - [0.2, 0.2, 0.2]).tolist(), (_tail_pts.max(0) + [0.2, 0.2, 0.1]).tolist()],
-    "views": {"face": [80.0, 5.0], "wing": [35.0, 20.0], "markings": [90.0, -4.0], "tail": [90.0, 5.0]},
-    "axis_xy": [float(-SHIFT[0]), float(-SHIFT[1])]})
+    "views": {"face": [60.0, 5.0], "wing": [35.0, 35.0], "markings": [90.0, 6.0], "tail": [120.0, 10.0]},
+    "axis_xy": [0.0, 0.0]})                      # v3: the sheet's dive axes no longer apply; orthos centre on the bbox
 
 if PREVIEW:
     for o in list(scene.objects):
@@ -919,13 +1021,13 @@ def P_(p):
 
 
 def spine_at(Y):
-    return np.array([0.0, float(Y), float(zc_of_y(Y))])
+    return glide_map([0.0, float(Y), float(zc_of_y(Y))])[0]
 
 
 BONES = [("body", P_(spine_at(-1.0)), P_(spine_at(1.10)), "root"),
-         ("head", P_(spine_at(-1.15)), P_((0.0, -2.30, 0.45)), "body"),
+         ("head", P_(spine_at(-1.15)), P_(glide_map((0.0, -2.30, 0.45))[0]), "body"),
          ("tail.001", P_(spine_at(1.10)), P_(spine_at(1.60)), "body"),
-         ("tail.002", P_(spine_at(1.60)), P_(SPINE3[-1]), "tail.001")]
+         ("tail.002", P_(spine_at(1.60)), P_(glide_map(SPINE3[-1])[0]), "tail.001")]
 for s, sg in SIDES:
     b0, b1, b2 = WING[s]["bones"]
     BONES += [("wing_%s.001" % s, P_(b0), P_(b1), "body"), ("wing_%s.002" % s, P_(b1), P_(b2), "wing_%s.001" % s)]
@@ -951,7 +1053,7 @@ J = {n: j for j, n in enumerate(DEFORM)}
 # ---- weights (<= 4 influences)
 Wt = np.zeros((len(VALL), len(DEFORM)))
 a_, b_ = RANGE["shell"]
-Pw = VALL[a_:b_] + SHIFT
+Pw = VSHEET[a_:b_]                                # sheet coords: the medial-curve bands
 _, s_arc, _ = FP.spine_param(np.stack([np.zeros(len(Pw)), Pw[:, 1], Pw[:, 2]], 1), SPINE3)
 Yn = np.interp(s_arc, SP_ARC, SPY)                              # Y of the nearest medial-curve point
 w_body_from_head = smoothstep(NECK_BAND[0], NECK_BAND[1], Yn)
@@ -963,7 +1065,7 @@ Wt[a_:b_, J["tail.001"]] = w_t1 * (1.0 - w_t2)
 Wt[a_:b_, J["tail.002"]] = w_t2
 for p in PARTS:
     a_, b_ = RANGE[p.name]
-    Pp = p.V
+    Pp = p.Vs                                     # sheet coords (front-view root line etc.)
     if p.name.startswith("wing"):
         s = p.name.split(".")[1]
         s_lat = np.clip(np.abs(Pp[:, 0]) - x_root(Pp[:, 2]), 0.0, WING_LAT)
@@ -1032,12 +1134,12 @@ def local_quat(bone, rots):
     return q
 
 
-# wing hinge axis = the root line; sign fixed so that + raises the wing toward its front (-Y) face, mirrored L / R
+# wing hinge axis = the root line; sign fixed so that + raises the wing (up), mirrored L / R
 WING_HINGE = {}
 for s, sg in SIDES:
     h0, h1 = WING[s]["hinge"]
     hax = unit(h1 - h0)
-    nf_ = unit(np.array([0.0, -1.0, float(dyw_dz(1.3))]))
+    nf_ = np.array([0.0, 0.0, 1.0])                # v3: + raises the wing (up: the glide pose's top face)
     if float(np.cross(hax, np.array([sg, 0.0, 0.0])) @ nf_) < 0:
         hax = -hax
     WING_HINGE[s] = tuple(hax)
