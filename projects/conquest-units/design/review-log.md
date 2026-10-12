@@ -1756,3 +1756,786 @@ raven_rogue and pangolin_knight 3 ft; canine_bat 3 ft 5 in; shadow_mole
 2 ft 6 in out of the ground. M1 ANSWERED: Shadow Mole's pink stalks /
 petals / claws glow faintly (palette tiers 0.15-0.50; the build's gate now
 requires exactly those regions to glow, under the 2.0 cap).
+
+## 2026-10-10 — NEW UNITS x4: Soot Puff, Winged Cat, Phoenix Hatchling, Chest Monster (artist sheets)
+
+Artist (verbatim): "go ahead and create the model for this one following our
+exisiting pipeline" (Soot Puff) + "here is another one to take in" (Winged
+Cat) + "next one" (Phoenix Hatchling) + (Chest Monster, no text).
+Sheets: design/reference/soot_puff-character-sheet.webp (attachment);
+{winged_cat,phoenix_hatchling,chest_monster}-character-sheet.png (pasted
+inline and loaded off the clipboard; originals are in
+design/reference/incoming/). Intake: design/reference/<unit>/intake.json +
+intake_overlay.png. All four are in tier REGULAR [8000, 22000]. Idle + walk
+are PLACEHOLDER (movement is asked, never guessed). They go in at natural
+sheet scale, and the size table takes them.
+
+SOOT PUFF ("soot_puff", ~4.1 units; all three views are true orthos; axes
+pinned to the body centre: front 229 / back 639 / side 1009.5).
+- Body: one round, near-black puffball. The edge is soft, fuzzy, irregular
+  and painterly ("slightly airy").
+- Material: matte, dusty, no sheen.
+- Face: two white oval eyes plus one small white oval mouth.
+- Arms: two soft, fuzzy, dangling arms hang below the ball. They have no
+  hands or fingers.
+- No legs. It FLOATS: the sheet's shadow sits ~0.6 u under the arm tips.
+  Rest pose min z = 0, and the placeholder idle = a hover bob + arm sway.
+- Palette: body 0,0,0 / fuzz 15,15,15 / dusty rim 113,113,115 /
+  eyes + mouth 255,255,255.
+- Deviations to report:
+  (a) The front view's mouth sits ~0.1 u right of the eye midline. It is
+      built on the centreline.
+  (b) The side view draws the near arm ~0.85 u forward of the body centre.
+
+WINGED CAT ("winged_cat", ~4.3 units; true orthos BACK + SIDE; the front is
+drawn 3/4; front/back fused by the tail, so --cuts 465,790).
+- Pose: a SITTING green cat. Big round head, pointed ears with cream inner
+  ears, haunches, two front legs with paws.
+- Face: almond white eyes with black slit pupils, an open mouth with a white
+  interior, two cute fangs.
+- Collar: a fluffy red-orange collar wraps the neck.
+- Wings: two leaf / bat-shaped bright-green wings attached to the back.
+  They have a scalloped trailing edge and darker-green veins.
+- Tail: a broom / fan-shaped tail of layered dark-brown blades, fanning
+  behind as one broom (a fan from both the back and the side views; the side fan
+  bottom edge sits at ~z 0.47, NOT on the floor; corrected at the gate).
+- Palette: green 24,180,60 / dark green 18,106,41 / collar 245,44,29 /
+  tail brown 69,27,18 / cream 245,237,229.
+- Deviations to report: the black ink outline is drawing style and is not
+  modelled.
+
+PHOENIX HATCHLING ("phoenix_hatchling", ~6.5 units incl. crest; all three
+views are true orthos).
+- Head: a big round maroon head, more than half the height, topped by a
+  curled feather crest (swirl curls) with small ember particles.
+- Face: large round glossy black eyes with a white highlight, a small
+  orange beak.
+- Collar: a GLOWING ORANGE RING at the head base, then a soft smoky
+  near-black fluff collar with floating ash flecks.
+- Body: a small round taupe body with feathered wing shapes at the sides
+  and a short tail tuft behind (side view). An orange EMBER JEWEL (diamond)
+  sits on the chest.
+- Legs: thin pink bird legs with ring segments, three-toed feet plus a back
+  toe.
+- Palette: maroon 79,20,17 / orange 245,143,28 / taupe 117,87,80 /
+  pink 232,129,122 / smoke 27,23,22.
+- Glow (drawn on the sheet): the collar ring, the chest jewel and the
+  embers.
+- Deviations to report: embers and ash are static low-poly flecks (no
+  particle systems).
+
+CHEST MONSTER ("chest_monster", ~5.5 units incl. crystals).
+- ALL THREE VIEWS ARE DRAWN IN 3/4 PERSPECTIVE; there is no true ortho.
+  Intake uses front + side with face-centred axes (192 / 578 / 1010), and
+  the overlay is indicative only. The lane reconstructs the box from the
+  perspective views and reports its proportions.
+- Body: a slightly tapered tan box (wider at the base). A dark-brown lid
+  band overhangs it all round.
+- Eye: a single orange almond EYE EMBLEM on the front, with a dark-brown
+  iris and a highlight.
+- Crystals: blue crystal clusters grow from the lid (a big cluster plus a
+  small one). They are angular prisms with white facet streaks, slightly
+  translucent and glowing.
+- Magic: soft pinkish glowing magic smoke bursts from the top opening.
+- Legs: four tiny dangling legs (brown stalks with orange dots), each
+  ending in three clawed red-orange toes with an orange-red glow.
+- Palette: box tan 210,154,99 / lid brown 71,40,17 / eye orange
+  253,144,56 / feet red-orange 253,97,44 / crystal blue 73,79,253 /
+  magic pink 252,184,170.
+- Glow (drawn on the sheet): the crystals, the feet and the smoke.
+- Deviations to report: the smoke is a translucent glow-burst mesh
+  (firefly alpha path), and the sparks are static flecks.
+
+
+## 2026-10-10 — Chest Monster v1 verdict (artist verbatim + markup)
+
+"lets get rid of the shiny sparkle  on the center of the creature head, marked in red"
+Markup: design/reference/chest_monster-v1-smoke-annotation.png (a red mark
+on the pink star burst at the centre of the lid).
+Binding reading: REMOVE the magic-smoke burst (the core + 13 rays) from the
+lid. The small spark flecks and the crystals stay. Applied by the TUNABLE
+SMOKE_BURST = False (the build no longer emits the parts; the palette keeps
+the regions).
+Follow-up (artist verbatim): "yes turn off the floating spark flecks".
+Applied: SPARKS count 0. The lid now carries the crystals only.
+
+## 2026-10-10 — Phoenix Hatchling v1 verdict (artist verbatim)
+
+"the smokey collar should be half that height and thinner in the center"
+Binding reading:
+- The smoke collar's vertical thickness is halved (the v1 tube is 0.84 u
+  tall; target ~0.42 u at the sides).
+- It tapers thinner toward the front and back centre line (X = 0), so it is
+  thickest at the sides, as the front view draws it.
+- The head stays seated in the collar with the glow band at its base, and
+  the body's top meets the collar's underside with no gap.
+
+## 2026-10-10 — NEW UNITS x3: Petal Cobra, Crystal Canine, Leaf Bird (artist sheets)
+
+Artist (verbatim): "next one" (Petal Cobra) + "another one" (Crystal Canine)
++ "another one" (Leaf Bird) + "its not a leaf fish its leaf bird descriptor
+is wrong in case that weighs in to design choices".
+Sheets (pasted inline, loaded off the clipboard; originals are in
+incoming/): design/reference/{petal_cobra,crystal_canine,leaf_bird}-
+character-sheet.png. The Leaf Bird sheet is titled "LEAF FISH"; the artist
+says it is a BIRD, so the unit is "leaf_bird", and its lateral leaves are
+WINGS and its back leaf a crest/wing-leaf, not fins. Tier REGULAR
+[8000, 22000]. Idle + walk are PLACEHOLDER. Natural sheet scale.
+
+PETAL COBRA ("petal_cobra", ~5.9 u; three true orthos; --cuts 484,862;
+axes pinned front 240 / back 673 / side 1000).
+- Body: a pale-sage serpent (215,219,202) rising upright from a long,
+  smooth, tapering tail.
+- Tail: it curves to the unit's RIGHT and forward, its tip resting on the
+  floor. The front view sweeps image-left, the back view image-right, and
+  the side view forward under the head.
+- Head: a smooth rounded head, with narrow almond amber eyes (245,212,154)
+  and a gentle smile line.
+- Hood: two LARGE CURVED HOOD PETALS rise behind the shoulders and flank the
+  head.
+  - Inner face: green 127,146,121 shading to 76,95,86, with light veins.
+  - Back / rim: cream 225,205,170, its tip curling over at the top.
+  - Side view: the petal stands behind the body and arcs up and forward.
+- Torso: a front panel with 3 pairs of oval amber MARKINGS (symmetrical),
+  and the torso's lower corners flaring into two small nubs.
+- Palette: 215,219,202 / 127,146,121 / 76,95,86 / 225,205,170 /
+  245,212,154 / 41,51,47 (ink).
+- Deviations to report:
+  - The front and back draw the two petals at different heights per side;
+    the build is symmetric.
+  - The tail curl is asymmetric, as drawn.
+
+CRYSTAL CANINE ("crystal_canine", ~6.2 u; --cuts 418,760; axes front 205 /
+back 565 / side 1005.5; the side view is a true ortho, and the front and
+back are near-frontal with the tail swinging round).
+- Body: a slim standing four-legged canine in cream-white fur
+  (247,234,224), with large pointed ears (blush inner) and a fluffy chest
+  ruff.
+- Face: expressive grey eyes, a simple cute muzzle, a small dark nose.
+- Gem: a faceted FOREHEAD GEM (stone / crystal, mauve-taupe), integrated
+  into the head.
+- Mane: a CRYSTAL MANE / stone frill of layered angular faceted prisms
+  (217,188,180 lit, 153,137,146 shade) growing from the neck / shoulders,
+  radiating out and back and blending into the back, integrated with the
+  fur.
+- Tail: a long, flowing, plume-like tail sweeping down toward the floor.
+- Palette: 247,234,224 / 217,198,198 / 217,188,180 / 153,137,146 /
+  81,74,81.
+
+LEAF BIRD ("leaf_bird"; --cuts 440,712; side axis 960; front + side used as
+orthos).
+- Pose: a streamlined LEAF BIRD drawn in a DIVE. The side view pitches the
+  body ~35 deg nose-down, beak lowest, tail up and back. The front (nose-on)
+  and back (tail-on) views show the same dive, so their heights differ (4.5
+  / 5.1 / 4.3 u); reconcile them against the side view.
+- Body: bright green (56,191,33), with dark-green (4,115,25) leaf-vein
+  segment bands along the belly and light-green highlights (121,190,91).
+- Beak: a pointed amber beak (200,133,30).
+- Eyes: round off-white (254,248,220) with an amber iris.
+- Wings: two large swept leaf WINGS at the sides (front + back views).
+- Back crest: a leaf crest / wing-leaf on the back with a vein net (the
+  sheet's "dorsal fin" panel), plus a central crest leaf and two small
+  leaves (front view).
+- Tail: a tapered leaf tail with a sharp tip and a small second lobe.
+- Rest pose = the drawn dive, with min z 0 at the lowest point.
+
+## 2026-10-10 — NEW UNITS x2: Eye Totem, Ember Eye (artist sheets)
+
+Artist (verbatim): "next one" (Eye Totem) + "next one" (Ember Eye).
+Sheets (clipboard): design/reference/{eye_totem,ember_eye}-character-
+sheet.png. Both FLOAT: a floor shadow is drawn well below each. Rest pose
+min z = 0 at the lowest tip, and the placeholder idle = a hover bob. Tier
+REGULAR [8000, 22000]. Idle + walk are PLACEHOLDER. Natural sheet scale.
+
+EYE TOTEM ("eye_totem", ~6.7 u; orthos FRONT + BACK; the side draws the
+eye at a 3/4 slant).
+- Body: a matte, painterly, near-black body (10,3,3) in three parts:
+  - a tall pointed upper spire with slightly uneven edges;
+  - a round disc / orb at mid-height;
+  - a short rounded droplet extension below.
+- Eye: a single large EYE on the disc's front: an off-white ring
+  (251,242,233) around a dark pupil (23,10,10) with a rough hand-drawn
+  edge. The back of the disc is plain black.
+- Rim glow: a subtle deep-red (124,7,7) outer rim glow / outline. Build it
+  as a faint emissive rim region, and report how.
+- Palette: 10,3,3 / 48,45,44 / 124,7,7 / 251,242,233 / 23,10,10.
+- Deviations to report: the side view shows the eye ring as a narrow oval
+  (3/4); the build follows the front view, so in true side view the eye is
+  near edge-on.
+
+EMBER EYE ("ember_eye", ~7.0-7.4 u; orthos FRONT + BACK; the side is 3/4).
+- Orb: a dark-red orb (115,33,33) with a deep-maroon (85,22,21) rim.
+- Eye: a FRONT EYE: a white (244,243,243) inner ring with a red
+  flame-shaped pupil (250,8,30). The back is a plain inset disc.
+- Upper flame: a large, tall, wavy flame-like petal rising from the top,
+  bright red with a soft-pink (253,165,166) highlight, with a tapered tip.
+- Side flames: two smaller curved side flame-petals, left and right, each
+  with a pink highlight.
+- Lower ribbon: three hanging petal strips with tattered, cloth-like edges.
+- Stem: a tapered dark-red lower stem / tail with a pointed tip.
+- Palette (sheet hex): FF0000 / 7A1F1F / FFB3B3 / FFFFFF / 531212.
+  Sampled: 250,8,30 / 115,33,33 / 253,165,166 / 244,243,243 / 85,22,21.
+- Deviations to report: the back-view flame is drawn taller than the
+  front-view one (tip at y 68 vs 114); reconcile it and say how.
+
+## 2026-10-10 — NEW UNIT: Ember Stump (artist sheet)
+
+Artist (verbatim): "next one".
+Sheet (clipboard): design/reference/ember_stump-character-sheet.png
+(intake --cuts 460,860; orthos BACK + SIDE; the front is slightly turned,
+with the face and the fire offset to image-left).
+Tier REGULAR [8000, 22000]. Idle + walk are PLACEHOLDER. Natural sheet
+scale.
+
+EMBER STUMP ("ember_stump", ~6.3 u).
+- Body: an ARCHED, curving tree-STUMP trunk of rough, charred bark
+  (79,68,60 brown-grey, 24,23,23 char, 193,187,179 ash-pale streaks), with
+  a flared, root-split base on the floor.
+- Mask: a JAGGED WOODEN MASK face, a flat slab with a ragged lower edge
+  hanging at the trunk's top front.
+  - Two GLOWING RED angular eyes (236,33,18).
+  - A jagged zig-zag-toothed mouth.
+  - FIRE IN THE MOUTH: a bold orange-red flame jet (253,121,29 / 236,33,18)
+    streaming out forward and to the side.
+- Crest: a SOOT CREST on top, a black ash plume of rough, wild,
+  feather-like shapes (24,23,23 / 77,77,77).
+- Arms: two BROKEN BRANCH ARMS, thin branches from the trunk ending in
+  big upright split slabs of bark with jagged edges.
+- Palette: 24,23,23 / 77,77,77 / 79,68,60 / 236,33,18 / 253,121,29 /
+  193,187,179.
+- Glow (drawn on the sheet): the eyes and the fire.
+- Deviations to report: the fire is a static flame-jet mesh (no
+  particles), and the bark texture is regions + the normal map.
+
+## 2026-10-10 — NEW UNITS x3: Shield Rodent, Storm Vessel, Volcano Turtle (artist sheets)
+
+Artist (verbatim): "next one" (each).
+Sheets: design/reference/{shield_rodent,storm_vessel}-character-sheet.png
+(clipboard) and volcano_turtle-character-sheet.webp (attachment).
+Tier REGULAR [8000, 22000]. Idle + walk are PLACEHOLDER. Natural sheet
+scale.
+
+SHIELD RODENT ("shield_rodent", ~3 u; ALL views drawn from slightly above,
+the back almost top-down; orthos FRONT + SIDE; back floor pinned to its feet
+at y 610).
+- Head: a small steel rodent head (light steel 189,184,181), with large
+  ears with a warm-taupe inner (121,111,107), simple expressive black
+  eyes, and a metal snout with two teeth.
+- Shell: a flat, round SHIELD-SHELL body.
+  - Top plate: a dark brushed steel disc (61,64,68 / 90,94,100).
+  - A raised CENTRE BOSS.
+  - A light-steel rim band with RIVETS all round.
+  - Light scratches.
+- Feet: tiny, simple feet, sturdy and low.
+- Tail: a LONG, POINTED, faceted metal tail rising back and up.
+- Palette: 189,184,181 / 129,132,138 / 90,94,100 / 61,64,68 / 121,111,107.
+  Metallic, but flat-shaded per the house rule.
+
+STORM VESSEL ("storm_vessel", ~6.6 u; orthos FRONT + BACK; the side is 3/4;
+axes pinned to the orb: front 255 / back 668 / side 1085).
+- Body: a big glossy vessel-blue (156,205,241) ORB body with a short open
+  neck rim on top, from which glowing energy filaments spray.
+- Head: a FLOATING HEAD above the neck (detached), a blue visor band with
+  two horn tips over a white (247,247,247) half-dome face with two eyes.
+  The eyes face forward; the back of the dome is plain white.
+- Core: a GLOWING CORE set in the front centre of the body, an orange
+  (254,102,2 / 254,175,20) energy ball with filaments inside a segmented
+  metal-grey (143,148,159) ring frame.
+- Arms: two FLOATING ARM PIECES, detached at the sides. Each is a blue band
+  ring around a white dome "hand", with glowing filament bursts between it
+  and the body.
+- Tail: a JAGGED LIGHTNING TAIL attached under the body, a bold glowing
+  orange / yellow-orange zig-zag bolt with thin spark crackles.
+- Glow (drawn on the sheet): the core, the filaments, the neck spray and
+  the lightning tail.
+- Floats: the tail tip is the lowest point (min z 0); the idle is a hover.
+- Deviations to report:
+  - The detached pieces (head, arms) are separate closed parts on their own
+    bones.
+  - The thin spark crackles are simplified to a few thin glowing strands.
+
+VOLCANO TURTLE ("volcano_turtle", ~6.8 u incl. flame; orthos FRONT + BACK;
+the side is 3/4; floor pinned to the feet at y 808, under the drop shadow).
+- Body: an upright, bipedal, chunky turtle of dark volcanic rock (61,57,58 /
+  94,77,71), with a tan plastron belly (170,137,116).
+- Head: a simple cute face with glowing orange eyes (254,143,58), a rocky
+  brow (dark angular rock blocks) and a VOLCANO CRATER on the head. The
+  crater has a glowing lava rim dripping down, and a constant flame rising
+  from it (254,143,58 / 254,192,83) with a few small flame flicks.
+- Arms: chunky cylindrical upper arms with big rock shoulder plates and
+  OVERSIZED FISTS, crossed by LAVA CRACKS (glow).
+- Shell: a TURTLE SHELL on the back, large rock plates separated by glowing
+  lava cracks, with a tan rim.
+- Tail: a short, stubby, pointed tail.
+- Legs: stubby legs with toe claws.
+- Palette: 61,57,58 / 94,77,71 / 170,137,116 / 136,58,47 / 254,143,58 /
+  254,192,83.
+- Glow (drawn on the sheet): the eyes, the lava cracks, the crater rim and
+  the flame.
+- Deviations to report: the flame is a static flame mesh.
+
+## 2026-10-10 — NEW UNITS x2: Goo Shield, Fogeist (artist sheets)
+
+Artist (verbatim): "next one" (each) + "yes carry on goo shield, I have
+given you the references to intake, build them out into blends and after
+all are done I will give feedback".
+Sheets (clipboard): design/reference/goo_shield-character-sheet.png and
+fogeist-character-sheet.png. Tier REGULAR [8000, 22000]. Idle + walk are
+PLACEHOLDER. Natural sheet scale.
+
+GOO SHIELD ("goo_shield", ~5.3 u).
+- Intake: --bg-tol 12, because the near-black armour is close to the
+  background (--bg-tol 8 crashed sheet_intake label_blobs with an
+  IndexError; that is a kit defect, logged). Also --cuts 410,783 and side
+  axis 1190.
+- The SIDE view faces image-RIGHT: the eye is on the right and the goo
+  trails left. goo_shield_render.py's ortho_side camera is flipped to -X
+  for it, as for soot_puff.
+- Body: a translucent, glossy lime GOO body (242,253,224 / 210,246,160,
+  with a bright 147,250,11 rim). It is a tall slug neck rising from a wide
+  lobed puddle base, which trails far back in the side view.
+- Helmet: near-black, faceted rock HEAD ARMOUR (38,38,37 / 86,86,84) caps
+  the head, with a V point between the eyes, hanging down at the sides.
+- Eyes: two oval eyes, a pale ring around a bright-green iris.
+- Shell plate: a big faceted near-black rock BODY ARMOUR plate (the shield)
+  sits on the back / side (the back view covers the whole back; the side
+  view is a large slab).
+- Palette: 242,253,224 / 210,246,160 / 147,250,11 / 38,38,37 / 86,86,84 /
+  133,140,124.
+
+FOGEIST ("fogeist").
+- Intake: the sheet is laid out in two rows (SIDE on top, FRONT + BACK
+  below), so a single-row measurement copy was composed at the same pixel
+  scale on a common floor line: design/reference/fogeist-character-sheet-
+  row.png. Crops from the original: front (11,566,567,882) -> (70,174);
+  back (573,567,1181,879) -> (696,178); side (99,120,1182,536) -> (1374,74).
+  The intake ran on it (--cuts 660,1340; axes front 309 / back 823 / side
+  1535). The original stays the art reference.
+- Scale: the SIDE view is drawn ~1.3x larger than the front / back (head
+  and eye sizes), and its mist crest rises higher (3.95 u vs 2.95 u).
+  Reconcile them (the front / back fix the scale) and report how.
+- Body: a low, reclining ghost made of soft, layered, cloud-like fog. A
+  hooded rounded head with two simple dark eyes (~55,66,82) floating in the
+  mist, a neck / chest rising from a puddled body.
+- Crest: a LARGE flowing MIST CREST drifting back from the head.
+- Tail: a long, tapering TRAILING TAIL of mist breaking into wisps.
+- Material: semi-transparent mist (the firefly alpha path) over an opaque
+  core.
+- Palette (chips): 227,227,232 / 190,196,208 / 144,157,177 / 85,101,122 /
+  55,66,82.
+- Deviations to report: the wisps are closed lobed sheets / blobs, not
+  volumetrics.
+
+## 2026-10-10 — Goo Shield v1 verdict (artist verbatim + 2 markups)
+
+"for the goo one  can we get rid of the sides here and instead extend the
+middle down more and thicker there from a side angle view"
+Markups:
+- design/reference/goo_shield-v1-sideflaps-annotation.png: red outlines
+  round BOTH helmet side flaps, the hood sides hanging down beside the eyes.
+- goo_shield-v1-centre-annotation.png: a red outline of the centre V point
+  extended down as a long rounded tab between the eyes, to about the
+  eyes' lower edge.
+Binding reading:
+1. REMOVE the two helmet side flaps.
+2. EXTEND the helmet's centre V point downward between the eyes, as a
+   rounded-bottom tab reaching about the eyes' lower edge (per the markup),
+   with its upper part flaring wider into the helmet as drawn.
+3. Make that centre tab THICKER in depth, so it reads as a substantial
+   nose-guard from a side angle, not a thin plate.
+
+## 2026-10-10 — Shield Rodent v1 verdict (artist verbatim + markup)
+
+"for the mouse the tail potion should be moved further back/down"
+Markup: design/reference/shield_rodent-v1-tail-annotation.png (a red
+outline of the tail rising from the shield's back rim edge, not from the
+plate behind the boss).
+Binding reading: move the tail root back and down onto the rear rim band.
+TAIL_ROOT_R 0.65 -> 1.30 (the root sits on the rim top); same angle and
+length.
+
+## 2026-10-10 — Leaf Bird v1 verdict (artist verbatim + markup)
+
+"for the bird  we should get rid of the crist and slim the bird down so its
+more leaf likle"
+Markup: design/reference/leaf_bird-v1-crest-annotation.png (a red X over
+the back crest leaf).
+Binding reading:
+1. REMOVE the back crest leaf (part, bone, regions, clip keys).
+2. SLIM the body so it reads as a LEAF: thinner across (flatter, narrower
+   cross-section) and leaf-shaped, tapering to pointed ends, rather than a
+   round plump bird body. Keep the head / eyes / beak readable, and keep the
+   wings, the tail and the belly vein bands.
+
+## 2026-10-10 — Ember Stump v1 verdict (artist verbatim + reference still)
+
+"here he should be symmetical and not leaning to one side"
+Reference: design/reference/ember_stump-v1-lean-annotation.png (the v1 back
+still: the trunk's S-curve leans to one side, and the flame pokes out on
+one side).
+Binding reading:
+1. The trunk is SYMMETRIC left-right, with no sideways lean or S-curve in
+   the front / back views. The trunk axis is straight up the centre line;
+   the side-view forward arch stays.
+2. The arms / slabs are mirrored about the centre line (they already are).
+3. Flame (orchestrator reading, reported): aim the fire breath straight
+   forward on the centre line (no sideways azimuth), so the unit stays
+   symmetric and the flame no longer pokes out past the trunk in the back
+   view.
+
+## 2026-10-10 — Crystal Canine v1 verdict (artist verbatim + 3 images)
+
+"here we dont see symmetry on the model either for the legs, the art poses
+them but our model should have symmetry and then we can pose
+the chest hair is too lumpy and not fur enough and doesnt extend down
+enough, we also lost fur detail on the legs, and the ears should go in on
+the inner part of ear, like a canines ear, the head gem should be more flat
+and level with the head"
+Images:
+- design/reference/crystal_canine-v1-walk-annotation.png (a walk frame);
+- crystal_canine-v1-chest-annotation.png (a red mark at the chest-fur
+  bottom between the front legs, where it should extend down to);
+- crystal_canine-v1-face-reference.png (the sheet's face crop: a fluffy
+  cheek / chest fur, a flat gem flush on the forehead, a cupped inner ear).
+Binding reading (and a NEW HOUSE RULE, see below):
+1. REST POSE SYMMETRIC: the four legs are mirror-symmetric (no hind / front
+   stagger, equal spacing). The art's staggered pose is a pose, applied
+   later by animation, not built into the model.
+2. CHEST FUR: less lumpy, more FUR. Pointed fur locks / tufts (flame-like
+   fur strands, as the sheet draws), not round lumps. Extend it further
+   DOWN the chest, to between the front legs per the markup.
+3. LEG FUR DETAIL: restore fur detail on the legs (tufts at the elbows /
+   back of the forelegs, haunch fur, as the sheet draws), clean, not
+   noisy.
+4. EARS: the inner part goes IN, cupped / hollow like a canine ear (a
+   concave inner face with the blush inner region), not a flat front face.
+5. HEAD GEM: flatter and level with the head, a low faceted inlay flush
+   with the forehead, not a raised pyramid.
+NEW HOUSE RULE (artist, 2026-10-10): models are built SYMMETRIC in rest
+pose even when the sheet draws an asymmetric pose (staggered legs, swung
+tail, tilted parts). Posing comes after, in the rig / clips.
+
+## 2026-10-10 — Goo Shield v2 verdict (artist verbatim + markup)
+
+"for goo one more edit have the rock more parallel with the goo and more
+craggly"
+Markup: design/reference/goo_shield-v2-helmet-annotation.png. A red outline
+of the wanted helmet: the sides come down hugging the goo column (not the
+wide flared mushroom brim), then sweep in along the brow over the eyes to
+the centre, where the nose-tab hangs down a little lower, with a rounded
+bottom.
+Binding reading:
+1. The helmet's lower edge / sides run PARALLEL to the goo surface. Shrink
+   the brim flare so the helmet hugs the head column with a thin, even
+   overhang, instead of a wide mushroom cap.
+2. The brow line sweeps in over the eyes to the centre tab, as drawn. The
+   tab hangs slightly lower, with its rounded bottom, per the markup.
+3. The rock reads MORE CRAGGY: rougher, more irregular faceting, with
+   chipped / jagged edges along the lower rim, not smooth broad facets.
+
+## 2026-10-10 — Ember Stump v2 note (artist verbatim)
+
+"the fire out of his mouth should be an animation that has it on and off"
+Reference: design/reference/ember_stump-v2-fire-reference.png (a v2
+three-quarter still with the fire jet).
+Binding reading:
+- The fire breath is ANIMATED on / off, not a permanent part of the
+  silhouette.
+- rigkit.ALLOWED_CLIP_NAMES has no attack / breath name (shared kit,
+  read-only), so the on / off cycle lives in the idle clip: fire off,
+  then a burst that grows out of the mouth, holds, and dies back to
+  nothing (flame bone scale 0 <-> 1, plus a mouth-open accent if
+  cheap).
+- walk: fire off throughout.
+- The rest pose keeps the fire ON (so the model shows it for review and
+  glb static previews); the clips key it off.
+- A dedicated fire-breath clip would need a new allowed clip name in the
+  shared rigkit (offered to the artist).
+
+## 2026-10-11 — NEW UNITS x6: Lava Komodo, Spectormn, Halo Sentinel, Eclipse Wolf, Gemwing Dragon, Mystic Snow Spirit (artist sheets)
+
+Artist (verbatim): "lets start intaking work again i will paste in
+references" (then pasted Holly Snowman, Lava Komodo, Spectormn, Halo
+Sentinel, Mystic Snow Spirit, Eclipse Wolf, Gemwing Dragon).
+- Holly Snowman: NOT captured. The clipboard never held it, so it is
+  waiting for a re-copy.
+Sheets: design/reference/<unit>-character-sheet.{webp,png} (Lava Komodo
+was an attachment; the rest came off the clipboard into incoming/). Tier
+REGULAR [8000, 22000]. Idle + walk are PLACEHOLDER. Natural sheet scale.
+HOUSE RULE (artist, 2026-10-10): the rest pose is SYMMETRIC. Any pose the
+sheet draws (a swung tail, staggered legs) is built mirror-symmetric and
+reported.
+
+LAVA KOMODO ("lava_komodo"; orthos FRONT + SIDE; the side faces image-LEFT;
+--cuts 305,612).
+- Body: a SITTING komodo lizard of broken volcanic ROCK PLATES (67,58,57 /
+  148,84,69 / 163,72,57), separated by glowing MAGMA CRACKS (254,115,58 /
+  255,190,69).
+- Head: a komodo head with rugged stone plates and an expressive orange
+  eye.
+- Flame crest: a FLAME CREST rising from the head and running down the
+  neck.
+- Chest / underside: glowing molten orange.
+- MELTING LOWER BODY: the limbs merge into lava and drip, pooling into a
+  glowing lava puddle on the floor.
+- Tail: a long, tapered tail with rock plates, a glowing underside and lava
+  drips. The sheet curls it to one side; it is built straight back (house
+  rule).
+- Glow: cracks, chest, crest, drips, pool.
+- Accent: 167,145,125.
+
+SPECTORMN ("spectormn", ~6.7 u; orthos FRONT + BACK; the side is 3/4;
+axes front 232 / back 656 / side 1020).
+- Body: a hooded SHEET-LIKE CLOTH ghost: white (247,241,237) with
+  off-white folds (206,198,199) and a pointed hood.
+- Eyes: two RED GLOWING OVAL EYES sunken into the cloth (216,3,17).
+- Chest: three vertical glowing red CHEST SLITS.
+- Arms: long sleeved arms hanging down.
+- Chains: RED GLOWING CHAIN loops hang from both wrists (dark-grey 38,39,43
+  wrist shackles; red glowing links).
+- Lower half: TATTERED, fading into a semi-transparent purple / pink-red
+  MIST (116,84,111 / 185,82,94) toward the floor. It floats.
+- Glow: the eyes, slits and chains.
+- Mist: alpha path, BLENDED (no dither grain), as in fogeist.
+
+HALO SENTINEL ("halo_sentinel", ~6.1 u; three views; --cuts 545,1030;
+axes front 288 / back 752 / side 1150; the side faces image-LEFT).
+- Body: a magenta (138,20,67) smooth rounded body. A round head with a
+  single VERTICAL EYE (cream 234,191,204 almond, orange 250,105,16
+  pupil).
+- Arms: broad, rounded, WING-LIKE ARM extensions sweeping out to the
+  sides.
+- Belly eye: a second vertical eye emblem on the lower belly (pink 209,80,136
+  rings).
+- Halo: a FLOATING ORANGE HALO ring above the head, with two small HORN
+  arrow tips curving down at its sides.
+- Lower body: translucent, jelly-like, crystalline-watery BLUE (101,158,192
+  / 32,87,131) pillar shapes.
+  - Front / side: two leg pillars.
+  - Back: one wide skirt cone. Reconcile them, and report how.
+  - Watery, ribbed texture (as regions + normal); alpha BLENDED.
+- Floats: the shadow is drawn below.
+
+ECLIPSE WOLF ("eclipse_wolf", ~6.4 u; three views; --cuts 470,860; axes
+front 218 / back 652 / side 1010; floors at the paws; the side faces
+image-LEFT).
+- Body: a standing four-legged wolf with near-black fur (35,30,35), pointed
+  ears with light inner fur, narrow expressive eyes and a sharp TOOTHY
+  GRIN.
+- Fleece mantle: a WOOLLY FLEECE MANTLE (122,109,109 / 229,221,217) of
+  rounded curl clumps runs from the chest along the body into a fluffy
+  wool TAIL. The sheet swings the tail to one side; it is built
+  symmetric (house rule).
+- Horns: two LARGE SYMMETRICAL CRESCENT HORNS behind the head (dark purple
+  56,28,58), with a GLOWING MAGENTA (253,49,253) inner edge, plus a
+  floating dark ORB with a magenta glow ring between them.
+- Leg bands: glowing magenta energy BANDS around the four lower legs.
+- Glow: the horn inner edges, the orb ring and the leg bands.
+
+GEMWING DRAGON ("gemwing_dragon"; orthos FRONT + SIDE; floors at the feet:
+front 764, back 760, side 772; axes 174 / 500 / 900; the side faces
+image-LEFT; no palette chips detected; sample them).
+- Body: a four-legged dragon made entirely of faceted, prismatic, slightly
+  translucent CRYSTAL (pearl white, periwinkle, indigo, blue, violet,
+  peach-orange gradients per facet).
+- Head: an angular reptilian head with a crown of gemstone spikes and
+  reptilian eyes.
+- Wings: CRYSTALLINE WINGS of layered crystal blades fanning up and back.
+- Spikes: gemstone spikes along the neck and back; crystal plates over the
+  whole body.
+- Tail: a long faceted crystal tail. The sheet swings / curls it; it is
+  built symmetric (straight back), per the house rule.
+- Glow: none drawn beyond the prismatic sheen. Facets are toned by light
+  direction, as in chest_monster / crystal_canine.
+
+MYSTIC SNOW SPIRIT ("mystic_snow_spirit", ~7.0 u; three views; --cuts
+485,880; the side faces image-LEFT).
+- Body: a snowman: a round snow head, a smaller middle ball, and a large
+  conical snow-mound skirt base with a chunky snow-pile rim (237,238,242 /
+  193,215,237).
+- Face: oval eyes with blue irises, a carrot-like SNOW NOSE, a small "o"
+  mouth.
+- Horns: branch-like TWIG HORNS with snow accents (symmetrical).
+- Arms: long branch / wooden ARMS with twig fingers, snow on top, hanging
+  down.
+- Snowballs: FIVE FLOATING SNOWBALLS orbiting around the head / shoulders,
+  each consumed in a stylised mystical blue / cyan / violet FLAME (92,173,214
+  / 139,93,253 / 46,67,108), glowing.
+- Glow: the flames, plus a faint blue under-glow at the base.
+- Asymmetry: the snowballs are placed asymmetrically on the sheet. They
+  are built symmetric (2 + 2 + 1 top), per the house rule.
+
+## 2026-10-11 — Gemwing Dragon pre-build direction (artist verbatim)
+
+"for gemwing dragon tone the crystalness of the body and save the most color
+for the wings and spikes around it"
+Binding reading:
+- BODY (head, neck, torso, legs, tail): toned-down crystal. Mostly the pale
+  pearl / soft periwinkle base, with gentle, low-contrast facet shading and
+  only sparse, muted colour accents. Not the full prismatic rainbow of
+  facets.
+- WINGS + SPIKES (the crown spikes, the neck / back / tail spikes): carry
+  the saturated prismatic colour (blue, violet, indigo, peach-orange
+  gradients) and the strongest facet contrast.
+
+## 2026-10-11 — Halo Sentinel v1 verdict (artist verbatim + reference still)
+
+"for this creature have the skirt connect in the back and curve around the
+front a little more"
+Reference: design/reference/halo_sentinel-v1-skirt-reference.png (the v1
+front + threequarter stills: two separate blue pillars).
+Binding reading:
+- The blue lower body becomes ONE continuous SKIRT, joined across the back
+  (no V-gap; it reads as the back view's single cone skirt).
+- The skirt wraps further round the sides toward the front, curving in so
+  its front edges come nearer the belly lobe. It stays OPEN at the front
+  centre: the belly lobe / emblem still shows through, and the front view
+  still reads as two panels flanking the belly.
+- Keep: the flare toward the bottom, the translucent jelly material and
+  stripes, symmetry, and the floating min z 0 at the hem.
+
+## 2026-10-11 — NEW UNIT: Holly Snowman (artist sheet)
+
+Artist: pasted again (the earlier paste never reached the clipboard).
+Sheet: design/reference/holly_snowman-character-sheet.png (intake: --cuts
+470,880; axes front 250 / back 668 / side 1010; the side faces image-LEFT).
+Tier REGULAR [8000, 22000]. Idle + walk are PLACEHOLDER. Natural sheet
+scale. HOUSE RULE: symmetric rest pose.
+
+HOLLY SNOWMAN ("holly_snowman", ~5.9 u).
+- Body: a FLUFFY, icy-blue snowman (192,210,253 base / 133,167,252 shadow /
+  227,240,254 highlight). A big round head over a pear-shaped body, with
+  scalloped, cloud-like, fluffy outlines and subtle texture.
+- Feet: two small rounded snow FEET.
+- Face: two simple black oval eyes (34,36,40), with a soft blue blush
+  shading below them.
+- Leaf ears: two dark-green (16,47,29) LEAF EARS on the head, plant-like
+  leaves with a slight curve and a lighter rim / midrib.
+- Arms: PLANT ARMS of leafy fronds (layered pointed green leaves) at the
+  shoulders, holding RED BERRY CLUSTERS (178,37,38) with highlights.
+- Buttons: three red berry BUTTONS down the front.
+- No glow.
+
+## 2026-10-11 — Gemwing Dragon v1 verdict (artist verbatim + 3 markups)
+
+"lets make it more a wing pattern / lets also make it wider on the bottom,
+shown in second picture / and the head spikes more in the shape of a
+crown"
+Markups:
+- design/reference/gemwing_dragon-v1-wing-annotation.png: a red outline of
+  a WING silhouette over the side view. A swept, bird / dragon wing shape:
+  a leading edge rising from the shoulder and arcing back to a high wingtip,
+  with a stepped / scalloped trailing edge of 2-3 layered feather points
+  sweeping back, rather than the v1 upright fan of separate spikes.
+- gemwing_dragon-v1-belly-annotation.png: a red line under the body from
+  the chest down round the belly to the hind leg / tail root. The
+  underside / lower body should be WIDER and deeper (a fuller chest and
+  belly hanging lower), not the slim v1 underline.
+- gemwing_dragon-v1-crown-annotation.png: a red outline of a CROWN shape on
+  the head: the spikes arranged as a regal crown, a ring / band of
+  upright points (a taller centre point, symmetric points stepping down to
+  the sides) sitting on the head, rather than the v1 swept-back mohawk.
+Binding reading: (1) wings in a wing pattern per the markup; (2) a deeper,
+wider lower body; (3) the head spikes as a crown. The colour direction
+from 2026-10-11 still holds (a toned body; the colour on the wings and
+spikes).
+
+## 2026-10-11 — Eclipse Wolf v1 note (artist verbatim)
+
+"can we make the inner mouth purple like the glowing color to contrast with
+the teeth"
+Reference: design/reference/eclipse_wolf-v1-mouth-reference.png.
+Applied: palette region mouth 11,7,10 -> 253,49,253 (the glow magenta), as
+colour only (not emissive; the glow set stays horns / orb ring / bands).
+Follow-up (artist verbatim): "instead of just the painted look can we push
+the mouth in and have the teeth carved out"
+Reference: design/reference/eclipse_wolf-v1-mouth-depth-reference.png (the
+v1.1 face close-up: flat decal teeth on purple).
+Binding reading: real DEPTH. The mouth is a recessed cavity pushed into the
+head (purple interior walls and floor). The teeth are separate carved /
+modelled solid points (upper row hanging down, lower row pointing up) that
+stand proud in the opening, with real gaps between them showing the
+recessed purple. No painted decals.
+
+## 2026-10-11 — Gemwing Dragon v2 verdict (artist verbatim + markup + the sheet)
+
+"can the crown component be one merged piece rathe than each being
+separate / same for the wings, more one piece like the original reference,
+lets try to get a close look to the refeence and add the ggems on the chest
+piece that extend to the start of the front legs like the eference like an
+armor / the whole body should also look more gemotric like a body made of
+crystals"
+Markup: design/reference/gemwing_dragon-v2-crown-annotation.png (red lines
+under the crown: the points should share one merged base band on the
+head).
+Binding reading:
+1. CROWN: ONE merged piece. A faceted crystal band / base wrapping the head
+   top with the points growing out of it as a single connected crystal
+   form, not 9 separate sticks.
+2. WINGS: each wing is ONE connected crystal piece, as the sheet draws it:
+   a solid faceted wing mass whose layered blades are fused together and
+   read as one wing, not separate floating blades. Get close to the
+   reference wing shape (the sheet's side view: a big fan of fused blades
+   sweeping up-back), keeping the v2 wing-arm silhouette where it agrees.
+3. CHEST ARMOUR: add the sheet's chest crystal plates. A V / chevron of
+   overlapping gem plates on the chest, running down onto the shoulders
+   and the start of the front legs like armour (front view: the stacked
+   V-plates; side view: the plates over the chest and forearm tops).
+4. BODY GEOMETRY: the whole body reads as made of crystals. Real faceted,
+   planar geometry (a low-poly crystal surface with crisp facet planes and
+   shard-like plates on the neck, legs and tail), not a smooth body with
+   painted facet tones.
+Colour (orchestrator reading, reported): keep the 2026-10-11 balance. The
+body facets stay pale pearl / periwinkle; the chest armour gems, crown,
+spikes and wings carry the saturated prismatic colour.
+
+## 2026-10-11 — Gemwing Dragon v3 verdict (artist verbatim + 2 markups)
+
+"the chest should be a piece like this / the crown should extend like this /
+right now our creature looks like a horse rather than a dragon"
+Markups:
+- design/reference/gemwing_dragon-v3-chest-annotation.png: a red outline on
+  the front view of ONE chest piece. A spiky starburst / flame-shaped
+  plate (pointed spikes radiating out round its edge, a pointed bottom),
+  centred on the upper chest, replacing the scattered separate gem plates.
+- gemwing_dragon-v3-snout-annotation.png: a red outline on the head side
+  view. The crown band EXTENDS FORWARD from the crown down along the top
+  of the snout to the nose tip, ending in a pointed / hooked tip just
+  above the nostril (a crystal snout ridge / armour plate over the
+  muzzle).
+Binding reading:
+1. CHEST: replace the 18 separate plates with ONE merged chest-armour piece
+   in the outlined starburst shape: a central faceted gem plate with
+   radiating pointed spikes round its edge, pointed at the bottom (the
+   sheet's chest chevron). One closed part, saturated prismatic colour.
+2. CROWN EXTENSION: the crown continues forward as one merged crystal
+   ridge along the top of the head and snout to the nose, with a pointed
+   tip over the nostrils. It stays part of the one crown piece.
+3. DRAGON, NOT HORSE: re-proportion toward the sheet's dragon:
+   - a longer, lower, angular reptilian head (flatter skull, longer
+     tapering snout, a strong brow ridge, an angular jaw line);
+   - a longer S-curved neck carried forward / low;
+   - a lower, longer body;
+   - legs with dragon / reptile structure (bent, clawed, heavier forearms,
+     reverse-jointed hind legs), not straight horse legs;
+   - a longer, heavier tail base.
+   Look at the sheet's side view as the master.
+
+## 2026-10-11 — Gemwing Dragon v5 verdict (artist verbatim)
+
+"why does the dragon look so low poly, and its snout and mouth are so
+small, its wings look like a mess" -> (after the explanation + the offer of
+the boss budget) "yes do it".
+Binding reading:
+1. TIER: Gemwing moves to the BOSS tier [20000, 30000] (artist approved).
+   The extra budget goes to the body.
+2. BODY: smaller, crisper crystal facets (~0.2-0.3 u, the sheet's shard
+   size) instead of the 0.45 u planar cells, so it reads as a fine
+   crystal mosaic, not chunky low-poly.
+3. SNOUT / MOUTH: restore a long wedge dragon snout with a proper jaw and a
+   longer mouth line, as the sheet's head panel draws (the v5 shortening
+   was an orchestrator over-correction).
+4. WINGS: a clean fan of long straight layered blades, each with a few
+   large facets and one root-to-tip gradient, tips forming an even
+   stepped edge; no per-facet colour speckle, no streak noise, no tips
+   poking out of a fused blob.

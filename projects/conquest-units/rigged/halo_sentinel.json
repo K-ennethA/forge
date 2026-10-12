@@ -1,0 +1,462 @@
+{
+ "unit": "halo_sentinel",
+ "source": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\improved\\halo_sentinel.blend",
+ "fps": 24,
+ "weights": {
+  "max_influences": 4,
+  "unweighted": 0,
+  "sum_dev_max": 2.220446049250313e-16,
+  "per_bone_dominant": {
+   "body": 3684,
+   "head": 1946,
+   "halo": 760,
+   "wing_L.001": 370,
+   "wing_L.002": 451,
+   "wing_R.001": 370,
+   "wing_R.002": 451,
+   "skirt_back.001": 141,
+   "skirt_back.002": 476,
+   "skirt_L.001": 270,
+   "skirt_L.002": 562,
+   "skirt_R.001": 270,
+   "skirt_R.002": 562
+  },
+  "rule": "shell: head by soft head ownership (+-0.05), arms by soft arm ownership (+-0.08) -> rigkit.vine_weights along the arm axis from the body, the rest body (incl. the belly lobe); skirt: blended by azimuth (skirt_back within 25 deg of the back centre, the side chains past 80) x vine_weights down each chain from the body (the buried top rides the body); halo + horns rigid on 'halo'"
+ },
+ "clips": {
+  "idle": {
+   "frames": [
+    1,
+    97
+   ],
+   "period_frames": 96,
+   "seconds": 4.0,
+   "cyclic": true,
+   "seam_main_mm": 0.0,
+   "root_offset_max": 0.0,
+   "clearance_min_z": 0.04757,
+   "body_lift": [
+    0.06,
+    0.24
+   ]
+  },
+  "walk": {
+   "frames": [
+    1,
+    49
+   ],
+   "period_frames": 48,
+   "seconds": 2.0,
+   "cyclic": true,
+   "seam_main_mm": 0.0,
+   "root_offset_max": 0.0,
+   "clearance_min_z": 0.18647,
+   "body_lift": [
+    0.15,
+    0.21
+   ]
+  }
+ },
+ "hover": {
+  "rest_height_units": 6.065915578728938,
+  "idle_lift_units": [
+   0.06,
+   0.24
+  ],
+  "walk_lift_units": 0.18,
+  "rule": "rest pose: the skirt hem on the floor (contract feet_origin, z 0); the clips lift the body; the in-game hover height is the artist's open question"
+ },
+ "bones": [
+  {
+   "name": "root",
+   "parent": null,
+   "deform": false,
+   "head": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "tail": [
+    0.0,
+    0.0,
+    0.4
+   ]
+  },
+  {
+   "name": "body",
+   "parent": "root",
+   "deform": true,
+   "head": [
+    0.0,
+    -0.1836,
+    3.5995
+   ],
+   "tail": [
+    0.0,
+    -0.1836,
+    4.5995
+   ]
+  },
+  {
+   "name": "head",
+   "parent": "body",
+   "deform": true,
+   "head": [
+    0.0,
+    -0.3336,
+    4.6495
+   ],
+   "tail": [
+    0.0,
+    -0.3336,
+    5.7495
+   ]
+  },
+  {
+   "name": "halo",
+   "parent": "head",
+   "deform": true,
+   "head": [
+    0.0,
+    -0.3136,
+    5.7895
+   ],
+   "tail": [
+    0.0,
+    -0.2135,
+    6.1768
+   ]
+  },
+  {
+   "name": "wing_L.001",
+   "parent": "body",
+   "deform": true,
+   "head": [
+    1.15,
+    -0.0336,
+    4.4995
+   ],
+   "tail": [
+    1.915,
+    0.3164,
+    3.5995
+   ]
+  },
+  {
+   "name": "wing_L.002",
+   "parent": "wing_L.001",
+   "deform": true,
+   "head": [
+    1.915,
+    0.3164,
+    3.5995
+   ],
+   "tail": [
+    2.68,
+    0.6664,
+    2.6995
+   ]
+  },
+  {
+   "name": "wing_R.001",
+   "parent": "body",
+   "deform": true,
+   "head": [
+    -1.15,
+    -0.0336,
+    4.4995
+   ],
+   "tail": [
+    -1.915,
+    0.3164,
+    3.5995
+   ]
+  },
+  {
+   "name": "wing_R.002",
+   "parent": "wing_R.001",
+   "deform": true,
+   "head": [
+    -1.915,
+    0.3164,
+    3.5995
+   ],
+   "tail": [
+    -2.68,
+    0.6664,
+    2.6995
+   ]
+  },
+  {
+   "name": "skirt_back.001",
+   "parent": "body",
+   "deform": true,
+   "head": [
+    0.0,
+    0.0664,
+    3.3995
+   ],
+   "tail": [
+    0.0,
+    0.6664,
+    1.7995
+   ]
+  },
+  {
+   "name": "skirt_back.002",
+   "parent": "skirt_back.001",
+   "deform": true,
+   "head": [
+    0.0,
+    0.6664,
+    1.7995
+   ],
+   "tail": [
+    0.0,
+    1.1664,
+    0.1995
+   ]
+  },
+  {
+   "name": "skirt_L.001",
+   "parent": "body",
+   "deform": true,
+   "head": [
+    0.62,
+    -0.0836,
+    3.3995
+   ],
+   "tail": [
+    1.3,
+    0.1164,
+    1.7995
+   ]
+  },
+  {
+   "name": "skirt_L.002",
+   "parent": "skirt_L.001",
+   "deform": true,
+   "head": [
+    1.3,
+    0.1164,
+    1.7995
+   ],
+   "tail": [
+    1.95,
+    0.2664,
+    0.5495
+   ]
+  },
+  {
+   "name": "skirt_R.001",
+   "parent": "body",
+   "deform": true,
+   "head": [
+    -0.62,
+    -0.0836,
+    3.3995
+   ],
+   "tail": [
+    -1.3,
+    0.1164,
+    1.7995
+   ]
+  },
+  {
+   "name": "skirt_R.002",
+   "parent": "skirt_R.001",
+   "deform": true,
+   "head": [
+    -1.3,
+    0.1164,
+    1.7995
+   ],
+   "tail": [
+    -1.95,
+    0.2664,
+    0.5495
+   ]
+  }
+ ],
+ "bone_count": 14,
+ "deform_bone_count": 13,
+ "digest": {
+  "parts": {
+   "bake_normal": "c9f4d05d79a911bf",
+   "bake_ao": "6373fe0cb80fd4bf",
+   "geometry_colour_uv": "585377877c4bf3e8",
+   "weights": "f909813909028f79",
+   "keys": "6470bdc104045732",
+   "clip_samples": "71b4a46560490f06"
+  },
+  "combined": "95a72081a622782e"
+ },
+ "glb": {
+  "path": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\rigged\\halo_sentinel.glb",
+  "bytes": 6310592,
+  "seconds": 0.6,
+  "carries": {
+   "materials": [
+    {
+     "name": "halo_sentinel_body",
+     "alphaMode": "OPAQUE",
+     "doubleSided": false,
+     "textures": [
+      "baseColorTexture",
+      "normalTexture"
+     ]
+    },
+    {
+     "name": "halo_sentinel_jelly",
+     "alphaMode": "BLEND",
+     "doubleSided": false,
+     "textures": [
+      "baseColorTexture",
+      "normalTexture"
+     ]
+    }
+   ],
+   "primitives": [
+    {
+     "mesh": "halo_sentinel",
+     "material": "halo_sentinel_body",
+     "attributes": [
+      "COLOR_0",
+      "COLOR_1",
+      "JOINTS_0",
+      "NORMAL",
+      "POSITION",
+      "TEXCOORD_0",
+      "WEIGHTS_0",
+      "_GLOW"
+     ]
+    },
+    {
+     "mesh": "halo_sentinel",
+     "material": "halo_sentinel_jelly",
+     "attributes": [
+      "COLOR_0",
+      "COLOR_1",
+      "JOINTS_0",
+      "NORMAL",
+      "POSITION",
+      "TEXCOORD_0",
+      "WEIGHTS_0",
+      "_GLOW"
+     ]
+    }
+   ],
+   "animations": [
+    "idle",
+    "walk"
+   ],
+   "skins": 1,
+   "joints": 14
+  },
+  "structure": "armature identity + skinned 'halo_sentinel' (opaque body/halo primitive + alpha-blend jelly primitive); natural scale; report-only cell fit 0.29674"
+ },
+ "skins": {
+  "default": {
+   "file": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\rigged\\halo_sentinel.blend",
+   "palette": {
+    "body": {
+     "rgb": [
+      140,
+      20,
+      68
+     ]
+    },
+    "eye_rim": {
+     "rgb": [
+      20,
+      6,
+      12
+     ]
+    },
+    "eye_white": {
+     "rgb": [
+      251,
+      237,
+      230
+     ]
+    },
+    "pupil": {
+     "rgb": [
+      250,
+      101,
+      15
+     ],
+     "emission": [
+      250,
+      101,
+      15
+     ],
+     "emission_scale": 0.35
+    },
+    "belly_ring": {
+     "rgb": [
+      200,
+      30,
+      99
+     ]
+    },
+    "belly_pink": {
+     "rgb": [
+      225,
+      153,
+      184
+     ]
+    },
+    "halo": {
+     "rgb": [
+      250,
+      108,
+      16
+     ],
+     "emission": [
+      250,
+      108,
+      16
+     ],
+     "emission_scale": 0.85
+    },
+    "jelly": {
+     "rgb": [
+      101,
+      158,
+      192
+     ]
+    },
+    "jelly_light": {
+     "rgb": [
+      159,
+      198,
+      221
+     ]
+    },
+    "jelly_deep": {
+     "rgb": [
+      32,
+      87,
+      131
+     ]
+    }
+   },
+   "glow_tiers": {
+    "skin": "default",
+    "emission_scale_tiers": {
+     "pupil": 0.35,
+     "halo": 0.85
+    },
+    "emission_strength": 1.0,
+    "only_drawn_glow": true,
+    "cap": 2.0,
+    "cap_pass": true,
+    "max_effective": 0.85
+   }
+  },
+  "rule": "default skin only (brief)"
+ },
+ "improved_report": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\improved\\halo_sentinel.json",
+ "seconds": 44.9
+}

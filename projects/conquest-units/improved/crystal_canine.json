@@ -1,0 +1,640 @@
+{
+ "unit": "crystal_canine",
+ "conquest_character_id": "crystal_canine",
+ "source": "none: from-scratch unit (sheet design/reference/crystal_canine-character-sheet.png)",
+ "tier": "regular",
+ "tri_budget": [
+  8000,
+  22000
+ ],
+ "units": "sheet units: 1 unit = 100 px; measured off the true side ortho + the front view's widths; floor z = 0",
+ "overrides": {},
+ "sdf": {
+  "step": 0.025,
+  "band": 0.2,
+  "grid": [
+   113,
+   187,
+   263
+  ],
+  "ops": 25,
+  "high_tris": 598768,
+  "high_verts": 299350,
+  "toe_creases": 8,
+  "ruff_tufts": 23,
+  "crumbs": {
+   "pieces": 4,
+   "dropped_verts": 42
+  },
+  "seconds": 20.4
+ },
+ "retopo": {
+  "method": "SDF marching tetrahedra (step 0.025) -> collapse decimation (deterministic)",
+  "decimated_tris": 15336,
+  "specks": {
+   "pieces": 1,
+   "dropped_verts": 0
+  },
+  "doubled_faces_removed": 0,
+  "mirror_halved": {
+   "seam_verts": 408,
+   "rule": "X >= 0 half + its mirror (symmetric rest mesh)"
+  },
+  "low_to_high": {
+   "mean": 0.00105,
+   "p99": 0.00443,
+   "max": 0.02171
+  },
+  "high_to_low_sampled": {
+   "p99": 0.00334,
+   "max": 0.02752
+  },
+  "bbox_high": [
+   1.824,
+   4.1366,
+   6.2018
+  ],
+  "bbox_low": [
+   1.8249,
+   4.1368,
+   6.2018
+  ],
+  "bbox_low_over_high": [
+   1.00051,
+   1.00007,
+   0.99999
+  ],
+  "seconds": 8.0
+ },
+ "chest_fur": {
+  "bottom_z": 1.854,
+  "v1_bottom_z": 2.23,
+  "locks": 23,
+  "rule": "lowest ruff-owned shell point within |X| < 0.25 (between the front legs)"
+ },
+ "tail_leg_clearance": {
+  "min_gap": 0.091,
+  "at": {
+   "point": [
+    0.189,
+    1.33,
+    0.95
+   ],
+   "group": "hindleg.L"
+  },
+  "need": "> TAIL_K / 2 = 0.040 (no smooth-union bridge)",
+  "rule": "tail-owned shell points below z 2.0 (under the rump) -> nearest hind leg / haunch"
+ },
+ "iso_cuts": {
+  "cuts": [
+   {
+    "field": "inner",
+    "tau": 0.0,
+    "edge_splits": 218,
+    "face_connects": 234
+   }
+  ],
+  "seconds": 3.1,
+  "shell_tris_after_cuts": 15772
+ },
+ "centre_shift": [
+  0.0,
+  -0.139463,
+  -4.6e-05
+ ],
+ "glow": {
+  "skin": "default",
+  "glowing_regions": [],
+  "rule": "no glow (the sheet draws none): zero Glow"
+ },
+ "regions_faces": {
+  "crystal_canine": {
+   "fur": 15056,
+   "ear_inner": 716,
+   "eye_white": 336,
+   "iris": 392,
+   "pupil": 160,
+   "nose": 140,
+   "gem_lit": 4,
+   "gem_shade": 20,
+   "crystal_lit": 224,
+   "crystal": 168,
+   "crystal_shade": 184
+  }
+ },
+ "regions_area_share": {
+  "fur": 0.5272,
+  "ear_inner": 0.0119,
+  "eye_white": 0.0039,
+  "iris": 0.0034,
+  "pupil": 0.001,
+  "nose": 0.0008,
+  "gem_lit": 0.0013,
+  "gem_shade": 0.0054,
+  "crystal_lit": 0.1864,
+  "crystal": 0.1226,
+  "crystal_shade": 0.1361
+ },
+ "facing": {
+  "rule": "head centre (HEAD_C) -> the nose (front cast on the midline at NOSE_Z)",
+  "anchor": [
+   0.0,
+   -0.9605,
+   4.98
+  ],
+  "landmark": [
+   0.0,
+   -2.0487,
+   4.68
+  ],
+  "angle_from_minusY_deg": 0.0
+ },
+ "face": {
+  "eye.L": {
+   "surface": [
+    0.3400000035762787,
+    -1.711300015449524,
+    4.860000133514404
+   ],
+   "normal": [
+    0.5224,
+    -0.8436,
+    0.1241
+   ],
+   "iris": [
+    0.3050000071525574,
+    -1.7466000318527222,
+    4.860000133514404
+   ]
+  },
+  "nose": {
+   "surface": [
+    0.0,
+    -2.188199996948242,
+    4.679999828338623
+   ],
+   "normal": [
+    0.027,
+    -0.9978,
+    0.061
+   ]
+  },
+  "gem": {
+   "T": [
+    0.0,
+    -1.3495999574661255,
+    5.519999980926514
+   ],
+   "Lc": [
+    0.23999999463558197,
+    -1.594599962234497,
+    5.320000171661377
+   ],
+   "B": [
+    0.0,
+    -1.871399998664856,
+    4.920000076293945
+   ],
+   "Rc": [
+    -0.23999999463558197,
+    -1.594599962234497,
+    5.320000171661377
+   ],
+   "F": [
+    0.0,
+    -1.7080999612808228,
+    5.239999771118164
+   ]
+  }
+ },
+ "mane": {
+  "per_side": 12,
+  "total": 24,
+  "crystals": [
+   {
+    "name": "crystal.L.01",
+    "root": [
+     0.38,
+     -0.8,
+     4.12
+    ],
+    "tip": [
+     1.42,
+     0.42,
+     5.12
+    ],
+    "length": 1.889,
+    "radius": 0.21
+   },
+   {
+    "name": "crystal.L.02",
+    "root": [
+     0.42,
+     -0.7,
+     3.95
+    ],
+    "tip": [
+     1.63,
+     0.8,
+     4.67
+    ],
+    "length": 2.057,
+    "radius": 0.2275
+   },
+   {
+    "name": "crystal.L.03",
+    "root": [
+     0.45,
+     -0.92,
+     3.85
+    ],
+    "tip": [
+     1.83,
+     0.0,
+     4.22
+    ],
+    "length": 1.699,
+    "radius": 0.2275
+   },
+   {
+    "name": "crystal.L.04",
+    "root": [
+     0.45,
+     -0.55,
+     3.55
+    ],
+    "tip": [
+     1.78,
+     1.15,
+     3.64
+    ],
+    "length": 2.16,
+    "radius": 0.3325
+   },
+   {
+    "name": "crystal.L.05",
+    "root": [
+     0.5,
+     -0.75,
+     3.4
+    ],
+    "tip": [
+     1.32,
+     0.45,
+     3.6
+    ],
+    "length": 1.467,
+    "radius": 0.21
+   },
+   {
+    "name": "crystal.L.06",
+    "root": [
+     0.4,
+     -1.0,
+     4.2
+    ],
+    "tip": [
+     1.06,
+     -0.5,
+     4.88
+    ],
+    "length": 1.071,
+    "radius": 0.1575
+   },
+   {
+    "name": "crystal.L.07",
+    "root": [
+     0.45,
+     -0.98,
+     3.95
+    ],
+    "tip": [
+     1.45,
+     -0.4,
+     4.4
+    ],
+    "length": 1.241,
+    "radius": 0.175
+   },
+   {
+    "name": "crystal.L.08",
+    "root": [
+     0.55,
+     -1.0,
+     3.35
+    ],
+    "tip": [
+     0.98,
+     -0.45,
+     3.22
+    ],
+    "length": 0.71,
+    "radius": 0.175
+   },
+   {
+    "name": "crystal.L.09",
+    "root": [
+     0.55,
+     -1.12,
+     3.1
+    ],
+    "tip": [
+     0.96,
+     -0.9,
+     2.8
+    ],
+    "length": 0.554,
+    "radius": 0.14
+   },
+   {
+    "name": "crystal.L.10",
+    "root": [
+     0.62,
+     -1.15,
+     3.7
+    ],
+    "tip": [
+     1.3,
+     -1.55,
+     4.05
+    ],
+    "length": 0.863,
+    "radius": 0.1575
+   },
+   {
+    "name": "crystal.L.11",
+    "root": [
+     0.58,
+     -1.1,
+     4.0
+    ],
+    "tip": [
+     1.15,
+     -1.45,
+     4.55
+    ],
+    "length": 0.866,
+    "radius": 0.14
+   },
+   {
+    "name": "crystal.L.12",
+    "root": [
+     0.55,
+     -1.2,
+     3.5
+    ],
+    "tip": [
+     1.25,
+     -1.3,
+     3.85
+    ],
+    "length": 0.789,
+    "radius": 0.175
+   }
+  ]
+ },
+ "mirror_test": {
+  "max_abs_asymmetry": 0.00319,
+  "p99": 0.00023,
+  "per_piece_max": {},
+  "rule": "every rest vertex mirrored across X = 0 -> distance to the nearest point of the mesh"
+ },
+ "tris": {
+  "total": 18412,
+  "shell": 15772,
+  "shell_before_cuts": 15336,
+  "eye_whites": 576,
+  "irises": 672,
+  "pupils": 256,
+  "nose": 240,
+  "gem": 32,
+  "mane_crystals": 864,
+  "per_part": {
+   "eye.L": 288,
+   "iris.L": 336,
+   "pupil.L": 128,
+   "eye.R": 288,
+   "iris.R": 336,
+   "pupil.R": 128,
+   "nose": 240,
+   "gem": 32,
+   "crystal.L.01": 36,
+   "crystal.L.02": 36,
+   "crystal.L.03": 36,
+   "crystal.L.04": 36,
+   "crystal.L.05": 36,
+   "crystal.L.06": 36,
+   "crystal.L.07": 36,
+   "crystal.L.08": 36,
+   "crystal.L.09": 36,
+   "crystal.L.10": 36,
+   "crystal.L.11": 36,
+   "crystal.L.12": 36,
+   "crystal.R.01": 36,
+   "crystal.R.02": 36,
+   "crystal.R.03": 36,
+   "crystal.R.04": 36,
+   "crystal.R.05": 36,
+   "crystal.R.06": 36,
+   "crystal.R.07": 36,
+   "crystal.R.08": 36,
+   "crystal.R.09": 36,
+   "crystal.R.10": 36,
+   "crystal.R.11": 36,
+   "crystal.R.12": 36
+  }
+ },
+ "tier_rationale": "REGULAR role (a line unit): window [8000, 22000]. The shell carries the head, the large ears, the ruff tufts, four slim legs + paws and the plume tail; the crystal mane is 24 faceted prisms (low-poly by design: facets ARE the look); the bake carries the ruff fuzz.",
+ "open_edges": {
+  "closed_parts": [
+   "crystal.L.01",
+   "crystal.L.02",
+   "crystal.L.03",
+   "crystal.L.04",
+   "crystal.L.05",
+   "crystal.L.06",
+   "crystal.L.07",
+   "crystal.L.08",
+   "crystal.L.09",
+   "crystal.L.10",
+   "crystal.L.11",
+   "crystal.L.12",
+   "crystal.R.01",
+   "crystal.R.02",
+   "crystal.R.03",
+   "crystal.R.04",
+   "crystal.R.05",
+   "crystal.R.06",
+   "crystal.R.07",
+   "crystal.R.08",
+   "crystal.R.09",
+   "crystal.R.10",
+   "crystal.R.11",
+   "crystal.R.12",
+   "eye.L",
+   "eye.R",
+   "gem",
+   "iris.L",
+   "iris.R",
+   "nose",
+   "pupil.L",
+   "pupil.R",
+   "shell"
+  ],
+  "open_parts": {},
+  "rule": "every piece is a closed solid (shell, decals, gem, crystal prisms)"
+ },
+ "measure": {
+  "bbox": [
+   [
+    -1.8444,
+    -2.0866,
+    0.0
+   ],
+   [
+    1.8444,
+    2.0866,
+    6.2018
+   ]
+  ],
+  "height": 6.2018,
+  "width_x": 3.6889,
+  "depth_y": 4.1733,
+  "sheet_px_equivalent": {
+   "height_px": 620.2,
+   "width_px": 368.9,
+   "depth_px": 417.3
+  },
+  "sheet": {
+   "front_view_height_px": 623,
+   "front_view_width_px": 398,
+   "side_view_height_px": 621,
+   "side_view_length_px": 415
+  },
+  "export_cell_fit_report_only": {
+   "scale": 0.29024,
+   "height_m": 1.8,
+   "footprint_m": 1.2113,
+   "bound_by": "height"
+  }
+ },
+ "bake": {
+  "NORMAL": {
+   "result": [
+    "FINISHED"
+   ],
+   "seconds": 1.0
+  },
+  "AO": {
+   "result": [
+    "FINISHED"
+   ],
+   "seconds": 0.8
+  },
+  "cage_extrusion": 0.02,
+  "cage_rule": "3 x the sampled high->low p99 distance (floor 0.02)",
+  "resolution": {
+   "normal": 1024,
+   "ao": 512
+  },
+  "high_tris": 600396,
+  "high_rule": "SDF shell (marching tets, the ruff fuzz at full density) + every closed part",
+  "body_uv_texels_normal": 432962,
+  "normal_baked_pct_of_body_texels": 98.9,
+  "normal_detail_fraction_dev_gt_0.05": 0.5539,
+  "ao_baked_pct_of_body_texels": 100.0,
+  "ao_mean": 0.5522,
+  "ao_p05": 0.0,
+  "pixel_sha": {
+   "normal": "6ab4d718a11be068",
+   "ao": "6cb38c236d02d4ad"
+  },
+  "seconds": 4.4
+ },
+ "digest_geometry_colour_uv": "2642cbb2deff126d",
+ "palette": {
+  "default": {
+   "fur": {
+    "rgb": [
+     247,
+     234,
+     224
+    ]
+   },
+   "ear_inner": {
+    "rgb": [
+     217,
+     198,
+     198
+    ]
+   },
+   "eye_white": {
+    "rgb": [
+     252,
+     245,
+     238
+    ]
+   },
+   "iris": {
+    "rgb": [
+     109,
+     98,
+     111
+    ]
+   },
+   "pupil": {
+    "rgb": [
+     81,
+     74,
+     81
+    ]
+   },
+   "nose": {
+    "rgb": [
+     115,
+     94,
+     100
+    ]
+   },
+   "gem_lit": {
+    "rgb": [
+     217,
+     188,
+     180
+    ]
+   },
+   "gem_shade": {
+    "rgb": [
+     153,
+     137,
+     146
+    ]
+   },
+   "crystal_lit": {
+    "rgb": [
+     217,
+     198,
+     198
+    ]
+   },
+   "crystal": {
+    "rgb": [
+     217,
+     188,
+     180
+    ]
+   },
+   "crystal_shade": {
+    "rgb": [
+     153,
+     137,
+     146
+    ]
+   }
+  },
+  "files": [
+   "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\palettes\\crystal_canine\\default.json"
+  ],
+  "provenance": "pixel-sampled from the sheet's chips + drawn surfaces (see the palette notes)"
+ }
+}

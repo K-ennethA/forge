@@ -1,0 +1,1012 @@
+{
+ "unit": "volcano_turtle",
+ "conquest_character_id": "volcano_turtle",
+ "source": "none: from-scratch unit (sheet design/reference/volcano_turtle-character-sheet.webp)",
+ "tier": "regular",
+ "tri_budget": [
+  8000,
+  22000
+ ],
+ "units": "sheet units: 1 unit = 100 px; floor z = 0 at the sheet floor line (y 808); X from the front + back orthos, Y from the 3/4 side view",
+ "overrides": {},
+ "sdf": {
+  "body": {
+   "step": 0.025,
+   "band": 0.28,
+   "grid": [
+    169,
+    137,
+    218
+   ],
+   "ops": [
+    "union",
+    "union",
+    "union",
+    "union",
+    "union",
+    "union",
+    "union",
+    "union",
+    "union",
+    "union",
+    "union",
+    "subtract",
+    "floor"
+   ],
+   "high_tris": 690548,
+   "crumbs": {
+    "pieces": 1,
+    "kept": 1,
+    "dropped_verts": 0
+   },
+   "decimated_tris": 7000,
+   "specks": {
+    "pieces": 1,
+    "kept": 1,
+    "dropped_verts": 0
+   },
+   "low_to_high": {
+    "mean": 0.0011,
+    "p99": 0.00358,
+    "max": 0.00646
+   },
+   "high_to_low_sampled": {
+    "p99": 0.00272,
+    "max": 0.01069
+   },
+   "bbox_low_over_high": [
+    1.0003,
+    1.00107,
+    1.00023
+   ],
+   "floor_snap": {
+    "verts_snapped_to_floor": 2,
+    "worst_dip": 0.0
+   },
+   "seconds": 18.9
+  },
+  "arm": {
+   "step": 0.022,
+   "band": 0.18,
+   "grid": [
+    85,
+    96,
+    150
+   ],
+   "ops": [
+    "union",
+    "union",
+    "union",
+    "union",
+    "union"
+   ],
+   "high_tris": 274716,
+   "crumbs": {
+    "pieces": 1,
+    "kept": 1,
+    "dropped_verts": 0
+   },
+   "decimated_tris": 2000,
+   "specks": {
+    "pieces": 1,
+    "kept": 1,
+    "dropped_verts": 0
+   },
+   "low_to_high": {
+    "mean": 0.00162,
+    "p99": 0.00448,
+    "max": 0.00774
+   },
+   "high_to_low_sampled": {
+    "p99": 0.00325,
+    "max": 0.00641
+   },
+   "bbox_low_over_high": [
+    1.00024,
+    1.00018,
+    1.00001
+   ],
+   "floor_snap": null,
+   "seconds": 6.7
+  },
+  "shell": {
+   "step": 0.024,
+   "band": 0.1,
+   "grid": [
+    129,
+    70,
+    144
+   ],
+   "ops": [
+    "union",
+    "union"
+   ],
+   "high_tris": 293260,
+   "crumbs": {
+    "pieces": 1,
+    "kept": 1,
+    "dropped_verts": 0
+   },
+   "decimated_tris": 2400,
+   "specks": {
+    "pieces": 1,
+    "kept": 1,
+    "dropped_verts": 0
+   },
+   "low_to_high": {
+    "mean": 0.00131,
+    "p99": 0.00435,
+    "max": 0.00569
+   },
+   "high_to_low_sampled": {
+    "p99": 0.00246,
+    "max": 0.00661
+   },
+   "bbox_low_over_high": [
+    1.00035,
+    1.00088,
+    1.00042
+   ],
+   "floor_snap": null,
+   "seconds": 7.3
+  },
+  "seconds": 40.3
+ },
+ "iso_cuts": {
+  "body": {
+   "cuts": [
+    {
+     "refined_faces": 321,
+     "max_edge": 0.075
+    },
+    {
+     "field": "own_toe",
+     "tau": 0.0,
+     "edge_splits": 49,
+     "face_connects": 61
+    },
+    {
+     "field": "own_tail",
+     "tau": 0.0,
+     "edge_splits": 25,
+     "face_connects": 31
+    },
+    {
+     "field": "tail_side",
+     "tau": 0.0,
+     "edge_splits": 59,
+     "face_connects": 66
+    },
+    {
+     "field": "plastron",
+     "tau": 0.0,
+     "edge_splits": 64,
+     "face_connects": 73
+    },
+    {
+     "field": "z",
+     "tau": 2.338,
+     "edge_splits": 12,
+     "face_connects": 12
+    },
+    {
+     "field": "z",
+     "tau": 2.382,
+     "edge_splits": 10,
+     "face_connects": 10
+    },
+    {
+     "field": "z",
+     "tau": 1.738,
+     "edge_splits": 13,
+     "face_connects": 14
+    },
+    {
+     "field": "z",
+     "tau": 1.782,
+     "edge_splits": 27,
+     "face_connects": 26
+    },
+    {
+     "field": "z",
+     "tau": 1.228,
+     "edge_splits": 11,
+     "face_connects": 11
+    },
+    {
+     "field": "z",
+     "tau": 1.272,
+     "edge_splits": 19,
+     "face_connects": 19
+    },
+    {
+     "field": "band",
+     "tau": 0.0,
+     "edge_splits": 124,
+     "face_connects": 129
+    },
+    {
+     "field": "drip",
+     "tau": 0.0,
+     "edge_splits": 212,
+     "face_connects": 243
+    },
+    {
+     "degenerate_dissolved_faces": 0,
+     "sliver_edge_flips": 0,
+     "sliver_collapses": 0,
+     "min_face_area": 1.8522860045777634e-05
+    }
+   ],
+   "tris_after": 9330,
+   "seconds": 5.5
+  },
+  "arm": {
+   "cuts": [
+    {
+     "refined_faces": 0,
+     "max_edge": null
+    },
+    {
+     "field": "own_finger",
+     "tau": 0.0,
+     "edge_splits": 38,
+     "face_connects": 44
+    },
+    {
+     "field": "z",
+     "tau": 2.208,
+     "edge_splits": 87,
+     "face_connects": 89
+    },
+    {
+     "field": "z",
+     "tau": 2.272,
+     "edge_splits": 136,
+     "face_connects": 137
+    },
+    {
+     "field": "z",
+     "tau": 3.368,
+     "edge_splits": 31,
+     "face_connects": 29
+    },
+    {
+     "field": "z",
+     "tau": 3.432,
+     "edge_splits": 45,
+     "face_connects": 42
+    },
+    {
+     "field": "y",
+     "tau": 0.418,
+     "edge_splits": 4,
+     "face_connects": 5
+    },
+    {
+     "field": "y",
+     "tau": 0.482,
+     "edge_splits": 6,
+     "face_connects": 7
+    },
+    {
+     "field": "blk",
+     "tau": -0.032,
+     "edge_splits": 28,
+     "face_connects": 31
+    },
+    {
+     "field": "blk",
+     "tau": 0.032,
+     "edge_splits": 23,
+     "face_connects": 28
+    },
+    {
+     "degenerate_dissolved_faces": 0,
+     "sliver_edge_flips": 0,
+     "sliver_collapses": 0,
+     "min_face_area": 7.634640496689826e-06
+    }
+   ],
+   "tris_after_per_arm": 2796,
+   "seconds": 0.6
+  },
+  "shell": {
+   "cuts": [
+    {
+     "refined_faces": 0,
+     "max_edge": null
+    },
+    {
+     "field": "own_rim",
+     "tau": 0.0,
+     "edge_splits": 259,
+     "face_connects": 280
+    },
+    {
+     "field": "h0",
+     "tau": -0.034,
+     "edge_splits": 10,
+     "face_connects": 10
+    },
+    {
+     "field": "h0",
+     "tau": 0.034,
+     "edge_splits": 19,
+     "face_connects": 19
+    },
+    {
+     "field": "h1",
+     "tau": -0.034,
+     "edge_splits": 6,
+     "face_connects": 7
+    },
+    {
+     "field": "h1",
+     "tau": 0.034,
+     "edge_splits": 12,
+     "face_connects": 12
+    },
+    {
+     "field": "h2",
+     "tau": -0.034,
+     "edge_splits": 16,
+     "face_connects": 16
+    },
+    {
+     "field": "h2",
+     "tau": 0.034,
+     "edge_splits": 17,
+     "face_connects": 17
+    },
+    {
+     "field": "h3",
+     "tau": -0.034,
+     "edge_splits": 17,
+     "face_connects": 18
+    },
+    {
+     "field": "h3",
+     "tau": 0.034,
+     "edge_splits": 26,
+     "face_connects": 26
+    },
+    {
+     "field": "h4",
+     "tau": -0.034,
+     "edge_splits": 29,
+     "face_connects": 32
+    },
+    {
+     "field": "h4",
+     "tau": 0.034,
+     "edge_splits": 24,
+     "face_connects": 25
+    },
+    {
+     "field": "h5",
+     "tau": -0.034,
+     "edge_splits": 19,
+     "face_connects": 23
+    },
+    {
+     "field": "h5",
+     "tau": 0.034,
+     "edge_splits": 21,
+     "face_connects": 21
+    },
+    {
+     "field": "h6",
+     "tau": -0.034,
+     "edge_splits": 17,
+     "face_connects": 19
+    },
+    {
+     "field": "h6",
+     "tau": 0.034,
+     "edge_splits": 14,
+     "face_connects": 15
+    },
+    {
+     "field": "h7",
+     "tau": -0.034,
+     "edge_splits": 18,
+     "face_connects": 19
+    },
+    {
+     "field": "h7",
+     "tau": 0.034,
+     "edge_splits": 28,
+     "face_connects": 30
+    },
+    {
+     "field": "h8",
+     "tau": -0.034,
+     "edge_splits": 14,
+     "face_connects": 15
+    },
+    {
+     "field": "h8",
+     "tau": 0.034,
+     "edge_splits": 17,
+     "face_connects": 19
+    },
+    {
+     "field": "h9",
+     "tau": -0.034,
+     "edge_splits": 28,
+     "face_connects": 29
+    },
+    {
+     "field": "h9",
+     "tau": 0.034,
+     "edge_splits": 29,
+     "face_connects": 29
+    },
+    {
+     "degenerate_dissolved_faces": 0,
+     "sliver_edge_flips": 0,
+     "sliver_collapses": 0,
+     "min_face_area": 5.937672540312633e-06
+    }
+   ],
+   "tris_after": 3680,
+   "seconds": 1.4
+  }
+ },
+ "centre_shift": [
+  0.0,
+  0.333927,
+  0.0
+ ],
+ "glow": {
+  "default": {
+   "skin": "default",
+   "emission_scale_tiers": {
+    "eye": 0.65,
+    "crack": 0.6,
+    "lava_drip": 0.5,
+    "crater": 0.7,
+    "flame_outer": 0.75,
+    "flame_inner": 0.9
+   },
+   "peak_x_strength": {
+    "eye": 0.6475,
+    "crack": 0.5976,
+    "lava_drip": 0.2667,
+    "crater": 0.6973,
+    "flame_outer": 0.7471,
+    "flame_inner": 0.8965
+   },
+   "cap": 2.0,
+   "only_drawn_glow": true,
+   "grade_pass": true,
+   "cap_pass": true
+  }
+ },
+ "regions_faces": {
+  "volcano_turtle": {
+   "skin": 6602,
+   "plastron": 353,
+   "plastron_line": 99,
+   "toe": 219,
+   "tail_under": 279,
+   "arm_rock": 4332,
+   "knuckle": 474,
+   "shell_plate": 1440,
+   "shell_rim": 1697,
+   "brow": 48,
+   "eye_socket": 48,
+   "face_line": 122,
+   "eye": 48,
+   "crack": 1329,
+   "lava_drip": 735,
+   "crater": 1043,
+   "flame_outer": 692,
+   "flame_inner": 300
+  }
+ },
+ "regions_area_share": {
+  "skin": 0.3581,
+  "plastron": 0.0228,
+  "plastron_line": 0.0012,
+  "toe": 0.003,
+  "tail_under": 0.0059,
+  "arm_rock": 0.2334,
+  "knuckle": 0.0157,
+  "shell_plate": 0.0849,
+  "shell_rim": 0.08,
+  "brow": 0.0106,
+  "eye_socket": 0.0048,
+  "face_line": 0.0009,
+  "eye": 0.0034,
+  "crack": 0.0166,
+  "lava_drip": 0.0044,
+  "crater": 0.0289,
+  "flame_outer": 0.0883,
+  "flame_inner": 0.0371
+ },
+ "facing": {
+  "rule": "head centre at eye height -> the face surface between the eyes (the face looks -Y)",
+  "anchor": [
+   0.0,
+   -0.6339,
+   4.27
+  ],
+  "landmark": [
+   0.0,
+   -1.432,
+   4.27
+  ],
+  "angle_from_minusY_deg": 0.0
+ },
+ "tris": {
+  "total": 20790,
+  "per_part_family": {
+   "body": 9330,
+   "arm": 5592,
+   "shell": 3680,
+   "eye_socket": 72,
+   "eye": 72,
+   "brow": 72,
+   "nostril": 96,
+   "mouth": 116,
+   "flame": 1440,
+   "flick": 320
+  },
+  "per_region": {
+   "skin": 6602,
+   "plastron": 353,
+   "plastron_line": 99,
+   "toe": 219,
+   "tail_under": 279,
+   "arm_rock": 4332,
+   "knuckle": 474,
+   "shell_plate": 1440,
+   "shell_rim": 1697,
+   "brow": 48,
+   "eye_socket": 48,
+   "face_line": 122,
+   "eye": 48,
+   "crack": 1329,
+   "lava_drip": 735,
+   "crater": 1043,
+   "flame_outer": 692,
+   "flame_inner": 300
+  }
+ },
+ "tier_rationale": "REGULAR role (a line unit): window [8000, 22000]. The SDF body (plastron / drip refinement + cuts) carries the largest share; the two arm islands, the faceted shell, 8 flame tongues + 4 flicks and the face decals the rest.",
+ "open_edges": {
+  "closed_parts": 26,
+  "parts": 26,
+  "open_parts": {},
+  "rule": "every part is closed: SDF islands (body, 2 arms, shell), plates, ribbon, flame tongues"
+ },
+ "measure": {
+  "bbox": [
+   [
+    -2.1004,
+    -1.5175,
+    0.0
+   ],
+   [
+    2.1004,
+    1.5175,
+    6.7048
+   ]
+  ],
+  "height": 6.7048,
+  "width_x": 4.2008,
+  "depth_y": 3.035,
+  "sheet_height_units": {
+   "front": 6.77,
+   "back": 6.85,
+   "side": 6.89
+  },
+  "sheet_width_units": {
+   "front": 4.25,
+   "back": 4.27,
+   "side_3q": 3.16
+  },
+  "export_cell_fit_report_only": {
+   "scale": 0.26847,
+   "height_m": 1.8,
+   "footprint_m": 1.1278,
+   "bound_by": "height"
+  }
+ },
+ "bake": {
+  "NORMAL": {
+   "result": [
+    "FINISHED"
+   ],
+   "seconds": 1.9
+  },
+  "AO": {
+   "result": [
+    "FINISHED"
+   ],
+   "seconds": 1.0
+  },
+  "cage_extrusion": 0.02,
+  "cage_rule": "3 x the worst SDF island's sampled high->low p99 distance (floor 0.02)",
+  "resolution": {
+   "normal": 1024,
+   "ao": 512
+  },
+  "high_tris": 1533506,
+  "high_rule": "body + 2 arm + shell SDF highs + every closed part except the flame tongues / flicks",
+  "body_uv_texels_normal": 538327,
+  "normal_baked_pct_of_body_texels": 99.65,
+  "normal_detail_fraction_dev_gt_0.05": 0.3321,
+  "ao_baked_pct_of_body_texels": 100.0,
+  "ao_mean": 0.5546,
+  "ao_p05": 0.0,
+  "pixel_sha": {
+   "normal": "6a87e17389d0caef",
+   "ao": "633e1284f7ff50ed"
+  },
+  "seconds": 6.6
+ },
+ "digest_geometry_colour_uv": "555573c96392cdab",
+ "palette": {
+  "default": {
+   "skin": {
+    "rgb": [
+     94,
+     77,
+     71
+    ]
+   },
+   "plastron": {
+    "rgb": [
+     170,
+     137,
+     116
+    ]
+   },
+   "plastron_line": {
+    "rgb": [
+     94,
+     77,
+     71
+    ]
+   },
+   "toe": {
+    "rgb": [
+     170,
+     137,
+     116
+    ]
+   },
+   "tail_under": {
+    "rgb": [
+     170,
+     137,
+     116
+    ]
+   },
+   "arm_rock": {
+    "rgb": [
+     94,
+     77,
+     71
+    ]
+   },
+   "knuckle": {
+    "rgb": [
+     170,
+     137,
+     116
+    ]
+   },
+   "shell_plate": {
+    "rgb": [
+     61,
+     57,
+     58
+    ]
+   },
+   "shell_rim": {
+    "rgb": [
+     170,
+     137,
+     116
+    ]
+   },
+   "brow": {
+    "rgb": [
+     31,
+     27,
+     26
+    ]
+   },
+   "eye_socket": {
+    "rgb": [
+     31,
+     27,
+     26
+    ]
+   },
+   "face_line": {
+    "rgb": [
+     31,
+     27,
+     26
+    ]
+   },
+   "eye": {
+    "rgb": [
+     254,
+     143,
+     58
+    ],
+    "emission": [
+     254,
+     143,
+     58
+    ],
+    "emission_scale": 0.65
+   },
+   "crack": {
+    "rgb": [
+     254,
+     143,
+     58
+    ],
+    "emission": [
+     254,
+     143,
+     58
+    ],
+    "emission_scale": 0.6
+   },
+   "lava_drip": {
+    "rgb": [
+     136,
+     58,
+     47
+    ],
+    "emission": [
+     136,
+     58,
+     47
+    ],
+    "emission_scale": 0.5
+   },
+   "crater": {
+    "rgb": [
+     254,
+     143,
+     58
+    ],
+    "emission": [
+     254,
+     143,
+     58
+    ],
+    "emission_scale": 0.7
+   },
+   "flame_outer": {
+    "rgb": [
+     254,
+     143,
+     58
+    ],
+    "emission": [
+     254,
+     143,
+     58
+    ],
+    "emission_scale": 0.75
+   },
+   "flame_inner": {
+    "rgb": [
+     254,
+     192,
+     83
+    ],
+    "emission": [
+     254,
+     192,
+     83
+    ],
+    "emission_scale": 0.9
+   }
+  },
+  "files": [
+   "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\palettes\\volcano_turtle\\default.json"
+  ],
+  "provenance": "pixel-sampled from the sheet's six palette chips (intake swatches) + drawn-surface samples (see the palette notes)"
+ },
+ "flame": {
+  "root": [
+   0.0,
+   -0.4839,
+   4.9
+  ],
+  "tongues": [
+   {
+    "layer": "flame_outer",
+    "tip": [
+     -0.112,
+     0.3,
+     6.705
+    ],
+    "length": 1.86,
+    "radius": 0.7
+   },
+   {
+    "layer": "flame_outer",
+    "tip": [
+     -0.537,
+     -0.15,
+     5.721
+    ],
+    "length": 0.98,
+    "radius": 0.44
+   },
+   {
+    "layer": "flame_outer",
+    "tip": [
+     0.494,
+     -0.15,
+     6.016
+    ],
+    "length": 1.22,
+    "radius": 0.46
+   },
+   {
+    "layer": "flame_outer",
+    "tip": [
+     -0.223,
+     -0.054,
+     6.285
+    ],
+    "length": 1.4,
+    "radius": 0.44
+   },
+   {
+    "layer": "flame_outer",
+    "tip": [
+     -0.131,
+     0.34,
+     5.854
+    ],
+    "length": 1.08,
+    "radius": 0.42
+   },
+   {
+    "layer": "flame_inner",
+    "tip": [
+     -0.052,
+     -0.014,
+     6.012
+    ],
+    "length": 1.12,
+    "radius": 0.56
+   },
+   {
+    "layer": "flame_inner",
+    "tip": [
+     -0.262,
+     -0.15,
+     5.549
+    ],
+    "length": 0.7,
+    "radius": 0.32
+   },
+   {
+    "layer": "flame_inner",
+    "tip": [
+     0.285,
+     -0.15,
+     5.605
+    ],
+    "length": 0.76,
+    "radius": 0.32
+   },
+   {
+    "layer": "flick",
+    "tip": [
+     -0.398,
+     -0.108,
+     6.473
+    ],
+    "length": 0.24,
+    "radius": 0.055
+   },
+   {
+    "layer": "flick",
+    "tip": [
+     0.613,
+     -0.067,
+     6.452
+    ],
+    "length": 0.26,
+    "radius": 0.06
+   },
+   {
+    "layer": "flick",
+    "tip": [
+     -0.813,
+     -0.009,
+     6.013
+    ],
+    "length": 0.22,
+    "radius": 0.05
+   },
+   {
+    "layer": "flick",
+    "tip": [
+     0.848,
+     0.06,
+     5.934
+    ],
+    "length": 0.2,
+    "radius": 0.05
+   }
+  ]
+ },
+ "face": {
+  "eye.L": {
+   "centre": [
+    0.39,
+    -1.0241,
+    4.27
+   ],
+   "normal": [
+    0.369,
+    -0.926,
+    0.079
+   ]
+  },
+  "eye.R": {
+   "centre": [
+    -0.39,
+    -1.0241,
+    4.27
+   ],
+   "normal": [
+    -0.369,
+    -0.926,
+    0.079
+   ]
+  },
+  "brow.C": {
+   "centre": [
+    0.0,
+    -1.0166,
+    4.54
+   ]
+  },
+  "brow.L": {
+   "centre": [
+    0.51,
+    -0.7038,
+    4.7
+   ]
+  },
+  "brow.R": {
+   "centre": [
+    -0.51,
+    -0.7038,
+    4.7
+   ]
+  },
+  "mouth": {
+   "ends": [
+    [
+     -0.27,
+     -0.9244,
+     3.78
+    ],
+    [
+     0.27,
+     -0.9244,
+     3.78
+    ]
+   ]
+  }
+ }
+}

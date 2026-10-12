@@ -1,0 +1,21 @@
+SDF {"what": "one dangling leg (stalk + foot + 3 toes), placed x4", "step": 0.01, "band": 0.13, "grid": [85, 65, 144], "ops": 5, "high_tris_per_leg": 79128, "high_verts_per_leg": 39566, "crumbs": {"pieces": 1, "dropped_verts": 0}, "high_min_z": 0.002, "seconds": 1.0}
+RETOPO {"method": "SDF marching tetrahedra (step 0.010) -> collapse decimation (deterministic)", "decimated_tris_per_leg": 1700, "specks": {"pieces": 1, "dropped_verts": 0}, "low_to_high": {"mean": 0.00026, "p99": 0.00095, "max": 0.00167}, "high_to_low": {"p99": 0.00073, "max": 0.00182}, "bbox_high": [0.6387, 0.2581, 1.335], "bbox_low": [0.6399, 0.2579, 1.3356], "bbox_low_over_high": [1.00182, 0.99926, 1.00043], "seconds": 1.2}
+CUTS {"cuts": [{"field": "z", "tau": 0.62, "edge_splits": 43, "face_connects": 52}, {"field": "z", "tau": 0.5, "edge_splits": 81, "face_connects": 82}, {"field": "z", "tau": 0.09, "edge_splits": 88, "face_connects": 95}], "seconds": 0.1, "leg_tris_after_cuts": 2124}
+Info: Baking map saved to internal image, save it externally or pack it
+Info: Baking map saved to internal image, save it externally or pack it
+BAKE {"NORMAL": {"result": ["FINISHED"], "seconds": 0.7}, "AO": {"result": ["FINISHED"], "seconds": 0.6}, "cage_extrusion": 0.02, "cage_rule": "3 x the leg's high->low p99 distance (floor 0.02)", "resolution": {"normal": 1024, "ao": 512}, "high_tris": 318844, "high_rule": "4 x the leg SDF high + every opaque closed part; fx parts excluded (see-through)", "body_uv_texels_normal": 688782, "normal_baked_pct_of_body_texels": 99.62, "normal_detail_fraction_dev_gt_0.05": 0.1017, "ao_baked_pct_of_body_texels": 100.0, "ao_mean": 0.6996, "ao_p05": 0.0, "seconds": 3.6}
+Info: Saved copy as "chest_monster.blend"
+IMPROVED_SAVED C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\improved\chest_monster.blend 9.0
+CLIP idle {"frames": [1, 97], "period_frames": 96, "seconds": 4.0, "cyclic": true, "seam_main_mm": 0.0, "root_offset_max": 0.0, "clearance_min_z": -0.0038, "box_lift": [0.0, 0.0]}
+CLIP walk {"frames": [1, 25], "period_frames": 24, "seconds": 1.0, "cyclic": true, "seam_main_mm": 0.0, "root_offset_max": 0.0, "clearance_min_z": -0.0203, "box_lift": [0.0, 0.12]}
+Info: Saved copy as "chest_monster.blend"
+INFO Draco mesh compression is available, use library at C:\Program Files\Blender Foundation\Blender 5.0\5.0\scripts\addons_core\io_scene_gltf2\extern_draco.dll
+14:02:55 | INFO: Starting glTF 2.0 export
+14:02:55 | INFO: Extracting primitive: chest_monster
+14:02:55 | WARNING: glTF specification does not allow this case (multiple materials with different Vertex Color)
+14:02:55 | INFO: Primitives created: 2
+14:02:55 | INFO: Finished glTF 2.0 export in 0.2798285484313965 s
+
+RIG_DONE {"bone_count": 13, "weights": {"max_influences": 2, "unweighted": 0, "sum_dev_max": 0.0, "per_bone_dominant": {"box": 1428, "lid": 702, "crystal_big": 296, "crystal_small": 222, "leg_BL.0": 123, "leg_BL.1": 956, "leg_BR.0": 123, "leg_BR.1": 956, "leg_FL.0": 123, "leg_FL.1": 956, "leg_FR.0": 123, "leg_FR.1": 956}, "rule": "box + eye/iris/glint 1.0 box; lid + smoke + sparks 1.0 lid; each crystal cluster 1.0 its crystal bone (parented to the lid); legs + dots: rigkit.vine_weights along the leg (box -> leg.0 blend over the top quarter, leg.0 -> leg.1 between the bone midpoints)"}, "digest": {"parts": {"bake_normal": "86324e4e0b4e24d4", "bake_ao": "694cff1b5a868fdc", "geometry_colour_uv": "1a54fcdbd026939d", "weights": "db1789a57f5bc2b8", "keys": "d95f9fa6bb468bcd", "clip_samples": "93188ea0aa9d1fd6"}, "combined": "a516c7df19004eae"}, "seconds": 9.9}
+GLB {"materials": [{"name": "chest_monster_body", "alphaMode": "OPAQUE", "doubleSided": false, "textures": ["baseColorTexture", "normalTexture"]}, {"name": "chest_monster_fx", "alphaMode": "BLEND", "doubleSided": true, "textures": []}], "primitives": [{"mesh": "chest_monster", "material": "chest_monster_body", "attributes": ["COLOR_0", "COLOR_1", "JOINTS_0", "NORMAL", "POSITION", "TEXCOORD_0", "WEIGHTS_0", "_GLOW"]}, {"mesh": "chest_monster", "material": "chest_monster_fx", "attributes": ["COLOR_0", "COLOR_1", "JOINTS_0", "NORMAL", "POSITION", "TEXCOORD_0", "WEIGHTS_0", "_GLOW"]}], "animations": ["idle", "walk"], "skins": 1, "joints": 13}
+Blender 5.0.1 (hash a3db93c5b259 built 2025-12-16 01:32:30)

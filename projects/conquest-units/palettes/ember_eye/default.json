@@ -1,0 +1,20 @@
+{
+ "unit": "ember_eye",
+ "skin": "default",
+ "description": "Ember Eye default look, PIXEL-SAMPLED from design/reference/ember_eye-character-sheet.png (sampler: service venv PIL; medians of each drawn surface, masks eroded 2-3 px off the ink outline). The five chips (intake.json swatches 250,8,30 / 115,33,33 / 253,165,166 / 244,243,243 / 85,22,21; printed hex FF0000 / 7A1F1F / FFB3B3 / FFFFFF / 531212) are cited per region. NO glow: the sheet draws none beyond the bright colours. The SOFT PINK chip is not drawn as such anywhere: the drawn pinks are 241-245,183-188 (side-flame streaks, the pupil's inner flame) and the upper flame's streak is a lighter red 248,77,79.",
+ "regions": {
+  "body":       {"rgb": [117, 32, 31],  "note": "ORB face: FRONT ring r40-67 px median 117,32,31 (n 8290); BACK ring r43-67 116,32,31; 3/4 side wall 113,32,31. Chip DARK RED 115,33,33 (#7A1F1F)"},
+  "rim":        {"rgb": [85, 22, 21],   "note": "the orb's rim band: chip DEEP MAROON 85,22,21 (#531212) as the brief names it; the drawn rim outline (front r 67-70 px) reads darker, 70,8,7 (ink)"},
+  "back_disc":  {"rgb": [99, 28, 27],   "note": "BACK inset disc r < 38 px median 99,28,27 (n 4509); the groove ring r 38-43 reads 91,25,24"},
+  "eye_white":  {"rgb": [245, 245, 246], "note": "FRONT eye disc (eroded 3 px) median 245,245,246 (n 2119). Chip WHITE 244,243,243 (#FFFFFF)"},
+  "pupil":      {"rgb": [225, 4, 6],    "note": "FRONT flame pupil (eroded 1 px) median 225,4,6 (n 1016). Chip FLAME RED 250,8,30 (#FF0000)"},
+  "pupil_core": {"rgb": [245, 184, 182], "note": "the pupil's lighter inner flame: median 245,184,182 (n 267). Chip SOFT PINK 253,165,166 (#FFB3B3)"},
+  "stem":       {"rgb": [115, 32, 31],  "note": "FRONT stem y 700-780 median 115,32,31 (n 2000). Chip DARK RED 115,33,33"},
+  "flame":      {"rgb": [250, 3, 5],    "note": "upper flame FRONT (eroded 2 px) median 250,3,5 (n 19190; back 247,6,10). Chip FLAME RED 250,8,30"},
+  "flame_hi":   {"rgb": [248, 77, 79],  "note": "upper flame highlight streak, FRONT R > 200 / 50 < G < 140 median 248,77,79 (n 1837; back 248,79,79) -- a lighter red, not the pink chip 253,165,166"},
+  "side_flame": {"rgb": [243, 4, 6],    "note": "side flames FRONT (eroded 2 px) median +X 245,3,5 / -X 241,5,7 -> 243,4,6. Chip FLAME RED 250,8,30"},
+  "side_hi":    {"rgb": [241, 185, 183], "note": "side-flame highlight streaks FRONT median +X 241,185,183 (n 855) / -X 241,183,181; back 241,188,186 / 240,194,192. Chip SOFT PINK 253,165,166"},
+  "ribbon":     {"rgb": [247, 2, 4],    "note": "lower ribbon strips FRONT (eroded 2 px) median 247,2,4 (n 9206; back 224,7,14). Chip FLAME RED 250,8,30"}
+ },
+ "material": {"roughness": 0.55, "emission_strength": 1.0}
+}

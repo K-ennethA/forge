@@ -1,0 +1,131 @@
+{
+ "unit": "spectormn",
+ "skin": "default",
+ "description": "Spectormn default look, PIXEL-SAMPLED from design/reference/spectormn-character-sheet.png: the six palette chips (intake.json swatches: WHITE 247,241,237 x1243 / OFF-WHITE 206,198,199 x1316 / RED 216,3,17 x1390 / DARK GRAY 38,39,43 x1464 / PURPLE 116,84,111 x1535 / PINK-RED 185,82,94 x1608, all y 843) cross-checked with the drawn surfaces (service venv PIL). Drawn cloth (lum > 150, sat < 45) front: lit 64 % median 245,235,230 / shade 30 % 225,211,208 / dark 6 % 182,164,163; back 54 % / 40 % / 6 % (243,234,229 / 225,211,209 / 184,167,166). Glow: eyes, chest slits and chain links glow RED; tiers chain_link < slit < eye under the 2.0 cap (emission_strength 1.0). The mist is semi-transparent and AIRY (gate 2026-10-11): cloth, glow and metal regions are OPAQUE (material spectormn_cloth); the three mist regions (lavender-white body, purple + pink-red streaks) carry alpha 0.55 on the alpha-blended material spectormn_mist (Eevee BLENDED, single-sided, no transparency overlap, solid shadow: smooth, never dithered grain), graded PER CORNER down the height by material.mist_grade (alpha 0.55 -> 0.15, streaks mixing from lavender-white at the top into their chip colour below): no band steps. Drawn mist composite (|x| < 0.6, over the background): z 3.19 199,159,173 / z 2.59 169,104,134 / z 1.79 130,75,105 / z 0.99 151,94,119 / z 0.59 105,77,98 / z 0.19 73,61,71.",
+ "regions": {
+  "cloth": {
+   "rgb": [
+    247,
+    241,
+    237
+   ],
+   "note": "WHITE (CLOTH) chip (x1243 y843); drawn lit cloth median front 245,235,230 / back 243,234,229, hood (232,185) 248,240,236"
+  },
+  "cloth_fold": {
+   "rgb": [
+    206,
+    198,
+    199
+   ],
+   "note": "OFF-WHITE (SHADOW) chip (x1316 y843); drawn shade band median 225,211,208 (30 % front / 40 % back) and dark folds 182,164,163 (6 %): the chip sits between them"
+  },
+  "eye": {
+   "rgb": [
+    216,
+    3,
+    17
+   ],
+   "emission": [
+    216,
+    3,
+    17
+   ],
+   "emission_scale": 2.0,
+   "note": "RED (GLOW) chip (x1390 y843); drawn eye red px median 146,6,19, brightest third 193,28,42 (n 712). Top tier: peak 0.847 x 2.0 = 1.69 (cap 2.0)"
+  },
+  "slit": {
+   "rgb": [
+    216,
+    3,
+    17
+   ],
+   "emission": [
+    216,
+    3,
+    17
+   ],
+   "emission_scale": 1.7,
+   "note": "RED chip; drawn slit red px median 159,14,28, brightest third 204,72,82 (n 971). Middle tier: peak 1.44"
+  },
+  "chain_link": {
+   "rgb": [
+    216,
+    3,
+    17
+   ],
+   "emission": [
+    216,
+    3,
+    17
+   ],
+   "emission_scale": 1.4,
+   "note": "RED chip; drawn chain red px median 193,52,61, brightest third 237,95,108 (n 9025, incl. the glow halo). Lowest glow tier: peak 1.19"
+  },
+  "shackle": {
+   "rgb": [
+    38,
+    39,
+    43
+   ],
+   "note": "DARK GRAY (CHAINS) chip (x1464 y843, intake 'inferred_by_spacing'); drawn shackle dark px median front L 48,30,32 / R 39,29,31 (red-tinted by the glow halo)"
+  },
+  "mist_lavender": {
+   "rgb": [
+    232,
+    210,
+    226
+   ],
+   "alpha": 0.55,
+   "note": "the pale lavender-white mist body (gate 2026-10-11: lighter, airier): the drawn light mist pixels (lum > 165, B >= G + 8) median front 204,158,180 / back 209,165,185, p75 217,172,190 / 219,180,197 are COMPOSITES over the 30,30,33 background; un-compositing the p75 at the drawn alpha ~0.8 saturates (>= 255), so the base is the pale lavender-white 232,210,226 (the WHITE chip 247,241,237 tinted toward the PURPLE chip 116,84,111). Also the gradient light target (material.mist_grade)"
+  },
+  "mist_purple": {
+   "rgb": [
+    116,
+    84,
+    111
+   ],
+   "alpha": 0.55,
+   "note": "PURPLE (MIST) chip (x1535 y843): the purple streaks; drawn z 0.99-1.79 median 130-151,75-94,105-119; graded toward mist_lavender near the top"
+  },
+  "mist_pink": {
+   "rgb": [
+    185,
+    82,
+    94
+   ],
+   "alpha": 0.55,
+   "note": "PINK-RED (MIST) chip (x1608 y843): the pink-red streaks; drawn z 1.19-1.39 p75 172-177,101-108,134-140; graded toward mist_lavender near the top"
+  },
+  "chain_iron": {
+   "rgb": [
+    38,
+    39,
+    43
+   ],
+   "note": "DARK GRAY (CHAINS) chip: the first link at the shackle + the free end link of each strand, drawn dark iron (CHAIN RESTRAINTS panel; front strand ends y ~690-710)"
+  }
+ },
+ "material": {
+  "roughness": 0.9,
+  "mist_roughness": 0.95,
+  "emission_strength": 1.0,
+  "alpha": 1.0,
+  "mist_grade": {
+   "light_region": "mist_lavender",
+   "light_mix": [
+    0.85,
+    0.0
+   ],
+   "light_z": [
+    3.0,
+    1.8
+   ],
+   "alpha_z": [
+    3.3,
+    0.0
+   ],
+   "alpha_bottom": 0.27,
+   "note": "per-corner gradient: streak colours mix toward mist_lavender by 0.85 at z >= 3.0 -> 0 at z <= 1.8; alpha = region alpha (0.55) x (0.27 + 0.73 x ramp), ramp 1 at z >= 3.3 -> 0 at the floor: 0.55 under the tatters -> 0.15 at the bottom (gate 2026-10-11)"
+  }
+ }
+}

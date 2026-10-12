@@ -1,0 +1,290 @@
+{
+ "unit": "soot_puff",
+ "source": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\improved\\soot_puff.blend",
+ "fps": 24,
+ "weights": {
+  "max_influences": 3,
+  "unweighted": 0,
+  "sum_dev_max": 2.220446049250313e-16,
+  "per_bone_dominant": {
+   "body": 8517,
+   "arm_L.001": 123,
+   "arm_L.002": 118,
+   "arm_R.001": 110,
+   "arm_R.002": 127
+  },
+  "rule": "ball + face + fuzz 1.0 body; each arm owned by smoothstep(+-0.10) of (ball distance - arm distance), split along the arm by rigkit.vine_weights from its exit point out of the ball (body -> arm.001 blend starts 0.15 above it)"
+ },
+ "clips": {
+  "idle": {
+   "frames": [
+    1,
+    97
+   ],
+   "period_frames": 96,
+   "seconds": 4.0,
+   "cyclic": true,
+   "seam_main_mm": 0.0,
+   "root_offset_max": 0.0,
+   "clearance_min_z": 0.0099,
+   "body_lift": [
+    0.03,
+    0.3
+   ],
+   "pitch_deg": [
+    -1.377,
+    1.377
+   ],
+   "roll_deg": [
+    -0.684,
+    0.684
+   ],
+   "arm_tip_p2p_xyz": {
+    "L": [
+     0.1277,
+     0.2841,
+     0.3327
+    ],
+    "R": [
+     0.1653,
+     0.2916,
+     0.3536
+    ]
+   },
+   "arm_tips_z_LR_corr": 0.9571,
+   "lower_arm_min_sd_to_ball": 0.0923
+  },
+  "walk": {
+   "frames": [
+    1,
+    49
+   ],
+   "period_frames": 48,
+   "seconds": 2.0,
+   "cyclic": true,
+   "seam_main_mm": 0.0,
+   "root_offset_max": 0.0,
+   "clearance_min_z": 0.1121,
+   "body_lift": [
+    0.12,
+    0.18
+   ],
+   "pitch_deg": [
+    7.001,
+    9.002
+   ],
+   "roll_deg": [
+    -1.498,
+    1.498
+   ],
+   "arm_tip_p2p_xyz": {
+    "L": [
+     0.1659,
+     0.1727,
+     0.1594
+    ],
+    "R": [
+     0.1173,
+     0.184,
+     0.1421
+    ]
+   },
+   "arm_tips_z_LR_corr": -0.2461,
+   "lower_arm_min_sd_to_ball": 0.0154
+  }
+ },
+ "hover": {
+  "rest_height_units": 4.0406,
+  "idle_lift_units": [
+   0.03,
+   0.3
+  ],
+  "walk_lift_units": 0.15,
+  "sheet_shadow_gap_units": 0.6,
+  "rule": "rest pose: arm tips on the floor (contract feet_origin, z 0); idle keys body.location z = IDLE_LIFT[0] .. [1] (slow bob), walk WALK_LIFT + bob; the contract root never moves. The sheet's floor shadow sits ~0.6 under the tips: the in-game hover height is the artist's open question"
+ },
+ "bones": [
+  {
+   "name": "root",
+   "parent": null,
+   "deform": false,
+   "head": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "tail": [
+    0.0,
+    0.0,
+    0.4
+   ]
+  },
+  {
+   "name": "body",
+   "parent": "root",
+   "deform": true,
+   "head": [
+    -0.0018,
+    -0.0065,
+    2.1655
+   ],
+   "tail": [
+    -0.0018,
+    -0.0065,
+    3.1655
+   ]
+  },
+  {
+   "name": "arm_L.001",
+   "parent": "body",
+   "deform": true,
+   "head": [
+    1.2982,
+    -0.9865,
+    1.3155
+   ],
+   "tail": [
+    1.1784,
+    -0.8611,
+    0.6884
+   ]
+  },
+  {
+   "name": "arm_L.002",
+   "parent": "arm_L.001",
+   "deform": true,
+   "head": [
+    1.1784,
+    -0.8611,
+    0.6884
+   ],
+   "tail": [
+    1.0587,
+    -0.7357,
+    0.0613
+   ]
+  },
+  {
+   "name": "arm_R.001",
+   "parent": "body",
+   "deform": true,
+   "head": [
+    -1.3018,
+    -0.9865,
+    1.3155
+   ],
+   "tail": [
+    -1.1821,
+    -0.8611,
+    0.6884
+   ]
+  },
+  {
+   "name": "arm_R.002",
+   "parent": "arm_R.001",
+   "deform": true,
+   "head": [
+    -1.1821,
+    -0.8611,
+    0.6884
+   ],
+   "tail": [
+    -1.0624,
+    -0.7357,
+    0.0613
+   ]
+  }
+ ],
+ "bone_count": 6,
+ "deform_bone_count": 5,
+ "digest": {
+  "parts": {
+   "bake_normal": "f79fe932b89d0fe8",
+   "bake_ao": "bfad286454a7248b",
+   "geometry_colour_uv": "c8f31b5ad2436641",
+   "weights": "f8f0453a3a41d3c5",
+   "keys": "5942f59ac5d17ba3",
+   "clip_samples": "572d488e0909155a"
+  },
+  "combined": "74838a3bb0eb45d2"
+ },
+ "glb": {
+  "path": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\rigged\\soot_puff.glb",
+  "bytes": 6351200,
+  "seconds": 0.6,
+  "carries": {
+   "materials": [
+    {
+     "name": "soot_puff_body",
+     "alphaMode": "OPAQUE",
+     "doubleSided": false,
+     "textures": [
+      "baseColorTexture",
+      "normalTexture"
+     ]
+    }
+   ],
+   "primitives": [
+    {
+     "mesh": "soot_puff",
+     "material": "soot_puff_body",
+     "attributes": [
+      "COLOR_0",
+      "COLOR_1",
+      "JOINTS_0",
+      "NORMAL",
+      "POSITION",
+      "TEXCOORD_0",
+      "WEIGHTS_0",
+      "_GLOW"
+     ]
+    }
+   ],
+   "animations": [
+    "idle",
+    "walk"
+   ],
+   "skins": 1,
+   "joints": 6
+  },
+  "structure": "armature identity + skinned 'soot_puff' (one opaque body primitive); natural scale; report-only cell fit 0.44547"
+ },
+ "skins": {
+  "default": {
+   "file": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\rigged\\soot_puff.blend",
+   "palette": {
+    "body": {
+     "rgb": [
+      0,
+      0,
+      0
+     ]
+    },
+    "fuzz": {
+     "rgb": [
+      15,
+      15,
+      15
+     ]
+    },
+    "dust": {
+     "rgb": [
+      113,
+      113,
+      115
+     ]
+    },
+    "face": {
+     "rgb": [
+      255,
+      255,
+      255
+     ]
+    }
+   }
+  },
+  "rule": "default skin only (brief)"
+ },
+ "improved_report": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\improved\\soot_puff.json",
+ "seconds": 63.7
+}

@@ -1,0 +1,328 @@
+{
+ "unit": "holly_snowman",
+ "source": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\improved\\holly_snowman.blend",
+ "fps": 24,
+ "weights": {
+  "max_influences": 2,
+  "unweighted": 0,
+  "sum_dev_max": 0.0,
+  "per_bone_dominant": {
+   "body": 3466,
+   "head": 2487,
+   "ear_L": 302,
+   "arm_L": 1074,
+   "foot_L": 489,
+   "ear_R": 302,
+   "arm_R": 1074,
+   "foot_R": 489
+  },
+  "rule": "shell: head smoothstep at z 3.15 +- 0.12; feet = (1 - smoothstep z 0.30..0.46) x smoothstep |X| 0.10..0.28 on each side; the rest body. Eyes 1.0 head; buttons 1.0 body; ears 1.0 ear_*; stalk / fronds / berries 1.0 arm_*"
+ },
+ "clips": {
+  "idle": {
+   "frames": [
+    1,
+    97
+   ],
+   "period_frames": 96,
+   "seconds": 4.0,
+   "cyclic": true,
+   "seam_main_mm": 0.0,
+   "root_offset_max": 0.0,
+   "clearance_min_z": 0.0,
+   "soles": {
+    "min_z": 0.0,
+    "slide_xy_max": 0.0,
+    "sole_verts": 108
+   }
+  },
+  "walk": {
+   "frames": [
+    1,
+    49
+   ],
+   "period_frames": 48,
+   "seconds": 2.0,
+   "cyclic": true,
+   "seam_main_mm": 0.0,
+   "root_offset_max": 0.0,
+   "clearance_min_z": 0.0,
+   "soles": {
+    "min_z": 0.0,
+    "slide_xy_max": 0.0,
+    "sole_verts": 108
+   }
+  }
+ },
+ "bones": [
+  {
+   "name": "root",
+   "parent": null,
+   "deform": false,
+   "head": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "tail": [
+    0.0,
+    0.0,
+    0.4
+   ]
+  },
+  {
+   "name": "body",
+   "parent": "root",
+   "deform": true,
+   "head": [
+    0.0,
+    -0.0072,
+    0.0
+   ],
+   "tail": [
+    0.0,
+    -0.0072,
+    3.15
+   ]
+  },
+  {
+   "name": "head",
+   "parent": "body",
+   "deform": true,
+   "head": [
+    0.0,
+    -0.0783,
+    3.15
+   ],
+   "tail": [
+    0.0,
+    -0.0783,
+    4.91
+   ]
+  },
+  {
+   "name": "ear_L",
+   "parent": "head",
+   "deform": true,
+   "head": [
+    0.72,
+    0.1317,
+    4.58
+   ],
+   "tail": [
+    1.11,
+    0.5817,
+    5.92
+   ]
+  },
+  {
+   "name": "ear_R",
+   "parent": "head",
+   "deform": true,
+   "head": [
+    -0.72,
+    0.1317,
+    4.58
+   ],
+   "tail": [
+    -1.11,
+    0.5817,
+    5.92
+   ]
+  },
+  {
+   "name": "arm_L",
+   "parent": "body",
+   "deform": true,
+   "head": [
+    0.4,
+    -0.1483,
+    3.08
+   ],
+   "tail": [
+    1.8438,
+    0.738,
+    1.9475
+   ]
+  },
+  {
+   "name": "arm_R",
+   "parent": "body",
+   "deform": true,
+   "head": [
+    -0.4,
+    -0.1483,
+    3.08
+   ],
+   "tail": [
+    -1.8438,
+    0.738,
+    1.9475
+   ]
+  },
+  {
+   "name": "foot_L",
+   "parent": "root",
+   "deform": true,
+   "head": [
+    0.67,
+    -0.2683,
+    0.0
+   ],
+   "tail": [
+    0.67,
+    -0.2683,
+    0.45
+   ]
+  },
+  {
+   "name": "foot_R",
+   "parent": "root",
+   "deform": true,
+   "head": [
+    -0.67,
+    -0.2683,
+    0.0
+   ],
+   "tail": [
+    -0.67,
+    -0.2683,
+    0.45
+   ]
+  }
+ ],
+ "bone_count": 9,
+ "deform_bone_count": 8,
+ "digest": {
+  "parts": {
+   "bake_normal": "cb4ae98f4efc27c2",
+   "bake_ao": "7234c7133ad0637e",
+   "geometry_colour_uv": "f009d0a85962d427",
+   "weights": "a45f93afe6c2303a",
+   "keys": "998fd22e4f950ad4",
+   "clip_samples": "d1b3b6e8d5819819"
+  },
+  "combined": "030149e0f9a3b44c"
+ },
+ "glb": {
+  "path": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\rigged\\holly_snowman.glb",
+  "bytes": 6039532,
+  "seconds": 0.7,
+  "carries": {
+   "materials": [
+    {
+     "name": "holly_snowman_body",
+     "alphaMode": "OPAQUE",
+     "doubleSided": false,
+     "textures": [
+      "baseColorTexture",
+      "normalTexture"
+     ]
+    }
+   ],
+   "primitives": [
+    {
+     "mesh": "holly_snowman",
+     "material": "holly_snowman_body",
+     "attributes": [
+      "COLOR_0",
+      "COLOR_1",
+      "JOINTS_0",
+      "NORMAL",
+      "POSITION",
+      "TEXCOORD_0",
+      "WEIGHTS_0",
+      "_GLOW"
+     ]
+    }
+   ],
+   "animations": [
+    "idle",
+    "walk"
+   ],
+   "skins": 1,
+   "joints": 9
+  },
+  "structure": "armature identity + skinned 'holly_snowman' (one opaque primitive); natural scale; report-only cell fit 0.30405"
+ },
+ "skins": {
+  "default": {
+   "file": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\rigged\\holly_snowman.blend",
+   "palette": {
+    "snow": {
+     "rgb": [
+      192,
+      210,
+      253
+     ]
+    },
+    "snow_hi": {
+     "rgb": [
+      227,
+      240,
+      254
+     ]
+    },
+    "snow_shade": {
+     "rgb": [
+      133,
+      167,
+      252
+     ]
+    },
+    "blush": {
+     "rgb": [
+      144,
+      176,
+      252
+     ]
+    },
+    "eye": {
+     "rgb": [
+      34,
+      36,
+      40
+     ]
+    },
+    "leaf": {
+     "rgb": [
+      16,
+      47,
+      29
+     ]
+    },
+    "leaf_light": {
+     "rgb": [
+      21,
+      58,
+      38
+     ]
+    },
+    "leaf_rim": {
+     "rgb": [
+      144,
+      163,
+      110
+     ]
+    },
+    "berry": {
+     "rgb": [
+      178,
+      37,
+      38
+     ]
+    },
+    "berry_hi": {
+     "rgb": [
+      251,
+      179,
+      170
+     ]
+    }
+   }
+  },
+  "rule": "default skin only (brief)"
+ },
+ "improved_report": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\improved\\holly_snowman.json",
+ "seconds": 35.5
+}

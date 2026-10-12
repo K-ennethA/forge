@@ -1,0 +1,550 @@
+{
+ "unit": "phoenix_hatchling",
+ "conquest_character_id": "phoenix_hatchling",
+ "source": "none: from-scratch unit (sheet design/reference/phoenix_hatchling-character-sheet.png)",
+ "tier": "regular",
+ "tri_budget": [
+  8000,
+  22000
+ ],
+ "units": "sheet units: 1 unit = 100 px; three true orthos; floor z = 0 at the soles",
+ "overrides": {},
+ "collar_fluff": {
+  "seed": 11,
+  "puffs": {
+   "big": 90,
+   "small": 200
+  },
+  "wisp_puffs": 9,
+  "k": 0.05
+ },
+ "sdf": {
+  "step": 0.02,
+  "band": 0.2,
+  "grid": [
+   180,
+   193,
+   298
+  ],
+  "ops": 306,
+  "high_tris": 1074216,
+  "high_verts": 537110,
+  "crumbs": {
+   "pieces": 1,
+   "dropped_verts": 0
+  },
+  "seconds_fields": 3.7,
+  "seconds": 12.9
+ },
+ "retopo": {
+  "method": "SDF marching tetrahedra (step 0.020) -> collapse decimation (deterministic)",
+  "decimated_tris": 12500,
+  "specks": {
+   "pieces": 1,
+   "dropped_verts": 0
+  },
+  "low_to_high": {
+   "mean": 0.00116,
+   "p99": 0.00384,
+   "max": 0.00763
+  },
+  "high_to_low_sampled": {
+   "p99": 0.00291,
+   "max": 0.01156
+  },
+  "bbox_high": [
+   2.8998,
+   3.5175,
+   5.5599
+  ],
+  "bbox_low": [
+   2.9017,
+   3.518,
+   5.556
+  ],
+  "bbox_low_over_high": [
+   1.00064,
+   1.00015,
+   0.99929
+  ],
+  "seconds": 17.0
+ },
+ "iso_cuts": {
+  "cuts": [
+   {
+    "field": "f_collar",
+    "tau": 0.0,
+    "edge_splits": 225,
+    "face_connects": 276
+   },
+   {
+    "field": "f_beak",
+    "tau": 0.0,
+    "edge_splits": 27,
+    "face_connects": 33
+   },
+   {
+    "field": "ringd",
+    "tau": 0.0,
+    "edge_splits": 70,
+    "face_connects": 81
+   },
+   {
+    "field": "wisp",
+    "tau": 0.022,
+    "edge_splits": 7,
+    "face_connects": 9
+   }
+  ],
+  "seconds": 3.3,
+  "shell_tris_after_cuts": 13158
+ },
+ "centre_shift": [
+  -0.004216,
+  0.150909,
+  0.0
+ ],
+ "glow": {
+  "skin": "default",
+  "glowing_regions": [
+   "ember",
+   "jewel",
+   "jewel_core",
+   "ring"
+  ],
+  "emission_scale_tiers": {
+   "ember": 1.0,
+   "jewel": 0.7,
+   "jewel_core": 0.9,
+   "ring": 0.85
+  },
+  "peak_srgb_x_scale": 0.9686,
+  "peak_x_strength": 1.4529,
+  "cap": 2.0,
+  "ok": true
+ },
+ "regions_faces": {
+  "phoenix_hatchling": {
+   "head": 2477,
+   "crest": 880,
+   "collar": 3575,
+   "smoke_light": 11,
+   "body": 982,
+   "wing": 4160,
+   "tail": 372,
+   "eye": 384,
+   "eye_hi": 96,
+   "beak": 197,
+   "ring": 504,
+   "jewel": 8,
+   "jewel_core": 8,
+   "leg": 480,
+   "leg_ring": 480,
+   "ember": 96,
+   "ash": 168
+  }
+ },
+ "regions_area_share": {
+  "head": 0.3167,
+  "crest": 0.0371,
+  "collar": 0.112,
+  "smoke_light": 0.0001,
+  "body": 0.0817,
+  "wing": 0.301,
+  "tail": 0.0163,
+  "eye": 0.0273,
+  "eye_hi": 0.0006,
+  "beak": 0.0103,
+  "ring": 0.0129,
+  "jewel": 0.001,
+  "jewel_core": 0.0003,
+  "leg": 0.0695,
+  "leg_ring": 0.0056,
+  "ember": 0.0008,
+  "ash": 0.0068
+ },
+ "facing": {
+  "rule": "head centre -> beak tip on the midline (the beak points forward, -Y)",
+  "anchor": [
+   0.0042,
+   -0.1009,
+   4.24
+  ],
+  "landmark": [
+   0.0042,
+   -1.7359,
+   3.76
+  ],
+  "angle_from_minusY_deg": 0.0
+ },
+ "face": {
+  "eyes": {
+   "L": {
+    "surface": [
+     0.9842,
+     -1.0944,
+     4.29
+    ],
+    "normal": [
+     0.6492,
+     -0.7593,
+     0.0453
+    ],
+    "half_wh": [
+     0.35,
+     0.29
+    ],
+    "proud": 0.04
+   },
+   "R": {
+    "surface": [
+     -0.9758,
+     -1.0944,
+     4.29
+    ],
+    "normal": [
+     -0.6492,
+     -0.7593,
+     0.0453
+    ],
+    "half_wh": [
+     0.35,
+     0.29
+    ],
+    "proud": 0.04
+   }
+  },
+  "beak": {
+   "chain": [
+    [
+     0.0,
+     -1.05,
+     3.98
+    ],
+    [
+     0.0,
+     -1.35,
+     3.97
+    ],
+    [
+     0.0,
+     -1.5,
+     3.88
+    ],
+    [
+     0.0,
+     -1.585,
+     3.76
+    ]
+   ],
+   "sx": 1.45,
+   "rule": "SDF shell, iso-cut"
+  },
+  "ring": {
+   "width": 0.1,
+   "rule": "head surface within RING_W of the collar, iso-cut, glowing"
+  },
+  "jewel": {
+   "surface": [
+    0.0042,
+    -0.9011,
+    2.15
+   ]
+  }
+ },
+ "tris": {
+  "total": 16090,
+  "shell": 13158,
+  "shell_before_cuts": 12500,
+  "per_region": {
+   "head": 2477,
+   "crest": 880,
+   "collar": 3575,
+   "smoke_light": 11,
+   "body": 982,
+   "wing": 4160,
+   "tail": 372,
+   "eye": 384,
+   "eye_hi": 96,
+   "beak": 197,
+   "ring": 504,
+   "jewel": 8,
+   "jewel_core": 8,
+   "leg": 480,
+   "leg_ring": 480,
+   "ember": 96,
+   "ash": 168
+  },
+  "per_part": {
+   "shell (head + crest + body + wings + tail + collar, one SDF)": 13158,
+   "eye": 672,
+   "eye_hi": 144,
+   "jewel": 8,
+   "jewel_core": 8,
+   "leg": 120,
+   "leg_ring": 960,
+   "pad": 240,
+   "toe": 384,
+   "ember": 144,
+   "ash": 252
+  }
+ },
+ "tier_rationale": "REGULAR role (a line unit): window [8000, 22000]. The one SDF shell carries the head, crest curls, body, wings, tail and the lumpy collar (~13k tris keeps the collar puffs and crest curls in the LOW silhouette); the closed parts (eyes, beak, ring, jewel, legs, feet, particles) add the rest.",
+ "open_edges": {
+  "closed_parts": [
+   "ash.0",
+   "ash.1",
+   "ash.2",
+   "ash.3",
+   "ash.4",
+   "ash.5",
+   "ash.6",
+   "ember.0",
+   "ember.1",
+   "ember.2",
+   "ember.3",
+   "eye.L",
+   "eye.R",
+   "eye_hi.L",
+   "eye_hi.R",
+   "jewel",
+   "jewel_core",
+   "leg.L",
+   "leg.R",
+   "leg_ring.L.0",
+   "leg_ring.L.1",
+   "leg_ring.R.0",
+   "leg_ring.R.1",
+   "pad.L",
+   "pad.R",
+   "shell",
+   "toe.L.back",
+   "toe.L.inner",
+   "toe.L.mid",
+   "toe.L.outer",
+   "toe.R.back",
+   "toe.R.inner",
+   "toe.R.mid",
+   "toe.R.outer"
+  ],
+  "open_parts": {},
+  "rule": "every piece is a closed solid (SDF shell, lathes with poles, tori)"
+ },
+ "measure": {
+  "bbox": [
+   [
+    -1.6408,
+    -1.759,
+    0.0
+   ],
+   [
+    1.6408,
+    1.759,
+    6.5548
+   ]
+  ],
+  "height": 6.5548,
+  "width_x": 3.2815,
+  "depth_y": 3.518,
+  "sheet_px_equivalent": {
+   "height_px": 655.5,
+   "width_px": 328.2,
+   "sheet": {
+    "front": "H 6.52 W 2.95",
+    "side": "H 6.63 D 3.51",
+    "back": "H 6.40 W 3.17"
+   }
+  },
+  "export_cell_fit_report_only": {
+   "scale": 0.27461,
+   "height_m": 1.8,
+   "footprint_m": 0.9661,
+   "bound_by": "height"
+  }
+ },
+ "bake": {
+  "NORMAL": {
+   "result": [
+    "FINISHED"
+   ],
+   "seconds": 1.4
+  },
+  "AO": {
+   "result": [
+    "FINISHED"
+   ],
+   "seconds": 1.0
+  },
+  "cage_extrusion": 0.02,
+  "cage_rule": "3 x the sampled high->low p99 distance (floor 0.02)",
+  "resolution": {
+   "normal": 1024,
+   "ao": 512
+  },
+  "high_tris": 1075936,
+  "high_rule": "the SDF shell (marching tets) + every closed part",
+  "body_uv_texels_normal": 491103,
+  "normal_baked_pct_of_body_texels": 99.95,
+  "normal_detail_fraction_dev_gt_0.05": 0.289,
+  "ao_baked_pct_of_body_texels": 100.0,
+  "ao_mean": 0.8224,
+  "ao_p05": 0.251,
+  "pixel_sha": {
+   "normal": "29d7b8180bd19a31",
+   "ao": "b62c2e030afa293a"
+  },
+  "seconds": 5.2
+ },
+ "digest_geometry_colour_uv": "a468ecdadaadbbcd",
+ "palette": {
+  "default": {
+   "head": {
+    "rgb": [
+     79,
+     20,
+     17
+    ]
+   },
+   "crest": {
+    "rgb": [
+     79,
+     20,
+     17
+    ]
+   },
+   "collar": {
+    "rgb": [
+     27,
+     23,
+     22
+    ]
+   },
+   "smoke_light": {
+    "rgb": [
+     47,
+     37,
+     35
+    ]
+   },
+   "body": {
+    "rgb": [
+     117,
+     87,
+     80
+    ]
+   },
+   "wing": {
+    "rgb": [
+     117,
+     87,
+     80
+    ]
+   },
+   "tail": {
+    "rgb": [
+     117,
+     87,
+     80
+    ]
+   },
+   "eye": {
+    "rgb": [
+     7,
+     6,
+     6
+    ]
+   },
+   "eye_hi": {
+    "rgb": [
+     242,
+     242,
+     242
+    ]
+   },
+   "beak": {
+    "rgb": [
+     245,
+     143,
+     28
+    ]
+   },
+   "ring": {
+    "rgb": [
+     250,
+     146,
+     19
+    ],
+    "emission": [
+     250,
+     146,
+     19
+    ],
+    "emission_scale": 0.85
+   },
+   "jewel": {
+    "rgb": [
+     249,
+     149,
+     28
+    ],
+    "emission": [
+     249,
+     149,
+     28
+    ],
+    "emission_scale": 0.7
+   },
+   "jewel_core": {
+    "rgb": [
+     245,
+     72,
+     10
+    ],
+    "emission": [
+     245,
+     72,
+     10
+    ],
+    "emission_scale": 0.9
+   },
+   "leg": {
+    "rgb": [
+     232,
+     129,
+     122
+    ]
+   },
+   "leg_ring": {
+    "rgb": [
+     67,
+     41,
+     40
+    ]
+   },
+   "ember": {
+    "rgb": [
+     247,
+     100,
+     15
+    ],
+    "emission": [
+     247,
+     100,
+     15
+    ],
+    "emission_scale": 1.0
+   },
+   "ash": {
+    "rgb": [
+     24,
+     19,
+     19
+    ]
+   }
+  },
+  "files": [
+   "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\palettes\\phoenix_hatchling\\default.json"
+  ],
+  "provenance": "pixel-sampled from the sheet's five palette chips (intake swatches) + drawn-surface samples (see the palette notes)"
+ }
+}

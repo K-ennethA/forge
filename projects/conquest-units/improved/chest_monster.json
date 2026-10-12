@@ -1,0 +1,712 @@
+{
+ "unit": "chest_monster",
+ "conquest_character_id": "chest_monster",
+ "source": "none: from-scratch unit (sheet design/reference/chest_monster-character-sheet.png)",
+ "tier": "regular",
+ "tri_budget": [
+  8000,
+  22000
+ ],
+ "units": "sheet units: 1 unit = 100 px; all three views 3/4 perspective (box reconstructed, verticals / 0.973); floor z = 0 at the toe tips",
+ "overrides": {},
+ "sdf": {
+  "what": "one dangling leg (stalk + foot + 3 toes), placed x4",
+  "step": 0.01,
+  "band": 0.13,
+  "grid": [
+   85,
+   65,
+   144
+  ],
+  "ops": 5,
+  "high_tris_per_leg": 79128,
+  "high_verts_per_leg": 39566,
+  "crumbs": {
+   "pieces": 1,
+   "dropped_verts": 0
+  },
+  "high_min_z": 0.002,
+  "seconds": 1.0
+ },
+ "retopo": {
+  "method": "SDF marching tetrahedra (step 0.010) -> collapse decimation (deterministic)",
+  "decimated_tris_per_leg": 1700,
+  "specks": {
+   "pieces": 1,
+   "dropped_verts": 0
+  },
+  "low_to_high": {
+   "mean": 0.00026,
+   "p99": 0.00095,
+   "max": 0.00167
+  },
+  "high_to_low": {
+   "p99": 0.00073,
+   "max": 0.00182
+  },
+  "bbox_high": [
+   0.6387,
+   0.2581,
+   1.335
+  ],
+  "bbox_low": [
+   0.6399,
+   0.2579,
+   1.3356
+  ],
+  "bbox_low_over_high": [
+   1.00182,
+   0.99926,
+   1.00043
+  ],
+  "seconds": 1.2
+ },
+ "iso_cuts": {
+  "cuts": [
+   {
+    "field": "z",
+    "tau": 0.62,
+    "edge_splits": 43,
+    "face_connects": 52
+   },
+   {
+    "field": "z",
+    "tau": 0.5,
+    "edge_splits": 81,
+    "face_connects": 82
+   },
+   {
+    "field": "z",
+    "tau": 0.09,
+    "edge_splits": 88,
+    "face_connects": 95
+   }
+  ],
+  "seconds": 0.1,
+  "leg_tris_after_cuts": 2124
+ },
+ "centre_shift": [
+  0.0,
+  0.0,
+  0.0016
+ ],
+ "glow_tiers": {
+  "default": {
+   "skin": "default",
+   "emission_scale_tiers": {
+    "toe": 0.55,
+    "toe_tip": 0.85,
+    "crystal_deep": 0.35,
+    "crystal": 0.5,
+    "crystal_light": 0.6,
+    "crystal_streak": 0.9,
+    "smoke_core": 0.7,
+    "smoke_ray": 0.5,
+    "smoke_spark": 0.6
+   },
+   "families": [
+    [
+     "toe",
+     "toe_tip"
+    ],
+    [
+     "crystal_deep",
+     "crystal",
+     "crystal_light",
+     "crystal_streak"
+    ],
+    [
+     "smoke_ray",
+     "smoke_spark",
+     "smoke_core"
+    ]
+   ],
+   "grade_pass": true,
+   "only_drawn_glow": true,
+   "cap": 2.0,
+   "cap_pass": true
+  }
+ },
+ "regions_faces": {
+  "chest_monster": {
+   "box": 960,
+   "lid": 532,
+   "lid_top": 168,
+   "eye": 224,
+   "iris": 128,
+   "eye_glint": 64,
+   "leg": 1128,
+   "leg_ankle": 1384,
+   "leg_dot": 256,
+   "toe": 4988,
+   "toe_tip": 996,
+   "crystal_deep": 209,
+   "crystal": 205,
+   "crystal_light": 208,
+   "crystal_streak": 8,
+   "smoke_core": 0,
+   "smoke_ray": 0,
+   "smoke_spark": 0
+  }
+ },
+ "alpha": {
+  "main": {
+   "box": 1.0,
+   "lid": 1.0,
+   "lid_top": 1.0,
+   "eye": 1.0,
+   "iris": 1.0,
+   "eye_glint": 1.0,
+   "leg": 1.0,
+   "leg_ankle": 1.0,
+   "leg_dot": 1.0,
+   "toe": 1.0,
+   "toe_tip": 1.0,
+   "crystal_deep": 0.8600000143051147,
+   "crystal": 0.8199999928474426,
+   "crystal_light": 0.7799999713897705,
+   "crystal_streak": 0.949999988079071,
+   "smoke_core": 0.550000011920929,
+   "smoke_ray": 0.5,
+   "smoke_spark": 1.0
+  },
+  "material_alpha": 1.0
+ },
+ "regions_area_share": {
+  "box": 0.4548,
+  "lid": 0.1968,
+  "lid_top": 0.0892,
+  "eye": 0.0463,
+  "iris": 0.0062,
+  "eye_glint": 0.0005,
+  "leg": 0.0211,
+  "leg_ankle": 0.0064,
+  "leg_dot": 0.0012,
+  "toe": 0.0295,
+  "toe_tip": 0.0023,
+  "crystal_deep": 0.0472,
+  "crystal": 0.0483,
+  "crystal_light": 0.0474,
+  "crystal_streak": 0.0026,
+  "smoke_core": 0.0,
+  "smoke_ray": 0.0,
+  "smoke_spark": 0.0
+ },
+ "facing": {
+  "rule": "box centre (at eye height) -> the eye emblem's front face centre (the eye faces -Y)",
+  "anchor": [
+   0.0,
+   0.0,
+   2.4884
+  ],
+  "landmark": [
+   0.0,
+   -1.07,
+   2.4884
+  ],
+  "angle_from_minusY_deg": 0.0
+ },
+ "tris": {
+  "total": 13832,
+  "per_part_family": {
+   "box": 1920,
+   "lid": 1400,
+   "eye": 336,
+   "iris": 192,
+   "eye_glint": 96,
+   "leg": 8496,
+   "leg_dot": 384,
+   "crystal": 1008
+  },
+  "per_region": {
+   "box": 960,
+   "lid": 532,
+   "lid_top": 168,
+   "eye": 224,
+   "iris": 128,
+   "eye_glint": 64,
+   "leg": 1128,
+   "leg_ankle": 1384,
+   "leg_dot": 256,
+   "toe": 4988,
+   "toe_tip": 996,
+   "crystal_deep": 209,
+   "crystal": 205,
+   "crystal_light": 208,
+   "crystal_streak": 8,
+   "smoke_core": 0,
+   "smoke_ray": 0,
+   "smoke_spark": 0
+  }
+ },
+ "tier_rationale": "REGULAR role (a line unit): window [8000, 22000]. The four SDF legs carry most of the budget (a smooth teardrop stalk + three claws each), the box / lid are bevelled rounded boxes, the crystals are faceted prisms (7), the smoke a core + 13 rays.",
+ "open_edges": {
+  "closed_parts": 24,
+  "open_parts": {},
+  "rule": "every part is a closed solid (SDF legs, rounded boxes, plates, prisms, bipyramids, octahedra)"
+ },
+ "measure": {
+  "bbox": [
+   [
+    -1.5818,
+    -1.3169,
+    0.0
+   ],
+   [
+    1.5818,
+    1.3169,
+    4.8361
+   ]
+  ],
+  "height": 4.8361,
+  "width_x": 3.1635,
+  "depth_y": 2.6338,
+  "box_WxDxH": {
+   "top_W": 2.49,
+   "top_D": 1.99,
+   "base_W": 2.6394,
+   "base_D": 2.1094,
+   "box_H_visible": 1.76,
+   "lid_H": 0.71,
+   "lid_W": 2.59,
+   "lid_D": 2.09,
+   "body_top_z": 3.13,
+   "box_bottom_z": 0.66
+  },
+  "sheet_reconstruction": {
+   "method": "3/4 views: face widths W cos t / D sin t in the front + side views solved for W, D and both yaws; verticals / cos(elev 13.5 deg)",
+   "front_px": [
+    231,
+    75
+   ],
+   "side_px": [
+    56,
+    194
+   ],
+   "W_px": 249,
+   "D_px": 199,
+   "yaw_front_deg": 21.9,
+   "yaw_side_deg": 77.0,
+   "elev_deg": 13.5
+  },
+  "export_cell_fit_report_only": {
+   "scale": 0.3722,
+   "height_m": 1.8,
+   "footprint_m": 1.1775,
+   "bound_by": "height"
+  }
+ },
+ "bake": {
+  "NORMAL": {
+   "result": [
+    "FINISHED"
+   ],
+   "seconds": 0.7
+  },
+  "AO": {
+   "result": [
+    "FINISHED"
+   ],
+   "seconds": 0.6
+  },
+  "cage_extrusion": 0.02,
+  "cage_rule": "3 x the leg's high->low p99 distance (floor 0.02)",
+  "resolution": {
+   "normal": 1024,
+   "ao": 512
+  },
+  "high_tris": 318844,
+  "high_rule": "4 x the leg SDF high + every opaque closed part; fx parts excluded (see-through)",
+  "body_uv_texels_normal": 688782,
+  "normal_baked_pct_of_body_texels": 99.62,
+  "normal_detail_fraction_dev_gt_0.05": 0.1017,
+  "ao_baked_pct_of_body_texels": 100.0,
+  "ao_mean": 0.6996,
+  "ao_p05": 0.0,
+  "pixel_sha": {
+   "normal": "86324e4e0b4e24d4",
+   "ao": "694cff1b5a868fdc"
+  },
+  "seconds": 3.6
+ },
+ "digest_geometry_colour_uv": "1a54fcdbd026939d",
+ "palette": {
+  "default": {
+   "box": {
+    "rgb": [
+     210,
+     154,
+     99
+    ]
+   },
+   "lid": {
+    "rgb": [
+     71,
+     40,
+     17
+    ]
+   },
+   "lid_top": {
+    "rgb": [
+     106,
+     62,
+     34
+    ]
+   },
+   "eye": {
+    "rgb": [
+     253,
+     144,
+     56
+    ]
+   },
+   "iris": {
+    "rgb": [
+     67,
+     37,
+     14
+    ]
+   },
+   "eye_glint": {
+    "rgb": [
+     251,
+     235,
+     217
+    ]
+   },
+   "leg": {
+    "rgb": [
+     122,
+     69,
+     31
+    ]
+   },
+   "leg_ankle": {
+    "rgb": [
+     184,
+     68,
+     22
+    ]
+   },
+   "leg_dot": {
+    "rgb": [
+     240,
+     88,
+     24
+    ]
+   },
+   "toe": {
+    "rgb": [
+     253,
+     97,
+     44
+    ],
+    "emission": [
+     253,
+     97,
+     44
+    ],
+    "emission_scale": 0.55
+   },
+   "toe_tip": {
+    "rgb": [
+     251,
+     150,
+     100
+    ],
+    "emission": [
+     251,
+     150,
+     100
+    ],
+    "emission_scale": 0.85
+   },
+   "crystal_deep": {
+    "rgb": [
+     19,
+     37,
+     251
+    ],
+    "emission": [
+     40,
+     60,
+     253
+    ],
+    "emission_scale": 0.35
+   },
+   "crystal": {
+    "rgb": [
+     73,
+     79,
+     253
+    ],
+    "emission": [
+     73,
+     79,
+     253
+    ],
+    "emission_scale": 0.5
+   },
+   "crystal_light": {
+    "rgb": [
+     134,
+     117,
+     237
+    ],
+    "emission": [
+     120,
+     115,
+     250
+    ],
+    "emission_scale": 0.6
+   },
+   "crystal_streak": {
+    "rgb": [
+     238,
+     236,
+     251
+    ],
+    "emission": [
+     230,
+     232,
+     255
+    ],
+    "emission_scale": 0.9
+   },
+   "smoke_core": {
+    "rgb": [
+     251,
+     211,
+     192
+    ],
+    "emission": [
+     252,
+     200,
+     185
+    ],
+    "emission_scale": 0.7
+   },
+   "smoke_ray": {
+    "rgb": [
+     252,
+     184,
+     170
+    ],
+    "emission": [
+     252,
+     184,
+     170
+    ],
+    "emission_scale": 0.5
+   },
+   "smoke_spark": {
+    "rgb": [
+     226,
+     140,
+     128
+    ],
+    "emission": [
+     240,
+     150,
+     130
+    ],
+    "emission_scale": 0.6
+   }
+  },
+  "files": [
+   "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\palettes\\chest_monster\\default.json"
+  ],
+  "provenance": "pixel-sampled from the sheet's six palette chips (intake swatches) + drawn-surface samples (see the palette notes)"
+ },
+ "crystals": [
+  {
+   "cluster": "big",
+   "base": [
+    -0.35,
+    0.05,
+    3.13
+   ],
+   "axis": [
+    0.1191,
+    0.0099,
+    0.9928
+   ],
+   "length": 1.72,
+   "radius": 0.27,
+   "tip": [
+    -0.1451,
+    0.0671,
+    4.8377
+   ],
+   "streak_faces": 2
+  },
+  {
+   "cluster": "big",
+   "base": [
+    -0.55,
+    -0.07,
+    3.13
+   ],
+   "axis": [
+    -0.2762,
+    -0.2762,
+    0.9206
+   ],
+   "length": 1.25,
+   "radius": 0.21,
+   "tip": [
+    -0.8952,
+    -0.4152,
+    4.2807
+   ],
+   "streak_faces": 2
+  },
+  {
+   "cluster": "big",
+   "base": [
+    -0.13,
+    0.07,
+    3.13
+   ],
+   "axis": [
+    0.6458,
+    0.076,
+    0.7597
+   ],
+   "length": 0.95,
+   "radius": 0.17,
+   "tip": [
+    0.4835,
+    0.1422,
+    3.8518
+   ],
+   "streak_faces": 1
+  },
+  {
+   "cluster": "big",
+   "base": [
+    -0.65,
+    0.23,
+    3.13
+   ],
+   "axis": [
+    -0.673,
+    0.2125,
+    0.7084
+   ],
+   "length": 0.55,
+   "radius": 0.13,
+   "tip": [
+    -1.0202,
+    0.3469,
+    3.5196
+   ],
+   "streak_faces": 1
+  },
+  {
+   "cluster": "small",
+   "base": [
+    1.15,
+    0.36,
+    3.13
+   ],
+   "axis": [
+    0.2906,
+    0.6227,
+    0.7265
+   ],
+   "length": 1.35,
+   "radius": 0.17,
+   "tip": [
+    1.5423,
+    1.2007,
+    4.1108
+   ],
+   "streak_faces": 1
+  },
+  {
+   "cluster": "small",
+   "base": [
+    0.95,
+    0.2,
+    3.13
+   ],
+   "axis": [
+    0.2639,
+    0.3958,
+    0.8796
+   ],
+   "length": 0.95,
+   "radius": 0.14,
+   "tip": [
+    1.2007,
+    0.576,
+    3.9656
+   ],
+   "streak_faces": 1
+  },
+  {
+   "cluster": "small",
+   "base": [
+    1.12,
+    0.06,
+    3.13
+   ],
+   "axis": [
+    0.4708,
+    -0.214,
+    0.8559
+   ],
+   "length": 0.5,
+   "radius": 0.11,
+   "tip": [
+    1.3554,
+    -0.047,
+    3.558
+   ],
+   "streak_faces": 0
+  }
+ ],
+ "legs": {
+  "BL": {
+   "top_xy": [
+    1.2792,
+    1.0197
+   ],
+   "foot_xy": [
+    1.3551,
+    1.0901
+   ]
+  },
+  "BR": {
+   "top_xy": [
+    -1.2792,
+    1.0197
+   ],
+   "foot_xy": [
+    -1.3551,
+    1.0901
+   ]
+  },
+  "FL": {
+   "top_xy": [
+    1.2792,
+    -1.0197
+   ],
+   "foot_xy": [
+    1.3551,
+    -1.0901
+   ]
+  },
+  "FR": {
+   "top_xy": [
+    -1.2792,
+    -1.0197
+   ],
+   "foot_xy": [
+    -1.3551,
+    -1.0901
+   ]
+  }
+ }
+}

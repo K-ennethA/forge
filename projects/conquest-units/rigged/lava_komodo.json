@@ -1,0 +1,609 @@
+{
+ "unit": "lava_komodo",
+ "source": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\improved\\lava_komodo.blend",
+ "fps": 24,
+ "weights": {
+  "max_influences": 4,
+  "unweighted": 0,
+  "sum_dev_max": 2.220446049250313e-16,
+  "per_bone_dominant": {
+   "hips": 2892,
+   "spine.001": 574,
+   "spine.002": 569,
+   "spine.003": 397,
+   "neck": 1029,
+   "head": 1650,
+   "crest": 1104,
+   "leg_L.upper": 311,
+   "leg_L.lower": 151,
+   "leg_R.upper": 311,
+   "leg_R.lower": 151,
+   "tail.001": 107,
+   "tail.002": 99,
+   "tail.003": 150,
+   "tail.004": 88
+  },
+  "rule": "body: membership by SDF ownership (head / neck / legs / tail / pool, +-0.10 blend), the rest hips | spine.001 | .002 | .003 split along Y at [1.0, 0.0, -0.9]; legs upper | lower at the elbow; tail.001-.004 along Y; the body below z [0.1, 0.55] fades onto hips (the melting base + the pool never move); face decals 1.0 head; crest tongues 1.0 crest"
+ },
+ "clips": {
+  "idle": {
+   "frames": [
+    1,
+    97
+   ],
+   "period_frames": 96,
+   "seconds": 4.0,
+   "cyclic": true,
+   "seam_main_mm": 0.0,
+   "root_offset_max": 0.0,
+   "clearance_min_z": -0.0,
+   "pool_max_move": 0.0,
+   "pool_min_z": -0.0,
+   "crest_length_scale": [
+    0.9264,
+    1.0736
+   ]
+  },
+  "walk": {
+   "frames": [
+    1,
+    49
+   ],
+   "period_frames": 48,
+   "seconds": 2.0,
+   "cyclic": true,
+   "seam_main_mm": 0.0,
+   "root_offset_max": 0.0,
+   "clearance_min_z": -0.0,
+   "pool_max_move": 0.0,
+   "pool_min_z": -0.0,
+   "crest_length_scale": [
+    0.9437,
+    1.1211
+   ]
+  }
+ },
+ "bones": [
+  {
+   "name": "root",
+   "parent": null,
+   "deform": false,
+   "head": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "tail": [
+    0.0,
+    0.0,
+    0.4
+   ]
+  },
+  {
+   "name": "hips",
+   "parent": "root",
+   "deform": true,
+   "head": [
+    0.0,
+    0.7495,
+    0.7
+   ],
+   "tail": [
+    0.0,
+    -0.2005,
+    1.0
+   ]
+  },
+  {
+   "name": "spine.001",
+   "parent": "hips",
+   "deform": true,
+   "head": [
+    0.0,
+    -0.2005,
+    1.0
+   ],
+   "tail": [
+    0.0,
+    -1.2005,
+    1.25
+   ]
+  },
+  {
+   "name": "spine.002",
+   "parent": "spine.001",
+   "deform": true,
+   "head": [
+    0.0,
+    -1.2005,
+    1.25
+   ],
+   "tail": [
+    0.0,
+    -2.1005,
+    1.55
+   ]
+  },
+  {
+   "name": "spine.003",
+   "parent": "spine.002",
+   "deform": true,
+   "head": [
+    0.0,
+    -2.1005,
+    1.55
+   ],
+   "tail": [
+    0.0,
+    -2.6205,
+    2.0
+   ]
+  },
+  {
+   "name": "neck",
+   "parent": "spine.003",
+   "deform": true,
+   "head": [
+    0.0,
+    -2.6205,
+    2.0
+   ],
+   "tail": [
+    0.0,
+    -3.0505,
+    3.15
+   ]
+  },
+  {
+   "name": "head",
+   "parent": "neck",
+   "deform": true,
+   "head": [
+    0.0,
+    -3.0505,
+    3.15
+   ],
+   "tail": [
+    0.0,
+    -4.1505,
+    3.45
+   ]
+  },
+  {
+   "name": "crest",
+   "parent": "head",
+   "deform": true,
+   "head": [
+    0.0,
+    -3.1005,
+    3.75
+   ],
+   "tail": [
+    0.0,
+    -3.0505,
+    4.5
+   ]
+  },
+  {
+   "name": "leg_L.upper",
+   "parent": "spine.003",
+   "deform": true,
+   "head": [
+    0.74,
+    -2.4205,
+    2.15
+   ],
+   "tail": [
+    0.8,
+    -2.9805,
+    0.98
+   ]
+  },
+  {
+   "name": "leg_L.lower",
+   "parent": "leg_L.upper",
+   "deform": true,
+   "head": [
+    0.8,
+    -2.9805,
+    0.98
+   ],
+   "tail": [
+    0.82,
+    -3.1805,
+    0.22
+   ]
+  },
+  {
+   "name": "leg_R.upper",
+   "parent": "spine.003",
+   "deform": true,
+   "head": [
+    -0.74,
+    -2.4205,
+    2.15
+   ],
+   "tail": [
+    -0.8,
+    -2.9805,
+    0.98
+   ]
+  },
+  {
+   "name": "leg_R.lower",
+   "parent": "leg_R.upper",
+   "deform": true,
+   "head": [
+    -0.8,
+    -2.9805,
+    0.98
+   ],
+   "tail": [
+    -0.82,
+    -3.1805,
+    0.22
+   ]
+  },
+  {
+   "name": "tail.001",
+   "parent": "hips",
+   "deform": true,
+   "head": [
+    0.0,
+    1.0995,
+    0.46
+   ],
+   "tail": [
+    0.0,
+    1.8495,
+    0.3725
+   ]
+  },
+  {
+   "name": "tail.002",
+   "parent": "tail.001",
+   "deform": true,
+   "head": [
+    0.0,
+    1.8495,
+    0.3725
+   ],
+   "tail": [
+    0.0,
+    2.5995,
+    0.2706
+   ]
+  },
+  {
+   "name": "tail.003",
+   "parent": "tail.002",
+   "deform": true,
+   "head": [
+    0.0,
+    2.5995,
+    0.2706
+   ],
+   "tail": [
+    0.0,
+    3.3995,
+    0.1688
+   ]
+  },
+  {
+   "name": "tail.004",
+   "parent": "tail.003",
+   "deform": true,
+   "head": [
+    0.0,
+    3.3995,
+    0.1688
+   ],
+   "tail": [
+    0.0,
+    4.2995,
+    0.07
+   ]
+  }
+ ],
+ "bone_count": 16,
+ "deform_bone_count": 15,
+ "digest": {
+  "parts": {
+   "bake_normal": "4cc30cb67e5b2196",
+   "bake_ao": "aeaf6c5eec171955",
+   "geometry_colour_uv": "edfacb7d2ece6768",
+   "weights": "83acda60fb087330",
+   "keys": "3813e654578ef1ac",
+   "clip_samples": "b8e9286b563d95a7"
+  },
+  "combined": "281d6f55929b345a"
+ },
+ "glb": {
+  "path": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\rigged\\lava_komodo.glb",
+  "bytes": 5891832,
+  "seconds": 0.6,
+  "carries": {
+   "materials": [
+    {
+     "name": "lava_komodo_body",
+     "alphaMode": "OPAQUE",
+     "doubleSided": false,
+     "textures": [
+      "baseColorTexture",
+      "normalTexture"
+     ]
+    },
+    {
+     "name": "lava_komodo_crest",
+     "alphaMode": "OPAQUE",
+     "doubleSided": false,
+     "textures": []
+    }
+   ],
+   "primitives": [
+    {
+     "mesh": "lava_komodo",
+     "material": "lava_komodo_body",
+     "attributes": [
+      "COLOR_0",
+      "COLOR_1",
+      "JOINTS_0",
+      "NORMAL",
+      "POSITION",
+      "TEXCOORD_0",
+      "WEIGHTS_0",
+      "_GLOW"
+     ]
+    },
+    {
+     "mesh": "lava_komodo",
+     "material": "lava_komodo_crest",
+     "attributes": [
+      "COLOR_0",
+      "COLOR_1",
+      "JOINTS_0",
+      "NORMAL",
+      "POSITION",
+      "TEXCOORD_0",
+      "WEIGHTS_0",
+      "_GLOW"
+     ]
+    }
+   ],
+   "animations": [
+    "idle",
+    "walk"
+   ],
+   "skins": 1,
+   "joints": 16
+  },
+  "structure": "armature identity + skinned 'lava_komodo' (opaque body primitive + opaque emissive crest primitive); natural scale; report-only cell fit 0.21792"
+ },
+ "skins": {
+  "default": {
+   "file": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\rigged\\lava_komodo.blend",
+   "palette": {
+    "plate_a": {
+     "rgb": [
+      148,
+      84,
+      69
+     ]
+    },
+    "plate_b": {
+     "rgb": [
+      163,
+      72,
+      57
+     ]
+    },
+    "plate_c": {
+     "rgb": [
+      67,
+      58,
+      57
+     ]
+    },
+    "brow": {
+     "rgb": [
+      167,
+      145,
+      125
+     ]
+    },
+    "crack": {
+     "rgb": [
+      254,
+      115,
+      58
+     ],
+     "emission": [
+      254,
+      115,
+      58
+     ],
+     "emission_scale": 0.5
+    },
+    "molten": {
+     "rgb": [
+      254,
+      115,
+      58
+     ],
+     "emission": [
+      254,
+      115,
+      58
+     ],
+     "emission_scale": 0.62
+    },
+    "molten_mid": {
+     "rgb": [
+      254,
+      153,
+      33
+     ],
+     "emission": [
+      254,
+      153,
+      33
+     ],
+     "emission_scale": 0.66
+    },
+    "molten_core": {
+     "rgb": [
+      255,
+      190,
+      69
+     ],
+     "emission": [
+      255,
+      190,
+      69
+     ],
+     "emission_scale": 0.7
+    },
+    "lava": {
+     "rgb": [
+      254,
+      115,
+      58
+     ],
+     "emission": [
+      254,
+      115,
+      58
+     ],
+     "emission_scale": 0.45
+    },
+    "drip": {
+     "rgb": [
+      255,
+      190,
+      69
+     ],
+     "emission": [
+      255,
+      190,
+      69
+     ],
+     "emission_scale": 0.55
+    },
+    "pool": {
+     "rgb": [
+      255,
+      190,
+      69
+     ],
+     "emission": [
+      255,
+      190,
+      69
+     ],
+     "emission_scale": 0.58
+    },
+    "eye_socket": {
+     "rgb": [
+      47,
+      32,
+      26
+     ]
+    },
+    "eye": {
+     "rgb": [
+      254,
+      115,
+      58
+     ],
+     "emission": [
+      254,
+      115,
+      58
+     ],
+     "emission_scale": 0.74
+    },
+    "pupil": {
+     "rgb": [
+      41,
+      19,
+      12
+     ]
+    },
+    "glint": {
+     "rgb": [
+      255,
+      250,
+      234
+     ]
+    },
+    "face_line": {
+     "rgb": [
+      47,
+      32,
+      26
+     ]
+    },
+    "crest_outer": {
+     "rgb": [
+      254,
+      115,
+      58
+     ],
+     "emission": [
+      254,
+      115,
+      58
+     ],
+     "emission_scale": 0.82
+    },
+    "crest_inner": {
+     "rgb": [
+      255,
+      190,
+      69
+     ],
+     "emission": [
+      255,
+      190,
+      69
+     ],
+     "emission_scale": 0.95
+    }
+   },
+   "glow": {
+    "skin": "default",
+    "emission_scale_tiers": {
+     "crack": 0.5,
+     "molten": 0.62,
+     "molten_mid": 0.66,
+     "molten_core": 0.7,
+     "lava": 0.45,
+     "drip": 0.55,
+     "pool": 0.58,
+     "eye": 0.74,
+     "crest_outer": 0.82,
+     "crest_inner": 0.95
+    },
+    "peak_x_strength": {
+     "crack": 0.498,
+     "molten": 0.6176,
+     "molten_mid": 0.6574,
+     "molten_core": 0.7,
+     "lava": 0.4482,
+     "drip": 0.55,
+     "pool": 0.58,
+     "eye": 0.7371,
+     "crest_outer": 0.8168,
+     "crest_inner": 0.95
+    },
+    "cap": 2.0,
+    "only_drawn_glow": true,
+    "grade_pass": true,
+    "cap_pass": true
+   }
+  },
+  "rule": "default skin only (brief)"
+ },
+ "improved_report": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\improved\\lava_komodo.json",
+ "seconds": 35.3
+}

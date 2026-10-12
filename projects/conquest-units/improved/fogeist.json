@@ -1,0 +1,407 @@
+{
+ "unit": "fogeist",
+ "conquest_character_id": "fogeist",
+ "source": "none: from-scratch unit (sheet design/reference/fogeist-character-sheet.png, measured on fogeist-character-sheet-row.png)",
+ "tier": "regular",
+ "tri_budget": [
+  8000,
+  22000
+ ],
+ "units": "sheet units: 1 unit = 100 FRONT-view px; side mapped at SIDE_K 1.34 (body / crest / tail) and HEAD_K 1.08 (head profile); floor z = 0 at the puddle bottom",
+ "overrides": {},
+ "sdf": {
+  "step": 0.03,
+  "band": 0.4,
+  "grid": [
+   155,
+   276,
+   114
+  ],
+  "ops": 93,
+  "high_tris": 890156,
+  "high_verts": 445080,
+  "crumbs": {
+   "pieces": 1,
+   "dropped_verts": 0
+  },
+  "high_min_z": 0.0,
+  "bulges": {
+   "crest": 14,
+   "body": 12
+  },
+  "bulge_seed": 5,
+  "wisp_blobs": 30,
+  "wisps": 5,
+  "seconds_fields": 3.6,
+  "seconds": 9.9
+ },
+ "retopo": {
+  "method": "SDF marching tetrahedra (step 0.030) -> collapse decimation (deterministic)",
+  "decimated_tris": 14998,
+  "specks": {
+   "pieces": 1,
+   "dropped_verts": 0
+  },
+  "low_to_high": {
+   "mean": 0.00116,
+   "p99": 0.00356,
+   "max": 0.00659
+  },
+  "high_to_low_sampled": {
+   "p99": 0.00312,
+   "max": 0.00625
+  },
+  "bbox_high": [
+   4.4398,
+   8.0175,
+   3.0438
+  ],
+  "bbox_low": [
+   4.4384,
+   8.0143,
+   3.0447
+  ],
+  "bbox_low_over_high": [
+   0.99968,
+   0.9996,
+   1.00029
+  ],
+  "seconds": 11.2,
+  "face_densify": {
+   "rounds": 2,
+   "zone": 0.1,
+   "new_verts": 806,
+   "tris_after": 16610
+  }
+ },
+ "iso_cuts": {
+  "cuts": [
+   {
+    "field": "mist",
+    "tau": 0.0,
+    "edge_splits": 182,
+    "face_connects": 211
+   },
+   {
+    "field": "wisp",
+    "tau": 0.0,
+    "edge_splits": 93,
+    "face_connects": 109
+   },
+   {
+    "field": "eye.L",
+    "tau": 0.0,
+    "edge_splits": 44,
+    "face_connects": 49
+   },
+   {
+    "field": "eye.R",
+    "tau": 0.0,
+    "edge_splits": 38,
+    "face_connects": 46
+   },
+   {
+    "field": "tone_core",
+    "tau": 1.25,
+    "edge_splits": 207,
+    "face_connects": 241
+   },
+   {
+    "field": "tone_core",
+    "tau": 0.28,
+    "edge_splits": 190,
+    "face_connects": 221
+   },
+   {
+    "field": "tone_crest",
+    "tau": 0.45,
+    "edge_splits": 143,
+    "face_connects": 173
+   },
+   {
+    "field": "tone_crest",
+    "tau": -0.35,
+    "edge_splits": 179,
+    "face_connects": 192
+   }
+  ],
+  "seconds": 10.8,
+  "shell_tris_after_cuts": 18762,
+  "tone_islands_merged": 1,
+  "faces_before_merge": {
+   "core_lit": 2948,
+   "core": 4093,
+   "core_shade": 2457,
+   "crest_lit": 3010,
+   "crest": 1323,
+   "crest_deep": 2679,
+   "wisp": 1864,
+   "eye": 388
+  }
+ },
+ "centre_shift": [
+  -0.016153,
+  2.969113,
+  -7e-06
+ ],
+ "glow": {
+  "default": {
+   "skin": "default",
+   "emissive_regions": [],
+   "pass": true,
+   "rule": "no glow (brief)"
+  }
+ },
+ "regions_faces": {
+  "fogeist": {
+   "core_lit": 2944,
+   "core": 4097,
+   "core_shade": 2457,
+   "crest_lit": 3010,
+   "crest": 1323,
+   "crest_deep": 2679,
+   "wisp": 1864,
+   "eye": 388
+  }
+ },
+ "alpha": {
+  "main": {
+   "core_lit": 1.0,
+   "core": 1.0,
+   "core_shade": 1.0,
+   "crest_lit": 0.800000011920929,
+   "crest": 0.7200000286102295,
+   "crest_deep": 0.6000000238418579,
+   "wisp": 0.5,
+   "eye": 1.0
+  },
+  "material_alpha": 1.0,
+  "mist_render_method": "BLENDED",
+  "mist_transparency_overlap": false
+ },
+ "regions_area_share": {
+  "core_lit": 0.073,
+  "core": 0.2132,
+  "core_shade": 0.2231,
+  "crest_lit": 0.2036,
+  "crest": 0.0497,
+  "crest_deep": 0.1827,
+  "wisp": 0.0536,
+  "eye": 0.0011
+ },
+ "facing": {
+  "rule": "head centre at eye height -> the midpoint of the two eyes (the face looks -Y)",
+  "anchor": [
+   0.0162,
+   -2.9091,
+   1.78
+  ],
+  "landmark": [
+   0.0146,
+   -3.7083,
+   1.7857
+  ],
+  "eyes_world": {
+   "L": [
+    0.2846,
+    -3.7105,
+    1.781
+   ],
+   "R": [
+    -0.2553,
+    -3.7061,
+    1.7904
+   ]
+  },
+  "angle_from_minusY_deg": -0.109
+ },
+ "tris": {
+  "total": 18762,
+  "window": [
+   8000,
+   22000
+  ],
+  "per_part": {
+   "mist_shell (one closed SDF shell)": 18762
+  },
+  "per_part_by_owner_group": {
+   "body": 3171,
+   "chest": 812,
+   "neck": 168,
+   "head": 3014,
+   "tail": 2725,
+   "crest": 6995,
+   "crest_wisp": 1001,
+   "tail_wisp": 876
+  },
+  "per_region": {
+   "core_lit": 2944,
+   "core": 4097,
+   "core_shade": 2457,
+   "crest_lit": 3010,
+   "crest": 1323,
+   "crest_deep": 2679,
+   "wisp": 1864,
+   "eye": 388
+  }
+ },
+ "tier_rationale": "REGULAR role (a line unit): window [8000, 22000]. One smooth mist shell carries the whole budget (soft rounded lobes need density to read round under flat shading; the crest is the largest surface); the face zone is densified for the eye outlines.",
+ "open_edges": {
+  "per_part": {
+   "shell": 0
+  },
+  "open_parts": {},
+  "rule": "one closed SDF shell (the wisps are closed tubes smooth-unioned into it)"
+ },
+ "measure": {
+  "bbox": [
+   [
+    -2.2192,
+    -4.0072,
+    0.0
+   ],
+   [
+    2.2192,
+    4.0072,
+    3.0447
+   ]
+  ],
+  "height": 3.0447,
+  "width_x": 4.4384,
+  "depth_y": 8.0143,
+  "sheet": {
+   "front_height": 2.95,
+   "back_height": 2.93,
+   "side_height_drawn": 3.95,
+   "side_height_at_SIDE_K": 2.948,
+   "front_width": 5.35,
+   "side_length_drawn": 10.6,
+   "side_length_at_SIDE_K": 7.91
+  },
+  "export_cell_fit_report_only": {
+   "scale": 0.23708,
+   "height_m": 0.7218,
+   "footprint_m": 1.9,
+   "bound_by": "footprint"
+  }
+ },
+ "sheet_deviations": [
+  "SCALE: the side view is mapped at SIDE_K 1.34 (eye-centre height above the floor 2.382 / 1.78 and crest top 3.95 / 2.95); the side's HEAD is not drawn 1.34x (head top->chin x0.92, eye height x0.83, head top->eye x0.85), so the head is built at the front's size with its side profile at HEAD_K 1.08 -- in the side ortho the head reads ~1.2-1.5x the sheet's and the whole side row does not overlay 1:1 (by design: the front / back fix the scale)",
+  "HEAD TOP: front 2.69 (hood top y 209) vs side at SIDE_K 2.35 (y 165): built 2.69 (front)",
+  "SNOUT: the side draws the eye 0.335 u (31 px x HEAD_K) behind the snout front; on the built head (front-view eye spacing on a 0.60-wide head) the eye lands ~0.18 u behind it",
+  "HOOD FLAPS: front bottom z 1.45 (y 333) vs side ~1.27 at SIDE_K (y 309): built 1.42 (front)",
+  "CREST DRIFT: the front view biases the crest to image right (+X: -1.83 / +2.40 at z 1.58) while the back view (a rear three-quarter) streams it ~3.7 u to image right (-X): contradictory lateral drift -> built straight back (+Y, the side view's direction) and SYMMETRIC (half-widths averaged); lateral wisps mirrored",
+  "BACK VIEW: drawn as a rear three-quarter (crest + tail run off to image right), not a true ortho: used for heights (crest top 2.90) and the body's back width (~0.97 half) only; no back-view overlay row exists (intake ortho_frame views = front, side)",
+  "TAIL WIDTH: no true view draws it (hidden behind the puddle in front; 3/4 in back): tapered 0.95 -> 0.34 half-width from the back view's body width",
+  "WISPS: closed lobed blobs (chains of flattened tapering ellipsoids, smooth-unioned), not volumetrics; the sheet's many fine curling strands are reduced to 8 lumpy blob strands (3 crest-end, 5 tail incl. mirrored pairs)",
+  "FRONT LATERAL WISPS: the front view's image-left low wisps (x 107-122, y 380-450) and image-right trailing wisps (x 456-612) are not modelled as strands (they read as horns in a first pass); the crest's low wings carry the front view's width (~2.1 half at z 1.4-1.8)",
+  "LIGHTING: the sheet lights the crest brighter on image right (front crest R 163 vs L 118); tones are painted symmetric (height / facing only)",
+  "EYES: simple dark ovals (chip 55,66,82); the sheet's soft reflection band inside each eye and the paler halo round it are not modelled",
+  "INK LINES: the thin contour lines (hood edge, chest / haunch outlines) are not modelled (brief)",
+  "TRANSLUCENCY: per-region alpha (crest_lit 0.80 / crest 0.72 / crest_deep 0.60 / wisp 0.50) on a closed shell, one blended layer: the sheet's soft feathered wisp edges are hard silhouette edges here; the mist casts a solid (not see-through) shadow"
+ ],
+ "bake": {
+  "NORMAL": {
+   "result": [
+    "FINISHED"
+   ],
+   "seconds": 1.2
+  },
+  "AO": {
+   "result": [
+    "FINISHED"
+   ],
+   "seconds": 1.6
+  },
+  "cage_extrusion": 0.04,
+  "cage_rule": "3 x the shell high->low sampled p99 distance (floor BAKE_CAGE_FLOOR 0.04)",
+  "resolution": {
+   "normal": 1024,
+   "ao": 512
+  },
+  "ao_samples": 48,
+  "high_tris": 890156,
+  "high_rule": "the mist SDF high (one shell)",
+  "normal_reference": "FLAT low faces (the mist reads smooth under the flat_shaded contract); wired into both materials",
+  "uv_texels_normal": 590240,
+  "normal_baked_pct_of_texels": 99.99,
+  "normal_dev_p50_p95": [
+   0.0217,
+   0.0768
+  ],
+  "ao_baked_pct_of_texels": 100.0,
+  "ao_raw_mean": 0.7564,
+  "ao_raw_p05": 0.1451,
+  "ao_floor": 0.62,
+  "pixel_sha": {
+   "normal": "5fd1ed568dfeaeae",
+   "ao": "b9ec0d0eead9b7b4"
+  },
+  "seconds": 5.8
+ },
+ "digest_geometry_colour_uv": "49e74b0676b30123",
+ "palette": {
+  "default": {
+   "core_lit": {
+    "rgb": [
+     227,
+     227,
+     232
+    ]
+   },
+   "core": {
+    "rgb": [
+     190,
+     196,
+     208
+    ]
+   },
+   "core_shade": {
+    "rgb": [
+     144,
+     157,
+     177
+    ]
+   },
+   "crest_lit": {
+    "rgb": [
+     190,
+     196,
+     208
+    ]
+   },
+   "crest": {
+    "rgb": [
+     144,
+     157,
+     177
+    ]
+   },
+   "crest_deep": {
+    "rgb": [
+     85,
+     101,
+     122
+    ]
+   },
+   "wisp": {
+    "rgb": [
+     144,
+     157,
+     177
+    ]
+   },
+   "eye": {
+    "rgb": [
+     55,
+     66,
+     82
+    ]
+   }
+  },
+  "files": [
+   "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\palettes\\fogeist\\default.json"
+  ],
+  "provenance": "pixel-sampled from the sheet's five palette chips + drawn-surface samples (see the palette notes)"
+ }
+}

@@ -1,0 +1,343 @@
+{
+ "unit": "eclipse_wolf",
+ "sheet": "design/reference/eclipse_wolf-character-sheet.png",
+ "size_px": [
+  1672,
+  941
+ ],
+ "background_rgb": [
+  30,
+  33,
+  38
+ ],
+ "bg_tol": 26.0,
+ "views": {
+  "front": {
+   "bbox_px": [
+    34,
+    162,
+    470,
+    801
+   ],
+   "axis_x_px": 218.0,
+   "floor_y_px": 800,
+   "height_px": 639,
+   "height_units": 6.39,
+   "width_units": 4.36,
+   "half_width_profile": {
+    "0.00": {
+     "y_px": 800,
+     "half_w_units": 0.81
+    },
+    "0.10": {
+     "y_px": 736,
+     "half_w_units": 1.12
+    },
+    "0.25": {
+     "y_px": 640,
+     "half_w_units": 2.24
+    },
+    "0.50": {
+     "y_px": 481,
+     "half_w_units": 2.51
+    },
+    "0.75": {
+     "y_px": 322,
+     "half_w_units": 2.51
+    },
+    "0.90": {
+     "y_px": 226,
+     "half_w_units": 1.57
+    }
+   },
+   "transform": "z = (800 - y_px) / 100 ; x = (x_px - 218.0) / 100"
+  },
+  "back": {
+   "bbox_px": [
+    470,
+    162,
+    860,
+    791
+   ],
+   "axis_x_px": 652.0,
+   "floor_y_px": 790,
+   "height_px": 629,
+   "height_units": 6.29,
+   "width_units": 3.9,
+   "half_width_profile": {
+    "0.00": {
+     "y_px": 790,
+     "half_w_units": 0.9
+    },
+    "0.10": {
+     "y_px": 727,
+     "half_w_units": 1.97
+    },
+    "0.25": {
+     "y_px": 633,
+     "half_w_units": 2.02
+    },
+    "0.50": {
+     "y_px": 476,
+     "half_w_units": 1.82
+    },
+    "0.75": {
+     "y_px": 319,
+     "half_w_units": 1.89
+    },
+    "0.90": {
+     "y_px": 225,
+     "half_w_units": 1.61
+    }
+   },
+   "transform": "z = (790 - y_px) / 100 ; x = (x_px - 652.0) / 100"
+  },
+  "side": {
+   "bbox_px": [
+    860,
+    156,
+    1290,
+    791
+   ],
+   "axis_x_px": 1010.0,
+   "floor_y_px": 790,
+   "height_px": 635,
+   "height_units": 6.35,
+   "width_units": 4.3,
+   "half_width_profile": {
+    "0.10": {
+     "y_px": 727,
+     "half_w_units": 2.14
+    },
+    "0.25": {
+     "y_px": 632,
+     "half_w_units": 2.56
+    },
+    "0.50": {
+     "y_px": 473,
+     "half_w_units": 2.61
+    },
+    "0.75": {
+     "y_px": 314,
+     "half_w_units": 1.49
+    },
+    "0.90": {
+     "y_px": 219,
+     "half_w_units": 1.37
+    }
+   },
+   "transform": "z = (790 - y_px) / 100 ; x = (x_px - 1010.0) / 100"
+  }
+ },
+ "ortho_frame": {
+  "views": [
+   "front",
+   "side"
+  ],
+  "width_px": 600,
+  "height_px": 700,
+  "below_floor_px": 20,
+  "crops": {
+   "front": [
+    -82,
+    120,
+    518,
+    820
+   ],
+   "back": [
+    352,
+    110,
+    952,
+    810
+   ],
+   "side": [
+    710,
+    110,
+    1310,
+    810
+   ]
+  }
+ },
+ "unnamed_extra_segments_px": [],
+ "swatches": [
+  {
+   "centre_px": [
+    1354.0,
+    905.8
+   ],
+   "rgb": [
+    35,
+    30,
+    35
+   ],
+   "diameter_px": 38,
+   "inferred_by_spacing": true
+  },
+  {
+   "centre_px": [
+    1406.0,
+    905.8
+   ],
+   "rgb": [
+    122,
+    109,
+    109
+   ],
+   "diameter_px": 38
+  },
+  {
+   "centre_px": [
+    1458.0,
+    905.7
+   ],
+   "rgb": [
+    56,
+    28,
+    58
+   ],
+   "diameter_px": 38
+  },
+  {
+   "centre_px": [
+    1510.0,
+    905.8
+   ],
+   "rgb": [
+    253,
+    49,
+    253
+   ],
+   "diameter_px": 38
+  },
+  {
+   "centre_px": [
+    1559.9,
+    907.0
+   ],
+   "rgb": [
+    229,
+    221,
+    217
+   ],
+   "diameter_px": 38
+  },
+  {
+   "centre_px": [
+    1612.0,
+    905.6
+   ],
+   "rgb": [
+    116,
+    83,
+    126
+   ],
+   "diameter_px": 38
+  }
+ ],
+ "swatch_rejects_off_column": [
+  {
+   "centre_px": [
+    1456.9,
+    30.0
+   ],
+   "rgb": [
+    23,
+    26,
+    31
+   ],
+   "diameter_px": 16
+  },
+  {
+   "centre_px": [
+    1482.1,
+    30.0
+   ],
+   "rgb": [
+    23,
+    25,
+    27
+   ],
+   "diameter_px": 16
+  },
+  {
+   "centre_px": [
+    1388.7,
+    633.0
+   ],
+   "rgb": [
+    25,
+    28,
+    30
+   ],
+   "diameter_px": 12
+  },
+  {
+   "centre_px": [
+    1420.0,
+    700.0
+   ],
+   "rgb": [
+    23,
+    24,
+    26
+   ],
+   "diameter_px": 14
+  },
+  {
+   "centre_px": [
+    1521.1,
+    700.0
+   ],
+   "rgb": [
+    30,
+    32,
+    36
+   ],
+   "diameter_px": 16
+  },
+  {
+   "centre_px": [
+    1607.0,
+    751.8
+   ],
+   "rgb": [
+    126,
+    110,
+    110
+   ],
+   "diameter_px": 70
+  },
+  {
+   "centre_px": [
+    1491.5,
+    793.6
+   ],
+   "rgb": [
+    18,
+    21,
+    22
+   ],
+   "diameter_px": 12
+  },
+  {
+   "centre_px": [
+    1424.5,
+    823.6
+   ],
+   "rgb": [
+    21,
+    24,
+    25
+   ],
+   "diameter_px": 12
+  }
+ ],
+ "base_frac": 0.06,
+ "axis_overrides": {
+  "front": 218.0,
+  "back": 652.0,
+  "side": 1010.0
+ },
+ "units_rule": "1 sheet unit = 100 px; per view z = (floor_y - y) / 100, x = (x - axis_x) / 100",
+ "caveat": "automatic split: VERIFY intake_overlay.png before dispatch (overlapping views or a floor shadow fuse / extend a view; rerun with --views or --bg-tol). A DARK subject on a dark sheet (shadowbun) loses its outline into the background: the floor line can sit high by ~15 px - check the soles"
+}

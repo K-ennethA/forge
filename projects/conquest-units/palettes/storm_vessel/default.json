@@ -1,0 +1,28 @@
+{
+ "unit": "storm_vessel",
+ "skin": "default",
+ "description": "Storm Vessel default look, PIXEL-SAMPLED from design/reference/storm_vessel-character-sheet.png (service venv PIL, python -P): the six palette chips (intake.json swatches: VESSEL BLUE 156,205,241 / LIGHT BLUE 150,201,239 / WHITE 247,247,247 / METAL GRAY 143,148,159 / ORANGE 254,102,2 / YELLOW ORANGE 254,175,20) plus direct medians of the drawn surfaces (FRONT view unless noted). GLOW (drawn on the sheet): the core, the filaments (neck spray, core strands, arm bursts), the arm-burst discs, the neck interior, the lightning bolt and its sparks only; the blue / white / grey pieces are not emissive. Tiers x material emission_strength 1.5 stay under the 2.0 cap.",
+ "regions": {
+  "body":          {"rgb": [156, 205, 241], "note": "ORB + neck collar: chip VESSEL BLUE 156,205,241 (x1291 y861); drawn FRONT orb ring r80-150 px median 147,199,238 (n 47790), BACK 151,201,239 (shading in the drawn medians)"},
+  "neck_glow":     {"rgb": [251, 158, 32],  "emission": [251, 158, 32],  "emission_scale": 0.80, "note": "the open neck's glowing interior: FRONT y258-290 orange median 251,158,32 (n 1241); its pale inner pool 253,228,172 (n 407) is folded in (one region)"},
+  "frame":         {"rgb": [143, 148, 159], "note": "segmented core ring frame: chip METAL GRAY 143,148,159 (x1490 y862); drawn ring r50-66 px median 152,158,169 (n 5824)"},
+  "frame_seam":    {"rgb": [92, 97, 107],   "note": "the frame's 10 seam lines: drawn dark pixels r50-68 px median 92,97,107 (n 199)"},
+  "core":          {"rgb": [254, 102, 2],   "emission": [254, 102, 2],   "emission_scale": 0.75, "note": "energy ball: chip ORANGE 254,102,2 (x1556 y860); drawn ball r12-36 px (G<150) median 253,131,21 (n 2413)"},
+  "core_deep":     {"rgb": [253, 73, 1],    "emission": [253, 73, 1],    "emission_scale": 0.65, "note": "the ball's deep centre r<9 px median 253,73,1 (n 249)"},
+  "core_rim":      {"rgb": [220, 192, 172], "emission": [220, 192, 172], "emission_scale": 0.45, "note": "the pale glass lip round the ball r40-47 px median 220,192,172 (n 1892)"},
+  "core_fil":      {"rgb": [253, 184, 100], "emission": [253, 184, 100], "emission_scale": 0.90, "note": "the ball's filament strands: r8-40 px yellow (G>=170) median 253,184,100 (n 872) -- drawn BRIGHT (yellow with dark-red edges), not darker"},
+  "filament":      {"rgb": [248, 195, 68],  "emission": [248, 195, 68],  "emission_scale": 0.90, "note": "neck spray + arm-burst strands: FRONT neck strands y245-262 median 248,195,68 (n 136); chip YELLOW ORANGE 254,175,20 is the nearest chip"},
+  "visor":         {"rgb": [150, 201, 239], "note": "head visor band + horn tips: chip LIGHT BLUE 150,201,239 (x1359 y861); drawn FRONT y160-200 median 152,202,240 (n 5522), BACK 143,195,236"},
+  "face":          {"rgb": [247, 247, 247], "note": "half-dome face: chip WHITE 247,247,247 (x1424 y861); drawn FRONT median 247,247,247 (n 3725)"},
+  "eye":           {"rgb": [4, 4, 4],       "note": "the two oval eyes: FRONT (sum<60) median 4,4,4 (n 380)"},
+  "arm_band":      {"rgb": [150, 201, 239], "note": "arm band rings: chip LIGHT BLUE 150,201,239; drawn FRONT R band median 150,203,241 (n 3167), L band 151,203,240"},
+  "hand":          {"rgb": [247, 247, 247], "note": "white dome hands: chip WHITE; drawn FRONT R hand median 247,247,247 (n 1883)"},
+  "hand_mark":     {"rgb": [54, 58, 64],    "note": "the short dark line marks on the hand dome: ARM DETAIL panel dark pixels inside the dome median 54,58,64 (n 107); FRONT R hand 80,77,86 (n 28)"},
+  "arm_glow":      {"rgb": [250, 79, 5],    "emission": [250, 79, 5],    "emission_scale": 0.70, "note": "the glowing burst disc on each band's body side: FRONT R arm x70-100 median 250,79,5 (n 803)"},
+  "arm_glow_ring": {"rgb": [254, 212, 133], "emission": [254, 212, 133], "emission_scale": 0.85, "note": "its pale (drawn segmented) ring: median 254,212,133 (n 306)"},
+  "bolt":          {"rgb": [251, 80, 2],    "emission": [251, 80, 2],    "emission_scale": 0.75, "note": "lightning tail's orange edge band (+ side walls): FRONT bolt G<130 median 251,80,2 (n 3424); chip ORANGE 254,102,2"},
+  "bolt_hi":       {"rgb": [254, 175, 20],  "emission": [254, 175, 20],  "emission_scale": 0.90, "note": "lightning tail's yellow-orange inner: chip YELLOW ORANGE 254,175,20 (x1620 y862); drawn inner median 254,181,30 (n 4994)"},
+  "spark":         {"rgb": [235, 158, 42],  "emission": [235, 158, 42],  "emission_scale": 0.90, "note": "spark crackles: FRONT x175-225 y630-700 median 235,158,42 (n 125)"}
+ },
+ "material": {"roughness": 0.35, "emission_strength": 1.5}
+}

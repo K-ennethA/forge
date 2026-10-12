@@ -1,0 +1,25 @@
+{
+ "unit": "shield_rodent",
+ "skin": "default",
+ "description": "Shield Rodent default look, PIXEL-SAMPLED from design/reference/shield_rodent-character-sheet.png: the five palette chips (intake.json swatches: light steel 189,184,181 / mid steel 129,132,138 / plate light 90,94,100 / plate dark 61,64,68 / warm taupe 121,111,107) plus direct samples of the drawn surfaces (service venv PIL, box medians; the drawn tones include the sheet's lighting, so the chips are the base tones). NO GLOW (the sheet draws none). Metallic, flat-shaded per the house rule: brushed + scratched metal = colour regions (plate / plate_sheen wedges, rim / rim_wall) + normal-map lines only.",
+ "regions": {
+  "body":        {"rgb": [189, 184, 181], "note": "head, belly, legs, feet, ear backs: chip 189,184,181 (x1291 y881); drawn head cheek (110-130,540-580) 175,170,169, side head (760-800,520-560) 173,169,168, foot (870-890,628-645) 162,155,150"},
+  "ear_inner":   {"rgb": [121, 111, 107], "note": "warm-taupe inner ear: chip 121,111,107 (x1589 y881); drawn lit inner front (55-85,400-460) 205,188,176, side (840-880,420-500) 191,175,164 (the sheet lights the cup)"},
+  "seam":        {"rgb": [129, 132, 138], "note": "head centre seam line: chip 129,132,138 (the nearest darker chip, so the line reads at game scale); drawn faint pencil line, darkest pixel per row x 172-179 y 465-530 median 164,159,157"},
+  "eye":         {"rgb": [16, 14, 14],    "note": "black eye: drawn dark pixels (lum < 120) of the left eye box (122-150,535-575) median 17,16,17, right 12,11,11"},
+  "eye_glint":   {"rgb": [255, 255, 255], "note": "eye highlight: drawn peak (131,542) / (206,542) 255,255,255"},
+  "snout":       {"rgb": [129, 132, 138], "note": "metal snout ball: chip 129,132,138 (x1365 y881); drawn ball (165-177,585-600) median 149,141,136"},
+  "tooth":       {"rgb": [189, 184, 181], "note": "two long front teeth: chip 189,184,181 (light steel, the sheet's FACE panel)"},
+  "plate":       {"rgb": [61, 64, 68],    "note": "dark brushed top plate: chip 61,64,68 (x1515 y881); drawn back view (590-630,470-500) 65,68,73, side (1030-1070,500-530) 70,72,77"},
+  "plate_sheen": {"rgb": [90, 94, 100],   "note": "brushed-sheen wedges on the plate: chip 90,94,100 (x1440 y881); drawn back view top (520-560,400-420) 86,88,93"},
+  "rim":         {"rgb": [189, 184, 181], "note": "light-steel rim band top + inner lip: chip 189,184,181; drawn back view rim (395-405,470-500) 192,187,185, side near rim (930-980,580-600) 181,176,174"},
+  "rim_wall":    {"rgb": [129, 132, 138], "note": "the rim band's outer wall: chip 129,132,138 (the brief's rim pair 129,132,138 / 189,184,181)"},
+  "rivet":       {"rgb": [129, 132, 138], "note": "rivet domes: chip 129,132,138; drawn rivet (880-890,585-595) 87,85,83 incl. its ink outline"},
+  "boss_collar": {"rgb": [189, 184, 181], "note": "the boss's stepped collar: chip 189,184,181; drawn back view collar (495-510,460-470) 183,183,184"},
+  "boss_dome":   {"rgb": [129, 132, 138], "note": "the boss dome: chip 129,132,138; drawn back view dome (525-550,420-440) 147,149,154"},
+  "skirt":       {"rgb": [90, 94, 100],   "note": "the short skirt / underside of the shell: chip 90,94,100 (the sheet draws the under-rim band in shadow)"},
+  "tail":        {"rgb": [189, 184, 181], "note": "the tail's upper (lit) facets: chip 189,184,181; drawn back view (530-545,600-640) median 115,115,119, p90 193,191,189"},
+  "tail_shade":  {"rgb": [129, 132, 138], "note": "the tail's lower (shade) facets: chip 129,132,138; drawn side tail lower facet (1100-1140,390-400) 75,76,78 incl. ink"}
+ },
+ "material": {"roughness": 0.45, "emission_strength": 1.0, "alpha": 1.0}
+}

@@ -1,0 +1,22 @@
+SDF {"step": 0.025, "band": 0.15, "grid": [141, 121, 151], "ops": 3, "high_tris": 464088, "high_verts": 232046, "crumbs": {"pieces": 1, "dropped_verts": 0}, "seconds_fields": 0.3, "seconds": 3.2}
+RETOPO {"method": "SDF marching tetrahedra (step 0.025) -> collapse decimation (deterministic)", "decimated_tris": 6000, "specks": {"pieces": 1, "dropped_verts": 0}, "low_to_high": {"mean": 0.0008, "p99": 0.00191, "max": 0.00281}, "high_to_low_sampled": {"p99": 0.00166, "max": 0.00492}, "bbox_high": [3.2799, 2.76, 3.52], "bbox_low": [3.2809, 2.7603, 3.521], "bbox_low_over_high": [1.00031, 1.00012, 1.00031], "seconds": 5.0}
+T parts_built 8.3
+CUTS parts {"head_face": [{"field": "eye", "tau": 0.0, "edge_splits": 32, "face_connects": 40}]}
+Info: Baking map saved to internal image, save it externally or pack it
+Info: Baking map saved to internal image, save it externally or pack it
+BAKE {"NORMAL": {"result": ["FINISHED"], "seconds": 0.7}, "AO": {"result": ["FINISHED"], "seconds": 1.5}, "cage_extrusion": 0.02, "cage_rule": "3 x the sampled high->low p99 distance (floor 0.02)", "resolution": {"normal": 1024, "ao": 512}, "high_tris": 498180, "high_rule": "SDF shell (marching tets: orb + neck - cavity) + every part re-generated at 3x rows + columns (the smooth curvature the flat low faces bake their normals from; tubes + bolt as built)", "body_uv_texels_normal": 534010, "normal_baked_pct_of_body_texels": 92.49, "normal_detail_fraction_dev_gt_0.05": 0.0329, "ao_baked_pct_of_body_texels": 100.0, "ao_mean": 0.5994, "ao_p05": 0.0, "ao_floor": {"rule": {"clean": 1.0, "other": 0.55}, "clean_texels": 47369, "ao_p05_after_floor": 0.55}, "seconds": 5.9}
+Info: Saved copy as "storm_vessel.blend"
+IMPROVED_SAVED C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\improved\storm_vessel.blend 20.7
+CLIP idle {"frames": [1, 97], "period_frames": 96, "seconds": 4.0, "cyclic": true, "seam_main_mm": 0.0, "root_offset_max": 0.0, "clearance_min_z": 0.04509, "head_gap_min": 0.2, "body_lift": [0.14, 0.34], "pitch_deg": [-1.0, 1.0], "roll_deg": [-0.8, 0.8], "tail_tip_p2p_xyz": [0.2901, 0.1761, 0.38]}
+CLIP walk {"frames": [1, 49], "period_frames": 48, "seconds": 2.0, "cyclic": true, "seam_main_mm": 0.0, "root_offset_max": 0.0, "clearance_min_z": 0.14393, "head_gap_min": 0.1669, "body_lift": [0.17, 0.23], "pitch_deg": [7.001, 9.0], "roll_deg": [-0.799, 0.799], "tail_tip_p2p_xyz": [0.2091, 0.2124, 0.1645]}
+Info: Saved copy as "storm_vessel.blend"
+INFO Draco mesh compression is available, use library at C:\Program Files\Blender Foundation\Blender 5.0\5.0\scripts\addons_core\io_scene_gltf2\extern_draco.dll
+16:50:57 | INFO: Starting glTF 2.0 export
+16:50:57 | INFO: Extracting primitive: storm_vessel
+16:50:57 | INFO: Primitives created: 1
+16:50:57 | INFO: Finished glTF 2.0 export in 0.3018782138824463 s
+
+RIG_DONE {"bone_count": 7, "weights": {"max_influences": 2, "unweighted": 0, "sum_dev_max": 0.0, "per_bone_dominant": {"body": 5214, "head": 1450, "arm_L": 1366, "arm_R": 1366, "tail.001": 193, "tail.002": 196}, "rule": "rigid ownership: shell + core + neck spray = body; face, visor, horns = head; band, hand, burst disc + strands = arm_L / arm_R; bolt + sparks: rigkit.vine_weights along the bolt centreline (body -> tail.001 from 0.15 above the top, tail.001 -> tail.002)"}, "digest": {"parts": {"bake_normal": "00cb052c068eabe7", "bake_ao": "2474fe4a92ac5378", "geometry_colour_uv": "f0f46812eb169939", "weights": "75a255602080c053", "keys": "9d83662752686892", "clip_samples": "8cb45eabe90db1dc"}, "combined": "2dd6ecc631dd6ec9"}, "seconds": 21.6}
+HOVER {"rest_height_units": 6.62, "idle_lift_units": [0.14, 0.34], "walk_lift_units": 0.2, "rule": "rest pose: the bolt tip on the floor (contract feet_origin, z 0); idle keys body.location z = IDLE_LIFT[0] .. [1] (slow bob), walk WALK_LIFT + bob; the contract root never moves. The in-game hover height is the artist's open question"}
+GLB {"materials": [{"name": "storm_vessel_body", "alphaMode": "OPAQUE", "doubleSided": false, "textures": ["baseColorTexture", "normalTexture"]}], "primitives": [{"mesh": "storm_vessel", "material": "storm_vessel_body", "attributes": ["COLOR_0", "COLOR_1", "JOINTS_0", "NORMAL", "POSITION", "TEXCOORD_0", "WEIGHTS_0", "_GLOW"]}], "animations": ["idle", "walk"], "skins": 1, "joints": 7}
+Blender 5.0.1 (hash a3db93c5b259 built 2025-12-16 01:32:30)

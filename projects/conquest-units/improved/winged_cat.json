@@ -1,0 +1,582 @@
+{
+ "unit": "winged_cat",
+ "conquest_character_id": "winged_cat",
+ "source": "none: from-scratch unit (sheet design/reference/winged_cat-character-sheet.png)",
+ "tier": "regular",
+ "tri_budget": [
+  8000,
+  22000
+ ],
+ "units": "sheet units: 1 unit = 100 px; measured off the TRUE orthos (back + side); floor z = 0 at the soles",
+ "overrides": {},
+ "sdf": {
+  "step": 0.025,
+  "band": 0.22,
+  "grid": [
+   101,
+   123,
+   181
+  ],
+  "ops": 25,
+  "high_tris": 414300,
+  "high_verts": 207140,
+  "toe_creases": 8,
+  "crumbs": {
+   "pieces": 1,
+   "dropped_verts": 0
+  },
+  "seconds": 4.7
+ },
+ "retopo": {
+  "method": "SDF marching tetrahedra (step 0.025) -> collapse decimation (deterministic)",
+  "decimated_tris": 9000,
+  "specks": {
+   "pieces": 1,
+   "dropped_verts": 0
+  },
+  "doubled_faces_removed": 0,
+  "low_to_high": {
+   "mean": 0.00128,
+   "p99": 0.00392,
+   "max": 0.00706
+  },
+  "high_to_low_sampled": {
+   "p99": 0.00468,
+   "max": 0.01466
+  },
+  "bbox_high": [
+   2.1004,
+   2.62,
+   4.2766
+  ],
+  "bbox_low": [
+   2.1006,
+   2.6203,
+   4.2773
+  ],
+  "bbox_low_over_high": [
+   1.00014,
+   1.0001,
+   1.00017
+  ],
+  "seconds": 7.2
+ },
+ "iso_cuts": {
+  "cuts": [
+   {
+    "field": "f_collar",
+    "tau": 0.0,
+    "edge_splits": 228,
+    "face_connects": 286
+   },
+   {
+    "field": "inner",
+    "tau": 0.0,
+    "edge_splits": 30,
+    "face_connects": 37
+   },
+   {
+    "field": "mouth",
+    "tau": 0.0,
+    "edge_splits": 3,
+    "face_connects": 6
+   }
+  ],
+  "seconds": 2.7,
+  "shell_tris_after_cuts": 9522
+ },
+ "centre_shift": [
+  0.0,
+  0.382214,
+  -0.000816
+ ],
+ "glow": {
+  "skin": "default",
+  "glowing_regions": [],
+  "rule": "no glow (the sheet draws none): zero Glow"
+ },
+ "regions_faces": {
+  "winged_cat": {
+   "fur": 5782,
+   "ear_inner": 63,
+   "collar": 3634,
+   "mouth": 43,
+   "eye": 504,
+   "pupil": 280,
+   "fang": 100,
+   "wing": 1236,
+   "wing_root": 192,
+   "wing_vein": 12,
+   "tail": 1680,
+   "tail_line": 336
+  }
+ },
+ "regions_area_share": {
+  "fur": 0.5504,
+  "ear_inner": 0.0092,
+  "collar": 0.0583,
+  "mouth": 0.0025,
+  "eye": 0.0157,
+  "pupil": 0.0041,
+  "fang": 0.0016,
+  "wing": 0.0767,
+  "wing_root": 0.0094,
+  "wing_vein": 0.0013,
+  "tail": 0.2237,
+  "tail_line": 0.047
+ },
+ "facing": {
+  "rule": "head centre (HEAD_C) -> the face front on the midline just above the mouth",
+  "anchor": [
+   0.0,
+   -1.0722,
+   2.5008
+  ],
+  "landmark": [
+   0.0,
+   -1.9754,
+   2.2108
+  ],
+  "angle_from_minusY_deg": 0.0
+ },
+ "face": {
+  "eye.L": {
+   "surface": [
+    0.47999998927116394,
+    -1.519700050354004,
+    2.630000114440918
+   ],
+   "normal": [
+    0.3389,
+    -0.9336,
+    0.1161
+   ]
+  },
+  "fang.L": {
+   "root": [
+    0.17,
+    -1.5134,
+    2.18
+   ],
+   "tip": [
+    0.17,
+    -1.5334,
+    2.0
+   ]
+  },
+  "eye.R": {
+   "surface": [
+    -0.47999998927116394,
+    -1.520300030708313,
+    2.630000114440918
+   ],
+   "normal": [
+    -0.3212,
+    -0.9404,
+    0.1114
+   ]
+  },
+  "fang.R": {
+   "root": [
+    -0.17,
+    -1.5143,
+    2.18
+   ],
+   "tip": [
+    -0.17,
+    -1.5343,
+    2.0
+   ]
+  }
+ },
+ "tail_blades": [
+  {
+   "blade": 0,
+   "dir": [
+    0.0,
+    0.6935,
+    0.7204
+   ],
+   "length": 1.4852,
+   "tip_centre": [
+    0.0,
+    1.88,
+    2.02
+   ]
+  },
+  {
+   "blade": 1,
+   "dir": [
+    0.3201,
+    0.7682,
+    0.5545
+   ],
+   "length": 1.4609,
+   "tip_centre": [
+    0.4677,
+    1.9723,
+    1.76
+   ]
+  },
+  {
+   "blade": 2,
+   "dir": [
+    0.4432,
+    0.8591,
+    0.2559
+   ],
+   "length": 1.484,
+   "tip_centre": [
+    0.6577,
+    2.1249,
+    1.3297
+   ]
+  },
+  {
+   "blade": 3,
+   "dir": [
+    0.5053,
+    0.863,
+    0.0
+   ],
+   "length": 1.6336,
+   "tip_centre": [
+    0.8254,
+    2.2597,
+    0.95
+   ]
+  },
+  {
+   "blade": 4,
+   "dir": [
+    0.3899,
+    0.8929,
+    -0.2251
+   ],
+   "length": 1.7339,
+   "tip_centre": [
+    0.6761,
+    2.3982,
+    0.5597
+   ]
+  },
+  {
+   "blade": 5,
+   "dir": [
+    0.156,
+    0.9501,
+    -0.2702
+   ],
+   "length": 1.6502,
+   "tip_centre": [
+    0.2574,
+    2.4179,
+    0.5041
+   ]
+  },
+  {
+   "blade": 6,
+   "dir": [
+    0.0,
+    0.9568,
+    -0.2907
+   ],
+   "length": 1.6513,
+   "tip_centre": [
+    0.0,
+    2.43,
+    0.47
+   ]
+  },
+  {
+   "blade": 7,
+   "dir": [
+    -0.156,
+    0.9501,
+    -0.2702
+   ],
+   "length": 1.6502,
+   "tip_centre": [
+    -0.2574,
+    2.4179,
+    0.5041
+   ]
+  },
+  {
+   "blade": 8,
+   "dir": [
+    -0.3899,
+    0.8929,
+    -0.2251
+   ],
+   "length": 1.7339,
+   "tip_centre": [
+    -0.6761,
+    2.3982,
+    0.5597
+   ]
+  },
+  {
+   "blade": 9,
+   "dir": [
+    -0.5053,
+    0.863,
+    -0.0
+   ],
+   "length": 1.6336,
+   "tip_centre": [
+    -0.8254,
+    2.2597,
+    0.95
+   ]
+  },
+  {
+   "blade": 10,
+   "dir": [
+    -0.4432,
+    0.8591,
+    0.2559
+   ],
+   "length": 1.484,
+   "tip_centre": [
+    -0.6577,
+    2.1249,
+    1.3297
+   ]
+  },
+  {
+   "blade": 11,
+   "dir": [
+    -0.3201,
+    0.7682,
+    0.5545
+   ],
+   "length": 1.4609,
+   "tip_centre": [
+    -0.4677,
+    1.9723,
+    1.76
+   ]
+  }
+ ],
+ "tris": {
+  "total": 17922,
+  "shell": 9522,
+  "shell_before_cuts": 9000,
+  "eyes": 896,
+  "pupils": 480,
+  "fangs": 160,
+  "wings": 2832,
+  "tail": 4032,
+  "per_part": {
+   "eye.L": 448,
+   "pupil.L": 240,
+   "fang.L": 80,
+   "eye.R": 448,
+   "pupil.R": 240,
+   "fang.R": 80,
+   "wing.L": 1416,
+   "wing.R": 1416,
+   "tail_blade.00": 336,
+   "tail_blade.01": 336,
+   "tail_blade.02": 336,
+   "tail_blade.03": 336,
+   "tail_blade.04": 336,
+   "tail_blade.05": 336,
+   "tail_blade.06": 336,
+   "tail_blade.07": 336,
+   "tail_blade.08": 336,
+   "tail_blade.09": 336,
+   "tail_blade.10": 336,
+   "tail_blade.11": 336
+  }
+ },
+ "tier_rationale": "REGULAR role (a line unit): window [8000, 22000]. The shell carries the round head, the pointed ears, the haunches, the paws and the lumpy collar; the two leaf wings and the ten-blade fan tail are the next biggest shares; the bake carries the collar fuzz.",
+ "open_edges": {
+  "closed_parts": [
+   "eye.L",
+   "eye.R",
+   "fang.L",
+   "fang.R",
+   "pupil.L",
+   "pupil.R",
+   "shell",
+   "tail_blade.00",
+   "tail_blade.01",
+   "tail_blade.02",
+   "tail_blade.03",
+   "tail_blade.04",
+   "tail_blade.05",
+   "tail_blade.06",
+   "tail_blade.07",
+   "tail_blade.08",
+   "tail_blade.09",
+   "tail_blade.10",
+   "tail_blade.11",
+   "wing.L",
+   "wing.R"
+  ],
+  "open_parts": {},
+  "rule": "every piece is a closed solid (shell, decals, fangs, wing + blade pillows)"
+ },
+ "measure": {
+  "bbox": [
+   [
+    -1.5,
+    -2.0224,
+    0.0
+   ],
+   [
+    1.5,
+    2.0224,
+    4.2773
+   ]
+  ],
+  "height": 4.2773,
+  "width_x": 3.0,
+  "depth_y": 4.0448,
+  "sheet_px_equivalent": {
+   "height_px": 427.7,
+   "width_px": 300.0,
+   "depth_px": 404.5
+  },
+  "sheet": {
+   "back_view_height_px": 430,
+   "back_view_width_px": 306,
+   "side_view_height_px": 424,
+   "side_view_length_px": 407
+  },
+  "export_cell_fit_report_only": {
+   "scale": 0.42082,
+   "height_m": 1.8,
+   "footprint_m": 1.7022,
+   "bound_by": "height"
+  }
+ },
+ "bake": {
+  "NORMAL": {
+   "result": [
+    "FINISHED"
+   ],
+   "seconds": 1.0
+  },
+  "AO": {
+   "result": [
+    "FINISHED"
+   ],
+   "seconds": 0.9
+  },
+  "cage_extrusion": 0.02,
+  "cage_rule": "3 x the sampled high->low p99 distance (floor 0.02)",
+  "resolution": {
+   "normal": 1024,
+   "ao": 512
+  },
+  "high_tris": 418640,
+  "high_rule": "SDF shell (marching tets, the collar fuzz at full density) + every closed part",
+  "body_uv_texels_normal": 477778,
+  "normal_baked_pct_of_body_texels": 99.07,
+  "normal_detail_fraction_dev_gt_0.05": 0.2981,
+  "ao_baked_pct_of_body_texels": 100.0,
+  "ao_mean": 0.7283,
+  "ao_p05": 0.0,
+  "pixel_sha": {
+   "normal": "62f46766506c0ffd",
+   "ao": "5d5e9b64f46aadf5"
+  },
+  "seconds": 5.6
+ },
+ "digest_geometry_colour_uv": "12a9ad136a3bd51c",
+ "palette": {
+  "default": {
+   "fur": {
+    "rgb": [
+     24,
+     180,
+     60
+    ]
+   },
+   "ear_inner": {
+    "rgb": [
+     245,
+     237,
+     229
+    ]
+   },
+   "collar": {
+    "rgb": [
+     245,
+     44,
+     29
+    ]
+   },
+   "mouth": {
+    "rgb": [
+     250,
+     243,
+     237
+    ]
+   },
+   "eye": {
+    "rgb": [
+     253,
+     248,
+     246
+    ]
+   },
+   "pupil": {
+    "rgb": [
+     8,
+     9,
+     8
+    ]
+   },
+   "fang": {
+    "rgb": [
+     254,
+     253,
+     254
+    ]
+   },
+   "wing": {
+    "rgb": [
+     24,
+     180,
+     60
+    ]
+   },
+   "wing_root": {
+    "rgb": [
+     18,
+     106,
+     41
+    ]
+   },
+   "wing_vein": {
+    "rgb": [
+     18,
+     128,
+     45
+    ]
+   },
+   "tail": {
+    "rgb": [
+     69,
+     27,
+     18
+    ]
+   },
+   "tail_line": {
+    "rgb": [
+     41,
+     15,
+     10
+    ]
+   }
+  },
+  "files": [
+   "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\palettes\\winged_cat\\default.json"
+  ],
+  "provenance": "pixel-sampled from the sheet's chips + drawn surfaces (see the palette notes)"
+ }
+}

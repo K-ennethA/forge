@@ -1,0 +1,1316 @@
+{
+ "unit": "gemwing_dragon",
+ "conquest_character_id": "gemwing_dragon",
+ "source": "none: from-scratch unit (sheet design/reference/gemwing_dragon-character-sheet.png)",
+ "tier": "boss",
+ "tri_budget": [
+  20000,
+  30000
+ ],
+ "units": "sheet units: 1 unit = 100 px; the side view (floor at the drawn paws, y 725) is the master profile, the front view gives the widths; floor z = 0",
+ "overrides": {},
+ "belly_underline_z": {
+  "-1.2": 1.735,
+  "-0.9": 1.28,
+  "-0.6": 1.22,
+  "-0.3": 1.335,
+  "0.0": 1.295,
+  "0.5": 1.315,
+  "1.0": 1.455,
+  "1.5": 1.77
+ },
+ "sdf": {
+  "step": 0.025,
+  "band": 0.25,
+  "grid": [
+   101,
+   347,
+   197
+  ],
+  "ops": 17,
+  "high_tris": 604016,
+  "high_verts": 302008,
+  "crumbs": {
+   "pieces": 1,
+   "dropped_verts": 0
+  },
+  "seconds": 8.6
+ },
+ "retopo": {
+  "method": "SDF marching tetrahedra (step 0.025) -> collapse decimation (deterministic) -> long-edge split (> 0.19, midpoints onto the high) + beautify",
+  "decimated_tris": 6500,
+  "split_rounds": [
+   1803,
+   314,
+   113,
+   190
+  ],
+  "low_tris": 12238,
+  "specks": {
+   "pieces": 1,
+   "dropped_verts": 0
+  },
+  "doubled_faces_removed": 0,
+  "mirror_halved": {
+   "seam_verts": 505,
+   "rule": "X >= 0 half + its mirror (symmetric rest mesh)"
+  },
+  "low_to_high": {
+   "mean": 0.0011,
+   "p99": 0.00576,
+   "max": 0.02174
+  },
+  "high_to_low_sampled": {
+   "p99": 0.00942,
+   "max": 0.02993
+  },
+  "bbox_high": [
+   2.2196,
+   8.0697,
+   4.3199
+  ],
+  "bbox_low": [
+   2.2228,
+   8.0691,
+   4.3196
+  ],
+  "bbox_low_over_high": [
+   1.00143,
+   0.99993,
+   0.99993
+  ],
+  "seconds": 6.3
+ },
+ "head_proportion": {
+  "length": 1.373,
+  "height": 0.789,
+  "length_over_height": 1.741,
+  "sheet": {
+   "length": 1.25,
+   "height": 0.85,
+   "length_over_height": 1.47
+  },
+  "rule": "shell points owned by head / snout / jaw: snout front -> the cranium back (HEAD_C + HEAD_R) over the head's vertical extent (brow top -> jaw bottom)"
+ },
+ "facets": {
+  "seeds": 722,
+  "cells_used": 722,
+  "facet_r": 0.18,
+  "groups": {
+   "foreleg": 126,
+   "head": 54,
+   "hindleg": 114,
+   "neck": 45,
+   "tail": 100,
+   "trunk": 283
+  },
+  "edge_splits": 4180,
+  "snapped_verts": 1919,
+  "face_connects": 2911,
+  "long_edge_splits": [],
+  "edge_max": 0.19,
+  "low_edge_lengths": {
+   "p50": 0.0994,
+   "p90": 0.1402,
+   "p99": 0.1726,
+   "max": 0.1899
+  },
+  "shell_tris_before": 12238,
+  "shell_tris_after_long_edge_split": 12238,
+  "shell_tris_after": 20598,
+  "tone_cells": {
+   "body": 263,
+   "body_accent_cool": 39,
+   "body_accent_warm": 9,
+   "body_lit": 116,
+   "body_shade": 295
+  },
+  "seconds": 11.4,
+  "rule": "farthest-point seeds per body part on the X >= 0 half (mirrored; within 0.06 of X = 0 on the midline), Euclidean nearest seed within the part, every cell border split on the exact bisector plane; one tone per cell (mean normal . light + jitter), accents by a symmetric hash"
+ },
+ "facet_geometry": {
+  "move_p50": 0.0159,
+  "move_p99": 0.12,
+  "move_max": 0.12,
+  "capped": 166,
+  "face_vs_cell_plane_deg_p50": 1.972,
+  "face_vs_cell_plane_deg_p95": 36.198,
+  "seconds": 0.7,
+  "rule": "LOW shell vertices onto their facet planes (border vertices onto the planes' intersection, regularised LS eps 0.02), moves capped at 0.12"
+ },
+ "centre_shift": [
+  0.0,
+  1.966064,
+  0.0
+ ],
+ "glow": {
+  "skin": "default",
+  "glowing_regions": [],
+  "rule": "no glow (the sheet's sheen is colour, not light): zero Glow"
+ },
+ "regions_faces": {
+  "gemwing_dragon": {
+   "body_lit": 3557,
+   "body": 6793,
+   "body_shade": 8973,
+   "body_accent_cool": 1029,
+   "body_accent_warm": 246,
+   "iris": 200,
+   "pupil": 160,
+   "claw": 192,
+   "gem_indigo": 1944,
+   "gem_blue": 466,
+   "gem_sky": 434,
+   "gem_violet": 1086,
+   "gem_lilac": 730,
+   "gem_pink": 844,
+   "gem_peach": 538
+  }
+ },
+ "regions_area_share": {
+  "body_lit": 0.0767,
+  "body": 0.1609,
+  "body_shade": 0.2029,
+  "body_accent_cool": 0.0241,
+  "body_accent_warm": 0.0064,
+  "iris": 0.0011,
+  "pupil": 0.0003,
+  "claw": 0.0054,
+  "gem_indigo": 0.1554,
+  "gem_blue": 0.0409,
+  "gem_sky": 0.0325,
+  "gem_violet": 0.1137,
+  "gem_lilac": 0.062,
+  "gem_pink": 0.0825,
+  "gem_peach": 0.0352
+ },
+ "colour_split": {
+  "body_shell": {
+   "area_weighted_mean_sat": 0.1848,
+   "share_sat_gt_0.4": 0.0,
+   "area": 44.954
+  },
+  "wings": {
+   "area_weighted_mean_sat": 0.5468,
+   "share_sat_gt_0.4": 1.0,
+   "area": 31.786
+  },
+  "crown": {
+   "area_weighted_mean_sat": 0.5719,
+   "share_sat_gt_0.4": 1.0,
+   "area": 3.017
+  },
+  "chest_armour": {
+   "area_weighted_mean_sat": 0.5442,
+   "share_sat_gt_0.4": 1.0,
+   "area": 1.805
+  },
+  "spikes_all": {
+   "area_weighted_mean_sat": 0.5914,
+   "share_sat_gt_0.4": 1.0,
+   "area": 13.08
+  },
+  "claws": {
+   "area_weighted_mean_sat": 0.5322,
+   "share_sat_gt_0.4": 1.0,
+   "area": 0.672
+  },
+  "rule": "HSV saturation of each face's palette sRGB, area-weighted (artist direction: body toned down, the most colour on the wings + spikes)"
+ },
+ "facing": {
+  "rule": "head centre (HEAD_C) -> the snout tip (front cast on the midline at the snout tip height)",
+  "anchor": [
+   0.0,
+   -3.2461,
+   4.02
+  ],
+  "landmark": [
+   0.0,
+   -4.1859,
+   3.92
+  ],
+  "angle_from_minusY_deg": 0.0
+ },
+ "face": {
+  "eye.L": {
+   "surface": [
+    0.2944999933242798,
+    -1.5882999897003174,
+    4.059999942779541
+   ],
+   "normal": [
+    0.9655,
+    -0.2329,
+    -0.1163
+   ]
+  }
+ },
+ "wings": {
+  "high_tris": 260488,
+  "tris": 1500,
+  "pieces_after_crumb_drop": 1,
+  "crumbs": {
+   "pieces": 4,
+   "dropped_verts": 42
+  },
+  "blades_fused": 13,
+  "plane_normal_L": [
+   0.9507,
+   -0.3088,
+   -0.0287
+  ],
+  "arm": [
+   [
+    0.45,
+    0.0,
+    2.95
+   ],
+   [
+    0.8,
+    0.65,
+    4.55
+   ],
+   [
+    1.1,
+    1.45,
+    5.7
+   ],
+   [
+    1.4,
+    2.6,
+    6.45
+   ]
+  ],
+  "tips": [
+   [
+    1.05,
+    1.5,
+    3.0
+   ],
+   [
+    1.3,
+    2.25,
+    2.95
+   ],
+   [
+    1.35,
+    2.55,
+    3.3
+   ],
+   [
+    1.45,
+    3.0,
+    3.8
+   ],
+   [
+    1.4,
+    2.8,
+    4.3
+   ],
+   [
+    1.493,
+    3.086,
+    4.799
+   ],
+   [
+    1.493,
+    3.136,
+    5.349
+   ],
+   [
+    1.463,
+    3.036,
+    6.149
+   ],
+   [
+    1.443,
+    2.386,
+    6.499
+   ],
+   [
+    1.243,
+    1.686,
+    5.949
+   ],
+   [
+    0.993,
+    0.736,
+    4.949
+   ],
+   [
+    1.136,
+    1.422,
+    4.797
+   ],
+   [
+    1.336,
+    2.072,
+    5.497
+   ]
+  ],
+  "rule": "one SDF per wing: the wing arm (round cones, buried at the shoulder) + 13 long straight hex-prism blades (flat faces, pyramid tips) in near-hard union (k 0.012) -> one closed faceted solid; one root -> tip gradient per blade (4 ramp steps, no streaks); weights: rigkit.vine_weights along wing_X.001-.003 (parent spine.002)"
+ },
+ "crown": {
+  "points": 9,
+  "tips": [
+   [
+    0.0,
+    -1.24,
+    5.312
+   ],
+   [
+    0.0,
+    -1.747,
+    5.131
+   ],
+   [
+    0.342,
+    -1.582,
+    5.083
+   ],
+   [
+    -0.342,
+    -1.582,
+    5.083
+   ],
+   [
+    0.455,
+    -1.24,
+    4.917
+   ],
+   [
+    -0.455,
+    -1.24,
+    4.917
+   ],
+   [
+    0.304,
+    -0.936,
+    4.786
+   ],
+   [
+    -0.304,
+    -0.936,
+    4.786
+   ],
+   [
+    0.0,
+    -0.825,
+    4.733
+   ]
+  ],
+  "high_tris": 118788,
+  "tris": 852,
+  "pieces_after_crumb_drop": 1,
+  "crumbs": {
+   "pieces": 1,
+   "dropped_verts": 0
+  },
+  "ridge": [
+   [
+    0.0,
+    -1.54,
+    4.453
+   ],
+   [
+    0.0,
+    -1.7,
+    4.219
+   ],
+   [
+    0.0,
+    -1.86,
+    4.111
+   ],
+   [
+    0.0,
+    -2.02,
+    4.058
+   ],
+   [
+    0.0,
+    -2.14,
+    4.019
+   ]
+  ],
+  "hook_tip": [
+   0.0,
+   -2.28,
+   4.049
+  ],
+  "hook_projection_beyond_nose": 0.06,
+  "hook_rise_over_ridge_end": 0.03,
+  "rule": "one SDF: a raised band (two loops at +0.04 / +0.18 over the head top, r 0.07) + 9 upright points + the ridge plate forward over the snout to a hooked nose tip, smooth-unioned (k 0.05) -> one closed faceted solid, mirror-welded"
+ },
+ "chest_armour": {
+  "high_tris": 70828,
+  "tris": 750,
+  "pieces_after_crumb_drop": 1,
+  "crumbs": {
+   "pieces": 1,
+   "dropped_verts": 0
+  },
+  "points": 10,
+  "centre": [
+   0.0,
+   -1.582,
+   2.38
+  ],
+  "tips": [
+   [
+    -0.0,
+    -1.355,
+    2.825
+   ],
+   [
+    0.288,
+    -1.326,
+    2.798
+   ],
+   [
+    -0.288,
+    -1.326,
+    2.798
+   ],
+   [
+    0.587,
+    -1.279,
+    2.598
+   ],
+   [
+    -0.587,
+    -1.279,
+    2.598
+   ],
+   [
+    0.672,
+    -1.262,
+    2.263
+   ],
+   [
+    -0.672,
+    -1.262,
+    2.263
+   ],
+   [
+    0.368,
+    -1.357,
+    2.01
+   ],
+   [
+    -0.368,
+    -1.357,
+    2.01
+   ],
+   [
+    0.001,
+    -1.253,
+    1.739
+   ]
+  ],
+  "rule": "one SDF: a centre gem (half axes [0.26, 0.3, 0.09]) + 10 rays laid along the chest (root -> mid -> tip, projected + lifted), smooth-unioned (k 0.05) -> one closed faceted solid, mirror-welded"
+ },
+ "spikes": {
+  "count": 58,
+  "built_L_and_midline": [
+   {
+    "name": "neck.M.01",
+    "kind": "neck_spikes",
+    "family": "blue",
+    "length": 0.42,
+    "tip": [
+     0.0,
+     -0.48,
+     3.655
+    ],
+    "bone": "neck.002"
+   },
+   {
+    "name": "neck.M.02",
+    "kind": "neck_spikes",
+    "family": "blue",
+    "length": 0.52,
+    "tip": [
+     0.0,
+     -0.322,
+     3.309
+    ],
+    "bone": "neck.002"
+   },
+   {
+    "name": "neck.M.03",
+    "kind": "neck_spikes",
+    "family": "blue",
+    "length": 0.6,
+    "tip": [
+     0.0,
+     -0.106,
+     3.103
+    ],
+    "bone": "neck.001"
+   },
+   {
+    "name": "neck.M.04",
+    "kind": "neck_spikes",
+    "family": "violet",
+    "length": 0.58,
+    "tip": [
+     0.0,
+     0.041,
+     3.191
+    ],
+    "bone": "neck.001"
+   },
+   {
+    "name": "neck.M.05",
+    "kind": "neck_spikes",
+    "family": "blue",
+    "length": 0.5,
+    "tip": [
+     0.0,
+     0.161,
+     3.143
+    ],
+    "bone": "neck.001"
+   },
+   {
+    "name": "neck.L.01",
+    "kind": "neck_spikes",
+    "family": "blue",
+    "length": 0.36,
+    "tip": [
+     0.377,
+     -0.684,
+     3.493
+    ],
+    "bone": "neck.002"
+   },
+   {
+    "name": "neck.L.02",
+    "kind": "neck_spikes",
+    "family": "peach",
+    "length": 0.44,
+    "tip": [
+     0.465,
+     -0.573,
+     3.167
+    ],
+    "bone": "neck.002"
+   },
+   {
+    "name": "neck.L.03",
+    "kind": "neck_spikes",
+    "family": "peach",
+    "length": 0.48,
+    "tip": [
+     0.518,
+     -0.382,
+     3.052
+    ],
+    "bone": "neck.001"
+   },
+   {
+    "name": "neck.L.04",
+    "kind": "neck_spikes",
+    "family": "blue",
+    "length": 0.44,
+    "tip": [
+     0.551,
+     -0.222,
+     3.006
+    ],
+    "bone": "neck.001"
+   },
+   {
+    "name": "back.M.01",
+    "kind": "back_spikes",
+    "family": "blue",
+    "length": 0.5,
+    "tip": [
+     0.0,
+     0.795,
+     3.079
+    ],
+    "bone": "spine.002"
+   },
+   {
+    "name": "back.M.02",
+    "kind": "back_spikes",
+    "family": "blue",
+    "length": 0.56,
+    "tip": [
+     0.0,
+     1.285,
+     3.112
+    ],
+    "bone": "spine.002"
+   },
+   {
+    "name": "back.M.03",
+    "kind": "back_spikes",
+    "family": "blue",
+    "length": 0.52,
+    "tip": [
+     0.0,
+     1.692,
+     3.062
+    ],
+    "bone": "spine.001"
+   },
+   {
+    "name": "back.M.04",
+    "kind": "back_spikes",
+    "family": "violet",
+    "length": 0.46,
+    "tip": [
+     0.0,
+     2.099,
+     3.012
+    ],
+    "bone": "spine.001"
+   },
+   {
+    "name": "back.L.01",
+    "kind": "back_spikes",
+    "family": "blue",
+    "length": 0.4,
+    "tip": [
+     0.395,
+     0.916,
+     2.906
+    ],
+    "bone": "spine.002"
+   },
+   {
+    "name": "back.L.02",
+    "kind": "back_spikes",
+    "family": "peach",
+    "length": 0.42,
+    "tip": [
+     0.416,
+     1.373,
+     2.896
+    ],
+    "bone": "spine.001"
+   },
+   {
+    "name": "back.L.03",
+    "kind": "back_spikes",
+    "family": "peach",
+    "length": 0.38,
+    "tip": [
+     0.411,
+     1.786,
+     2.858
+    ],
+    "bone": "spine.001"
+   },
+   {
+    "name": "tail.M.01",
+    "kind": "tail_spikes",
+    "family": "blue",
+    "length": 0.58,
+    "tip": [
+     0.0,
+     2.962,
+     2.796
+    ],
+    "bone": "tail.001"
+   },
+   {
+    "name": "tail.M.02",
+    "kind": "tail_spikes",
+    "family": "blue",
+    "length": 0.6,
+    "tip": [
+     0.0,
+     3.487,
+     2.462
+    ],
+    "bone": "tail.001"
+   },
+   {
+    "name": "tail.M.03",
+    "kind": "tail_spikes",
+    "family": "blue",
+    "length": 0.56,
+    "tip": [
+     0.0,
+     3.912,
+     2.027
+    ],
+    "bone": "tail.002"
+   },
+   {
+    "name": "tail.M.04",
+    "kind": "tail_spikes",
+    "family": "violet",
+    "length": 0.52,
+    "tip": [
+     0.0,
+     4.271,
+     1.625
+    ],
+    "bone": "tail.002"
+   },
+   {
+    "name": "tail.M.05",
+    "kind": "tail_spikes",
+    "family": "blue",
+    "length": 0.46,
+    "tip": [
+     0.0,
+     4.576,
+     1.186
+    ],
+    "bone": "tail.003"
+   },
+   {
+    "name": "tail.M.06",
+    "kind": "tail_spikes",
+    "family": "blue",
+    "length": 0.4,
+    "tip": [
+     0.0,
+     4.875,
+     0.876
+    ],
+    "bone": "tail.003"
+   },
+   {
+    "name": "tail.M.07",
+    "kind": "tail_spikes",
+    "family": "violet",
+    "length": 0.34,
+    "tip": [
+     0.0,
+     5.213,
+     0.6
+    ],
+    "bone": "tail.004"
+   },
+   {
+    "name": "tail.M.08",
+    "kind": "tail_spikes",
+    "family": "peach",
+    "length": 0.28,
+    "tip": [
+     0.0,
+     5.542,
+     0.513
+    ],
+    "bone": "tail.004"
+   },
+   {
+    "name": "tail.L.01",
+    "kind": "tail_spikes",
+    "family": "blue",
+    "length": 0.5,
+    "tip": [
+     0.567,
+     2.997,
+     2.33
+    ],
+    "bone": "tail.001"
+   },
+   {
+    "name": "tail.L.02",
+    "kind": "tail_spikes",
+    "family": "peach",
+    "length": 0.48,
+    "tip": [
+     0.518,
+     3.458,
+     1.998
+    ],
+    "bone": "tail.001"
+   },
+   {
+    "name": "tail.L.03",
+    "kind": "tail_spikes",
+    "family": "peach",
+    "length": 0.44,
+    "tip": [
+     0.43,
+     3.834,
+     1.63
+    ],
+    "bone": "tail.002"
+   },
+   {
+    "name": "tail.L.04",
+    "kind": "tail_spikes",
+    "family": "blue",
+    "length": 0.4,
+    "tip": [
+     0.381,
+     4.191,
+     1.265
+    ],
+    "bone": "tail.002"
+   },
+   {
+    "name": "tail.L.05",
+    "kind": "tail_spikes",
+    "family": "violet",
+    "length": 0.36,
+    "tip": [
+     0.325,
+     4.514,
+     0.878
+    ],
+    "bone": "tail.003"
+   },
+   {
+    "name": "tail.L.06",
+    "kind": "tail_spikes",
+    "family": "peach",
+    "length": 0.3,
+    "tip": [
+     0.304,
+     4.877,
+     0.61
+    ],
+    "bone": "tail.003"
+   },
+   {
+    "name": "tail.L.07",
+    "kind": "tail_spikes",
+    "family": "peach",
+    "length": 0.25,
+    "tip": [
+     0.211,
+     5.227,
+     0.376
+    ],
+    "bone": "tail.004"
+   },
+   {
+    "name": "tail.M.tip",
+    "kind": "tail_spikes",
+    "family": "violet",
+    "length": 0.65,
+    "tip": [
+     0.0,
+     6.234,
+     0.154
+    ],
+    "bone": "tail.004"
+   },
+   {
+    "name": "legspike.L.01",
+    "kind": "leg_spikes",
+    "family": "violet",
+    "length": 0.42,
+    "tip": [
+     1.019,
+     -0.17,
+     1.159
+    ],
+    "bone": "foreleg_L.lower"
+   },
+   {
+    "name": "legspike.L.02",
+    "kind": "leg_spikes",
+    "family": "peach",
+    "length": 0.4,
+    "tip": [
+     1.221,
+     -0.017,
+     1.531
+    ],
+    "bone": "foreleg_L.upper"
+   },
+   {
+    "name": "legspike.L.03",
+    "kind": "leg_spikes",
+    "family": "violet",
+    "length": 0.38,
+    "tip": [
+     1.009,
+     2.888,
+     1.02
+    ],
+    "bone": "hindleg_L.lower"
+   },
+   {
+    "name": "legspike.L.04",
+    "kind": "leg_spikes",
+    "family": "blue",
+    "length": 0.4,
+    "tip": [
+     1.16,
+     2.373,
+     1.851
+    ],
+    "bone": "hindleg_L.upper"
+   },
+   {
+    "name": "legspike.L.05",
+    "kind": "leg_spikes",
+    "family": "peach",
+    "length": 0.32,
+    "tip": [
+     1.091,
+     -0.681,
+     0.859
+    ],
+    "bone": "foreleg_L.lower"
+   },
+   {
+    "name": "legspike.L.06",
+    "kind": "leg_spikes",
+    "family": "violet",
+    "length": 0.4,
+    "tip": [
+     1.21,
+     1.92,
+     1.936
+    ],
+    "bone": "hindleg_L.upper"
+   }
+  ]
+ },
+ "claws": {
+  "per_foot": 3,
+  "total": 12,
+  "L": [
+   {
+    "name": "claw.L.foreleg.1",
+    "tip": [
+     0.541,
+     -1.713,
+     0.006
+    ]
+   },
+   {
+    "name": "claw.L.foreleg.2",
+    "tip": [
+     0.7,
+     -1.788,
+     0.006
+    ]
+   },
+   {
+    "name": "claw.L.foreleg.3",
+    "tip": [
+     0.859,
+     -1.713,
+     0.006
+    ]
+   },
+   {
+    "name": "claw.L.hindleg.1",
+    "tip": [
+     0.681,
+     1.857,
+     0.006
+    ]
+   },
+   {
+    "name": "claw.L.hindleg.2",
+    "tip": [
+     0.84,
+     1.782,
+     0.006
+    ]
+   },
+   {
+    "name": "claw.L.hindleg.3",
+    "tip": [
+     0.999,
+     1.857,
+     0.006
+    ]
+   }
+  ]
+ },
+ "mirror_test": {
+  "max_abs_asymmetry": 0.0,
+  "p99": 0.0,
+  "per_piece_max": {},
+  "rule": "every rest vertex mirrored across X = 0 (after the centring shift) -> distance to the nearest point of the mesh"
+ },
+ "tris": {
+  "total": 28248,
+  "shell": 20598,
+  "shell_before_facet_cuts": 12238,
+  "irises": 320,
+  "pupils": 256,
+  "crown": 852,
+  "neck_spikes": 468,
+  "back_spikes": 360,
+  "tail_spikes": 828,
+  "leg_spikes": 432,
+  "wings": 3000,
+  "claws": 384,
+  "chest_armour": 750,
+  "per_part": {
+   "iris.L": 160,
+   "pupil.L": 128,
+   "iris.R": 160,
+   "pupil.R": 128,
+   "crown": 852,
+   "neck.M.01": 36,
+   "neck.M.02": 36,
+   "neck.M.03": 36,
+   "neck.M.04": 36,
+   "neck.M.05": 36,
+   "neck.L.01": 36,
+   "neck.L.02": 36,
+   "neck.L.03": 36,
+   "neck.L.04": 36,
+   "back.M.01": 36,
+   "back.M.02": 36,
+   "back.M.03": 36,
+   "back.M.04": 36,
+   "back.L.01": 36,
+   "back.L.02": 36,
+   "back.L.03": 36,
+   "tail.M.01": 36,
+   "tail.M.02": 36,
+   "tail.M.03": 36,
+   "tail.M.04": 36,
+   "tail.M.05": 36,
+   "tail.M.06": 36,
+   "tail.M.07": 36,
+   "tail.M.08": 36,
+   "tail.L.01": 36,
+   "tail.L.02": 36,
+   "tail.L.03": 36,
+   "tail.L.04": 36,
+   "tail.L.05": 36,
+   "tail.L.06": 36,
+   "tail.L.07": 36,
+   "tail.M.tip": 36,
+   "legspike.L.01": 36,
+   "legspike.L.02": 36,
+   "legspike.L.03": 36,
+   "legspike.L.04": 36,
+   "legspike.L.05": 36,
+   "legspike.L.06": 36,
+   "wing.L": 1500,
+   "claw.L.foreleg.1": 32,
+   "claw.L.foreleg.2": 32,
+   "claw.L.foreleg.3": 32,
+   "claw.L.hindleg.1": 32,
+   "claw.L.hindleg.2": 32,
+   "claw.L.hindleg.3": 32,
+   "chest_star": 750,
+   "neck.R.01": 36,
+   "neck.R.02": 36,
+   "neck.R.03": 36,
+   "neck.R.04": 36,
+   "back.R.01": 36,
+   "back.R.02": 36,
+   "back.R.03": 36,
+   "tail.R.01": 36,
+   "tail.R.02": 36,
+   "tail.R.03": 36,
+   "tail.R.04": 36,
+   "tail.R.05": 36,
+   "tail.R.06": 36,
+   "tail.R.07": 36,
+   "legspike.R.01": 36,
+   "legspike.R.02": 36,
+   "legspike.R.03": 36,
+   "legspike.R.04": 36,
+   "legspike.R.05": 36,
+   "legspike.R.06": 36,
+   "wing.R": 1500,
+   "claw.R.foreleg.1": 32,
+   "claw.R.foreleg.2": 32,
+   "claw.R.foreleg.3": 32,
+   "claw.R.hindleg.1": 32,
+   "claw.R.hindleg.2": 32,
+   "claw.R.hindleg.3": 32
+  }
+ },
+ "tier_rationale": "BOSS tier (artist approved 2026-10-11: v5 verdict 'why does the dragon look so low poly' -> 'yes do it'): window [20000, 30000], the extra budget spent on the body shell (finer crystal facets). The shell carries the head, neck, deep chest, four legs + feet and the tail, cut into ~722 planar toned facets; each wing and the crown are ONE fused faceted crystal solid, the chest armour faceted gem plates, the neck / back / tail / leg spikes closed hex prisms, the claws faceted points (low-poly by design: facets ARE the look).",
+ "open_edges": {
+  "closed_parts": 79,
+  "open_parts": {},
+  "rule": "every piece is a closed solid (shell, decals, spikes, blades, claws)"
+ },
+ "measure": {
+  "bbox": [
+   [
+    -1.4862,
+    -4.2684,
+    0.0
+   ],
+   [
+    1.4862,
+    4.2684,
+    6.4828
+   ]
+  ],
+  "height": 6.4828,
+  "width_x": 2.9724,
+  "depth_y": 8.5368,
+  "sheet_px_equivalent": {
+   "height_px": 648.3,
+   "width_px": 297.2,
+   "depth_px": 853.7
+  },
+  "sheet": {
+   "front_view_height_px": 621,
+   "front_view_width_px": 320,
+   "side_view_height_px_to_drawn_paws": 653,
+   "side_view_length_px": 660
+  },
+  "export_cell_fit_report_only": {
+   "scale": 0.44513,
+   "height_m": 2.8857,
+   "footprint_m": 3.8,
+   "bound_by": "footprint"
+  }
+ },
+ "bake": {
+  "NORMAL": {
+   "result": [
+    "FINISHED"
+   ],
+   "seconds": 0.4
+  },
+  "AO": {
+   "result": [
+    "FINISHED"
+   ],
+   "seconds": 0.3
+  },
+  "cage_extrusion": 0.02,
+  "cage_rule": "3 x the sampled faceted-high->low p99 distance (floor 0.02)",
+  "resolution": {
+   "normal": 1024,
+   "ao": 512
+  },
+  "high_tris": 27192,
+  "high_rule": "the faceted LOW shell itself (facets are geometry) + every closed part",
+  "body_uv_texels_normal": 162385,
+  "normal_baked_pct_of_body_texels": 97.69,
+  "normal_detail_fraction_dev_gt_0.05": 0.0213,
+  "ao_baked_pct_of_body_texels": 100.0,
+  "ao_mean": 0.6771,
+  "ao_p05": 0.0,
+  "pixel_sha": {
+   "normal": "b8f971b76d64e62f",
+   "ao": "15e0001a79e4ddeb"
+  },
+  "seconds": 4.7
+ },
+ "digest_geometry_colour_uv": "65032152af635b5c",
+ "palette": {
+  "default": {
+   "body_lit": {
+    "rgb": [
+     241,
+     233,
+     247
+    ]
+   },
+   "body": {
+    "rgb": [
+     209,
+     212,
+     246
+    ]
+   },
+   "body_shade": {
+    "rgb": [
+     183,
+     191,
+     241
+    ]
+   },
+   "body_accent_cool": {
+    "rgb": [
+     156,
+     160,
+     236
+    ]
+   },
+   "body_accent_warm": {
+    "rgb": [
+     243,
+     195,
+     187
+    ]
+   },
+   "iris": {
+    "rgb": [
+     129,
+     104,
+     205
+    ]
+   },
+   "pupil": {
+    "rgb": [
+     45,
+     17,
+     67
+    ]
+   },
+   "claw": {
+    "rgb": [
+     114,
+     77,
+     162
+    ]
+   },
+   "gem_indigo": {
+    "rgb": [
+     86,
+     89,
+     247
+    ]
+   },
+   "gem_blue": {
+    "rgb": [
+     79,
+     147,
+     253
+    ]
+   },
+   "gem_sky": {
+    "rgb": [
+     123,
+     167,
+     254
+    ]
+   },
+   "gem_violet": {
+    "rgb": [
+     166,
+     112,
+     253
+    ]
+   },
+   "gem_lilac": {
+    "rgb": [
+     193,
+     143,
+     252
+    ]
+   },
+   "gem_pink": {
+    "rgb": [
+     250,
+     140,
+     174
+    ]
+   },
+   "gem_peach": {
+    "rgb": [
+     253,
+     185,
+     111
+    ]
+   }
+  },
+  "files": [
+   "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\palettes\\gemwing_dragon\\default.json"
+  ],
+  "provenance": "pixel-sampled from the sheet's chip row (y 852) + drawn surfaces (see the palette notes)"
+ }
+}

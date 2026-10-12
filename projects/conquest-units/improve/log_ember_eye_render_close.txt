@@ -1,0 +1,10 @@
+00:01.750  blend            | Read blend: "C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\rigged\ember_eye.blend"
+00:04.515  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\ember_eye\ember_eye_eye_detail.png'
+00:05.015  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\ember_eye\ember_eye_lower_ribbon_stem.png'
+00:05.437  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\ember_eye\ember_eye_side_flame.png'
+00:05.953  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\ember_eye\ember_eye_upper_flame.png'
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\ember_eye\ember_eye_eye_detail.png
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\ember_eye\ember_eye_lower_ribbon_stem.png
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\ember_eye\ember_eye_side_flame.png
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\ember_eye\ember_eye_upper_flame.png
+Blender 5.0.1 (hash a3db93c5b259 built 2025-12-16 01:32:30)

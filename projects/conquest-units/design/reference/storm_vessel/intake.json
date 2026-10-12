@@ -1,0 +1,262 @@
+{
+ "unit": "storm_vessel",
+ "sheet": "design/reference/storm_vessel-character-sheet.png",
+ "size_px": [
+  1672,
+  941
+ ],
+ "background_rgb": [
+  32,
+  38,
+  45
+ ],
+ "bg_tol": 26.0,
+ "views": {
+  "front": {
+   "bbox_px": [
+    16,
+    150,
+    478,
+    812
+   ],
+   "axis_x_px": 255.0,
+   "floor_y_px": 811,
+   "height_px": 662,
+   "height_units": 6.62,
+   "width_units": 4.62,
+   "half_width_profile": {
+    "0.00": {
+     "y_px": 811,
+     "half_w_units": 1.3
+    },
+    "0.10": {
+     "y_px": 745,
+     "half_w_units": 1.13
+    },
+    "0.25": {
+     "y_px": 646,
+     "half_w_units": 0.69
+    },
+    "0.50": {
+     "y_px": 480,
+     "half_w_units": 2.39
+    },
+    "0.75": {
+     "y_px": 315,
+     "half_w_units": 0.84
+    },
+    "0.90": {
+     "y_px": 216,
+     "half_w_units": 0.7
+    }
+   },
+   "transform": "z = (811 - y_px) / 100 ; x = (x_px - 255.0) / 100"
+  },
+  "back": {
+   "bbox_px": [
+    478,
+    152,
+    890,
+    812
+   ],
+   "axis_x_px": 668.0,
+   "floor_y_px": 811,
+   "height_px": 660,
+   "height_units": 6.6,
+   "width_units": 4.12,
+   "half_width_profile": {
+    "0.00": {
+     "y_px": 811,
+     "half_w_units": 1.02
+    },
+    "0.10": {
+     "y_px": 745,
+     "half_w_units": 1.0
+    },
+    "0.25": {
+     "y_px": 646,
+     "half_w_units": 0.8
+    },
+    "0.50": {
+     "y_px": 482,
+     "half_w_units": 2.19
+    },
+    "0.75": {
+     "y_px": 317,
+     "half_w_units": 0.87
+    },
+    "0.90": {
+     "y_px": 218,
+     "half_w_units": 0.91
+    }
+   },
+   "transform": "z = (811 - y_px) / 100 ; x = (x_px - 668.0) / 100"
+  },
+  "side": {
+   "bbox_px": [
+    924,
+    148,
+    1229,
+    811
+   ],
+   "axis_x_px": 1085.0,
+   "floor_y_px": 810,
+   "height_px": 663,
+   "height_units": 6.63,
+   "width_units": 3.05,
+   "half_width_profile": {
+    "0.00": {
+     "y_px": 810,
+     "half_w_units": 1.29
+    },
+    "0.10": {
+     "y_px": 744,
+     "half_w_units": 1.19
+    },
+    "0.25": {
+     "y_px": 644,
+     "half_w_units": 0.65
+    },
+    "0.50": {
+     "y_px": 479,
+     "half_w_units": 1.56
+    },
+    "0.75": {
+     "y_px": 314,
+     "half_w_units": 0.76
+    },
+    "0.90": {
+     "y_px": 214,
+     "half_w_units": 0.85
+    }
+   },
+   "transform": "z = (810 - y_px) / 100 ; x = (x_px - 1085.0) / 100"
+  }
+ },
+ "ortho_frame": {
+  "views": [
+   "front",
+   "back"
+  ],
+  "width_px": 520,
+  "height_px": 730,
+  "below_floor_px": 20,
+  "crops": {
+   "front": [
+    -5,
+    101,
+    515,
+    831
+   ],
+   "back": [
+    408,
+    101,
+    928,
+    831
+   ],
+   "side": [
+    825,
+    100,
+    1345,
+    830
+   ]
+  }
+ },
+ "unnamed_extra_segments_px": [],
+ "swatches": [
+  {
+   "centre_px": [
+    1291.5,
+    861.0
+   ],
+   "rgb": [
+    156,
+    205,
+    241
+   ],
+   "diameter_px": 48
+  },
+  {
+   "centre_px": [
+    1358.6,
+    861.0
+   ],
+   "rgb": [
+    150,
+    201,
+    239
+   ],
+   "diameter_px": 50
+  },
+  {
+   "centre_px": [
+    1424.2,
+    861.0
+   ],
+   "rgb": [
+    247,
+    247,
+    247
+   ],
+   "diameter_px": 48
+  },
+  {
+   "centre_px": [
+    1489.9,
+    862.0
+   ],
+   "rgb": [
+    143,
+    148,
+    159
+   ],
+   "diameter_px": 48
+  },
+  {
+   "centre_px": [
+    1556.0,
+    860.5
+   ],
+   "rgb": [
+    254,
+    102,
+    2
+   ],
+   "diameter_px": 48
+  },
+  {
+   "centre_px": [
+    1620.4,
+    862.0
+   ],
+   "rgb": [
+    254,
+    175,
+    20
+   ],
+   "diameter_px": 48
+  }
+ ],
+ "swatch_rejects_off_column": [
+  {
+   "centre_px": [
+    1346.2,
+    218.0
+   ],
+   "rgb": [
+    31,
+    35,
+    41
+   ],
+   "diameter_px": 14
+  }
+ ],
+ "base_frac": 0.06,
+ "axis_overrides": {
+  "front": 255.0,
+  "back": 668.0,
+  "side": 1085.0
+ },
+ "units_rule": "1 sheet unit = 100 px; per view z = (floor_y - y) / 100, x = (x - axis_x) / 100",
+ "caveat": "automatic split: VERIFY intake_overlay.png before dispatch (overlapping views or a floor shadow fuse / extend a view; rerun with --views or --bg-tol). A DARK subject on a dark sheet (shadowbun) loses its outline into the background: the floor line can sit high by ~15 px - check the soles"
+}

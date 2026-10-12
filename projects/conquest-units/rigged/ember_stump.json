@@ -1,0 +1,502 @@
+{
+ "unit": "ember_stump",
+ "source": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\improved\\ember_stump.blend",
+ "fps": 24,
+ "weights": {
+  "max_influences": 2,
+  "unweighted": 0,
+  "sum_dev_max": 0.0,
+  "per_bone_dominant": {
+   "trunk.001": 1967,
+   "trunk.002": 971,
+   "trunk.003": 773,
+   "head": 844,
+   "crest": 986,
+   "flame": 736,
+   "jaw": 905,
+   "arm_L.0": 106,
+   "arm_L.1": 1769,
+   "arm_R.0": 106,
+   "arm_R.1": 1769
+  },
+  "rule": "trunk shell: smoothstep blends at z [1.45, 2.85, 4.0] (half-widths [0.2, 0.2, 0.15]); mask, eyes, sockets, mouth back 1.0 head; crest core + feathers 1.0 crest; flame tongues 1.0 flame; arms: branch trunk.003 -> arm.0 over 15-40% of its length, slab 1.0 arm.1"
+ },
+ "clips": {
+  "idle": {
+   "frames": [
+    1,
+    121
+   ],
+   "period_frames": 120,
+   "seconds": 5.0,
+   "cyclic": true,
+   "seam_main_mm": 0.0,
+   "root_offset_max": 0.0,
+   "clearance_min_z": 0.0,
+   "base_on_floor": {
+    "min_z": 0.0,
+    "z_spread_max": 0.019994,
+    "base_verts": 179
+   },
+   "flame_length_scale": [
+    0.0009,
+    1.0752
+   ],
+   "fire_timeline_frames": {
+    "off": [
+     1,
+     25
+    ],
+    "grow": [
+     25,
+     33
+    ],
+    "hold": [
+     33,
+     65
+    ],
+    "die": [
+     65,
+     75
+    ],
+    "off_again": [
+     75,
+     121
+    ],
+    "seconds": {
+     "off_total": 2.917,
+     "grow": 0.333,
+     "hold": 1.333,
+     "die": 0.417
+    }
+   }
+  },
+  "walk": {
+   "frames": [
+    1,
+    49
+   ],
+   "period_frames": 48,
+   "seconds": 2.0,
+   "cyclic": true,
+   "seam_main_mm": 0.0,
+   "root_offset_max": 0.0,
+   "clearance_min_z": -0.0,
+   "base_on_floor": {
+    "min_z": -0.0,
+    "z_spread_max": 0.019994,
+    "base_verts": 179
+   },
+   "flame_length_scale": [
+    0.0009,
+    0.0011
+   ],
+   "fire_timeline_frames": {
+    "off": [
+     1,
+     49
+    ],
+    "rule": "fire off on every frame (flame scale 0.001)"
+   }
+  }
+ },
+ "bones": [
+  {
+   "name": "root",
+   "parent": null,
+   "deform": false,
+   "head": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "tail": [
+    0.0,
+    0.0,
+    0.4
+   ]
+  },
+  {
+   "name": "trunk.001",
+   "parent": "root",
+   "deform": true,
+   "head": [
+    0.0,
+    0.6769,
+    0.0
+   ],
+   "tail": [
+    0.0,
+    1.0251,
+    1.45
+   ]
+  },
+  {
+   "name": "trunk.002",
+   "parent": "trunk.001",
+   "deform": true,
+   "head": [
+    0.0,
+    1.0251,
+    1.45
+   ],
+   "tail": [
+    0.0,
+    0.7368,
+    2.85
+   ]
+  },
+  {
+   "name": "trunk.003",
+   "parent": "trunk.002",
+   "deform": true,
+   "head": [
+    0.0,
+    0.7368,
+    2.85
+   ],
+   "tail": [
+    0.0,
+    0.3507,
+    4.0
+   ]
+  },
+  {
+   "name": "head",
+   "parent": "trunk.003",
+   "deform": true,
+   "head": [
+    0.0,
+    0.3507,
+    4.0
+   ],
+   "tail": [
+    0.0,
+    0.3507,
+    4.9
+   ]
+  },
+  {
+   "name": "crest",
+   "parent": "head",
+   "deform": true,
+   "head": [
+    0.0,
+    0.2469,
+    4.36
+   ],
+   "tail": [
+    0.0,
+    0.2469,
+    5.56
+   ]
+  },
+  {
+   "name": "flame",
+   "parent": "head",
+   "deform": true,
+   "head": [
+    0.0,
+    -0.0548,
+    3.4
+   ],
+   "tail": [
+    0.0,
+    -1.6339,
+    3.3449
+   ]
+  },
+  {
+   "name": "jaw",
+   "parent": "head",
+   "deform": true,
+   "head": [
+    0.0,
+    0.0977,
+    3.1
+   ],
+   "tail": [
+    0.0,
+    -0.3023,
+    3.1
+   ]
+  },
+  {
+   "name": "arm_L.0",
+   "parent": "trunk.003",
+   "deform": true,
+   "head": [
+    0.36,
+    0.6569,
+    3.16
+   ],
+   "tail": [
+    1.13,
+    0.4369,
+    2.64
+   ]
+  },
+  {
+   "name": "arm_L.1",
+   "parent": "arm_L.0",
+   "deform": true,
+   "head": [
+    1.13,
+    0.4369,
+    2.64
+   ],
+   "tail": [
+    1.37,
+    0.5783,
+    3.2824
+   ]
+  },
+  {
+   "name": "arm_R.0",
+   "parent": "trunk.003",
+   "deform": true,
+   "head": [
+    -0.36,
+    0.6569,
+    3.16
+   ],
+   "tail": [
+    -1.13,
+    0.4369,
+    2.64
+   ]
+  },
+  {
+   "name": "arm_R.1",
+   "parent": "arm_R.0",
+   "deform": true,
+   "head": [
+    -1.13,
+    0.4369,
+    2.64
+   ],
+   "tail": [
+    -1.37,
+    0.5783,
+    3.2824
+   ]
+  }
+ ],
+ "bone_count": 12,
+ "deform_bone_count": 11,
+ "digest": {
+  "parts": {
+   "bake_normal": "c3a819725938bdc9",
+   "bake_ao": "180f5d16b4662b82",
+   "geometry_colour_uv": "5673d74cc26e27f4",
+   "weights": "407d13e702e5b890",
+   "keys": "e206e0edb47fca1a",
+   "clip_samples": "baf7dc458eb75a0d"
+  },
+  "combined": "704443bc9b022552"
+ },
+ "glb": {
+  "path": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\rigged\\ember_stump.glb",
+  "bytes": 7043540,
+  "seconds": 0.9,
+  "carries": {
+   "materials": [
+    {
+     "name": "ember_stump_body",
+     "alphaMode": "OPAQUE",
+     "doubleSided": false,
+     "textures": [
+      "baseColorTexture",
+      "normalTexture"
+     ]
+    },
+    {
+     "name": "ember_stump_flame",
+     "alphaMode": "OPAQUE",
+     "doubleSided": false,
+     "textures": []
+    }
+   ],
+   "primitives": [
+    {
+     "mesh": "ember_stump",
+     "material": "ember_stump_body",
+     "attributes": [
+      "COLOR_0",
+      "COLOR_1",
+      "JOINTS_0",
+      "NORMAL",
+      "POSITION",
+      "TEXCOORD_0",
+      "WEIGHTS_0",
+      "_GLOW"
+     ]
+    },
+    {
+     "mesh": "ember_stump",
+     "material": "ember_stump_flame",
+     "attributes": [
+      "COLOR_0",
+      "COLOR_1",
+      "JOINTS_0",
+      "NORMAL",
+      "POSITION",
+      "TEXCOORD_0",
+      "WEIGHTS_0",
+      "_GLOW"
+     ]
+    }
+   ],
+   "animations": [
+    "idle",
+    "walk"
+   ],
+   "skins": 1,
+   "joints": 12
+  },
+  "structure": "armature identity + skinned 'ember_stump' (opaque body primitive + opaque emissive flame primitive); natural scale; report-only cell fit 0.29477"
+ },
+ "skins": {
+  "default": {
+   "file": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\rigged\\ember_stump.blend",
+   "palette": {
+    "bark": {
+     "rgb": [
+      79,
+      68,
+      60
+     ]
+    },
+    "bark_char": {
+     "rgb": [
+      24,
+      23,
+      23
+     ]
+    },
+    "bark_ash": {
+     "rgb": [
+      193,
+      187,
+      179
+     ]
+    },
+    "splinter": {
+     "rgb": [
+      116,
+      75,
+      62
+     ]
+    },
+    "mask": {
+     "rgb": [
+      79,
+      66,
+      58
+     ]
+    },
+    "mask_char": {
+     "rgb": [
+      24,
+      23,
+      23
+     ]
+    },
+    "tooth_edge": {
+     "rgb": [
+      193,
+      187,
+      179
+     ]
+    },
+    "mouth": {
+     "rgb": [
+      24,
+      23,
+      23
+     ]
+    },
+    "eye_socket": {
+     "rgb": [
+      24,
+      23,
+      23
+     ]
+    },
+    "eye": {
+     "rgb": [
+      236,
+      33,
+      18
+     ],
+     "emission": [
+      236,
+      33,
+      18
+     ],
+     "emission_scale": 0.9
+    },
+    "crest": {
+     "rgb": [
+      24,
+      23,
+      23
+     ]
+    },
+    "crest_hi": {
+     "rgb": [
+      77,
+      77,
+      77
+     ]
+    },
+    "flame_edge": {
+     "rgb": [
+      236,
+      33,
+      18
+     ],
+     "emission": [
+      236,
+      33,
+      18
+     ],
+     "emission_scale": 1.0
+    },
+    "flame_core": {
+     "rgb": [
+      253,
+      121,
+      29
+     ],
+     "emission": [
+      253,
+      121,
+      29
+     ],
+     "emission_scale": 1.25
+    }
+   },
+   "glow": {
+    "skin": "default",
+    "emission_scale_tiers": {
+     "eye": 0.9,
+     "flame_edge": 1.0,
+     "flame_core": 1.25
+    },
+    "peak_x_strength": {
+     "eye": 1.2494,
+     "flame_edge": 1.3882,
+     "flame_core": 1.8603
+    },
+    "cap": 2.0,
+    "only_drawn_glow": true,
+    "grade_pass": true,
+    "cap_pass": true
+   }
+  },
+  "rule": "default skin only (brief)"
+ },
+ "improved_report": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\improved\\ember_stump.json",
+ "seconds": 77.5
+}

@@ -1,0 +1,464 @@
+{
+ "unit": "leaf_bird",
+ "conquest_character_id": "leaf_bird",
+ "source": "none: from-scratch unit (sheet design/reference/leaf_bird-character-sheet.png, titled 'LEAF FISH'; artist: it is a leaf BIRD)",
+ "tier": "regular",
+ "tri_budget": [
+  8000,
+  22000
+ ],
+ "units": "sheet units: 1 unit = 100 px; reconciled on the SIDE view (front view for the wings / widths); floor z = 0 at the lowest point (the belly)",
+ "overrides": {},
+ "sdf": {
+  "step": 0.02,
+  "band": 0.2,
+  "grid": [
+   83,
+   230,
+   223
+  ],
+  "ops": 73,
+  "high_tris": 299176,
+  "high_verts": 149590,
+  "spine_knots": 19,
+  "spine_dense": 73,
+  "crumbs": {
+   "pieces": 1,
+   "dropped_verts": 0
+  },
+  "seconds": 5.1
+ },
+ "retopo": {
+  "method": "SDF marching tetrahedra (step 0.020) -> collapse decimation (deterministic)",
+  "decimated_tris": 8000,
+  "specks": {
+   "pieces": 1,
+   "dropped_verts": 0
+  },
+  "doubled_faces_removed": 0,
+  "low_to_high": {
+   "mean": 0.00023,
+   "p99": 0.00066,
+   "max": 0.00096
+  },
+  "high_to_low_sampled": {
+   "p99": 0.0006,
+   "max": 0.00139
+  },
+  "bbox_high": [
+   0.7998,
+   4.3429,
+   4.1117
+  ],
+  "bbox_low": [
+   0.8,
+   4.3431,
+   4.1115
+  ],
+  "bbox_low_over_high": [
+   1.00023,
+   1.00005,
+   0.99995
+  ],
+  "seconds": 5.1
+ },
+ "slim": {
+  "shell_max_half_width": 0.4,
+  "mid_body_Y0.35_half_width": 0.358,
+  "mid_body_Y0.35_depth_z": 1.663,
+  "head_Y-1.6_half_width": 0.4,
+  "v1": {
+   "shell_max_half_width": 0.698,
+   "mid_body_Y0.35_half_width": 0.698,
+   "mid_body_Y0.35_depth_z": 2.111,
+   "head_Y-1.6_half_width": 0.598
+  },
+  "knobs": {
+   "BODY_KX": 0.5,
+   "SPINE_RSCALE": 0.8,
+   "HEAD_R": [
+    0.4,
+    0.58,
+    0.42
+   ]
+  }
+ },
+ "iso_cuts": {
+  "cuts": [
+   {
+    "field": "x",
+    "tau": 0.035,
+    "edge_splits": 161,
+    "face_connects": 162
+   },
+   {
+    "field": "x",
+    "tau": -0.035,
+    "edge_splits": 159,
+    "face_connects": 161
+   },
+   {
+    "field": "y",
+    "tau": -1.4,
+    "edge_splits": 29,
+    "face_connects": 30
+   },
+   {
+    "field": "x",
+    "tau": 0.08,
+    "edge_splits": 30,
+    "face_connects": 32
+   },
+   {
+    "field": "x",
+    "tau": -0.08,
+    "edge_splits": 29,
+    "face_connects": 34
+   },
+   {
+    "field": "bs0",
+    "tau": 0.035,
+    "edge_splits": 84,
+    "face_connects": 97
+   },
+   {
+    "field": "bs0",
+    "tau": -0.035,
+    "edge_splits": 98,
+    "face_connects": 116
+   },
+   {
+    "field": "bs1",
+    "tau": 0.035,
+    "edge_splits": 35,
+    "face_connects": 42
+   },
+   {
+    "field": "bs1",
+    "tau": -0.035,
+    "edge_splits": 58,
+    "face_connects": 63
+   },
+   {
+    "field": "bs2",
+    "tau": 0.035,
+    "edge_splits": 36,
+    "face_connects": 41
+   },
+   {
+    "field": "bs2",
+    "tau": -0.035,
+    "edge_splits": 73,
+    "face_connects": 73
+   },
+   {
+    "field": "bs3",
+    "tau": 0.035,
+    "edge_splits": 56,
+    "face_connects": 58
+   },
+   {
+    "field": "bs3",
+    "tau": -0.035,
+    "edge_splits": 29,
+    "face_connects": 35
+   },
+   {
+    "field": "ax",
+    "tau": 0.12,
+    "edge_splits": 1,
+    "face_connects": 1
+   }
+  ],
+  "seconds": 4.7,
+  "shell_tris_after_cuts": 9756,
+  "shell_region_faces": {
+   "body": 7376,
+   "highlight": 779,
+   "marking": 1601
+  },
+  "feature_faces": {
+   "midrib": 922,
+   "highlight": 779,
+   "bands": 679
+  }
+ },
+ "centre_shift": [
+  0.0,
+  0.015,
+  0.107778
+ ],
+ "glow": {
+  "skin": "default",
+  "glowing_regions": [],
+  "rule": "no glow (the sheet draws none): zero Glow"
+ },
+ "regions_faces": {
+  "leaf_bird": {
+   "body": 9904,
+   "highlight": 779,
+   "marking": 2001,
+   "beak": 144,
+   "eye": 504,
+   "iris": 336
+  }
+ },
+ "regions_area_share": {
+  "body": 0.8532,
+  "highlight": 0.0203,
+  "marking": 0.0824,
+  "beak": 0.0234,
+  "eye": 0.0145,
+  "iris": 0.0062
+ },
+ "facing": {
+  "rule": "head centre (HEAD_C) -> the beak tip on the midline",
+  "anchor": [
+   0.0,
+   -1.595,
+   0.4722
+  ],
+  "landmark": [
+   0.0,
+   -2.485,
+   0.2222
+  ],
+  "angle_from_minusY_deg": 0.0
+ },
+ "face": {
+  "eye.L": {
+   "surface": [
+    0.33660000562667847,
+    -1.8600000143051147,
+    0.6800000071525574
+   ],
+   "normal": [
+    0.5109,
+    -0.8498,
+    0.1298
+   ]
+  },
+  "eye.R": {
+   "surface": [
+    -0.3368000090122223,
+    -1.8600000143051147,
+    0.6800000071525574
+   ],
+   "normal": [
+    -0.4856,
+    -0.8628,
+    0.1408
+   ]
+  }
+ },
+ "wings": {
+  "L": {
+   "hinge": [
+    [
+     0.72,
+     -1.3858,
+     0.4922
+    ],
+    [
+     0.61,
+     1.139,
+     2.0022
+    ]
+   ],
+   "tip": [
+    1.92,
+    1.8437,
+    3.0322
+   ]
+  },
+  "R": {
+   "hinge": [
+    [
+     -0.72,
+     -1.3858,
+     0.4922
+    ],
+    [
+     -0.61,
+     1.139,
+     2.0022
+    ]
+   ],
+   "tip": [
+    -1.92,
+    1.8437,
+    3.0322
+   ]
+  }
+ },
+ "leaf_cuts": {
+  "wing.L": {
+   "cuts": 6,
+   "edge_splits": 144,
+   "vein_faces": 200
+  },
+  "wing.R": {
+   "cuts": 6,
+   "edge_splits": 144,
+   "vein_faces": 200
+  }
+ },
+ "tris": {
+  "total": 14556,
+  "shell": 9756,
+  "shell_before_cuts": 8000,
+  "beak": 240,
+  "eyes": 896,
+  "irises": 576,
+  "wings": 2736,
+  "tail_lobes": 352,
+  "per_part": {
+   "beak": 240,
+   "eye.L": 448,
+   "iris.L": 288,
+   "eye.R": 448,
+   "iris.R": 288,
+   "wing.L": 1368,
+   "wing.R": 1368,
+   "lobe.L": 176,
+   "lobe.R": 176
+  }
+ },
+ "tier_rationale": "REGULAR role (a line unit): window [8000, 22000]. The shell carries the leaf body, head and tail with the iso-cut midrib / highlight / belly bands; the two big leaf wings (closed pillows with iso-cut veins) are the next biggest shares.",
+ "open_edges": {
+  "closed_parts": [
+   "beak",
+   "eye.L",
+   "eye.R",
+   "iris.L",
+   "iris.R",
+   "lobe.L",
+   "lobe.R",
+   "shell",
+   "wing.L",
+   "wing.R"
+  ],
+  "open_parts": {},
+  "rule": "every piece is a closed solid (shell, beak, eye + iris decals, wing / lobe pillows)"
+ },
+ "measure": {
+  "bbox": [
+   [
+    -1.92,
+    -2.485,
+    0.0
+   ],
+   [
+    1.92,
+    2.485,
+    4.1115
+   ]
+  ],
+  "height": 4.1115,
+  "width_x": 3.84,
+  "depth_y": 4.97,
+  "sheet_px_equivalent": {
+   "height_px": 411.1,
+   "width_px": 384.0,
+   "depth_px": 497.0
+  },
+  "sheet": {
+   "front_view_height_px": 450,
+   "front_view_width_px": 389,
+   "back_view_height_px": 508,
+   "back_view_width_px": 256,
+   "side_view_height_px": 434,
+   "side_view_length_px": 500
+  },
+  "export_cell_fit_report_only": {
+   "scale": 0.38229,
+   "height_m": 1.5718,
+   "footprint_m": 1.9,
+   "bound_by": "footprint"
+  }
+ },
+ "bake": {
+  "NORMAL": {
+   "result": [
+    "FINISHED"
+   ],
+   "seconds": 0.7
+  },
+  "AO": {
+   "result": [
+    "FINISHED"
+   ],
+   "seconds": 0.5
+  },
+  "cage_extrusion": 0.02,
+  "cage_rule": "3 x the sampled high->low p99 distance (floor 0.02)",
+  "resolution": {
+   "normal": 1024,
+   "ao": 512
+  },
+  "high_tris": 303088,
+  "high_rule": "SDF shell (marching tets) + every closed part",
+  "body_uv_texels_normal": 520942,
+  "normal_baked_pct_of_body_texels": 99.86,
+  "normal_detail_fraction_dev_gt_0.05": 0.133,
+  "ao_baked_pct_of_body_texels": 100.0,
+  "ao_mean": 0.8237,
+  "ao_p05": 0.0,
+  "pixel_sha": {
+   "normal": "cbff3b10d2bba27c",
+   "ao": "eb861358924307d9"
+  },
+  "seconds": 3.8
+ },
+ "digest_geometry_colour_uv": "a9e7c8e0d831947a",
+ "palette": {
+  "default": {
+   "body": {
+    "rgb": [
+     56,
+     191,
+     33
+    ]
+   },
+   "marking": {
+    "rgb": [
+     4,
+     115,
+     25
+    ]
+   },
+   "highlight": {
+    "rgb": [
+     121,
+     190,
+     91
+    ]
+   },
+   "beak": {
+    "rgb": [
+     200,
+     133,
+     30
+    ]
+   },
+   "eye": {
+    "rgb": [
+     254,
+     248,
+     220
+    ]
+   },
+   "iris": {
+    "rgb": [
+     187,
+     122,
+     6
+    ]
+   }
+  },
+  "files": [
+   "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\palettes\\leaf_bird\\default.json"
+  ],
+  "provenance": "pixel-sampled from the sheet's chips + drawn surfaces (see the palette notes)"
+ }
+}

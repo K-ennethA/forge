@@ -1,0 +1,342 @@
+{
+ "unit": "goo_shield",
+ "source": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\improved\\goo_shield.blend",
+ "fps": 24,
+ "weights": {
+  "max_influences": 4,
+  "unweighted": 0,
+  "sum_dev_max": 2.220446049250313e-16,
+  "per_bone_dominant": {
+   "body.001": 1776,
+   "body.002": 1477,
+   "neck": 532,
+   "head": 2287,
+   "trail.001": 420,
+   "trail.002": 417,
+   "trail.003": 815
+  },
+  "rule": "goo: body.001 -> body.002 -> neck -> head by height (bands BODY_Z / NECK_Z / HEAD_Z; the face and eyes 100 % head), the rear (y > TRAIL_W_Y, below TRAIL_W_ZCAP) rigkit.vine_weights along the trail chain (root blends from body.001); helmet + eyes 1.0 head; body armour 1.0 body.002"
+ },
+ "clips": {
+  "idle": {
+   "frames": [
+    1,
+    97
+   ],
+   "period_frames": 96,
+   "seconds": 4.0,
+   "cyclic": true,
+   "seam_main_mm": 0.0,
+   "root_offset_max": 0.0,
+   "clearance_min_z": -0.0,
+   "trail_max_lift": 0.0509,
+   "head_z_range": [
+    3.0331,
+    3.1566
+   ]
+  },
+  "walk": {
+   "frames": [
+    1,
+    49
+   ],
+   "period_frames": 48,
+   "seconds": 2.0,
+   "cyclic": true,
+   "seam_main_mm": 0.0,
+   "root_offset_max": 0.0,
+   "clearance_min_z": -0.0,
+   "trail_max_lift": 0.0629,
+   "head_z_range": [
+    3.0418,
+    3.16
+   ]
+  }
+ },
+ "bones": [
+  {
+   "name": "root",
+   "parent": null,
+   "deform": false,
+   "head": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "tail": [
+    0.0,
+    0.0,
+    0.4
+   ]
+  },
+  {
+   "name": "body.001",
+   "parent": "root",
+   "deform": true,
+   "head": [
+    -0.0002,
+    -1.3155,
+    0.0001
+   ],
+   "tail": [
+    -0.0002,
+    -1.3155,
+    1.0001
+   ]
+  },
+  {
+   "name": "body.002",
+   "parent": "body.001",
+   "deform": true,
+   "head": [
+    -0.0002,
+    -1.3155,
+    1.0001
+   ],
+   "tail": [
+    -0.0002,
+    -1.2155,
+    2.2001
+   ]
+  },
+  {
+   "name": "neck",
+   "parent": "body.002",
+   "deform": true,
+   "head": [
+    -0.0002,
+    -1.2155,
+    2.2001
+   ],
+   "tail": [
+    -0.0002,
+    -1.3925,
+    3.1001
+   ]
+  },
+  {
+   "name": "head",
+   "parent": "neck",
+   "deform": true,
+   "head": [
+    -0.0002,
+    -1.3925,
+    3.1001
+   ],
+   "tail": [
+    -0.0002,
+    -1.3925,
+    4.6001
+   ]
+  },
+  {
+   "name": "trail.001",
+   "parent": "body.001",
+   "deform": true,
+   "head": [
+    -0.0002,
+    -0.5155,
+    0.6201
+   ],
+   "tail": [
+    -0.0002,
+    0.4845,
+    0.6001
+   ]
+  },
+  {
+   "name": "trail.002",
+   "parent": "trail.001",
+   "deform": true,
+   "head": [
+    -0.0002,
+    0.4845,
+    0.6001
+   ],
+   "tail": [
+    -0.0002,
+    1.4845,
+    0.4501
+   ]
+  },
+  {
+   "name": "trail.003",
+   "parent": "trail.002",
+   "deform": true,
+   "head": [
+    -0.0002,
+    1.4845,
+    0.4501
+   ],
+   "tail": [
+    -0.0002,
+    2.4845,
+    0.2201
+   ]
+  }
+ ],
+ "bone_count": 8,
+ "deform_bone_count": 7,
+ "digest": {
+  "parts": {
+   "bake_normal": "49c8458beeb5d6f7",
+   "bake_ao": "0960d1e64fd50c52",
+   "geometry_colour_uv": "405140addc8e0dc4",
+   "weights": "d92765f540e78683",
+   "keys": "0b22a8d516c174ba",
+   "clip_samples": "2c96feb9aaa9f0a3"
+  },
+  "combined": "0b4df1ff299d5f14"
+ },
+ "glb": {
+  "path": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\rigged\\goo_shield.glb",
+  "bytes": 4560960,
+  "seconds": 0.5,
+  "carries": {
+   "materials": [
+    {
+     "name": "goo_shield_body",
+     "alphaMode": "OPAQUE",
+     "doubleSided": false,
+     "roughness": 0.800000011920929,
+     "textures": [
+      "baseColorTexture"
+     ]
+    },
+    {
+     "name": "goo_shield_goo",
+     "alphaMode": "OPAQUE",
+     "doubleSided": false,
+     "roughness": 0.20000000298023224,
+     "textures": [
+      "baseColorTexture",
+      "normalTexture"
+     ]
+    }
+   ],
+   "primitives": [
+    {
+     "mesh": "goo_shield",
+     "material": "goo_shield_body",
+     "attributes": [
+      "COLOR_0",
+      "COLOR_1",
+      "JOINTS_0",
+      "NORMAL",
+      "POSITION",
+      "TEXCOORD_0",
+      "WEIGHTS_0",
+      "_GLOW"
+     ]
+    },
+    {
+     "mesh": "goo_shield",
+     "material": "goo_shield_goo",
+     "attributes": [
+      "COLOR_0",
+      "COLOR_1",
+      "JOINTS_0",
+      "NORMAL",
+      "POSITION",
+      "TEXCOORD_0",
+      "WEIGHTS_0",
+      "_GLOW"
+     ]
+    }
+   ],
+   "animations": [
+    "idle",
+    "walk"
+   ],
+   "skins": 1,
+   "joints": 8
+  },
+  "structure": "armature identity + skinned 'goo_shield' (opaque rock/eye primitive + alpha-blend glossy goo primitive); natural scale; report-only cell fit 0.34523"
+ },
+ "skins": {
+  "default": {
+   "file": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\rigged\\goo_shield.blend",
+   "palette": {
+    "goo": {
+     "rgb": [
+      231,
+      248,
+      204
+     ]
+    },
+    "goo_mid": {
+     "rgb": [
+      214,
+      247,
+      173
+     ]
+    },
+    "goo_rim": {
+     "rgb": [
+      147,
+      250,
+      11
+     ]
+    },
+    "eye_line": {
+     "rgb": [
+      115,
+      186,
+      22
+     ]
+    },
+    "eye_white": {
+     "rgb": [
+      243,
+      252,
+      237
+     ]
+    },
+    "eye_iris": {
+     "rgb": [
+      147,
+      250,
+      11
+     ]
+    },
+    "rock_dark": {
+     "rgb": [
+      31,
+      31,
+      29
+     ]
+    },
+    "rock": {
+     "rgb": [
+      38,
+      38,
+      37
+     ]
+    },
+    "rock_lit": {
+     "rgb": [
+      50,
+      50,
+      48
+     ]
+    },
+    "rock_hi": {
+     "rgb": [
+      86,
+      86,
+      84
+     ]
+    }
+   },
+   "glow": {
+    "skin": "default",
+    "emissive_regions": [],
+    "pass": true,
+    "rule": "the bright lime 147,250,11 (rim, iris) is colour, not emission"
+   }
+  },
+  "rule": "default skin only (brief)"
+ },
+ "improved_report": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\improved\\goo_shield.json",
+ "seconds": 42.7
+}

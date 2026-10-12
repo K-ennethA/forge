@@ -1,0 +1,18 @@
+{
+ "unit": "halo_sentinel",
+ "skin": "default",
+ "description": "Halo Sentinel default look, PIXEL-SAMPLED from design/reference/halo_sentinel-character-sheet.png (service venv PIL, python -P): the six palette chips (intake.json swatches: MAGENTA 138,20,67 x1352 / PINK 209,80,136 x1408 / CREAM 234,191,204 x1462 / ORANGE 250,105,16 x1512 / LIGHT BLUE 101,158,192 x1562 / DEEP BLUE 32,87,131 x1614, all y 902) plus 7x7 medians and colour-class medians of the drawn surfaces (FRONT view unless noted). GLOW (brief): the halo + its horn arrows, and the two pupils faintly; tiers x material emission_strength 1.0 stay under the 2.0 cap. The jelly pillars carry 'alpha' (Col alpha = glTF COLOR_0.a) on the alpha-blended material halo_sentinel_jelly (Eevee BLENDED, single-sided, no transparency overlap, solid shadow: smooth, never dithered grain); material.alpha multiplies every translucent region. The sheet's ink contour lines + painted shading are line art, not modelled.",
+ "regions": {
+  "body":        {"rgb": [140, 20, 68],   "note": "the smooth magenta body: chip 138,20,67; drawn magenta class median (front, R>90 G<60 R-B>30) 144,21,70 (p20 126,17,60 / p80 147,23,72); torso (288,380) 143,22,70, head (250,260) 142,20,69, arm (100,420) 145,22,71"},
+  "eye_rim":     {"rgb": [20, 6, 12],     "note": "the thin dark rim round the head eye: drawn dark pixels (sum < 150) in the eye box x 270-308 y 214-290 median 17,4,9 (n 270)"},
+  "eye_white":   {"rgb": [251, 237, 230], "note": "the head eye almond + the belly emblem's cream oval: drawn head eye white median 250,241,236 (n 725), belly cream 252,232,224 (n 1098) -- near-white, lighter than the CREAM chip 234,191,204 (reported)"},
+  "pupil":       {"rgb": [250, 101, 15],  "emission": [250, 101, 15], "emission_scale": 0.35, "note": "both orange pupils: chip ORANGE 250,105,16; drawn head pupil 251,97,14 (n 243), belly pupil 251,103,13 (n 257); faint glow (brief)"},
+  "belly_ring":  {"rgb": [200, 30, 99],   "note": "the emblem's crimson outer ring: drawn median (R>180 G<45 B>80, box x 240-340 y 495-650) 200,30,99 (n 2516); between the MAGENTA and PINK chips"},
+  "belly_pink":  {"rgb": [225, 153, 184], "note": "the emblem's pale-pink ring: drawn median 225,153,184 (n 2915); between the PINK 209,80,136 and CREAM 234,191,204 chips"},
+  "halo":        {"rgb": [250, 108, 16],  "emission": [250, 108, 16], "emission_scale": 0.85, "note": "the floating halo ring + horn arrows: chip ORANGE 250,105,16; drawn orange class median (box x 180-400 y 150-240) 249,112,15 (n 2590), top (290,166) 252,104,29"},
+  "jelly":       {"rgb": [101, 158, 192], "alpha": 0.75, "note": "jelly pillar body: chip LIGHT BLUE 101,158,192; drawn front pillar mid (400,600) 107,160,194, blue class lum 120-150 median 88,143,180 (35 %), 150-180 117,167,198 (24 %); side pillar (1200,650) 94,151,188"},
+  "jelly_light": {"rgb": [159, 198, 221], "alpha": 0.70, "note": "the watery light stripes (spine / rib highlights): drawn blue class lum >= 180 median 159,198,221 (7.5 %)"},
+  "jelly_deep":  {"rgb": [32, 87, 131],   "alpha": 0.82, "note": "the deep inner side: chip DEEP BLUE 32,87,131; drawn blue class lum < 90 median 31,82,125 (17.6 %), back skirt (752,600) 52,107,150"}
+ },
+ "material": {"roughness": 0.45, "jelly_roughness": 0.40, "emission_strength": 1.0, "alpha": 1.0}
+}

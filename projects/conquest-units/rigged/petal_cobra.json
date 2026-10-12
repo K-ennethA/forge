@@ -1,0 +1,414 @@
+{
+ "unit": "petal_cobra",
+ "source": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\improved\\petal_cobra.blend",
+ "fps": 24,
+ "weights": {
+  "max_influences": 3,
+  "unweighted": 0,
+  "sum_dev_max": 2.220446049250313e-16,
+  "per_bone_dominant": {
+   "tail.001": 136,
+   "tail.002": 143,
+   "tail.003": 182,
+   "tail.004": 255,
+   "tail.005": 382,
+   "spine": 3756,
+   "neck": 106,
+   "head": 2816,
+   "petal_L": 1458,
+   "petal_R": 1458
+  },
+  "rule": "shell: soft SDF ownership (tau 0.04) between head, neck, torso (+ nubs), tail; neck spine -> neck -> head by z bands; torso = spine; tail = arc-length hats from the planted tip (tail.001) up to the spine; petals: spine inside the torso -> petal bone by smoothstep(-0.02, 0.25) of the torso SDF"
+ },
+ "clips": {
+  "idle": {
+   "frames": [
+    1,
+    97
+   ],
+   "period_frames": 96,
+   "seconds": 4.0,
+   "cyclic": true,
+   "seam_main_mm": 0.0,
+   "root_offset_max": 0.0,
+   "clearance_min_z": -0.0,
+   "tail_tip_p2p_xyz": [
+    0.00034,
+    0.00028,
+    0.0
+   ],
+   "head_top_p2p_xyz": [
+    0.1652,
+    0.1473,
+    0.0372
+   ],
+   "petal_L_tip_p2p_xyz": [
+    0.2221,
+    0.2132,
+    0.1393
+   ]
+  },
+  "walk": {
+   "frames": [
+    1,
+    49
+   ],
+   "period_frames": 48,
+   "seconds": 2.0,
+   "cyclic": true,
+   "seam_main_mm": 0.0,
+   "root_offset_max": 0.0,
+   "clearance_min_z": -0.0,
+   "tail_tip_p2p_xyz": [
+    0.00167,
+    0.0014,
+    0.0
+   ],
+   "head_top_p2p_xyz": [
+    0.3522,
+    0.2596,
+    0.0075
+   ],
+   "petal_L_tip_p2p_xyz": [
+    0.415,
+    0.3546,
+    0.0809
+   ]
+  }
+ },
+ "clip_seconds": 0.5,
+ "bones": [
+  {
+   "name": "root",
+   "parent": null,
+   "deform": false,
+   "head": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "tail": [
+    0.0,
+    0.0,
+    0.4
+   ]
+  },
+  {
+   "name": "tail.001",
+   "parent": "root",
+   "deform": true,
+   "head": [
+    -1.58,
+    -1.4511,
+    0.0313
+   ],
+   "tail": [
+    -1.0752,
+    -0.8925,
+    0.1406
+   ]
+  },
+  {
+   "name": "tail.002",
+   "parent": "tail.001",
+   "deform": true,
+   "head": [
+    -1.0752,
+    -0.8925,
+    0.1406
+   ],
+   "tail": [
+    -0.6142,
+    -0.3527,
+    0.4084
+   ]
+  },
+  {
+   "name": "tail.003",
+   "parent": "tail.002",
+   "deform": true,
+   "head": [
+    -0.6142,
+    -0.3527,
+    0.4084
+   ],
+   "tail": [
+    -0.2194,
+    0.0883,
+    0.8802
+   ]
+  },
+  {
+   "name": "tail.004",
+   "parent": "tail.003",
+   "deform": true,
+   "head": [
+    -0.2194,
+    0.0883,
+    0.8802
+   ],
+   "tail": [
+    0.0197,
+    0.3751,
+    1.5366
+   ]
+  },
+  {
+   "name": "tail.005",
+   "parent": "tail.004",
+   "deform": true,
+   "head": [
+    0.0197,
+    0.3751,
+    1.5366
+   ],
+   "tail": [
+    0.08,
+    0.4239,
+    2.2863
+   ]
+  },
+  {
+   "name": "spine",
+   "parent": "tail.005",
+   "deform": true,
+   "head": [
+    0.08,
+    0.4239,
+    2.2863
+   ],
+   "tail": [
+    0.0,
+    -0.2011,
+    3.8463
+   ]
+  },
+  {
+   "name": "neck",
+   "parent": "spine",
+   "deform": true,
+   "head": [
+    0.0,
+    -0.2011,
+    3.8463
+   ],
+   "tail": [
+    0.0,
+    -0.4511,
+    4.2963
+   ]
+  },
+  {
+   "name": "head",
+   "parent": "neck",
+   "deform": true,
+   "head": [
+    0.0,
+    -0.4511,
+    4.2963
+   ],
+   "tail": [
+    0.0,
+    -0.5711,
+    5.1163
+   ]
+  },
+  {
+   "name": "petal_L",
+   "parent": "spine",
+   "deform": true,
+   "head": [
+    0.18,
+    0.1789,
+    3.7463
+   ],
+   "tail": [
+    1.55,
+    0.9989,
+    4.1463
+   ]
+  },
+  {
+   "name": "petal_R",
+   "parent": "spine",
+   "deform": true,
+   "head": [
+    -0.18,
+    0.1789,
+    3.7463
+   ],
+   "tail": [
+    -1.55,
+    0.9989,
+    4.1463
+   ]
+  }
+ ],
+ "bone_count": 11,
+ "deform_bone_count": 10,
+ "digest": {
+  "parts": {
+   "bake_normal": "f280bb6dcf18dd9f",
+   "bake_ao": "2a8bb7da7c941a62",
+   "geometry_colour_uv": "14bbfa5ff5087c7c",
+   "weights": "2455836e49e5b6e0",
+   "keys": "d9cc352965fbbe96",
+   "clip_samples": "74c8ca729b366500"
+  },
+  "combined": "cc774fa463a7b7e5"
+ },
+ "glb": {
+  "path": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\rigged\\petal_cobra.glb",
+  "bytes": 5983392,
+  "seconds": 0.7,
+  "carries": {
+   "materials": [
+    {
+     "name": "petal_cobra_body",
+     "alphaMode": "OPAQUE",
+     "doubleSided": false,
+     "textures": [
+      "baseColorTexture",
+      "normalTexture"
+     ]
+    }
+   ],
+   "primitives": [
+    {
+     "mesh": "petal_cobra",
+     "material": "petal_cobra_body",
+     "attributes": [
+      "COLOR_0",
+      "COLOR_1",
+      "JOINTS_0",
+      "NORMAL",
+      "POSITION",
+      "TEXCOORD_0",
+      "WEIGHTS_0",
+      "_GLOW"
+     ]
+    }
+   ],
+   "animations": [
+    "idle",
+    "walk"
+   ],
+   "skins": 1,
+   "joints": 11
+  },
+  "structure": "armature identity + skinned 'petal_cobra' (one opaque body material); natural scale; report-only cell fit 0.30603"
+ },
+ "skins": {
+  "default": {
+   "file": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\rigged\\petal_cobra.blend",
+   "palette": {
+    "body": {
+     "rgb": [
+      215,
+      219,
+      202
+     ]
+    },
+    "eye": {
+     "rgb": [
+      245,
+      212,
+      154
+     ]
+    },
+    "marking": {
+     "rgb": [
+      245,
+      212,
+      154
+     ]
+    },
+    "mouth": {
+     "rgb": [
+      41,
+      51,
+      47
+     ]
+    },
+    "petal_light": {
+     "rgb": [
+      127,
+      146,
+      121
+     ]
+    },
+    "petal_light2": {
+     "rgb": [
+      116,
+      138,
+      115
+     ]
+    },
+    "petal_mid": {
+     "rgb": [
+      104,
+      126,
+      107
+     ]
+    },
+    "petal_mid2": {
+     "rgb": [
+      96,
+      117,
+      101
+     ]
+    },
+    "petal_dark": {
+     "rgb": [
+      76,
+      95,
+      86
+     ]
+    },
+    "petal_vein": {
+     "rgb": [
+      87,
+      107,
+      94
+     ]
+    },
+    "petal_back": {
+     "rgb": [
+      127,
+      146,
+      121
+     ]
+    },
+    "petal_back_shade": {
+     "rgb": [
+      108,
+      129,
+      109
+     ]
+    },
+    "petal_back_vein": {
+     "rgb": [
+      117,
+      136,
+      114
+     ]
+    },
+    "petal_rim": {
+     "rgb": [
+      225,
+      205,
+      170
+     ]
+    }
+   },
+   "glow": {
+    "skin": "default",
+    "glowing_regions": [],
+    "rule": "no glow (the sheet draws none): zero Glow"
+   }
+  },
+  "rule": "default skin only (brief)"
+ },
+ "improved_report": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\improved\\petal_cobra.json",
+ "seconds": 27.5
+}

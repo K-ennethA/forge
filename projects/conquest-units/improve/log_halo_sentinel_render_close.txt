@@ -1,0 +1,10 @@
+00:01.563  blend            | Read blend: "C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\rigged\halo_sentinel.blend"
+00:03.672  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\halo_sentinel\halo_sentinel_arm_wing.png'
+00:04.328  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\halo_sentinel\halo_sentinel_face_eye.png'
+00:04.875  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\halo_sentinel\halo_sentinel_halo_horn.png'
+00:05.422  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\halo_sentinel\halo_sentinel_lower_body_leg.png'
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\halo_sentinel\halo_sentinel_arm_wing.png
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\halo_sentinel\halo_sentinel_face_eye.png
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\halo_sentinel\halo_sentinel_halo_horn.png
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\halo_sentinel\halo_sentinel_lower_body_leg.png
+Blender 5.0.1 (hash a3db93c5b259 built 2025-12-16 01:32:30)

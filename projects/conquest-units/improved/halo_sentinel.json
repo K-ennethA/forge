@@ -1,0 +1,536 @@
+{
+ "unit": "halo_sentinel",
+ "conquest_character_id": "halo_sentinel",
+ "source": "none: from-scratch unit (sheet design/reference/halo_sentinel-character-sheet.png)",
+ "tier": "regular",
+ "tri_budget": [
+  8000,
+  22000
+ ],
+ "units": "sheet units: 1 unit = 100 px; front fixes scale + heights, side gives depths; floor z = 0 at the skirt hem (it floats)",
+ "overrides": {},
+ "sdf": {
+  "step": 0.025,
+  "band": 0.4,
+  "grid": [
+   267,
+   102,
+   206
+  ],
+  "ops": 5,
+  "high_tris": 465200,
+  "high_verts": 232602,
+  "crumbs": {
+   "pieces": 1,
+   "dropped_verts": 0
+  },
+  "seconds_fields": 2.1,
+  "eye_face_projected_high": {
+   "verts": 12700,
+   "max_move": 0.00101
+  },
+  "seconds": 5.5
+ },
+ "retopo": {
+  "method": "SDF marching tetrahedra (step 0.025) -> collapse decimation (deterministic) -> X >= 0 half -> eye-zone densify (pulled onto the high) + Newton projection onto the SDF -> iso-cuts -> mirror weld",
+  "decimated_tris": 9000,
+  "specks": {
+   "pieces": 1,
+   "dropped_verts": 0
+  },
+  "raw_low_vs_high": {
+   "low_to_high": {
+    "mean": 0.00081,
+    "p99": 0.00179,
+    "max": 0.00238
+   },
+   "high_to_low_sampled": {
+    "p99": 0.00193,
+    "max": 0.00397
+   },
+   "bbox_low_over_high": [
+    0.99984,
+    0.9998,
+    0.99989
+   ]
+  },
+  "half_tris": 6368,
+  "eye_densify": {
+   "zones": {
+    "head": [
+     0.04,
+     2
+    ],
+    "belly": [
+     0.04,
+     1
+    ],
+    "belly_pupil": [
+     0.04,
+     2
+    ]
+   },
+   "rounds": [
+    {
+     "round": 1,
+     "faces": 211,
+     "tris_after": 5436
+    },
+    {
+     "round": 2,
+     "faces": 297,
+     "tris_after": 6368
+    }
+   ],
+   "new_verts": 856
+  },
+  "eye_face_projected_low": {
+   "verts": 1010,
+   "max_move": 0.00195
+  },
+  "seconds": 7.2
+ },
+ "iso_cuts": {
+  "cuts": [
+   {
+    "field": "eye_rim",
+    "tau": 0.0,
+    "edge_splits": 58,
+    "face_connects": 68
+   },
+   {
+    "field": "eye_white",
+    "tau": 0.0,
+    "edge_splits": 52,
+    "face_connects": 60
+   },
+   {
+    "field": "pupil",
+    "tau": 0.0,
+    "edge_splits": 26,
+    "face_connects": 28
+   },
+   {
+    "field": "belly_ring",
+    "tau": 0.0,
+    "edge_splits": 41,
+    "face_connects": 49
+   },
+   {
+    "field": "belly_pink",
+    "tau": 0.0,
+    "edge_splits": 42,
+    "face_connects": 45
+   },
+   {
+    "field": "belly_white",
+    "tau": 0.0,
+    "edge_splits": 24,
+    "face_connects": 26
+   },
+   {
+    "field": "belly_pupil",
+    "tau": 0.0,
+    "edge_splits": 12,
+    "face_connects": 16
+   }
+  ],
+  "seconds": 1.2,
+  "shell_tris_after_cuts": 13734,
+  "seam_verts": 375
+ },
+ "skirt": {
+  "step": 0.025,
+  "high_tris": 565536,
+  "high_tris_ribbed": 566120,
+  "crumbs": {
+   "pieces": 1,
+   "dropped_verts": 0
+  },
+  "decimated_tris": 4600,
+  "specks": {
+   "pieces": 1,
+   "dropped_verts": 0
+  },
+  "low_vs_high": {
+   "low_to_high": {
+    "mean": 0.00065,
+    "p99": 0.00275,
+    "max": 0.00442
+   },
+   "high_to_low_sampled": {
+    "p99": 0.00156,
+    "max": 0.00815
+   },
+   "bbox_low_over_high": [
+    0.99984,
+    1.00029,
+    1.00013
+   ]
+  },
+  "cuts": [
+   {
+    "field": "outer",
+    "tau": 0.0,
+    "edge_splits": 115,
+    "face_connects": 116
+   },
+   {
+    "field": "light",
+    "tau": 0.0,
+    "edge_splits": 64,
+    "face_connects": 78
+   }
+  ],
+  "tris_after_cuts": 5364,
+  "seam_verts": 60,
+  "opening_width": {
+   "at_top_z3.3": 0.8,
+   "at_z2.0": 1.041,
+   "at_z1.0": 1.246,
+   "at_hem_z0.3": 1.385,
+   "v1_pillar_gap_at_hem": 2.38
+  },
+  "wrap_deg_at_z0.3": 314.8,
+  "front_edge_at_z0.3": [
+   0.692,
+   -0.283,
+   0.286
+  ],
+  "seconds": 16.5,
+  "rule": "one cone shell (outer per-height ellipses from the measured rows, wall 0.30, top cap in the torso, hem z = 0.90 (|x| / 1.91)^3, front opening |x| < ((3.3, 0.4), (0.0, 0.72)) for y < centre), rounded k 0.05; joined across the back; mirror-halved + welded; ribs in the bake high only (normal map)"
+ },
+ "centre_shift": [
+  0.0,
+  0.133614,
+  0.000504
+ ],
+ "glow_tiers": {
+  "default": {
+   "skin": "default",
+   "emission_scale_tiers": {
+    "pupil": 0.35,
+    "halo": 0.85
+   },
+   "emission_strength": 1.0,
+   "only_drawn_glow": true,
+   "cap": 2.0,
+   "cap_pass": true,
+   "max_effective": 0.85
+  }
+ },
+ "regions_faces": {
+  "halo_sentinel": {
+   "body": 10586,
+   "eye_rim": 416,
+   "eye_white": 1304,
+   "pupil": 552,
+   "belly_ring": 476,
+   "belly_pink": 400,
+   "halo": 792,
+   "jelly": 2406,
+   "jelly_light": 472,
+   "jelly_deep": 2486
+  }
+ },
+ "alpha": {
+  "main": {
+   "body": 1.0,
+   "eye_rim": 1.0,
+   "eye_white": 1.0,
+   "pupil": 1.0,
+   "belly_ring": 1.0,
+   "belly_pink": 1.0,
+   "halo": 1.0,
+   "jelly": 0.75,
+   "jelly_light": 0.699999988079071,
+   "jelly_deep": 0.8199999928474426
+  },
+  "material_alpha": 1.0,
+  "jelly_render_method": "BLENDED",
+  "jelly_transparency_overlap": false
+ },
+ "regions_area_share": {
+  "body": 0.4338,
+  "eye_rim": 0.0004,
+  "eye_white": 0.0027,
+  "pupil": 0.0006,
+  "belly_ring": 0.005,
+  "belly_pink": 0.0047,
+  "halo": 0.0272,
+  "jelly": 0.2642,
+  "jelly_light": 0.0422,
+  "jelly_deep": 0.2192
+ },
+ "facing": {
+  "rule": "head centre at eye height -> the eye centre on the head front (the face looks -Y)",
+  "anchor": [
+   0.0,
+   -0.3336,
+   5.1845
+  ],
+  "landmark": [
+   0.0,
+   -0.9318,
+   5.1845
+  ],
+  "angle_from_minusY_deg": 0.0
+ },
+ "mirror_test": {
+  "max_abs_asymmetry": 0.0,
+  "p99": 0.0,
+  "per_piece_max": {
+   "shell": 0.0,
+   "halo": 0.0,
+   "horn_stem.L": 0.0,
+   "horn_stem.R": 0.0,
+   "horn_tip.L": 0.0,
+   "horn_tip.R": 0.0,
+   "skirt": 0.0
+  },
+  "region_mismatch_sampled": {
+   "faces_sampled": 2842,
+   "mismatched": 0
+  },
+  "rule": "every rest vertex mirrored across X = 0 -> distance to the nearest point of the mesh"
+ },
+ "tris": {
+  "total": 20602,
+  "window": [
+   8000,
+   22000
+  ],
+  "shell": 13734,
+  "per_part": {
+   "body shell (head + torso + arms + belly lobe, one SDF)": 13734,
+   "halo": 1024,
+   "horn_stem.L": 192,
+   "horn_stem.R": 192,
+   "horn_tip.L": 48,
+   "horn_tip.R": 48,
+   "skirt": 5364
+  },
+  "shell_by_owner_group": {
+   "torso": 2944,
+   "lobe": 3420,
+   "arm": 3478,
+   "head": 3892
+  },
+  "per_region": {
+   "body": 10586,
+   "eye_rim": 416,
+   "eye_white": 1304,
+   "pupil": 552,
+   "belly_ring": 476,
+   "belly_pink": 400,
+   "halo": 792,
+   "jelly": 2406,
+   "jelly_light": 472,
+   "jelly_deep": 2486
+  }
+ },
+ "tier_rationale": "REGULAR role: window [8000, 22000]. The smooth body shell (~9000 decimated tris + the densified eye faces) carries most of it; the jelly skirt shell (~4600 decimated + cuts), the halo ring and the horn arrows the rest.",
+ "open_edges": {
+  "per_piece": {
+   "shell": 0,
+   "halo": 0,
+   "horn_stem.L": 0,
+   "horn_stem.R": 0,
+   "horn_tip.L": 0,
+   "horn_tip.R": 0,
+   "skirt": 0
+  },
+  "closed_parts": [
+   "halo",
+   "horn_stem.L",
+   "horn_stem.R",
+   "horn_tip.L",
+   "horn_tip.R",
+   "shell",
+   "skirt"
+  ],
+  "open_parts": {},
+  "rule": "every piece is closed: the mirror-welded SDF shell, the mirror-welded skirt shell, the halo torus, the pole-capped horn stems and arrowhead cones"
+ },
+ "measure": {
+  "bbox": [
+   [
+    -2.7666,
+    -1.2576,
+    0.0
+   ],
+   [
+    2.7666,
+    1.2576,
+    6.0659
+   ]
+  ],
+  "height": 6.0659,
+  "width_x": 5.5333,
+  "depth_y": 2.5151,
+  "sheet": {
+   "front": "H 6.08 W 5.33 (intake)",
+   "back": "H 6.18 W 4.78 (cut at x 545)",
+   "side": "H 6.27 W 2.25"
+  },
+  "export_cell_fit_report_only": {
+   "scale": 0.29674,
+   "height_m": 1.8,
+   "footprint_m": 1.6419,
+   "bound_by": "height"
+  }
+ },
+ "sheet_deviations": [
+  "SKIRT (v2, artist verdict 2026-10-11): the FRONT + SIDE draw two leg pillars, the BACK one wide cone skirt; the artist chose ONE skirt joined across the back that wraps further round toward the front. Built: one cone SHELL (wall 0.30) on the back view's outline (+-0.74 at z 3.3 -> 1.96 at 0.9), hem rising from the back centre (z 0) to the sides (0.9 at |x| 1.91) as the back view draws, OPEN in front: opening 0.8 wide at z 3.3 / 1.246 at z 1.0 / 1.385 at z 0.3 (v1 pillar gap 2.38 at the hem), wrapping 315 deg of 360 round the unit. Through the opening the front sees the skirt's deep inner back wall behind the belly lobe (the sheet's front shows background there)",
+  "SKIRT HEM: the front view's panel bottoms reach the floor at their inner corner (1.19, 0.0); the built hem follows the back view (low at the back centre, 0.22 at |x| 1.19), so the front panels' inner bottoms sit higher than drawn",
+  "HALO TILT: the FRONT view (and both detail panels) hide the ring's LOWER arc behind the head between the horns, which only a FRONT-UP pitch allows (the lower arc is the back arc); the SIDE view draws the front end LOWER (front-down). Built front-up 14.5 deg (the front view: ellipse half-height 0.25 of 0.98); the side view's tilt is mirrored",
+  "HALO ROLL: the front view's ring ends sit at z 5.69 (image left) / 5.79 (image right): a ~6 deg roll; built level (house rule: symmetric rest pose)",
+  "HORNS: the front view draws the arrowhead tips at x +-0.38 (z 5.36), inside the head's silhouette (the drawing overlaps them onto the head); built at x +-0.60, Y -0.36, held 6 % outside the head ellipsoid so they never intersect it; the drawn arrowheads are flat barbed shapes, built as closed cones",
+  "SIDE VIEW: drawn ~3 % larger (H 6.27 vs 6.08) and slightly turned (its two blue panels do not overlap: the far one shows 0.4 u in front of the near one); depths are taken off it unscaled, heights off the FRONT",
+  "WINGS: the side view hangs the arm paddle BACK to Y ~1.1 at its tip; the front reads it sideways-down. Built along (1.15, 0.10, 4.50) -> (2.68, 0.80, 2.70) (out, down and back), round in section (0.48 x 0.46)",
+  "SKIRT TEXTURE: the drawn x-ray-like ribs + spine are NOT geometry (lesson: no ribbed / stacked shapes): three soft light stripes on the outer surface (back centre + two back-sides), the inner wall in the deep tone, the ribs in the baked normal map only (amplitude 0.003 u, wavelength 0.17 u)",
+  "TRANSLUCENCY: per-region alpha on the closed skirt shell, one BLENDED layer: the sheet's inner refractions / caustics are not modelled; the skirt casts a solid shadow",
+  "EYE COLOURS: the drawn eye + emblem centres are near-white (head 250,241,236; belly 252,232,224), not the 234,191,204 chip; the drawn tones are used (palette notes). The belly's crimson outer ring (drawn 200,30,99) is not a palette chip",
+  "INK LINES + PAINTED SHADING: the black contour lines and the sheet's painted light / shade on the magenta body are not modelled (one flat body tone; the renderer shades it)",
+  "HEAD EYE RIM: the drawn rim is the ink outline (~2 px); built as a thin dark band 0.02 u wide"
+ ],
+ "bake": {
+  "NORMAL": {
+   "result": [
+    "FINISHED"
+   ],
+   "seconds": 1.3
+  },
+  "AO": {
+   "result": [
+    "FINISHED"
+   ],
+   "seconds": 1.3
+  },
+  "cage_extrusion": 0.04,
+  "cage_rule": "3 x the worst high->low sampled p99 (body shell, ribbed skirt; floor 0.04)",
+  "resolution": {
+   "normal": 1024,
+   "ao": 512
+  },
+  "ao_samples": 48,
+  "high_tris": 1032112,
+  "high_rule": "body SDF high (eye faces projected smooth) + the RIBBED skirt SDF high + halo / horns as built",
+  "normal_reference": "FLAT low faces; wired into both materials",
+  "uv_texels_normal": 533172,
+  "normal_baked_pct_of_texels": 99.9,
+  "normal_dev_p50_p95": [
+   0.0256,
+   0.0589
+  ],
+  "jelly_normal_dev_p50_p95": [
+   0.0347,
+   0.0651
+  ],
+  "ao_baked_pct_of_texels": 100.0,
+  "ao_raw_mean": 0.7128,
+  "ao_raw_p05": 0.0196,
+  "ao_floor": {
+   "body": 0.5,
+   "clean": 0.9,
+   "jelly": 0.7
+  },
+  "ao_p05_after_floor": 0.7,
+  "pixel_sha": {
+   "normal": "c9f4d05d79a911bf",
+   "ao": "6373fe0cb80fd4bf"
+  },
+  "seconds": 7.7
+ },
+ "digest_geometry_colour_uv": "585377877c4bf3e8",
+ "palette": {
+  "default": {
+   "body": {
+    "rgb": [
+     140,
+     20,
+     68
+    ]
+   },
+   "eye_rim": {
+    "rgb": [
+     20,
+     6,
+     12
+    ]
+   },
+   "eye_white": {
+    "rgb": [
+     251,
+     237,
+     230
+    ]
+   },
+   "pupil": {
+    "rgb": [
+     250,
+     101,
+     15
+    ],
+    "emission": [
+     250,
+     101,
+     15
+    ],
+    "emission_scale": 0.35
+   },
+   "belly_ring": {
+    "rgb": [
+     200,
+     30,
+     99
+    ]
+   },
+   "belly_pink": {
+    "rgb": [
+     225,
+     153,
+     184
+    ]
+   },
+   "halo": {
+    "rgb": [
+     250,
+     108,
+     16
+    ],
+    "emission": [
+     250,
+     108,
+     16
+    ],
+    "emission_scale": 0.85
+   },
+   "jelly": {
+    "rgb": [
+     101,
+     158,
+     192
+    ]
+   },
+   "jelly_light": {
+    "rgb": [
+     159,
+     198,
+     221
+    ]
+   },
+   "jelly_deep": {
+    "rgb": [
+     32,
+     87,
+     131
+    ]
+   }
+  },
+  "files": [
+   "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\palettes\\halo_sentinel\\default.json"
+  ],
+  "provenance": "pixel-sampled from the sheet's six chips + drawn-surface medians (palette notes)"
+ }
+}

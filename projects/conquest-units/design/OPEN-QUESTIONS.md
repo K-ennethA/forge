@@ -115,6 +115,32 @@ are asked, deviations from the sheet are reported.)
 - M1 ANSWERED 2026-10-09: yes glow (faint pink tiers).
 - N3 Movement for both (placeholder clips) + sizes (size table).
 
+## Soot Puff / Winged Cat / Phoenix Hatchling / Chest Monster (sheets 2026-10-10)
+- N4 Movement intent per unit (placeholder clips ship meanwhile): Soot Puff (floats on the sheet - hover?);
+  Winged Cat (sits on the sheet - walks? flies?); Phoenix Hatchling; Chest Monster (tiny dangling legs).
+- N5 In-game height of each.
+
+## Petal Cobra / Crystal Canine / Leaf Bird (sheets 2026-10-10)
+- N6 Movement intent per unit (placeholder clips ship meanwhile): Petal Cobra (slithers? hovers on its tail?); Crystal Canine;
+  Leaf Bird (drawn diving - flies?).
+- N7 In-game height of each.
+
+## Eye Totem / Ember Eye (sheets 2026-10-10)
+- N8 Movement intent (both float on the sheet - hover?) + in-game height of each.
+
+## Ember Stump (sheet 2026-10-10)
+- N9 Movement intent (a root-shuffle? hops?) + in-game height.
+
+## Shield Rodent / Storm Vessel / Volcano Turtle (sheets 2026-10-10)
+- N10 Movement intent per unit (Storm Vessel floats on the sheet - hover?) + in-game height of each.
+
+## Goo Shield / Fogeist (sheets 2026-10-10)
+- N11 Movement intent (Goo Shield slides like a slug? Fogeist drifts?) + in-game height of each.
+
+## Lava Komodo / Spectormn / Halo Sentinel / Eclipse Wolf / Gemwing Dragon / Mystic Snow Spirit (sheets 2026-10-11)
+- N12 Movement intent per unit (Spectormn + Halo Sentinel float on their sheets; Gemwing flies?) + in-game height of each.
+- N13 RESOLVED 2026-10-11: Holly Snowman captured + intaken. Movement + height for it join N12.
+
 ## Game-side (Conquest; all behind debug keys, defaults live)
 - G1 F7 look verdict: warm vs warm-neutralLUT vs new (WorldLook presets).
 - G2 F8 feel verdict: free preset speeds now 2.2/5.0 m/s (artist bumped); camera

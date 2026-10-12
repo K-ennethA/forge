@@ -1,0 +1,534 @@
+{
+ "unit": "petal_cobra",
+ "conquest_character_id": "petal_cobra",
+ "source": "none: from-scratch unit (sheet design/reference/petal_cobra-character-sheet.png)",
+ "tier": "regular",
+ "tri_budget": [
+  8000,
+  22000
+ ],
+ "units": "sheet units: 1 unit = 100 px; three true orthos; floor z = 0 at the resting tail tip",
+ "overrides": {},
+ "sdf": {
+  "step": 0.02,
+  "band": 0.2,
+  "grid": [
+   140,
+   130,
+   267
+  ],
+  "ops": 42,
+  "high_tris": 416072,
+  "high_verts": 208038,
+  "crumbs": {
+   "pieces": 1,
+   "dropped_verts": 0
+  },
+  "seconds_fields": 3.1,
+  "seconds": 6.6
+ },
+ "retopo": {
+  "method": "SDF marching tetrahedra (step 0.020) -> collapse decimation (deterministic)",
+  "decimated_tris": 7600,
+  "specks": {
+   "pieces": 1,
+   "dropped_verts": 0
+  },
+  "low_to_high": {
+   "mean": 0.00055,
+   "p99": 0.00147,
+   "max": 0.00389
+  },
+  "high_to_low_sampled": {
+   "p99": 0.00146,
+   "max": 0.00299
+  },
+  "bbox_high": [
+   2.4716,
+   2.3032,
+   5.126
+  ],
+  "bbox_low": [
+   2.4713,
+   2.3042,
+   5.1265
+  ],
+  "bbox_low_over_high": [
+   0.99985,
+   1.00042,
+   1.0001
+  ],
+  "seconds": 6.1,
+  "feature_densify": {
+   "rounds": 2,
+   "smile_rounds": 3,
+   "zone": 0.05,
+   "new_verts": 3521,
+   "tris_after": 14642
+  }
+ },
+ "iso_cuts": {
+  "cuts": [
+   {
+    "field": "eye.L",
+    "tau": 0.0,
+    "edge_splits": 30,
+    "face_connects": 41
+   },
+   {
+    "field": "eye.R",
+    "tau": 0.0,
+    "edge_splits": 54,
+    "face_connects": 63
+   },
+   {
+    "field": "mark1.L",
+    "tau": 0.0,
+    "edge_splits": 47,
+    "face_connects": 59
+   },
+   {
+    "field": "mark1.R",
+    "tau": 0.0,
+    "edge_splits": 65,
+    "face_connects": 77
+   },
+   {
+    "field": "mark2.L",
+    "tau": 0.0,
+    "edge_splits": 43,
+    "face_connects": 52
+   },
+   {
+    "field": "mark2.R",
+    "tau": 0.0,
+    "edge_splits": 43,
+    "face_connects": 52
+   },
+   {
+    "field": "mark3.L",
+    "tau": 0.0,
+    "edge_splits": 35,
+    "face_connects": 46
+   },
+   {
+    "field": "mark3.R",
+    "tau": 0.0,
+    "edge_splits": 40,
+    "face_connects": 47
+   },
+   {
+    "field": "smile",
+    "tau": 0.0,
+    "edge_splits": 68,
+    "face_connects": 85
+   }
+  ],
+  "seconds": 5.5,
+  "shell_tris_after_cuts": 15492,
+  "feature_faces": {
+   "eye.L": 205,
+   "eye.R": 325,
+   "mark1.L": 180,
+   "mark1.R": 230,
+   "mark2.L": 209,
+   "mark2.R": 222,
+   "mark3.L": 126,
+   "mark3.R": 133,
+   "smile": 316
+  }
+ },
+ "petals": {
+  "rows": 36,
+  "cols": 21,
+  "tris_each": 2940,
+  "inner_edge_len": 4.731,
+  "rim_len": 5.396,
+  "row_z": [
+   2.324,
+   2.354,
+   2.404,
+   2.477,
+   2.559,
+   2.647,
+   2.74,
+   2.839,
+   2.945,
+   3.056,
+   3.172,
+   3.293,
+   3.419,
+   3.548,
+   3.682,
+   3.818,
+   3.953,
+   4.085,
+   4.214,
+   4.342,
+   4.467,
+   4.584,
+   4.689,
+   4.783,
+   4.866,
+   4.94,
+   5.008,
+   5.079,
+   5.157,
+   5.238,
+   5.316,
+   5.396,
+   5.476,
+   5.537,
+   5.574,
+   5.605
+  ],
+  "rule": "closed pillow (knife-thin perimeter, welded tips), L built, R mirrored (symmetric by the brief)",
+  "faces_per_region": {
+   "petal_back": 354,
+   "petal_back_shade": 132,
+   "petal_back_vein": 72,
+   "petal_dark": 108,
+   "petal_light": 132,
+   "petal_light2": 45,
+   "petal_mid": 75,
+   "petal_mid2": 135,
+   "petal_rim": 396,
+   "petal_vein": 63
+  }
+ },
+ "centre_shift": [
+  0.0,
+  0.151091,
+  0.003727
+ ],
+ "glow": {
+  "skin": "default",
+  "glowing_regions": [],
+  "rule": "no glow (the sheet draws none): zero Glow"
+ },
+ "regions_faces": {
+  "petal_cobra": {
+   "body": 13546,
+   "eye": 530,
+   "marking": 1100,
+   "mouth": 316,
+   "petal_light": 264,
+   "petal_light2": 90,
+   "petal_mid": 150,
+   "petal_mid2": 270,
+   "petal_dark": 216,
+   "petal_vein": 126,
+   "petal_back": 708,
+   "petal_back_shade": 264,
+   "petal_back_vein": 144,
+   "petal_rim": 792
+  }
+ },
+ "regions_area_share": {
+  "body": 0.4098,
+  "eye": 0.0015,
+  "marking": 0.0031,
+  "mouth": 0.0001,
+  "petal_light": 0.0356,
+  "petal_light2": 0.0314,
+  "petal_mid": 0.0667,
+  "petal_mid2": 0.088,
+  "petal_dark": 0.0188,
+  "petal_vein": 0.0077,
+  "petal_back": 0.2084,
+  "petal_back_shade": 0.0366,
+  "petal_back_vein": 0.0086,
+  "petal_rim": 0.0837
+ },
+ "facing": {
+  "rule": "head centre (HEAD_C) -> the snout front on the midline (the face looks -Y)",
+  "anchor": [
+   0.0,
+   -0.7011,
+   4.4663
+  ],
+  "landmark": [
+   0.0,
+   -1.2514,
+   4.1863
+  ],
+  "angle_from_minusY_deg": 0.0
+ },
+ "face": {
+  "eyes": {
+   "x": 0.257,
+   "z": 4.245,
+   "half_ab": [
+    0.145,
+    0.08
+   ],
+   "tilt_deg": 33.0,
+   "rule": "front-projected tilted almond iso-cut into the head (closed shell, no decal)"
+  },
+  "smile": {
+   "stroke": [
+    [
+     -0.085,
+     3.962
+    ],
+    [
+     -0.045,
+     3.942
+    ],
+    [
+     0.0,
+     3.934
+    ],
+    [
+     0.045,
+     3.942
+    ],
+    [
+     0.085,
+     3.962
+    ]
+   ],
+   "half_width": 0.012,
+   "rule": "front-projected thin stroke iso-cut into the snout front (ink tone)"
+  },
+  "markings": [
+   {
+    "x": 0.6,
+    "z": 3.84,
+    "half_ab": [
+     0.16,
+     0.052
+    ],
+    "tilt_deg": 13.0
+   },
+   {
+    "x": 0.555,
+    "z": 3.465,
+    "half_ab": [
+     0.138,
+     0.05
+    ],
+    "tilt_deg": 4.0
+   },
+   {
+    "x": 0.48,
+    "z": 3.08,
+    "half_ab": [
+     0.118,
+     0.045
+    ],
+    "tilt_deg": -15.0
+   }
+  ]
+ },
+ "tris": {
+  "total": 21372,
+  "shell": 15492,
+  "shell_before_cuts": 14642,
+  "petals": 5880,
+  "per_part": {
+   "shell (head + neck + torso + nubs + tail, one SDF; face + markings cut in)": 15492,
+   "petal.L": 2940,
+   "petal.R": 2940
+  },
+  "per_region": {
+   "body": 13546,
+   "eye": 530,
+   "marking": 1100,
+   "mouth": 316,
+   "petal_light": 264,
+   "petal_light2": 90,
+   "petal_mid": 150,
+   "petal_mid2": 270,
+   "petal_dark": 216,
+   "petal_vein": 126,
+   "petal_back": 708,
+   "petal_back_shade": 264,
+   "petal_back_vein": 144,
+   "petal_rim": 792
+  }
+ },
+ "tier_rationale": "REGULAR role (a line unit): window [8000, 22000]. The one SDF shell carries the head, the torso panel with its shoulder corners + nubs and the long tail; the face + marking outlines are densified locally; the two cupped hood petals (closed pillows with clean rim + vein grid lines) are the other big share.",
+ "open_edges": {
+  "closed_parts": [
+   "petal.L",
+   "petal.R",
+   "shell"
+  ],
+  "open_parts": {},
+  "rule": "every piece is a closed solid (SDF shell; petal pillows); eyes / smile / markings are iso-cut regions of the shell"
+ },
+ "measure": {
+  "bbox": [
+   [
+    -2.1802,
+    -1.4757,
+    0.0
+   ],
+   [
+    2.1802,
+    1.4757,
+    5.8819
+   ]
+  ],
+  "height": 5.8819,
+  "width_x": 4.3603,
+  "depth_y": 2.9514,
+  "sheet_px_equivalent": {
+   "height_px": 588.2,
+   "width_px": 436.0,
+   "depth_px": 295.1
+  },
+  "sheet": {
+   "front": "H 5.90 W 4.39 (x 32-471)",
+   "side": "H 5.90 D 3.02 (x 862-1164)",
+   "back": "H 5.77 W 3.66"
+  },
+  "export_cell_fit_report_only": {
+   "scale": 0.30603,
+   "height_m": 1.8,
+   "footprint_m": 1.3344,
+   "bound_by": "height"
+  }
+ },
+ "bake": {
+  "NORMAL": {
+   "result": [
+    "FINISHED"
+   ],
+   "seconds": 0.8
+  },
+  "AO": {
+   "result": [
+    "FINISHED"
+   ],
+   "seconds": 0.5
+  },
+  "cage_extrusion": 0.02,
+  "cage_rule": "3 x the sampled high->low p99 distance (floor 0.02)",
+  "resolution": {
+   "normal": 1024,
+   "ao": 512
+  },
+  "high_tris": 419096,
+  "high_rule": "SDF shell (marching tets) + both closed petal pillows",
+  "body_uv_texels_normal": 520650,
+  "normal_baked_pct_of_body_texels": 99.77,
+  "normal_detail_fraction_dev_gt_0.05": 0.0858,
+  "ao_baked_pct_of_body_texels": 100.0,
+  "ao_mean": 0.8384,
+  "ao_p05": 0.3137,
+  "pixel_sha": {
+   "normal": "f280bb6dcf18dd9f",
+   "ao": "2a8bb7da7c941a62"
+  },
+  "seconds": 5.0
+ },
+ "digest_geometry_colour_uv": "14bbfa5ff5087c7c",
+ "palette": {
+  "default": {
+   "body": {
+    "rgb": [
+     215,
+     219,
+     202
+    ]
+   },
+   "eye": {
+    "rgb": [
+     245,
+     212,
+     154
+    ]
+   },
+   "marking": {
+    "rgb": [
+     245,
+     212,
+     154
+    ]
+   },
+   "mouth": {
+    "rgb": [
+     41,
+     51,
+     47
+    ]
+   },
+   "petal_light": {
+    "rgb": [
+     127,
+     146,
+     121
+    ]
+   },
+   "petal_light2": {
+    "rgb": [
+     116,
+     138,
+     115
+    ]
+   },
+   "petal_mid": {
+    "rgb": [
+     104,
+     126,
+     107
+    ]
+   },
+   "petal_mid2": {
+    "rgb": [
+     96,
+     117,
+     101
+    ]
+   },
+   "petal_dark": {
+    "rgb": [
+     76,
+     95,
+     86
+    ]
+   },
+   "petal_vein": {
+    "rgb": [
+     87,
+     107,
+     94
+    ]
+   },
+   "petal_back": {
+    "rgb": [
+     127,
+     146,
+     121
+    ]
+   },
+   "petal_back_shade": {
+    "rgb": [
+     108,
+     129,
+     109
+    ]
+   },
+   "petal_back_vein": {
+    "rgb": [
+     117,
+     136,
+     114
+    ]
+   },
+   "petal_rim": {
+    "rgb": [
+     225,
+     205,
+     170
+    ]
+   }
+  },
+  "files": [
+   "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\palettes\\petal_cobra\\default.json"
+  ],
+  "provenance": "pixel-sampled from the sheet's chips + drawn surfaces (see the palette notes)"
+ }
+}

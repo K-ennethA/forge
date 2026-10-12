@@ -1,0 +1,26 @@
+# chest_monster STATE (scaffolded 2026-10-10)
+
+- Version: v1.2 (2026-10-10: smoke burst + spark flecks removed per artist, SMOKE_BURST=False, SPARKS count 0). DIGEST build=a516c7df19004eae except-bake_normal gate PASS. Checks: improved 7/1 failed, rigged 11/1 failed (cell_fit only, report-only). 13,832 tris (REGULAR [8000, 22000]); 52 closed parts, 0 open edges.
+- Spec: design/review-log.md entry '2026-10-10 — NEW UNITS x4' (section CHEST_MONSTER) + design/reference/chest_monster-character-sheet.png (ALL views 3/4 perspective; intake axes front 192 / back 578 / side 1010; the overlay is indicative only)
+- Pattern: hard-surface closed parts (box, lid, eye plate, crystals, smoke fx) + SDF legs; fx primitive alpha BLEND
+- Box reconstruction: from both 3/4 views (yaw 21.9 / 77.0 deg, elev 13.5 deg). Top 2.49 W x 1.99 D, base taper 1.06, lid band 0.71 tall; overall 3.16 W x 2.63 D x 4.84 H.
+- LOCKED: (nothing yet - awaiting artist verdict)
+- Knobs that matter:
+  - box: BOX_HALF_TOP, BOX_BASE_SCALE, BOX_Z0/LID_Z0/LID_Z1, LID_OVERHANG
+  - eye: EYE_C/EYE_AB/EYE_PROUD/IRIS_AB/GLINT
+  - crystals: CRYSTALS table, CLUSTERS, CRYSTAL_TIP
+  - smoke: SMOKE_C/SMOKE_CORE/SMOKE_RAYS/RAY_W/SPARKS
+  - legs: LEG_TOP/STALK/FOOT/TOES/LEG_DOTS/ANKLE_Z
+  - clips: LID_BREATHE, CRYSTAL_SHIMMER, LEG_SWAY, WALK_HOP, WALK_SWING
+- Deviations:
+  - The smoke burst and the spark flecks were REMOVED (artist, 2026-10-10); only the crystals sit on the lid.
+  - There is no cut top opening.
+  - The eye position is the mean of the views; its tip pokes 0.16 above the lid.
+  - The iris is a pointed almond, with no halo.
+  - The taper follows the spec + back view.
+  - The ink outline is not modelled.
+  - The lid top uses the drawn tone 106,62,34.
+  - Walk dips a claw 0.02 u below the floor at mid-swing (placeholder clip).
+- Clips: idle (lid breathe + crystal shimmer + leg sway) and walk (scuttle hop) are PLACEHOLDER.
+- Unit gates: contract checks (cell_fit report-only), digest twins, bake gate
+- Open artist questions: design/OPEN-QUESTIONS.md section 'Soot Puff / Winged Cat / Phoenix Hatchling / Chest Monster' (N4, N5)

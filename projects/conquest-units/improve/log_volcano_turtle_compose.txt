@@ -1,0 +1,2 @@
+﻿WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\volcano_turtle\volcano_turtle_sheet_vs_model.png
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\volcano_turtle\volcano_turtle_contact.png

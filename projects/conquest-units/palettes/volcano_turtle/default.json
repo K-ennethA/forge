@@ -1,0 +1,26 @@
+{
+ "unit": "volcano_turtle",
+ "skin": "default",
+ "description": "Volcano Turtle default look, PIXEL-SAMPLED from design/reference/volcano_turtle-character-sheet.webp: the six palette chips (intake.json swatches dark rock 61,57,58 / rock 94,77,71 / tan 170,137,116 / lava red 136,58,47 / lava orange 254,143,58 / flame yellow 254,192,83) cross-checked against the drawn surfaces (service venv PIL, median of a box per surface; boxes in each note). GLOW (drawn on the sheet): the eyes, the lava cracks, the crater rim (+ its drips) and the flame only; tiers lava_drip < crack < eye < crater < flame_outer < flame_inner; peak emission (max channel / 255 x emission_scale x material emission_strength) stays under the 2.0 cap.",
+ "regions": {
+  "skin":          {"rgb": [94, 77, 71],    "note": "body / head / legs / tail rock skin: chip 94,77,71 (x1375 y878); drawn front head (150,350)-(180,365) median 99,76,70, front leg (80,720)-(180,770) 99,79,73, back tail (670,715)-(710,740) 103,82,75"},
+  "plastron":      {"rgb": [170, 137, 116], "note": "tan plastron belly: chip 170,137,116 (x1434 y879); drawn plastron (200,520)-(260,560) median 198,158,130 (lit) / (200,640)-(260,670) 151,114,95 (shaded) -- the chip is the mid tone"},
+  "plastron_line": {"rgb": [94, 77, 71],    "note": "the three plastron segment lines: drawn line pixels on the x 232 column y 572 = 160,125,102, y 683 = 75,50,38 (soft / dark line art) -- the rock chip 94,77,71 is used; NOT a separate chip, reported"},
+  "toe":           {"rgb": [170, 137, 116], "note": "tan toe claws: chip 170,137,116; drawn front toe (110,795)-(140,806) median 168,131,107"},
+  "tail_under":    {"rgb": [170, 137, 116], "note": "tan tail underside (side view draws the lower half of the tail tan: row y 750 x 1180-1240 = 136-180,103-147,84-127): chip 170,137,116"},
+  "arm_rock":      {"rgb": [94, 77, 71],    "note": "arms, oversized fists, rock shoulder plates: chip 94,77,71; drawn front fist (60,600)-(140,630) median 101,79,73, back arm (490,520)-(540,600) 97,77,69, front shoulder block (320,420)-(350,440) 99,75,67"},
+  "knuckle":       {"rgb": [170, 137, 116], "note": "tan curled fingers under the fists: chip 170,137,116; drawn front knuckles (60,655)-(140,675) median 179,142,117"},
+  "shell_plate":   {"rgb": [61, 57, 58],    "note": "dark faceted shell plates: chip 61,57,58 (x1315 y880); drawn back-view centre plate (650,490)-(730,570) median 62,50,50, lower-left plate (580,580)-(620,640) 53,44,45"},
+  "shell_rim":     {"rgb": [170, 137, 116], "note": "tan shell rim (+ the shell's flat underside the side view shows tan): chip 170,137,116; drawn back-view rim top (650,400)-(720,405) median 184,144,115"},
+  "brow":          {"rgb": [31, 27, 26],    "note": "the rocky brow blocks: drawn front centre block (222,345)-(244,365) median 31,27,26, side block (170,330)-(186,345) 32,27,26 -- darker than every chip (the drawn fill is used, reported)"},
+  "eye_socket":    {"rgb": [31, 27, 26],    "note": "the dark outline round each glowing eye (FACE DETAIL line art): the brow sample 31,27,26"},
+  "face_line":     {"rgb": [31, 27, 26],    "note": "nostrils + mouth line (FACE DETAIL line art): the brow sample 31,27,26"},
+  "eye":           {"rgb": [254, 143, 58],  "emission": [254, 143, 58], "emission_scale": 0.65, "note": "GLOWING orange angular eyes: chip 254,143,58 (x1553 y878); drawn front eyes (192,372)-(208,390) median 250,140,50, (266,372)-(284,390) 250,161,55"},
+  "crack":         {"rgb": [254, 143, 58],  "emission": [254, 143, 58], "emission_scale": 0.60, "note": "GLOWING lava cracks (arms, shoulder plates, shell seams): chip 254,143,58; drawn front fist crack (60,582)-(140,588) median 240,102,42 (redder than the chip; the chip is used, reported)"},
+  "lava_drip":     {"rgb": [136, 58, 47],   "emission": [136, 58, 47],  "emission_scale": 0.50, "note": "the darker lava dripping down the head under the crater: chip 136,58,47 (x1494 y878) per the brief's rim pair; drawn drips (215,325)-(245,335) median 244,88,39 and the crater's lower wall (185,318)-(200,328) 113,65,38 -- reported"},
+  "crater":        {"rgb": [254, 143, 58],  "emission": [254, 143, 58], "emission_scale": 0.70, "note": "the glowing crater wall, lip and hollow: chip 254,143,58; drawn crater wall (190,295)-(280,320) median 247,97,38, lip (180,288)-(290,292) 221,172,73"},
+  "flame_outer":   {"rgb": [254, 143, 58],  "emission": [254, 143, 58], "emission_scale": 0.75, "note": "orange outer flame tongues + the flicks: chip 254,143,58; drawn front flame edge (180,240)-(200,260) median 252,113,48, flick (193,170)-(202,182) 246,93,37"},
+  "flame_inner":   {"rgb": [254, 192, 83],  "emission": [254, 192, 83], "emission_scale": 0.90, "note": "yellow inner flame core: chip 254,192,83 (x1614 y878); drawn flame centre (225,255)-(255,280) median 254,225,102 (hotter than the chip; the chip is used)"}
+ },
+ "material": {"roughness": 0.95, "emission_strength": 1.0, "alpha": 1.0}
+}

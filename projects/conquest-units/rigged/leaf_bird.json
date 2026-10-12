@@ -1,0 +1,360 @@
+{
+ "unit": "leaf_bird",
+ "source": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\improved\\leaf_bird.blend",
+ "fps": 24,
+ "weights": {
+  "max_influences": 2,
+  "unweighted": 0,
+  "sum_dev_max": 0.0,
+  "per_bone_dominant": {
+   "body": 2812,
+   "head": 2152,
+   "tail.001": 559,
+   "tail.002": 819,
+   "wing_L.001": 217,
+   "wing_L.002": 261,
+   "wing_R.001": 217,
+   "wing_R.002": 261
+  },
+  "rule": "shell: by the Y of the nearest medial-curve point, head | body | tail.001 | tail.002 smoothstep bands (-1.33, -0.97) / (0.95, 1.25) / (1.48, 1.72); wings: rigkit.vine_weights by the lateral distance from the root line (parent body); beak, eyes, irises rigid head; tail lobes rigid tail.002"
+ },
+ "clips": {
+  "idle": {
+   "frames": [
+    1,
+    97
+   ],
+   "period_frames": 96,
+   "seconds": 4.0,
+   "cyclic": true,
+   "seam_main_mm": 0.0,
+   "root_offset_max": 0.0,
+   "clearance_min_z": 0.278,
+   "body_lift": [
+    0.26324,
+    0.38514
+   ],
+   "floor_guard_lift": {
+    "frames_lifted": 0,
+    "max": 0.0
+   },
+   "wing_tip_L_p2p_xyz": [
+    0.2491,
+    0.2304,
+    0.4167
+   ],
+   "wing_tip_R_p2p_xyz": [
+    0.2516,
+    0.2304,
+    0.4337
+   ],
+   "wing_tip_LR_z_corr": 0.9283,
+   "tail_tip_p2p_xyz": [
+    0.1221,
+    0.4969,
+    0.3392
+   ],
+   "head_tip_p2p_xyz": [
+    0.0092,
+    0.0218,
+    0.1233
+   ]
+  },
+  "walk": {
+   "frames": [
+    1,
+    49
+   ],
+   "period_frames": 48,
+   "seconds": 2.0,
+   "cyclic": true,
+   "seam_main_mm": 0.0,
+   "root_offset_max": 0.0,
+   "clearance_min_z": 0.26132,
+   "body_lift": [
+    0.26725,
+    0.39059
+   ],
+   "floor_guard_lift": {
+    "frames_lifted": 0,
+    "max": 0.0
+   },
+   "wing_tip_L_p2p_xyz": [
+    0.7351,
+    0.6379,
+    0.8499
+   ],
+   "wing_tip_R_p2p_xyz": [
+    0.7351,
+    0.6379,
+    0.8499
+   ],
+   "wing_tip_LR_z_corr": 1.0,
+   "tail_tip_p2p_xyz": [
+    0.0,
+    0.6106,
+    0.276
+   ],
+   "head_tip_p2p_xyz": [
+    0.0,
+    0.007,
+    0.1497
+   ]
+  }
+ },
+ "clip_seconds": 0.6,
+ "hover": {
+  "hover_frac_H": 0.08,
+  "hover_height_units": 0.3289,
+  "rest_height_units": 4.1115,
+  "rule": "rest pose = the drawn dive with the belly on z 0 (contract feet_origin); both clips key body.location z = HOVER_FRAC x H + the bob; floor guard lifts the body if any vertex would dip below z 0"
+ },
+ "bones": [
+  {
+   "name": "root",
+   "parent": null,
+   "deform": false,
+   "head": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "tail": [
+    0.0,
+    0.0,
+    0.4
+   ]
+  },
+  {
+   "name": "body",
+   "parent": "root",
+   "deform": true,
+   "head": [
+    0.0,
+    -1.015,
+    0.6052
+   ],
+   "tail": [
+    0.0,
+    1.085,
+    1.9382
+   ]
+  },
+  {
+   "name": "head",
+   "parent": "body",
+   "deform": true,
+   "head": [
+    0.0,
+    -1.165,
+    0.5569
+   ],
+   "tail": [
+    0.0,
+    -2.315,
+    0.3422
+   ]
+  },
+  {
+   "name": "tail.001",
+   "parent": "body",
+   "deform": true,
+   "head": [
+    0.0,
+    1.085,
+    1.9382
+   ],
+   "tail": [
+    0.0,
+    1.585,
+    2.5982
+   ]
+  },
+  {
+   "name": "tail.002",
+   "parent": "tail.001",
+   "deform": true,
+   "head": [
+    0.0,
+    1.585,
+    2.5982
+   ],
+   "tail": [
+    0.0,
+    2.115,
+    4.1022
+   ]
+  },
+  {
+   "name": "wing_L.001",
+   "parent": "body",
+   "deform": true,
+   "head": [
+    0.72,
+    0.2505,
+    1.2022
+   ],
+   "tail": [
+    1.35,
+    1.0419,
+    1.8922
+   ]
+  },
+  {
+   "name": "wing_L.002",
+   "parent": "wing_L.001",
+   "deform": true,
+   "head": [
+    1.35,
+    1.0419,
+    1.8922
+   ],
+   "tail": [
+    1.92,
+    1.8437,
+    3.0322
+   ]
+  },
+  {
+   "name": "wing_R.001",
+   "parent": "body",
+   "deform": true,
+   "head": [
+    -0.72,
+    0.2505,
+    1.2022
+   ],
+   "tail": [
+    -1.35,
+    1.0419,
+    1.8922
+   ]
+  },
+  {
+   "name": "wing_R.002",
+   "parent": "wing_R.001",
+   "deform": true,
+   "head": [
+    -1.35,
+    1.0419,
+    1.8922
+   ],
+   "tail": [
+    -1.92,
+    1.8437,
+    3.0322
+   ]
+  }
+ ],
+ "bone_count": 9,
+ "deform_bone_count": 8,
+ "digest": {
+  "parts": {
+   "bake_normal": "cbff3b10d2bba27c",
+   "bake_ao": "eb861358924307d9",
+   "geometry_colour_uv": "a9e7c8e0d831947a",
+   "weights": "87ba6d35072f5526",
+   "keys": "f2706448d747c56f",
+   "clip_samples": "fc4efa8dadc1fc4d"
+  },
+  "combined": "9c8fdc2beac2f091"
+ },
+ "glb": {
+  "path": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\rigged\\leaf_bird.glb",
+  "bytes": 4457092,
+  "seconds": 0.7,
+  "carries": {
+   "materials": [
+    {
+     "name": "leaf_bird_body",
+     "alphaMode": "OPAQUE",
+     "doubleSided": false,
+     "textures": [
+      "baseColorTexture",
+      "normalTexture"
+     ]
+    }
+   ],
+   "primitives": [
+    {
+     "mesh": "leaf_bird",
+     "material": "leaf_bird_body",
+     "attributes": [
+      "COLOR_0",
+      "COLOR_1",
+      "JOINTS_0",
+      "NORMAL",
+      "POSITION",
+      "TEXCOORD_0",
+      "WEIGHTS_0",
+      "_GLOW"
+     ]
+    }
+   ],
+   "animations": [
+    "idle",
+    "walk"
+   ],
+   "skins": 1,
+   "joints": 9
+  },
+  "structure": "armature identity + skinned 'leaf_bird' (one opaque body material); natural scale; report-only cell fit 0.38229"
+ },
+ "skins": {
+  "default": {
+   "file": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\rigged\\leaf_bird.blend",
+   "palette": {
+    "body": {
+     "rgb": [
+      56,
+      191,
+      33
+     ]
+    },
+    "marking": {
+     "rgb": [
+      4,
+      115,
+      25
+     ]
+    },
+    "highlight": {
+     "rgb": [
+      121,
+      190,
+      91
+     ]
+    },
+    "beak": {
+     "rgb": [
+      200,
+      133,
+      30
+     ]
+    },
+    "eye": {
+     "rgb": [
+      254,
+      248,
+      220
+     ]
+    },
+    "iris": {
+     "rgb": [
+      187,
+      122,
+      6
+     ]
+    }
+   },
+   "glow": {
+    "skin": "default",
+    "glowing_regions": [],
+    "rule": "no glow (the sheet draws none): zero Glow"
+   }
+  },
+  "rule": "default skin only (brief)"
+ },
+ "improved_report": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\improved\\leaf_bird.json",
+ "seconds": 22.2
+}

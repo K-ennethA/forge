@@ -1,0 +1,142 @@
+{
+  "unit": "eclipse_wolf",
+  "skin": "default",
+  "description": "Eclipse Wolf default look, PIXEL-SAMPLED from design/reference/eclipse_wolf-character-sheet.png (service venv PIL, python -P): the intake.json swatch chips 35,30,35 / 122,109,109 / 56,28,58 / 253,49,253 / 229,221,217 (the sixth chip 116,83,126 matches 7 drawn pixels in all three views: no surface uses it) plus direct medians of the drawn surfaces (px boxes cited per region; FRONT view unless noted). A near-black wolf with a taupe woolly fleece mantle (lighter clump tops), white narrow eyes with black pupils, a white toothy grin, dark-purple crescent horns and a dark orb. GLOW (drawn on the sheet): the horn inner-edge band, the orb ring and the four leg bands only; tiers x emission_strength 1.5 stay under the 2.0 cap.",
+  "regions": {
+    "fur": {
+      "rgb": [
+        35,
+        30,
+        35
+      ],
+      "note": "near-black fur: chip 35,30,35 (x1354 y906); drawn SIDE body (1010-1080, 600-640) median 35,30,36, FRONT foreleg (150-200, 640-720) 46,39,47, FRONT head (190-250, 310-340) 43,36,43"
+    },
+    "ear_inner": {
+      "rgb": [
+        229,
+        221,
+        217
+      ],
+      "note": "light inner ear fur: chip 229,221,217 (x1560 y907); drawn FRONT L ear (148-170, 285-335) median 202,191,188, face panel (1400-1440, 50-90) 211,200,196 (the drawn shading pulls it down)"
+    },
+    "fleece": {
+      "rgb": [
+        126,
+        110,
+        109
+      ],
+      "note": "fleece mantle body = the drawn MID wool: SIDE (860-1290, 430-700) sum-percentile p50 bin median 126,109,109, SIDE mantle (1050-1150, 480-580) 127,110,110, SIDE tail (1170-1270, 500-650) 126,110,109 (chip 122,109,109 x1406 y906)"
+    },
+    "fleece_lit": {
+      "rgb": [
+        168,
+        148,
+        144
+      ],
+      "note": "lit clump TOPS: between the drawn fleece's p90 and p97 sum-percentile bins: FRONT ruff p90 155,136,132 / p97 169,148,144, SIDE p90 163,143,139 / p97 179,157,152, BACK p90 160,140,136 / p97 177,155,151 (the 229,221,217 chip never appears on the drawn fleece: its p99.5 is 185-194,163-172,158-167)"
+    },
+    "mouth": {
+      "rgb": [
+        253,
+        49,
+        253
+      ],
+      "note": "inner mouth = the glow magenta (chip 253,49,253) as COLOUR, not emissive - artist 2026-10-11: 'make the inner mouth purple like the glowing color to contrast with the teeth' (was the drawn dark gap 11,7,10)"
+    },
+    "teeth": {
+      "rgb": [
+        229,
+        221,
+        217
+      ],
+      "note": "white teeth: chip 229,221,217; drawn FRONT (160-280, 405-440) sum>600 median 230,223,219, face panel 231,225,221"
+    },
+    "eye_white": {
+      "rgb": [
+        233,
+        227,
+        222
+      ],
+      "note": "eye whites: drawn FRONT L eye (168-205, 355-395) sum>600 median 233,227,222; face panel 235,229,225"
+    },
+    "pupil": {
+      "rgb": [
+        4,
+        3,
+        3
+      ],
+      "note": "black pupils: face panel (1440-1530, 95-130) sum<60 median 4,3,3; FRONT (195-210, 365-390) sum<120 median 28,24,28 (anti-aliased at 1:1)"
+    },
+    "nose": {
+      "rgb": [
+        6,
+        5,
+        6
+      ],
+      "note": "small black nose: FRONT (208-228, 390-405) sum<120 median 6,5,6"
+    },
+    "horn": {
+      "rgb": [
+        56,
+        28,
+        58
+      ],
+      "note": "dark-purple horns: chip 56,28,58 (x1458 y906); drawn FRONT horn (40-90, 260-400) R>G+15 median 62,24,65, SIDE (1110-1160, 230-380) 60,24,64"
+    },
+    "horn_glow": {
+      "rgb": [
+        253,
+        49,
+        253
+      ],
+      "emission": [
+        253,
+        49,
+        253
+      ],
+      "emission_scale": 0.9,
+      "note": "glowing magenta inner edge: chip 253,49,253 (x1510 y906); drawn FRONT (95-130, 280-380) median 253,66,252, SIDE (1060-1110, 250-400) 252,71,251"
+    },
+    "orb": {
+      "rgb": [
+        17,
+        12,
+        17
+      ],
+      "note": "dark orb: drawn FRONT core (205-232, 200-230) median 17,12,17"
+    },
+    "orb_ring": {
+      "rgb": [
+        253,
+        49,
+        253
+      ],
+      "emission": [
+        253,
+        49,
+        253
+      ],
+      "emission_scale": 1.0,
+      "note": "the orb's glowing ring: chip 253,49,253; drawn FRONT (170-266, 165-265) R>200 G<120 median 245,37,247"
+    },
+    "band": {
+      "rgb": [
+        253,
+        49,
+        253
+      ],
+      "emission": [
+        253,
+        49,
+        253
+      ],
+      "emission_scale": 1.0,
+      "note": "glowing leg bands: chip 253,49,253; drawn FRONT (170-265, 745-765) R>200 median 249,45,250 (its hot core 252,162,252 is the drawn bloom), SIDE (1095-1150, 735-755) 247,51,248"
+    }
+  },
+  "material": {
+    "roughness": 0.85,
+    "emission_strength": 1.5,
+    "alpha": 1.0
+  }
+}

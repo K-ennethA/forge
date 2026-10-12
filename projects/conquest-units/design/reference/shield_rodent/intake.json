@@ -1,0 +1,246 @@
+{
+ "unit": "shield_rodent",
+ "sheet": "design/reference/shield_rodent-character-sheet.png",
+ "size_px": [
+  1672,
+  941
+ ],
+ "background_rgb": [
+  38,
+  39,
+  41
+ ],
+ "bg_tol": 26.0,
+ "views": {
+  "front": {
+   "bbox_px": [
+    28,
+    370,
+    345,
+    661
+   ],
+   "axis_x_px": 189.5,
+   "floor_y_px": 660,
+   "height_px": 291,
+   "height_units": 2.91,
+   "width_units": 3.17,
+   "half_width_profile": {
+    "0.00": {
+     "y_px": 660,
+     "half_w_units": 0.235
+    },
+    "0.10": {
+     "y_px": 631,
+     "half_w_units": 1.185
+    },
+    "0.25": {
+     "y_px": 588,
+     "half_w_units": 1.255
+    },
+    "0.50": {
+     "y_px": 515,
+     "half_w_units": 1.615
+    },
+    "0.75": {
+     "y_px": 442,
+     "half_w_units": 1.415
+    },
+    "0.90": {
+     "y_px": 399,
+     "half_w_units": 1.395
+    }
+   },
+   "transform": "z = (660 - y_px) / 100 ; x = (x_px - 189.5) / 100"
+  },
+  "back": {
+   "bbox_px": [
+    388,
+    298,
+    687,
+    611
+   ],
+   "axis_x_px": 536.5,
+   "floor_y_px": 610,
+   "height_px": 313,
+   "height_units": 3.13,
+   "width_units": 2.99,
+   "half_width_profile": {
+    "0.00": {
+     "y_px": 610,
+     "half_w_units": 1.185
+    },
+    "0.10": {
+     "y_px": 579,
+     "half_w_units": 1.235
+    },
+    "0.25": {
+     "y_px": 532,
+     "half_w_units": 1.455
+    },
+    "0.50": {
+     "y_px": 454,
+     "half_w_units": 1.345
+    },
+    "0.75": {
+     "y_px": 376,
+     "half_w_units": 0.775
+    },
+    "0.90": {
+     "y_px": 329,
+     "half_w_units": 0.855
+    }
+   },
+   "transform": "z = (610 - y_px) / 100 ; x = (x_px - 536.5) / 100"
+  },
+  "side": {
+   "bbox_px": [
+    720,
+    306,
+    1212,
+    656
+   ],
+   "axis_x_px": 957.5,
+   "floor_y_px": 655,
+   "height_px": 350,
+   "height_units": 3.5,
+   "width_units": 4.92,
+   "half_width_profile": {
+    "0.00": {
+     "y_px": 655,
+     "half_w_units": 1.005
+    },
+    "0.10": {
+     "y_px": 620,
+     "half_w_units": 2.315
+    },
+    "0.25": {
+     "y_px": 568,
+     "half_w_units": 2.295
+    },
+    "0.50": {
+     "y_px": 480,
+     "half_w_units": 1.815
+    },
+    "0.75": {
+     "y_px": 393,
+     "half_w_units": 1.675
+    },
+    "0.90": {
+     "y_px": 341,
+     "half_w_units": 2.205
+    }
+   },
+   "transform": "z = (655 - y_px) / 100 ; x = (x_px - 957.5) / 100"
+  }
+ },
+ "ortho_frame": {
+  "views": [
+   "front",
+   "side"
+  ],
+  "width_px": 550,
+  "height_px": 410,
+  "below_floor_px": 20,
+  "crops": {
+   "front": [
+    -86,
+    270,
+    464,
+    680
+   ],
+   "back": [
+    262,
+    220,
+    812,
+    630
+   ],
+   "side": [
+    682,
+    265,
+    1232,
+    675
+   ]
+  }
+ },
+ "unnamed_extra_segments_px": [],
+ "swatches": [
+  {
+   "centre_px": [
+    1290.8,
+    881.0
+   ],
+   "rgb": [
+    189,
+    184,
+    181
+   ],
+   "diameter_px": 52
+  },
+  {
+   "centre_px": [
+    1365.2,
+    881.0
+   ],
+   "rgb": [
+    129,
+    132,
+    138
+   ],
+   "diameter_px": 52
+  },
+  {
+   "centre_px": [
+    1439.8,
+    881.0
+   ],
+   "rgb": [
+    90,
+    94,
+    100
+   ],
+   "diameter_px": 54
+  },
+  {
+   "centre_px": [
+    1514.6,
+    881.0
+   ],
+   "rgb": [
+    61,
+    64,
+    68
+   ],
+   "diameter_px": 52
+  },
+  {
+   "centre_px": [
+    1589.2,
+    881.0
+   ],
+   "rgb": [
+    121,
+    111,
+    107
+   ],
+   "diameter_px": 52
+  }
+ ],
+ "swatch_rejects_off_column": [
+  {
+   "centre_px": [
+    1283.9,
+    827.0
+   ],
+   "rgb": [
+    37,
+    37,
+    40
+   ],
+   "diameter_px": 14
+  }
+ ],
+ "base_frac": 0.06,
+ "axis_overrides": {},
+ "units_rule": "1 sheet unit = 100 px; per view z = (floor_y - y) / 100, x = (x - axis_x) / 100",
+ "caveat": "automatic split: VERIFY intake_overlay.png before dispatch (overlapping views or a floor shadow fuse / extend a view; rerun with --views or --bg-tol). A DARK subject on a dark sheet (shadowbun) loses its outline into the background: the floor line can sit high by ~15 px - check the soles"
+}

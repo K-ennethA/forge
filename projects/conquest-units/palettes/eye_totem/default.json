@@ -1,0 +1,13 @@
+{
+ "unit": "eye_totem",
+ "skin": "default",
+ "description": "Eye Totem default look, PIXEL-SAMPLED from design/reference/eye_totem-character-sheet.png: the five palette chips (intake.json swatches 10,3,3 / 48,45,44 / 124,7,7 / 251,242,233 / 23,10,10) cross-checked against the drawn surfaces (sampler: service venv PIL; body = view mask eroded 8 px with the eye dilated 6 px masked out; rim = the outer 5 px of each view mask, pixels with R - G > 50). Matte (specular 0), near-black body, a faint deep-red rim glow. The CHARCOAL GRAY chip (48,45,44) is not used: no drawn body pixel lies within 12 of it in any view (front / back / side share 0.0000); it is the sheet backdrop / floor-shadow tone (background 37,37,36).",
+ "regions": {
+  "body":       {"rgb": [10, 3, 3],      "note": "BODY BLACK chip (x1247 y831); drawn interiors median front 11,4,4 / back 13,4,4 / side 11,3,3"},
+  "rim":        {"rgb": [124, 7, 7],     "emission": [163, 20, 23], "emission_scale": 0.45, "note": "RED GLOW chip (x1423 y831) as the base tone; the emission is the drawn rim's median 163,20,23 (front n 7579 rim px, 68 % red; back 165,18,20; side 163,18,22), faint tier (0.45: peak 0.29 x strength 1.0, under the 2.0 cap)"},
+  "ring":       {"rgb": [251, 242, 233], "note": "EYE RING OFF-WHITE chip (x1511 y831); drawn front ring median 250,239,229 (9489 px)"},
+  "pupil":      {"rgb": [23, 10, 10],    "note": "PUPIL DARK chip (x1600 y831); the drawn pupil reads 9,3,2 (as dark as the body) -- the chip value is used so the pupil stays a distinct region"},
+  "pupil_mark": {"rgb": [124, 7, 7],     "emission": [163, 20, 23], "emission_scale": 0.45, "note": "the thin red loop drawn inside the pupil (front view + EYE DETAIL panel): drawn median 63..84,10..17,11..18 on a 1-2 px line (anti-aliased into the pupil); the red-glow chip + the rim's faint glow are used"}
+ },
+ "material": {"roughness": 0.95, "emission_strength": 1.0}
+}

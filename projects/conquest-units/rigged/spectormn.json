@@ -1,0 +1,495 @@
+{
+ "unit": "spectormn",
+ "source": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\improved\\spectormn.blend",
+ "fps": 24,
+ "weights": {
+  "max_influences": 3,
+  "unweighted": 0,
+  "sum_dev_max": 0.0,
+  "per_bone_dominant": {
+   "body": 1920,
+   "chest": 667,
+   "head": 468,
+   "mist.001": 574,
+   "mist.002": 2893,
+   "arm_upper.L": 112,
+   "arm_fore.L": 478,
+   "chain.L.001": 418,
+   "chain.L.002": 480,
+   "arm_upper.R": 86,
+   "arm_fore.R": 408,
+   "chain.R.001": 418,
+   "chain.R.002": 480
+  },
+  "rule": "shell: column bones by height (mist.002 | mist.001 | body | chest | head, COLUMN_EDGES) blended by sleeve ownership (+-OWN_BLEND) into chest -> arm_upper -> arm_fore along the arm; shackles 100 % arm_fore; chain links rigkit.vine_weights along each strand (arm_fore -> chain.001 -> chain.002)"
+ },
+ "clips": {
+  "idle": {
+   "frames": [
+    1,
+    97
+   ],
+   "period_frames": 96,
+   "seconds": 4.0,
+   "cyclic": true,
+   "seam_main_mm": 0.0,
+   "root_offset_max": 0.0,
+   "clearance_min_z": 0.15983,
+   "chain_max_move": 0.572,
+   "chain_mean_dy_range": [
+    -0.2425,
+    0.2434
+   ],
+   "mist_max_move": 0.4238,
+   "head_tip_y_range": [
+    -0.4221,
+    -0.3421
+   ]
+  },
+  "walk": {
+   "frames": [
+    1,
+    49
+   ],
+   "period_frames": 48,
+   "seconds": 2.0,
+   "cyclic": true,
+   "seam_main_mm": 0.0,
+   "root_offset_max": 0.0,
+   "clearance_min_z": 0.47725,
+   "chain_max_move": 1.8815,
+   "chain_mean_dy_range": [
+    0.5273,
+    0.8056
+   ],
+   "mist_max_move": 1.2887,
+   "head_tip_y_range": [
+    -0.8924,
+    -0.76
+   ]
+  }
+ },
+ "bones": [
+  {
+   "name": "root",
+   "parent": null,
+   "deform": false,
+   "head": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "tail": [
+    0.0,
+    0.0,
+    0.4
+   ]
+  },
+  {
+   "name": "body",
+   "parent": "root",
+   "deform": true,
+   "head": [
+    0.0,
+    -0.2622,
+    2.4594
+   ],
+   "tail": [
+    0.0,
+    -0.3822,
+    4.4094
+   ]
+  },
+  {
+   "name": "chest",
+   "parent": "body",
+   "deform": true,
+   "head": [
+    0.0,
+    -0.3822,
+    4.4094
+   ],
+   "tail": [
+    0.0,
+    -0.3822,
+    5.5094
+   ]
+  },
+  {
+   "name": "head",
+   "parent": "chest",
+   "deform": true,
+   "head": [
+    0.0,
+    -0.3822,
+    5.5094
+   ],
+   "tail": [
+    0.0,
+    -0.3822,
+    6.7094
+   ]
+  },
+  {
+   "name": "arm_upper.L",
+   "parent": "chest",
+   "deform": true,
+   "head": [
+    0.73,
+    -0.3822,
+    5.1094
+   ],
+   "tail": [
+    1.12,
+    -0.4822,
+    4.3094
+   ]
+  },
+  {
+   "name": "arm_fore.L",
+   "parent": "arm_upper.L",
+   "deform": true,
+   "head": [
+    1.12,
+    -0.4822,
+    4.3094
+   ],
+   "tail": [
+    1.57,
+    -0.6322,
+    3.4094
+   ]
+  },
+  {
+   "name": "chain.L.001",
+   "parent": "arm_fore.L",
+   "deform": true,
+   "head": [
+    1.5612,
+    -0.6293,
+    3.4271
+   ],
+   "tail": [
+    1.5656,
+    -0.6293,
+    2.2933
+   ]
+  },
+  {
+   "name": "chain.L.002",
+   "parent": "chain.L.001",
+   "deform": true,
+   "head": [
+    1.5656,
+    -0.6293,
+    2.2933
+   ],
+   "tail": [
+    1.57,
+    -0.6293,
+    1.1594
+   ]
+  },
+  {
+   "name": "arm_upper.R",
+   "parent": "chest",
+   "deform": true,
+   "head": [
+    -0.73,
+    -0.3822,
+    5.1094
+   ],
+   "tail": [
+    -1.12,
+    -0.4822,
+    4.3094
+   ]
+  },
+  {
+   "name": "arm_fore.R",
+   "parent": "arm_upper.R",
+   "deform": true,
+   "head": [
+    -1.12,
+    -0.4822,
+    4.3094
+   ],
+   "tail": [
+    -1.57,
+    -0.6322,
+    3.4094
+   ]
+  },
+  {
+   "name": "chain.R.001",
+   "parent": "arm_fore.R",
+   "deform": true,
+   "head": [
+    -1.5612,
+    -0.6293,
+    3.4271
+   ],
+   "tail": [
+    -1.5656,
+    -0.6293,
+    2.2933
+   ]
+  },
+  {
+   "name": "chain.R.002",
+   "parent": "chain.R.001",
+   "deform": true,
+   "head": [
+    -1.5656,
+    -0.6293,
+    2.2933
+   ],
+   "tail": [
+    -1.57,
+    -0.6293,
+    1.1594
+   ]
+  },
+  {
+   "name": "mist.001",
+   "parent": "body",
+   "deform": true,
+   "head": [
+    0.0,
+    -0.2622,
+    2.4594
+   ],
+   "tail": [
+    0.0,
+    -0.0822,
+    1.2094
+   ]
+  },
+  {
+   "name": "mist.002",
+   "parent": "mist.001",
+   "deform": true,
+   "head": [
+    0.0,
+    -0.0822,
+    1.2094
+   ],
+   "tail": [
+    0.0,
+    0.1178,
+    0.1094
+   ]
+  }
+ ],
+ "bone_count": 14,
+ "deform_bone_count": 13,
+ "digest": {
+  "parts": {
+   "bake_normal": "0bc7d935b4204cb5",
+   "bake_ao": "82baa2f7f4af49fb",
+   "geometry_colour_uv": "122ce5f7772322d4",
+   "weights": "0fcf16cf77ab48f8",
+   "keys": "99b5de43dd63ed18",
+   "clip_samples": "f031367a91133ce5"
+  },
+  "combined": "56fdc4d27e8c8dfe"
+ },
+ "glb": {
+  "path": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\rigged\\spectormn.glb",
+  "bytes": 5738144,
+  "seconds": 0.7,
+  "carries": {
+   "materials": [
+    {
+     "name": "spectormn_cloth",
+     "alphaMode": "OPAQUE",
+     "doubleSided": false,
+     "roughness": 0.8999999761581421,
+     "textures": [
+      "baseColorTexture",
+      "normalTexture"
+     ]
+    },
+    {
+     "name": "spectormn_mist",
+     "alphaMode": "BLEND",
+     "doubleSided": false,
+     "roughness": 0.949999988079071,
+     "textures": [
+      "baseColorTexture",
+      "normalTexture"
+     ]
+    }
+   ],
+   "primitives": [
+    {
+     "mesh": "spectormn",
+     "material": "spectormn_cloth",
+     "attributes": [
+      "COLOR_0",
+      "COLOR_1",
+      "JOINTS_0",
+      "NORMAL",
+      "POSITION",
+      "TEXCOORD_0",
+      "WEIGHTS_0",
+      "_GLOW"
+     ]
+    },
+    {
+     "mesh": "spectormn",
+     "material": "spectormn_mist",
+     "attributes": [
+      "COLOR_0",
+      "COLOR_1",
+      "JOINTS_0",
+      "NORMAL",
+      "POSITION",
+      "TEXCOORD_0",
+      "WEIGHTS_0",
+      "_GLOW"
+     ]
+    }
+   ],
+   "animations": [
+    "idle",
+    "walk"
+   ],
+   "skins": 1,
+   "joints": 14
+  },
+  "structure": "armature identity + skinned 'spectormn' (opaque cloth / glow / metal primitive + alpha-blend mist primitive); natural scale; report-only cell fit 0.26746"
+ },
+ "skins": {
+  "default": {
+   "file": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\rigged\\spectormn.blend",
+   "palette": {
+    "cloth": {
+     "rgb": [
+      247,
+      241,
+      237
+     ]
+    },
+    "cloth_fold": {
+     "rgb": [
+      206,
+      198,
+      199
+     ]
+    },
+    "eye": {
+     "rgb": [
+      216,
+      3,
+      17
+     ],
+     "emission": [
+      216,
+      3,
+      17
+     ],
+     "emission_scale": 2.0
+    },
+    "slit": {
+     "rgb": [
+      216,
+      3,
+      17
+     ],
+     "emission": [
+      216,
+      3,
+      17
+     ],
+     "emission_scale": 1.7
+    },
+    "chain_link": {
+     "rgb": [
+      216,
+      3,
+      17
+     ],
+     "emission": [
+      216,
+      3,
+      17
+     ],
+     "emission_scale": 1.4
+    },
+    "shackle": {
+     "rgb": [
+      38,
+      39,
+      43
+     ]
+    },
+    "mist_lavender": {
+     "rgb": [
+      232,
+      210,
+      226
+     ]
+    },
+    "mist_purple": {
+     "rgb": [
+      116,
+      84,
+      111
+     ]
+    },
+    "mist_pink": {
+     "rgb": [
+      185,
+      82,
+      94
+     ]
+    },
+    "chain_iron": {
+     "rgb": [
+      38,
+      39,
+      43
+     ]
+    }
+   },
+   "glow": {
+    "skin": "default",
+    "glowing_regions": [
+     "chain_link",
+     "eye",
+     "slit"
+    ],
+    "peak_x_strength": {
+     "chain_link": 1.1859,
+     "eye": 1.6941,
+     "slit": 1.44
+    },
+    "cap": 2.0,
+    "tiers": {
+     "chain_link": 1.4,
+     "slit": 1.7,
+     "eye": 2.0
+    },
+    "grade": [
+     "chain_link",
+     "slit",
+     "eye"
+    ],
+    "emission_hue_deg": {
+     "chain_link": 356.1,
+     "eye": 356.1,
+     "slit": 356.1
+    },
+    "red_hue_window": [
+     345,
+     10
+    ],
+    "ok": true
+   }
+  },
+  "rule": "default skin only (brief)"
+ },
+ "improved_report": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\improved\\spectormn.json",
+ "seconds": 59.8
+}

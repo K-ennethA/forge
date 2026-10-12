@@ -1,0 +1,14 @@
+{
+ "unit": "leaf_bird",
+ "skin": "default",
+ "description": "Leaf Bird default look, PIXEL-SAMPLED from design/reference/leaf_bird-character-sheet.png (the sheet is titled 'LEAF FISH'; the artist corrected it to a BIRD). Chips (intake.json swatches): main body 56,191,33 / leaf markings 4,115,25 / fin highlight 121,190,91 / beak 200,133,30 / eye 254,248,220. A bright-green streamlined leaf body in a dive with dark-green leaf-vein markings (belly segment bands, the midrib line along the back and belly, the wing veins and the back crest's vein net), a thin light-green highlight streak along the top of the back, a pointed amber beak and round off-white eyes with an amber iris. The black ink outline is drawing style and is not a region. No glow (the sheet draws none): every region writes zero Glow.",
+ "regions": {
+  "body":      {"rgb": [56, 191, 33],   "note": "bright-green body, wings, crest, tail lobes: chip 56,191,33; drawn medians side body (960,560) 50,189,32 / (1050,500) 55,194,33, back body (600,450) 52,191,32, crest (900,450) 53,188,30, front wing (100,470) 53,188,33"},
+  "marking":   {"rgb": [4, 115, 25],    "note": "dark-green leaf-vein markings (bands, midrib, wing veins, crest vein net): chip 4,115,25; the drawn lines are anti-aliased against the green (side belly line pixels median 19,129,20), the chip is the line core"},
+  "highlight": {"rgb": [121, 190, 91],  "note": "light-green highlight: chip 121,190,91 ('FIN HIGHLIGHT'); on the sheet the only pixels within 25 of the chip run along the top edge of the side view, from the head (749,610)-(816,559) along the back (987,437)-(1173,271) to the tail tip -> a thin dorsal streak"},
+  "beak":      {"rgb": [200, 133, 30],  "note": "amber beak: chip 200,133,30; drawn side (735,640) 205,136,32 / front (235,640) 201,133,29"},
+  "eye":       {"rgb": [254, 248, 220], "note": "off-white eye: chip 254,248,220; drawn side (778,617) 245,243,237 / front (195,595) 249,249,235"},
+  "iris":      {"rgb": [187, 122, 6],   "note": "amber iris: drawn side iris (795,610) median 187,122,6 (front (190,582) 162,102,5 is the shaded one); no chip of its own on the sheet"}
+ },
+ "material": {"roughness": 0.70, "emission_strength": 1.0, "alpha": 1.0}
+}

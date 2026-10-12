@@ -1,0 +1,12 @@
+00:01.969  blend            | Read blend: "C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\rigged\soot_puff.blend"
+00:04.390  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\soot_puff\soot_puff_front.png'
+00:04.953  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\soot_puff\soot_puff_threequarter.png'
+00:05.469  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\soot_puff\soot_puff_side.png'
+00:05.828  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\soot_puff\soot_puff_back.png'
+00:06.015  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\soot_puff\soot_puff_tactical.png'
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\soot_puff\soot_puff_front.png
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\soot_puff\soot_puff_threequarter.png
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\soot_puff\soot_puff_side.png
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\soot_puff\soot_puff_back.png
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\soot_puff\soot_puff_tactical.png
+Blender 5.0.1 (hash a3db93c5b259 built 2025-12-16 01:32:30)

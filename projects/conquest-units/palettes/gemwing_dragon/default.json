@@ -1,0 +1,23 @@
+{
+ "unit": "gemwing_dragon",
+ "skin": "default",
+ "description": "Gemwing Dragon default look, PIXEL-SAMPLED from design/reference/gemwing_dragon-character-sheet.png (the intake found no chips; the chip row y 852 sampled directly, r 10 px medians: x 1310 241,221,215 pearl / x 1368 126,128,190 muted periwinkle / x 1427 85,87,166 muted indigo / x 1488 79,147,253 blue / x 1548 166,112,253 violet / x 1610 253,185,111 peach-orange) + direct samples of the drawn surfaces (px cited per region). ARTIST DIRECTION 2026-10-11: 'tone the crystalness of the body and save the most color for the wings and spikes around it' -> the BODY regions (body_*) take only the sheet's LOW-saturation body tones (pearl / soft periwinkle, sat <= 0.36), with two sparse muted accents; the WINGS + SPIKES (gem_*) take the saturated prismatic tones (sat 0.36-0.76). Matte-satin, opaque (no translucency), no glow (the sheet's sheen is colour, not light): every region writes zero Glow.",
+ "regions": {
+  "body_lit":          {"rgb": [241, 233, 247], "note": "body facets toward the light: the pale (sat < 0.12) cluster median of the drawn side head box x 670-790 y 290-370 (241,233,247); side cheek (720,330) 241,235,248"},
+  "body":              {"rgb": [209, 212, 246], "note": "body mid facets, soft periwinkle-pearl: face panel head (1270,170) 209,212,246; side foreleg (810,620) 208,218,252"},
+  "body_shade":        {"rgb": [183, 191, 241], "note": "body facets away from the light: side belly (900,520) 183,191,241; front snout (215,320) 184,191,241"},
+  "body_accent_cool":  {"rgb": [156, 160, 236], "note": "sparse muted cool accent facets: the cool (hue 0.60-0.72, sat 0.2-0.45) cluster median of the side head box (156,160,236) / side torso x 760-1000 y 440-540 (156,160,239)"},
+  "body_accent_warm":  {"rgb": [243, 195, 187], "note": "sparse muted warm (peach-blush) accent facets: the warm (sat 0.12-0.45) cluster median of the side torso box (243,195,187) / front chest x 100-250 y 450-600 (241,193,190)"},
+  "iris":              {"rgb": [129, 104, 205], "note": "violet reptilian eye: mean of the medians face panel eye x 1292-1322 y 138-155 (131,112,209) / side eye x 728-748 y 300-314 (127,96,200)"},
+  "pupil":             {"rgb": [45, 17, 67],    "note": "the dark plum slit / eye rim: mean of the darkest-10% of face panel eye (43,19,74) / side eye (47,14,60)"},
+  "claw":              {"rgb": [114, 77, 162],  "note": "crystal claws: mean of the medians front L paw claws x 82-148 y 735-760 (121,80,160) / front R x 200-265 (113,76,168) / side near front claws x 725-760 y 690-712 (108,75,158)"},
+  "gem_indigo":        {"rgb": [86, 89, 247],   "note": "saturated indigo (the deep facets): the hue 0.64-0.68 sat > 0.3 cluster median of the side wing box x 940-1200 y 80-430; chip x 1427 85,87,166 is its muted version"},
+  "gem_blue":          {"rgb": [79, 147, 253],  "note": "saturated blue: chip x 1488 79,147,253; drawn wing blue cluster median 75,136,253; top blade (1030,140) 60,140,253"},
+  "gem_sky":           {"rgb": [123, 167, 254], "note": "lit blue facets: the wing blue cluster p80 (123,167,254)"},
+  "gem_violet":        {"rgb": [166, 112, 253], "note": "saturated violet: chip x 1548 166,112,253; drawn wing violet cluster p80 167,123,253"},
+  "gem_lilac":         {"rgb": [193, 143, 252], "note": "lit violet / lilac facets: drawn wing (1100,250) 193,143,252"},
+  "gem_pink":          {"rgb": [250, 140, 174], "note": "the peach -> violet transition (pink) facets: the wing pink (hue 0.9-1.0) cluster median 250,140,174"},
+  "gem_peach":         {"rgb": [253, 185, 111], "note": "saturated peach-orange: chip x 1610 253,185,111; drawn wing peach cluster median 253,178,141"}
+ },
+ "material": {"roughness": 0.42, "emission_strength": 1.0, "alpha": 1.0}
+}

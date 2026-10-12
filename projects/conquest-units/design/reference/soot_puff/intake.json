@@ -1,0 +1,225 @@
+{
+ "unit": "soot_puff",
+ "sheet": "design/reference/soot_puff-character-sheet.webp",
+ "size_px": [
+  1672,
+  941
+ ],
+ "background_rgb": [
+  45,
+  46,
+  47
+ ],
+ "bg_tol": 26.0,
+ "views": {
+  "front": {
+   "bbox_px": [
+    34,
+    254,
+    424,
+    663
+   ],
+   "axis_x_px": 229.0,
+   "floor_y_px": 662,
+   "height_px": 409,
+   "height_units": 4.09,
+   "width_units": 3.9,
+   "half_width_profile": {
+    "0.00": {
+     "y_px": 662,
+     "half_w_units": 1.01
+    },
+    "0.10": {
+     "y_px": 621,
+     "half_w_units": 1.49
+    },
+    "0.25": {
+     "y_px": 560,
+     "half_w_units": 1.55
+    },
+    "0.50": {
+     "y_px": 458,
+     "half_w_units": 1.93
+    },
+    "0.75": {
+     "y_px": 356,
+     "half_w_units": 1.72
+    },
+    "0.90": {
+     "y_px": 295,
+     "half_w_units": 1.14
+    }
+   },
+   "transform": "z = (662 - y_px) / 100 ; x = (x_px - 229.0) / 100"
+  },
+  "back": {
+   "bbox_px": [
+    452,
+    256,
+    826,
+    660
+   ],
+   "axis_x_px": 639.0,
+   "floor_y_px": 659,
+   "height_px": 404,
+   "height_units": 4.04,
+   "width_units": 3.74,
+   "half_width_profile": {
+    "0.00": {
+     "y_px": 659,
+     "half_w_units": 1.27
+    },
+    "0.10": {
+     "y_px": 619,
+     "half_w_units": 1.49
+    },
+    "0.25": {
+     "y_px": 558,
+     "half_w_units": 1.53
+    },
+    "0.50": {
+     "y_px": 458,
+     "half_w_units": 1.84
+    },
+    "0.75": {
+     "y_px": 357,
+     "half_w_units": 1.65
+    },
+    "0.90": {
+     "y_px": 296,
+     "half_w_units": 1.09
+    }
+   },
+   "transform": "z = (659 - y_px) / 100 ; x = (x_px - 639.0) / 100"
+  },
+  "side": {
+   "bbox_px": [
+    854,
+    254,
+    1165,
+    668
+   ],
+   "axis_x_px": 1009.5,
+   "floor_y_px": 667,
+   "height_px": 414,
+   "height_units": 4.14,
+   "width_units": 3.11,
+   "half_width_profile": {
+    "0.00": {
+     "y_px": 667,
+     "half_w_units": 0.805
+    },
+    "0.10": {
+     "y_px": 626,
+     "half_w_units": 1.075
+    },
+    "0.25": {
+     "y_px": 564,
+     "half_w_units": 1.155
+    },
+    "0.50": {
+     "y_px": 460,
+     "half_w_units": 1.515
+    },
+    "0.75": {
+     "y_px": 357,
+     "half_w_units": 1.365
+    },
+    "0.90": {
+     "y_px": 295,
+     "half_w_units": 0.995
+    }
+   },
+   "transform": "z = (667 - y_px) / 100 ; x = (x_px - 1009.5) / 100"
+  }
+ },
+ "ortho_frame": {
+  "views": [
+   "front",
+   "side"
+  ],
+  "width_px": 430,
+  "height_px": 480,
+  "below_floor_px": 20,
+  "crops": {
+   "front": [
+    14,
+    202,
+    444,
+    682
+   ],
+   "back": [
+    424,
+    199,
+    854,
+    679
+   ],
+   "side": [
+    794,
+    207,
+    1224,
+    687
+   ]
+  }
+ },
+ "unnamed_extra_segments_px": [],
+ "swatches": [
+  {
+   "centre_px": [
+    1300.2,
+    877.0
+   ],
+   "rgb": [
+    0,
+    0,
+    0
+   ],
+   "diameter_px": 56
+  },
+  {
+   "centre_px": [
+    1384.4,
+    877.0
+   ],
+   "rgb": [
+    15,
+    15,
+    15
+   ],
+   "diameter_px": 54
+  },
+  {
+   "centre_px": [
+    1468.9,
+    877.0
+   ],
+   "rgb": [
+    113,
+    113,
+    115
+   ],
+   "diameter_px": 54
+  },
+  {
+   "centre_px": [
+    1554.0,
+    876.0
+   ],
+   "rgb": [
+    255,
+    255,
+    255
+   ],
+   "diameter_px": 56
+  }
+ ],
+ "swatch_rejects_off_column": [],
+ "base_frac": 0.06,
+ "axis_overrides": {
+  "front": 229.0,
+  "back": 639.0,
+  "side": 1009.5
+ },
+ "units_rule": "1 sheet unit = 100 px; per view z = (floor_y - y) / 100, x = (x - axis_x) / 100",
+ "caveat": "automatic split: VERIFY intake_overlay.png before dispatch (overlapping views or a floor shadow fuse / extend a view; rerun with --views or --bg-tol). A DARK subject on a dark sheet (shadowbun) loses its outline into the background: the floor line can sit high by ~15 px - check the soles"
+}

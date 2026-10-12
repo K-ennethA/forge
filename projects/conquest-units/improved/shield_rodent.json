@@ -1,0 +1,491 @@
+{
+ "unit": "shield_rodent",
+ "conquest_character_id": "shield_rodent",
+ "source": "none: from-scratch unit (sheet design/reference/shield_rodent-character-sheet.png)",
+ "tier": "regular",
+ "tri_budget": [
+  8000,
+  22000
+ ],
+ "units": "sheet units: 1 unit = 100 px; heights off the side view corrected for the 19 deg drawing elevation, widths off the front view; floor z = 0 at the soles",
+ "overrides": {},
+ "sdf": {
+  "step": 0.02,
+  "band": 0.2,
+  "grid": [
+   170,
+   205,
+   150
+  ],
+  "ops": 22,
+  "high_tris": 438508,
+  "high_verts": 219236,
+  "toe_creases": 8,
+  "crumbs": {
+   "pieces": 1,
+   "dropped_verts": 0
+  },
+  "seconds": 4.0
+ },
+ "retopo": {
+  "method": "SDF marching tetrahedra (step 0.020) -> collapse decimation (deterministic)",
+  "decimated_tris": 10000,
+  "specks": {
+   "pieces": 1,
+   "dropped_verts": 0
+  },
+  "doubled_faces_removed": 0,
+  "low_to_high": {
+   "mean": 0.00073,
+   "p99": 0.00228,
+   "max": 0.00449
+  },
+  "high_to_low_sampled": {
+   "p99": 0.00198,
+   "max": 0.00607
+  },
+  "bbox_high": [
+   2.3133,
+   3.4949,
+   2.3806
+  ],
+  "bbox_low": [
+   2.3129,
+   3.4953,
+   2.381
+  ],
+  "bbox_low_over_high": [
+   0.99983,
+   1.00013,
+   1.00019
+  ],
+  "seconds": 4.5
+ },
+ "iso_cuts": {
+  "cuts": [
+   {
+    "field": "inner",
+    "tau": 0.0,
+    "edge_splits": 150,
+    "face_connects": 162
+   },
+   {
+    "field": "x",
+    "tau": 0.016,
+    "edge_splits": 17,
+    "face_connects": 23
+   },
+   {
+    "field": "x",
+    "tau": -0.016,
+    "edge_splits": 32,
+    "face_connects": 36
+   },
+   {
+    "field": "z",
+    "tau": 1.03,
+    "edge_splits": 6,
+    "face_connects": 6
+   }
+  ],
+  "seconds": 2.3,
+  "shell_tris_after_cuts": 10410
+ },
+ "centre_shift": [
+  0.0,
+  0.451914,
+  -4e-06
+ ],
+ "glow": {
+  "skin": "default",
+  "glowing_regions": [],
+  "rule": "no glow (the sheet draws none): zero Glow"
+ },
+ "regions_faces": {
+  "shield_rodent": {
+   "body": 9658,
+   "ear_inner": 686,
+   "seam": 66,
+   "eye": 336,
+   "eye_glint": 120,
+   "snout": 240,
+   "tooth": 100,
+   "plate": 640,
+   "plate_sheen": 224,
+   "rim": 384,
+   "rim_wall": 192,
+   "rivet": 864,
+   "boss_collar": 320,
+   "boss_dome": 960,
+   "skirt": 672,
+   "tail": 10,
+   "tail_shade": 14
+  }
+ },
+ "regions_area_share": {
+  "body": 0.3266,
+  "ear_inner": 0.0221,
+  "seam": 0.0009,
+  "eye": 0.0053,
+  "eye_glint": 0.0007,
+  "snout": 0.0049,
+  "tooth": 0.0033,
+  "plate": 0.1783,
+  "plate_sheen": 0.0314,
+  "rim": 0.0837,
+  "rim_wall": 0.043,
+  "rivet": 0.0114,
+  "boss_collar": 0.0351,
+  "boss_dome": 0.0146,
+  "skirt": 0.2101,
+  "tail": 0.0138,
+  "tail_shade": 0.0147
+ },
+ "facing": {
+  "rule": "head centre (HEAD_C) -> the snout ball centre (SNOUT_C), both on the midline",
+  "anchor": [
+   0.0,
+   -2.0719,
+   0.81
+  ],
+  "landmark": [
+   0.0,
+   -2.6219,
+   0.51
+  ],
+  "angle_from_minusY_deg": 0.0
+ },
+ "face": {
+  "eye.L": {
+   "surface": [
+    0.3799999952316284,
+    -2.1556999683380127,
+    0.8100000023841858
+   ],
+   "normal": [
+    0.3427,
+    -0.9394,
+    0.0121
+   ],
+   "glint": [
+    0.3400000035762787,
+    -2.168600082397461,
+    0.8949999809265137
+   ]
+  },
+  "eye.R": {
+   "surface": [
+    -0.3799999952316284,
+    -2.156599998474121,
+    0.8100000023841858
+   ],
+   "normal": [
+    -0.3544,
+    -0.9351,
+    0.0076
+   ],
+   "glint": [
+    -0.41999998688697815,
+    -2.127000093460083,
+    0.8949999809265137
+   ]
+  }
+ },
+ "shell": {
+  "centre": [
+   0.0,
+   0.07,
+   0.32
+  ],
+  "axis": [
+   0.0,
+   -0.0,
+   1.0
+  ],
+  "pitch_deg": 0.0,
+  "rim_r": [
+   1.2,
+   1.48
+  ],
+  "rim_h": 0.34,
+  "plate_centre_z": 1.06,
+  "boss_top_z": 1.44,
+  "rivets": 18,
+  "sheen_segments": 32,
+  "brush_grooves": 0,
+  "scratches": {
+   "plate": 9,
+   "rim": 7
+  }
+ },
+ "tail": {
+  "root": [
+   0.0,
+   1.37,
+   0.64
+  ],
+  "joint": [
+   0.0,
+   1.6917,
+   0.91
+  ],
+  "tip": [
+   0.0,
+   3.2238,
+   2.1955
+  ],
+  "angle_deg": 40.0,
+  "length": 2.42
+ },
+ "tris": {
+  "total": 19482,
+  "shell": 10410,
+  "shell_before_cuts": 10000,
+  "plate": 1536,
+  "rim": 1536,
+  "skirt": 768,
+  "boss": 2400,
+  "rivets": 1440,
+  "snout": 432,
+  "teeth": 160,
+  "eyes": 576,
+  "eye_glints": 192,
+  "tail_block": 16,
+  "tail_spike": 16
+ },
+ "tier_rationale": "REGULAR role (a line unit): window [8000, 22000]. The SDF shell carries the head, the two large ears, the belly, four short legs + feet; the shield-shell is hard-surface lathes (96 segments for a round silhouette) + 18 rivets; the brushed lines + scratches live in the normal map.",
+ "open_edges": {
+  "closed_parts": [
+   "boss",
+   "eye.L",
+   "eye.R",
+   "glint.L",
+   "glint.R",
+   "plate",
+   "rim",
+   "rivet.00",
+   "rivet.01",
+   "rivet.02",
+   "rivet.03",
+   "rivet.04",
+   "rivet.05",
+   "rivet.06",
+   "rivet.07",
+   "rivet.08",
+   "rivet.09",
+   "rivet.10",
+   "rivet.11",
+   "rivet.12",
+   "rivet.13",
+   "rivet.14",
+   "rivet.15",
+   "rivet.16",
+   "rivet.17",
+   "shell",
+   "skirt",
+   "snout",
+   "tail_block",
+   "tail_spike",
+   "tooth.L",
+   "tooth.R"
+  ],
+  "open_parts": {},
+  "rule": "every piece is a closed solid (shell, lathes, rim ring, decals, tail facets)"
+ },
+ "measure": {
+  "bbox": [
+   [
+    -1.48,
+    -2.7719,
+    0.0
+   ],
+   [
+    1.48,
+    2.7719,
+    2.381
+   ]
+  ],
+  "height": 2.381,
+  "width_x": 2.96,
+  "depth_y": 5.5438,
+  "sheet_px_equivalent": {
+   "height_px": 238.1,
+   "width_px": 296.0,
+   "depth_px": 554.4
+  },
+  "sheet": {
+   "front_view_height_px": 291,
+   "front_view_width_px": 317,
+   "side_view_height_px": 350,
+   "side_view_length_px": 492,
+   "note": "the sheet's heights include the drawing elevation"
+  },
+  "export_cell_fit_report_only": {
+   "scale": 0.34272,
+   "height_m": 0.816,
+   "footprint_m": 1.9,
+   "bound_by": "footprint"
+  }
+ },
+ "bake": {
+  "NORMAL": {
+   "result": [
+    "FINISHED"
+   ],
+   "seconds": 2.0
+  },
+  "AO": {
+   "result": [
+    "FINISHED"
+   ],
+   "seconds": 1.0
+  },
+  "cage_extrusion": 0.02,
+  "cage_rule": "3 x the sampled high->low p99 distance (floor 0.02)",
+  "resolution": {
+   "normal": 1024,
+   "ao": 512
+  },
+  "high_tris": 564432,
+  "high_rule": "SDF shell (marching tets) + every closed part; the plate + rim bake sources carry the brushed grooves + light scratches",
+  "body_uv_texels_normal": 609327,
+  "normal_baked_pct_of_body_texels": 99.13,
+  "normal_detail_fraction_dev_gt_0.05": 0.5441,
+  "ao_baked_pct_of_body_texels": 100.0,
+  "ao_mean": 0.4811,
+  "ao_p05": 0.0,
+  "pixel_sha": {
+   "normal": "4e91c35aecb1d9d0",
+   "ao": "29ebf3d6ee08158d"
+  },
+  "seconds": 6.7
+ },
+ "digest_geometry_colour_uv": "8e19f08b4737c6e9",
+ "palette": {
+  "default": {
+   "body": {
+    "rgb": [
+     189,
+     184,
+     181
+    ]
+   },
+   "ear_inner": {
+    "rgb": [
+     121,
+     111,
+     107
+    ]
+   },
+   "seam": {
+    "rgb": [
+     129,
+     132,
+     138
+    ]
+   },
+   "eye": {
+    "rgb": [
+     16,
+     14,
+     14
+    ]
+   },
+   "eye_glint": {
+    "rgb": [
+     255,
+     255,
+     255
+    ]
+   },
+   "snout": {
+    "rgb": [
+     129,
+     132,
+     138
+    ]
+   },
+   "tooth": {
+    "rgb": [
+     189,
+     184,
+     181
+    ]
+   },
+   "plate": {
+    "rgb": [
+     61,
+     64,
+     68
+    ]
+   },
+   "plate_sheen": {
+    "rgb": [
+     90,
+     94,
+     100
+    ]
+   },
+   "rim": {
+    "rgb": [
+     189,
+     184,
+     181
+    ]
+   },
+   "rim_wall": {
+    "rgb": [
+     129,
+     132,
+     138
+    ]
+   },
+   "rivet": {
+    "rgb": [
+     129,
+     132,
+     138
+    ]
+   },
+   "boss_collar": {
+    "rgb": [
+     189,
+     184,
+     181
+    ]
+   },
+   "boss_dome": {
+    "rgb": [
+     129,
+     132,
+     138
+    ]
+   },
+   "skirt": {
+    "rgb": [
+     90,
+     94,
+     100
+    ]
+   },
+   "tail": {
+    "rgb": [
+     189,
+     184,
+     181
+    ]
+   },
+   "tail_shade": {
+    "rgb": [
+     129,
+     132,
+     138
+    ]
+   }
+  },
+  "files": [
+   "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\palettes\\shield_rodent\\default.json"
+  ],
+  "provenance": "pixel-sampled from the sheet's chips + drawn surfaces (see the palette notes)"
+ }
+}

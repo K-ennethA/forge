@@ -1,0 +1,714 @@
+{
+ "unit": "eclipse_wolf",
+ "source": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\improved\\eclipse_wolf.blend",
+ "fps": 24,
+ "weights": {
+  "max_influences": 4,
+  "unweighted": 0,
+  "sum_dev_max": 2.220446049250313e-16,
+  "per_bone_dominant": {
+   "spine.001": 670,
+   "spine.002": 719,
+   "spine.003": 2045,
+   "neck": 1002,
+   "head": 1872,
+   "ear_L": 132,
+   "ear_R": 132,
+   "horn_L": 352,
+   "horn_R": 352,
+   "orb": 448,
+   "foreleg_L.upper": 73,
+   "foreleg_L.lower": 140,
+   "foreleg_L.paw": 174,
+   "hindleg_L.upper": 121,
+   "hindleg_L.lower": 90,
+   "hindleg_L.paw": 281,
+   "foreleg_R.upper": 73,
+   "foreleg_R.lower": 140,
+   "foreleg_R.paw": 174,
+   "hindleg_R.upper": 121,
+   "hindleg_R.lower": 90,
+   "hindleg_R.paw": 281,
+   "tail.001": 283,
+   "tail.002": 448,
+   "tail.003": 755
+  },
+  "rule": "shell: soft SDF ownership (tau 0.06) between torso, ruff, back mantle, tail, neck, head, muzzle, jaw, cheeks, ears, haunches, four legs; torso + back mantle spine.001-.003 hat weights along the spine; neck spine.003 -> neck -> head by z bands; ruff spine.003 -> neck; ears blend from the head along the ear axis; legs + haunches: parent -> upper -> lower -> paw by the leg-chain arc (the paw rigid below the ankle); tail: rigkit.vine_weights along tail.001-.003 (parent spine.001); eyes, pupils, nose, teeth rigid on the head; horns rigid on horn_L / horn_R; orb + ring rigid on orb; fore bands on .lower, hind bands on .paw (the segment they ring)"
+ },
+ "clips": {
+  "idle": {
+   "frames": [
+    1,
+    97
+   ],
+   "period_frames": 96,
+   "seconds": 4.0,
+   "cyclic": true,
+   "seam_main_mm": 0.0,
+   "root_offset_max": 0.0,
+   "clearance_min_z": 0.0,
+   "spine_lift": [
+    0.0,
+    0.0
+   ],
+   "floor_guard_lift": {
+    "frames_lifted": 0,
+    "max": 0.0
+   },
+   "ik_reach_shortfall_max": 0.00128,
+   "sole_verts": 96,
+   "planted_sole_slide_max_vs_ground": 1e-05,
+   "sole_min_z": 0.0,
+   "tail_tip_p2p_xyz": [
+    0.3805,
+    0.0199,
+    0.0
+   ],
+   "head_top_p2p_xyz": [
+    0.0007,
+    0.0219,
+    0.0206
+   ],
+   "ear_L_tip_p2p_xyz": [
+    0.0602,
+    0.1775,
+    0.034
+   ],
+   "orb_p2p_xyz": [
+    0.0285,
+    0.044,
+    0.1508
+   ]
+  },
+  "walk": {
+   "frames": [
+    1,
+    49
+   ],
+   "period_frames": 48,
+   "seconds": 2.0,
+   "cyclic": true,
+   "seam_main_mm": 0.0,
+   "root_offset_max": 0.0,
+   "clearance_min_z": -0.0,
+   "spine_lift": [
+    -0.02,
+    0.02
+   ],
+   "floor_guard_lift": {
+    "frames_lifted": 0,
+    "max": 0.0
+   },
+   "ik_reach_shortfall_max": 0.01427,
+   "sole_verts": 96,
+   "planted_sole_slide_max_vs_ground": 0.00161,
+   "sole_min_z": -0.0,
+   "tail_tip_p2p_xyz": [
+    0.2774,
+    0.0103,
+    0.04
+   ],
+   "head_top_p2p_xyz": [
+    0.0,
+    0.0348,
+    0.04
+   ],
+   "ear_L_tip_p2p_xyz": [
+    0.0,
+    0.0699,
+    0.0255
+   ],
+   "orb_p2p_xyz": [
+    0.0,
+    0.0644,
+    0.1206
+   ]
+  }
+ },
+ "clip_seconds": 1.3,
+ "bones": [
+  {
+   "name": "root",
+   "parent": null,
+   "deform": false,
+   "head": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "tail": [
+    0.0,
+    0.0,
+    0.4
+   ]
+  },
+  {
+   "name": "spine.001",
+   "parent": "root",
+   "deform": true,
+   "head": [
+    0.0,
+    0.6672,
+    2.3
+   ],
+   "tail": [
+    0.0,
+    -0.1828,
+    2.42
+   ]
+  },
+  {
+   "name": "spine.002",
+   "parent": "spine.001",
+   "deform": true,
+   "head": [
+    0.0,
+    -0.1828,
+    2.42
+   ],
+   "tail": [
+    0.0,
+    -0.9328,
+    2.5
+   ]
+  },
+  {
+   "name": "spine.003",
+   "parent": "spine.002",
+   "deform": true,
+   "head": [
+    0.0,
+    -0.9328,
+    2.5
+   ],
+   "tail": [
+    0.0,
+    -1.2128,
+    2.95
+   ]
+  },
+  {
+   "name": "neck",
+   "parent": "spine.003",
+   "deform": true,
+   "head": [
+    0.0,
+    -1.2128,
+    2.95
+   ],
+   "tail": [
+    0.0,
+    -1.1328,
+    3.95
+   ]
+  },
+  {
+   "name": "head",
+   "parent": "neck",
+   "deform": true,
+   "head": [
+    0.0,
+    -1.1328,
+    3.95
+   ],
+   "tail": [
+    0.0,
+    -1.1328,
+    4.95
+   ]
+  },
+  {
+   "name": "ear_L",
+   "parent": "head",
+   "deform": true,
+   "head": [
+    0.4697,
+    -1.0014,
+    4.829
+   ],
+   "tail": [
+    0.8,
+    -0.8528,
+    5.44
+   ]
+  },
+  {
+   "name": "ear_R",
+   "parent": "head",
+   "deform": true,
+   "head": [
+    -0.4697,
+    -1.0014,
+    4.829
+   ],
+   "tail": [
+    -0.8,
+    -0.8528,
+    5.44
+   ]
+  },
+  {
+   "name": "horn_L",
+   "parent": "head",
+   "deform": true,
+   "head": [
+    0.62,
+    -0.4828,
+    3.0
+   ],
+   "tail": [
+    1.4979,
+    0.5343,
+    4.9567
+   ]
+  },
+  {
+   "name": "horn_R",
+   "parent": "head",
+   "deform": true,
+   "head": [
+    -0.62,
+    -0.4828,
+    3.0
+   ],
+   "tail": [
+    -1.4979,
+    0.5343,
+    4.9567
+   ]
+  },
+  {
+   "name": "orb",
+   "parent": "head",
+   "deform": true,
+   "head": [
+    0.0,
+    -0.5628,
+    5.8
+   ],
+   "tail": [
+    0.0,
+    -0.5628,
+    6.15
+   ]
+  },
+  {
+   "name": "foreleg_L.upper",
+   "parent": "spine.003",
+   "deform": true,
+   "head": [
+    0.42,
+    -1.0328,
+    2.4
+   ],
+   "tail": [
+    0.46,
+    -0.9328,
+    1.4
+   ]
+  },
+  {
+   "name": "foreleg_L.lower",
+   "parent": "foreleg_L.upper",
+   "deform": true,
+   "head": [
+    0.46,
+    -0.9328,
+    1.4
+   ],
+   "tail": [
+    0.48,
+    -0.9928,
+    0.35
+   ]
+  },
+  {
+   "name": "foreleg_L.paw",
+   "parent": "foreleg_L.lower",
+   "deform": true,
+   "head": [
+    0.48,
+    -0.9928,
+    0.35
+   ],
+   "tail": [
+    0.48,
+    -1.4728,
+    0.09
+   ]
+  },
+  {
+   "name": "foreleg_R.upper",
+   "parent": "spine.003",
+   "deform": true,
+   "head": [
+    -0.42,
+    -1.0328,
+    2.4
+   ],
+   "tail": [
+    -0.46,
+    -0.9328,
+    1.4
+   ]
+  },
+  {
+   "name": "foreleg_R.lower",
+   "parent": "foreleg_R.upper",
+   "deform": true,
+   "head": [
+    -0.46,
+    -0.9328,
+    1.4
+   ],
+   "tail": [
+    -0.48,
+    -0.9928,
+    0.35
+   ]
+  },
+  {
+   "name": "foreleg_R.paw",
+   "parent": "foreleg_R.lower",
+   "deform": true,
+   "head": [
+    -0.48,
+    -0.9928,
+    0.35
+   ],
+   "tail": [
+    -0.48,
+    -1.4728,
+    0.09
+   ]
+  },
+  {
+   "name": "hindleg_L.upper",
+   "parent": "spine.001",
+   "deform": true,
+   "head": [
+    0.48,
+    0.5672,
+    2.05
+   ],
+   "tail": [
+    0.56,
+    0.5872,
+    1.25
+   ]
+  },
+  {
+   "name": "hindleg_L.lower",
+   "parent": "hindleg_L.upper",
+   "deform": true,
+   "head": [
+    0.56,
+    0.5872,
+    1.25
+   ],
+   "tail": [
+    0.62,
+    0.9872,
+    0.6
+   ]
+  },
+  {
+   "name": "hindleg_L.paw",
+   "parent": "hindleg_L.lower",
+   "deform": true,
+   "head": [
+    0.62,
+    0.9872,
+    0.6
+   ],
+   "tail": [
+    0.62,
+    0.5672,
+    0.09
+   ]
+  },
+  {
+   "name": "hindleg_R.upper",
+   "parent": "spine.001",
+   "deform": true,
+   "head": [
+    -0.48,
+    0.5672,
+    2.05
+   ],
+   "tail": [
+    -0.56,
+    0.5872,
+    1.25
+   ]
+  },
+  {
+   "name": "hindleg_R.lower",
+   "parent": "hindleg_R.upper",
+   "deform": true,
+   "head": [
+    -0.56,
+    0.5872,
+    1.25
+   ],
+   "tail": [
+    -0.62,
+    0.9872,
+    0.6
+   ]
+  },
+  {
+   "name": "hindleg_R.paw",
+   "parent": "hindleg_R.lower",
+   "deform": true,
+   "head": [
+    -0.62,
+    0.9872,
+    0.6
+   ],
+   "tail": [
+    -0.62,
+    0.5672,
+    0.09
+   ]
+  },
+  {
+   "name": "tail.001",
+   "parent": "spine.001",
+   "deform": true,
+   "head": [
+    0.0,
+    0.6172,
+    2.6
+   ],
+   "tail": [
+    0.0,
+    1.1172,
+    2.8
+   ]
+  },
+  {
+   "name": "tail.002",
+   "parent": "tail.001",
+   "deform": true,
+   "head": [
+    0.0,
+    1.1172,
+    2.8
+   ],
+   "tail": [
+    0.0,
+    1.5672,
+    2.5
+   ]
+  },
+  {
+   "name": "tail.003",
+   "parent": "tail.002",
+   "deform": true,
+   "head": [
+    0.0,
+    1.5672,
+    2.5
+   ],
+   "tail": [
+    0.0,
+    1.8172,
+    1.85
+   ]
+  }
+ ],
+ "bone_count": 26,
+ "deform_bone_count": 25,
+ "digest": {
+  "parts": {
+   "bake_normal": "0bba7af9af51261e",
+   "bake_ao": "bcabb0550c8db8ef",
+   "geometry_colour_uv": "b764db811cafb814",
+   "weights": "426234e92b417af2",
+   "keys": "18b3e58840b918e1",
+   "clip_samples": "35d1e40c3c6ec353"
+  },
+  "combined": "402776664b24a576"
+ },
+ "glb": {
+  "path": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\rigged\\eclipse_wolf.glb",
+  "bytes": 6983924,
+  "seconds": 1.0,
+  "carries": {
+   "materials": [
+    {
+     "name": "eclipse_wolf_body",
+     "alphaMode": "OPAQUE",
+     "doubleSided": false,
+     "textures": [
+      "baseColorTexture",
+      "normalTexture"
+     ]
+    }
+   ],
+   "primitives": [
+    {
+     "mesh": "eclipse_wolf",
+     "material": "eclipse_wolf_body",
+     "attributes": [
+      "COLOR_0",
+      "COLOR_1",
+      "JOINTS_0",
+      "NORMAL",
+      "POSITION",
+      "TEXCOORD_0",
+      "WEIGHTS_0",
+      "_GLOW"
+     ]
+    }
+   ],
+   "animations": [
+    "idle",
+    "walk"
+   ],
+   "skins": 1,
+   "joints": 26
+  },
+  "structure": "armature identity + skinned 'eclipse_wolf' (one opaque body material, Glow -> emission); natural scale; report-only cell fit 0.28436"
+ },
+ "skins": {
+  "default": {
+   "file": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\rigged\\eclipse_wolf.blend",
+   "palette": {
+    "fur": {
+     "rgb": [
+      35,
+      30,
+      35
+     ]
+    },
+    "ear_inner": {
+     "rgb": [
+      229,
+      221,
+      217
+     ]
+    },
+    "fleece": {
+     "rgb": [
+      126,
+      110,
+      109
+     ]
+    },
+    "fleece_lit": {
+     "rgb": [
+      168,
+      148,
+      144
+     ]
+    },
+    "mouth": {
+     "rgb": [
+      253,
+      49,
+      253
+     ]
+    },
+    "teeth": {
+     "rgb": [
+      229,
+      221,
+      217
+     ]
+    },
+    "eye_white": {
+     "rgb": [
+      233,
+      227,
+      222
+     ]
+    },
+    "pupil": {
+     "rgb": [
+      4,
+      3,
+      3
+     ]
+    },
+    "nose": {
+     "rgb": [
+      6,
+      5,
+      6
+     ]
+    },
+    "horn": {
+     "rgb": [
+      56,
+      28,
+      58
+     ]
+    },
+    "horn_glow": {
+     "rgb": [
+      253,
+      49,
+      253
+     ],
+     "emission": [
+      253,
+      49,
+      253
+     ],
+     "emission_scale": 0.9
+    },
+    "orb": {
+     "rgb": [
+      17,
+      12,
+      17
+     ]
+    },
+    "orb_ring": {
+     "rgb": [
+      253,
+      49,
+      253
+     ],
+     "emission": [
+      253,
+      49,
+      253
+     ],
+     "emission_scale": 1.0
+    },
+    "band": {
+     "rgb": [
+      253,
+      49,
+      253
+     ],
+     "emission": [
+      253,
+      49,
+      253
+     ],
+     "emission_scale": 1.0
+    }
+   },
+   "glow": {
+    "skin": "default",
+    "emission_scale_tiers": {
+     "horn_glow": 0.9,
+     "orb_ring": 1.0,
+     "band": 1.0
+    },
+    "emission_strength": 1.5,
+    "only_drawn_glow": true,
+    "cap": 2.0,
+    "cap_pass": true,
+    "max_effective": 1.5
+   }
+  },
+  "rule": "default skin only (brief)"
+ },
+ "improved_report": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\improved\\eclipse_wolf.json",
+ "seconds": 49.6
+}

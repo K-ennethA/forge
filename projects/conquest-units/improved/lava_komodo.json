@@ -1,0 +1,758 @@
+{
+ "unit": "lava_komodo",
+ "conquest_character_id": "lava_komodo",
+ "source": "none: from-scratch unit (sheet design/reference/lava_komodo-character-sheet.webp)",
+ "tier": "regular",
+ "tri_budget": [
+  8000,
+  22000
+ ],
+ "units": "sheet units: 1 unit = 100 px; floor z = 0 at the pool's near edge (front y 687, side y 695); X from the front ortho, Y from the side ortho",
+ "overrides": {},
+ "sdf": {
+  "body": {
+   "step": 0.03,
+   "band": 0.4,
+   "grid": [
+    126,
+    299,
+    142
+   ],
+   "ops": [
+    "union",
+    "union",
+    "union",
+    "union",
+    "union",
+    "union",
+    "union",
+    "union",
+    "union",
+    "union",
+    "union",
+    "union",
+    "union",
+    "union",
+    "union",
+    "union",
+    "union",
+    "floor"
+   ],
+   "high_tris": 678264,
+   "crumbs": {
+    "pieces": 1,
+    "kept": 1,
+    "dropped_verts": 0
+   },
+   "decimated_tris": 7000,
+   "specks": {
+    "pieces": 1,
+    "kept": 1,
+    "dropped_verts": 0
+   },
+   "floor_snap": {
+    "verts_snapped_to_floor": 4,
+    "worst_dip": 0.000156
+   },
+   "raw_low_vs_high": {
+    "low_to_high": {
+     "mean": 0.00124,
+     "p99": 0.00507,
+     "max": 0.00803
+    },
+    "high_to_low_sampled": {
+     "p99": 0.00358,
+     "max": 0.01038
+    },
+    "bbox_low_over_high": [
+     1.00004,
+     1.00015,
+     1.00028
+    ]
+   },
+   "half_tris": 3739,
+   "seconds": 14.7
+  },
+  "seconds": 25.9
+ },
+ "plates": {
+  "seeds_half": 29,
+  "seeds_total": 58,
+  "spacing": {
+   "body": 0.8,
+   "neck": 0.52,
+   "head": 0.34,
+   "tail": [
+    0.62,
+    0.3
+   ]
+  },
+  "tones": {
+   "plate_a": 24,
+   "plate_b": 4,
+   "plate_c": 1
+  },
+  "crack_half_width": 0.025,
+  "proud": 0.08,
+  "dome": 0.3,
+  "channel": 0.012,
+  "low_offset": {
+   "max_out": 0.089,
+   "max_in": 0.012,
+   "p90_out_on_rock": 0.0732
+  },
+  "rule": "Voronoi plates of Poisson-disc seeds on the +X half + their mirrors; every Voronoi bisector is split into the shell exactly (pair-linear), then the crack band h < CRACK_W is iso-cut; each plate is displaced into a raised domed slab in the LOW and the HIGH alike"
+ },
+ "iso_cuts": {
+  "body": {
+   "cuts": [
+    {
+     "refined_faces": 0,
+     "max_edge": null,
+     "bisector_splits": 734
+    },
+    {
+     "field": "pool",
+     "tau": 0.0,
+     "edge_splits": 75,
+     "face_connects": 94
+    },
+    {
+     "field": "skirt",
+     "tau": 0.0,
+     "edge_splits": 144,
+     "face_connects": 161
+    },
+    {
+     "field": "own_drip",
+     "tau": 0.0,
+     "edge_splits": 65,
+     "face_connects": 72
+    },
+    {
+     "field": "own_tail",
+     "tau": 0.0,
+     "edge_splits": 38,
+     "face_connects": 41
+    },
+    {
+     "field": "tailu",
+     "tau": 0.0,
+     "edge_splits": 25,
+     "face_connects": 27
+    },
+    {
+     "field": "front",
+     "tau": 0.0,
+     "edge_splits": 67,
+     "face_connects": 72
+    },
+    {
+     "field": "mid",
+     "tau": 0.0,
+     "edge_splits": 25,
+     "face_connects": 30
+    },
+    {
+     "field": "core",
+     "tau": 0.0,
+     "edge_splits": 29,
+     "face_connects": 28
+    },
+    {
+     "field": "mouth",
+     "tau": 0.0,
+     "edge_splits": 15,
+     "face_connects": 17
+    },
+    {
+     "field": "own_brow",
+     "tau": 0.0,
+     "edge_splits": 22,
+     "face_connects": 26
+    },
+    {
+     "field": "crk",
+     "tau": 0.0,
+     "edge_splits": 918,
+     "face_connects": 1023
+    },
+    {
+     "degenerate_dissolved_faces": 0,
+     "sliver_edge_flips": 0,
+     "sliver_collapses": 0,
+     "min_face_area": 1.19026026368374e-06
+    }
+   ],
+   "half_tris_after": 8029,
+   "tris_after": 16058,
+   "seam_verts": 297,
+   "seconds": 5.1
+  }
+ },
+ "bevel": {
+  "rule": "the HIGH carries the same slab displacement as the LOW",
+  "max_offset": 0.089,
+  "rock_fraction_of_high_verts": 0.3652,
+  "seconds": 4.8
+ },
+ "retopo": {
+  "method": "SDF marching tetrahedra (step 0.030) -> collapse decimation (deterministic) -> X >= 0 half -> cuts -> slab displacement -> mirror + weld (deviation vs the equally displaced high)",
+  "low_to_high": {
+   "mean": 0.00151,
+   "p99": 0.00675,
+   "max": 0.01265
+  },
+  "high_to_low_sampled": {
+   "p99": 0.03144,
+   "max": 0.06199
+  },
+  "bbox_low_over_high": [
+   0.99965,
+   1.00025,
+   0.99884
+  ]
+ },
+ "centre_shift": [
+  0.0,
+  1.200507,
+  0.0
+ ],
+ "glow": {
+  "default": {
+   "skin": "default",
+   "emission_scale_tiers": {
+    "crack": 0.5,
+    "molten": 0.62,
+    "molten_mid": 0.66,
+    "molten_core": 0.7,
+    "lava": 0.45,
+    "drip": 0.55,
+    "pool": 0.58,
+    "eye": 0.74,
+    "crest_outer": 0.82,
+    "crest_inner": 0.95
+   },
+   "peak_x_strength": {
+    "crack": 0.498,
+    "molten": 0.6176,
+    "molten_mid": 0.6574,
+    "molten_core": 0.7,
+    "lava": 0.4482,
+    "drip": 0.55,
+    "pool": 0.58,
+    "eye": 0.7371,
+    "crest_outer": 0.8168,
+    "crest_inner": 0.95
+   },
+   "cap": 2.0,
+   "only_drawn_glow": true,
+   "grade_pass": true,
+   "cap_pass": true
+  }
+ },
+ "regions_faces": {
+  "lava_komodo": {
+   "plate_a": 4232,
+   "plate_b": 934,
+   "plate_c": 104,
+   "brow": 192,
+   "crack": 2954,
+   "molten": 1760,
+   "molten_mid": 288,
+   "molten_core": 450,
+   "lava": 1998,
+   "drip": 614,
+   "pool": 2532,
+   "eye_socket": 64,
+   "eye": 128,
+   "pupil": 96,
+   "glint": 64,
+   "face_line": 180,
+   "crest_outer": 800,
+   "crest_inner": 400
+  }
+ },
+ "regions_area_share": {
+  "plate_a": 0.2913,
+  "plate_b": 0.0729,
+  "plate_c": 0.0109,
+  "brow": 0.0032,
+  "crack": 0.0334,
+  "molten": 0.0459,
+  "molten_mid": 0.01,
+  "molten_core": 0.0105,
+  "lava": 0.0929,
+  "drip": 0.0109,
+  "pool": 0.3431,
+  "eye_socket": 0.0032,
+  "eye": 0.0016,
+  "pupil": 0.0007,
+  "glint": 0.0003,
+  "face_line": 0.0051,
+  "crest_outer": 0.0493,
+  "crest_inner": 0.0148
+ },
+ "facing": {
+  "rule": "head centre at snout height -> the snout tip on the mirror plane (the face looks -Y)",
+  "anchor": [
+   0.0,
+   -3.2005,
+   3.43
+  ],
+  "landmark": [
+   0.0,
+   -4.3605,
+   3.43
+  ],
+  "angle_from_minusY_deg": 0.0
+ },
+ "mirror_test": {
+  "max_abs_asymmetry": 0.0,
+  "p99": 0.0,
+  "per_piece_max": {},
+  "rule": "every rest vertex mirrored across X = 0 -> distance to the nearest point of the mesh",
+  "region_mismatch_sampled": {
+   "faces_sampled": 2542,
+   "mismatched": 5
+  }
+ },
+ "tris": {
+  "total": 19074,
+  "per_part_family": {
+   "body": 16058,
+   "eye_socket": 96,
+   "eye": 192,
+   "pupil": 144,
+   "glint": 96,
+   "nostril": 96,
+   "mouth": 232,
+   "crest": 2160
+  },
+  "per_region": {
+   "plate_a": 4232,
+   "plate_b": 934,
+   "plate_c": 104,
+   "brow": 192,
+   "crack": 2954,
+   "molten": 1760,
+   "molten_mid": 288,
+   "molten_core": 450,
+   "lava": 1998,
+   "drip": 614,
+   "pool": 2532,
+   "eye_socket": 64,
+   "eye": 128,
+   "pupil": 96,
+   "glint": 64,
+   "face_line": 180,
+   "crest_outer": 800,
+   "crest_inner": 400
+  }
+ },
+ "tier_rationale": "REGULAR role (a line unit): window [8000, 22000]. The SDF body (shell + pool, refined along the plate cracks + every region cut) carries the largest share; the flame crest tongues and the face decals the rest.",
+ "open_edges": {
+  "closed_parts": 25,
+  "parts": 25,
+  "open_parts": {},
+  "rule": "every part is closed: the SDF body (mirror-welded), plates, ribbons, crest tongues"
+ },
+ "measure": {
+  "bbox": [
+   [
+    -1.7493,
+    -4.3594,
+    0.0
+   ],
+   [
+    1.7493,
+    4.3594,
+    4.598
+   ]
+  ],
+  "height": 4.598,
+  "width_x": 3.4986,
+  "depth_y": 8.7188,
+  "sheet_crest_top_z": {
+   "front": 4.55,
+   "side": 4.52
+  },
+  "sheet_width_units": {
+   "front_body": 2.42,
+   "front_pool_min": 3.0
+  },
+  "sheet_depth_note": "the sheet's side view is 6.28 u wide with the tail curled; straight back the tail adds ~2.4 u of depth (house rule)",
+  "export_cell_fit_report_only": {
+   "scale": 0.21792,
+   "height_m": 1.002,
+   "footprint_m": 1.9,
+   "bound_by": "footprint"
+  }
+ },
+ "bake": {
+  "NORMAL": {
+   "result": [
+    "FINISHED"
+   ],
+   "seconds": 0.7
+  },
+  "AO": {
+   "result": [
+    "FINISHED"
+   ],
+   "seconds": 0.6
+  },
+  "cage_extrusion": 0.1043,
+  "cage_rule": "3 x the body's worst retopo p99 (vs the slab-displaced high) + 0.01 (floor 0.05)",
+  "resolution": {
+   "normal": 1024,
+   "ao": 512
+  },
+  "high_tris": 678796,
+  "high_rule": "the grooved body SDF high + every closed part except the crest tongues",
+  "body_uv_texels_normal": 486068,
+  "normal_baked_pct_of_body_texels": 99.89,
+  "normal_detail_fraction_dev_gt_0.05": 0.4148,
+  "ao_baked_pct_of_body_texels": 100.0,
+  "ao_mean": 0.8464,
+  "ao_p05": 0.4392,
+  "pixel_sha": {
+   "normal": "4cc30cb67e5b2196",
+   "ao": "aeaf6c5eec171955"
+  },
+  "seconds": 3.9
+ },
+ "digest_geometry_colour_uv": "edfacb7d2ece6768",
+ "palette": {
+  "default": {
+   "plate_a": {
+    "rgb": [
+     148,
+     84,
+     69
+    ]
+   },
+   "plate_b": {
+    "rgb": [
+     163,
+     72,
+     57
+    ]
+   },
+   "plate_c": {
+    "rgb": [
+     67,
+     58,
+     57
+    ]
+   },
+   "brow": {
+    "rgb": [
+     167,
+     145,
+     125
+    ]
+   },
+   "crack": {
+    "rgb": [
+     254,
+     115,
+     58
+    ],
+    "emission": [
+     254,
+     115,
+     58
+    ],
+    "emission_scale": 0.5
+   },
+   "molten": {
+    "rgb": [
+     254,
+     115,
+     58
+    ],
+    "emission": [
+     254,
+     115,
+     58
+    ],
+    "emission_scale": 0.62
+   },
+   "molten_mid": {
+    "rgb": [
+     254,
+     153,
+     33
+    ],
+    "emission": [
+     254,
+     153,
+     33
+    ],
+    "emission_scale": 0.66
+   },
+   "molten_core": {
+    "rgb": [
+     255,
+     190,
+     69
+    ],
+    "emission": [
+     255,
+     190,
+     69
+    ],
+    "emission_scale": 0.7
+   },
+   "lava": {
+    "rgb": [
+     254,
+     115,
+     58
+    ],
+    "emission": [
+     254,
+     115,
+     58
+    ],
+    "emission_scale": 0.45
+   },
+   "drip": {
+    "rgb": [
+     255,
+     190,
+     69
+    ],
+    "emission": [
+     255,
+     190,
+     69
+    ],
+    "emission_scale": 0.55
+   },
+   "pool": {
+    "rgb": [
+     255,
+     190,
+     69
+    ],
+    "emission": [
+     255,
+     190,
+     69
+    ],
+    "emission_scale": 0.58
+   },
+   "eye_socket": {
+    "rgb": [
+     47,
+     32,
+     26
+    ]
+   },
+   "eye": {
+    "rgb": [
+     254,
+     115,
+     58
+    ],
+    "emission": [
+     254,
+     115,
+     58
+    ],
+    "emission_scale": 0.74
+   },
+   "pupil": {
+    "rgb": [
+     41,
+     19,
+     12
+    ]
+   },
+   "glint": {
+    "rgb": [
+     255,
+     250,
+     234
+    ]
+   },
+   "face_line": {
+    "rgb": [
+     47,
+     32,
+     26
+    ]
+   },
+   "crest_outer": {
+    "rgb": [
+     254,
+     115,
+     58
+    ],
+    "emission": [
+     254,
+     115,
+     58
+    ],
+    "emission_scale": 0.82
+   },
+   "crest_inner": {
+    "rgb": [
+     255,
+     190,
+     69
+    ],
+    "emission": [
+     255,
+     190,
+     69
+    ],
+    "emission_scale": 0.95
+   }
+  },
+  "files": [
+   "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\palettes\\lava_komodo\\default.json"
+  ],
+  "provenance": "pixel-sampled from the sheet's six palette chips (intake swatches) + drawn-surface samples (see the palette notes)"
+ },
+ "crest": {
+  "tongues": [
+   {
+    "layer": "crest_outer",
+    "x": 0.0,
+    "tip": [
+     0.0,
+     -2.043,
+     4.598
+    ],
+    "length": 0.92,
+    "radius": 0.34
+   },
+   {
+    "layer": "crest_outer",
+    "x": 0.0,
+    "tip": [
+     -0.0,
+     -2.401,
+     4.242
+    ],
+    "length": 0.68,
+    "radius": 0.27
+   },
+   {
+    "layer": "crest_outer",
+    "x": 0.0,
+    "tip": [
+     0.0,
+     -1.368,
+     4.13
+    ],
+    "length": 0.6,
+    "radius": 0.27
+   },
+   {
+    "layer": "crest_outer",
+    "x": 0.0,
+    "tip": [
+     0.0,
+     -1.123,
+     3.852
+    ],
+    "length": 0.5,
+    "radius": 0.22
+   },
+   {
+    "layer": "crest_inner",
+    "x": 0.0,
+    "tip": [
+     -0.0,
+     -2.277,
+     4.261
+    ],
+    "length": 0.62,
+    "radius": 0.21
+   },
+   {
+    "layer": "crest_inner",
+    "x": 0.0,
+    "tip": [
+     0.0,
+     -1.59,
+     3.994
+    ],
+    "length": 0.4,
+    "radius": 0.18
+   },
+   {
+    "layer": "crest_outer",
+    "x": 0.2,
+    "tip": [
+     0.374,
+     -1.995,
+     4.17
+    ],
+    "length": 0.6,
+    "radius": 0.24
+   },
+   {
+    "layer": "crest_outer",
+    "x": 0.32,
+    "tip": [
+     0.523,
+     -1.644,
+     3.867
+    ],
+    "length": 0.46,
+    "radius": 0.2
+   },
+   {
+    "layer": "crest_inner",
+    "x": 0.16,
+    "tip": [
+     0.248,
+     -2.104,
+     3.987
+    ],
+    "length": 0.38,
+    "radius": 0.15
+   }
+  ]
+ },
+ "face": {
+  "eye.L": {
+   "centre": [
+    0.3975,
+    -2.3,
+    3.56
+   ],
+   "normal": [
+    0.817,
+    -0.372,
+    0.441
+   ]
+  },
+  "nostril.L": {
+   "centre": [
+    0.11,
+    -3.1161,
+    3.48
+   ]
+  },
+  "mouth.L": {
+   "ends": [
+    [
+     0.0,
+     -3.0515,
+     3.28
+    ],
+    [
+     0.4919,
+     -1.95,
+     3.21
+    ]
+   ]
+  }
+ }
+}

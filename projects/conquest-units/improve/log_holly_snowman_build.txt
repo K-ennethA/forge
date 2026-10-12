@@ -1,0 +1,20 @@
+PUFFS {"seed": 3, "candidates_half": 53329, "placed_half": 129, "total_mirrored": 249, "per_zone": {"head": 112, "body": 91, "feet": 46}, "skipped": {"face": 1635, "buttons": 668, "fringe": 33495, "spacing": 16527, "own_mirror": 875}, "k": 0.06, "spacing": 1.3}
+SDF {"step": 0.02, "band": 0.16, "grid": [177, 175, 260], "high_tris": 893524, "crumbs": {"pieces": 1, "kept": 1, "dropped_verts": 0}, "seconds": 23.8} {"method": "SDF marching tetrahedra (step 0.020) -> collapse decimation of the scalloped high (deterministic) -> mirror-halved", "decimated_tris": 13238, "specks": {"pieces": 1, "kept": 1, "dropped_verts": 0}, "floor_snap": {"verts_snapped_to_floor": 1, "worst_dip": 0.00029}, "mirror_halved": {"seam_verts": 347, "rule": "X >= 0 half + its mirror (symmetric rest mesh)"}, "low_to_high": {"mean": 0.00102, "p99": 0.0028, "max": 0.00504}, "high_to_low_sampled": {"p99": 0.00259, "max": 0.00489}, "bbox_low_over_high": [1.00127, 1.0003, 0.99998]}
+MIRROR {"rule": "every rest vertex mirrored across X = 0 -> distance to the nearest point of the mesh", "max_abs_asymmetry": 0.0, "p99": 0.0, "mean": 0.0, "shift_x": 0.0, "bbox_x": [-2.1, 2.1]}
+Info: Baking map saved to internal image, save it externally or pack it
+Info: Baking map saved to internal image, save it externally or pack it
+BAKE {"NORMAL": {"result": ["FINISHED"], "seconds": 1.3}, "AO": {"result": ["FINISHED"], "seconds": 0.9}, "cage_extrusion": 0.02, "cage_rule": "3 x the body's sampled high->low p99 distance (floor 0.02)", "resolution": {"normal": 1024, "ao": 512}, "high_tris": 896918, "high_rule": "the scalloped body SDF high + every closed part", "body_uv_texels_normal": 393670, "normal_baked_pct_of_body_texels": 100.0, "normal_detail_fraction_dev_gt_0.05": 0.2771, "normal_dev_p99": 0.1664, "ao_baked_pct_of_body_texels": 100.0, "ao_mean_raw": 0.8602, "ao_p05_raw": 0.4392, "ao_floor": 0.62, "seconds": 4.3}
+Info: Saved copy as "holly_snowman.blend"
+IMPROVED_SAVED C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\improved\holly_snowman.blend 34.3
+CLIP idle {"frames": [1, 97], "period_frames": 96, "seconds": 4.0, "cyclic": true, "seam_main_mm": 0.0, "root_offset_max": 0.0, "clearance_min_z": 0.0, "soles": {"min_z": 0.0, "slide_xy_max": 0.0, "sole_verts": 108}}
+CLIP walk {"frames": [1, 49], "period_frames": 48, "seconds": 2.0, "cyclic": true, "seam_main_mm": 0.0, "root_offset_max": 0.0, "clearance_min_z": 0.0, "soles": {"min_z": 0.0, "slide_xy_max": 0.0, "sole_verts": 108}}
+Info: Saved copy as "holly_snowman.blend"
+INFO Draco mesh compression is available, use library at C:\Program Files\Blender Foundation\Blender 5.0\5.0\scripts\addons_core\io_scene_gltf2\extern_draco.dll
+15:40:32 | INFO: Starting glTF 2.0 export
+15:40:32 | INFO: Extracting primitive: holly_snowman
+15:40:32 | INFO: Primitives created: 1
+15:40:32 | INFO: Finished glTF 2.0 export in 0.30368995666503906 s
+
+RIG_DONE {"bone_count": 9, "weights": {"max_influences": 2, "unweighted": 0, "sum_dev_max": 0.0, "per_bone_dominant": {"body": 3466, "head": 2487, "ear_L": 302, "arm_L": 1074, "foot_L": 489, "ear_R": 302, "arm_R": 1074, "foot_R": 489}, "rule": "shell: head smoothstep at z 3.15 +- 0.12; feet = (1 - smoothstep z 0.30..0.46) x smoothstep |X| 0.10..0.28 on each side; the rest body. Eyes 1.0 head; buttons 1.0 body; ears 1.0 ear_*; stalk / fronds / berries 1.0 arm_*"}, "digest": {"parts": {"bake_normal": "cb4ae98f4efc27c2", "bake_ao": "7234c7133ad0637e", "geometry_colour_uv": "f009d0a85962d427", "weights": "a45f93afe6c2303a", "keys": "998fd22e4f950ad4", "clip_samples": "d1b3b6e8d5819819"}, "combined": "030149e0f9a3b44c"}, "seconds": 35.5}
+GLB {"materials": [{"name": "holly_snowman_body", "alphaMode": "OPAQUE", "doubleSided": false, "textures": ["baseColorTexture", "normalTexture"]}], "primitives": [{"mesh": "holly_snowman", "material": "holly_snowman_body", "attributes": ["COLOR_0", "COLOR_1", "JOINTS_0", "NORMAL", "POSITION", "TEXCOORD_0", "WEIGHTS_0", "_GLOW"]}], "animations": ["idle", "walk"], "skins": 1, "joints": 9}
+Blender 5.0.1 (hash a3db93c5b259 built 2025-12-16 01:32:30)

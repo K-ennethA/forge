@@ -1,0 +1,22 @@
+{
+ "unit": "mystic_snow_spirit",
+ "skin": "default",
+ "description": "Mystic Snow Spirit default look, PIXEL-SAMPLED from design/reference/mystic_snow_spirit-character-sheet.png: the palette chips (intake.json swatches snow 237,238,242 / blue-shadow 193,215,237 / icy blue 92,173,214 / navy 46,67,108 / violet 139,93,253 / dark 51,53,58 inferred) cross-checked against the drawn surfaces (service venv PIL, median of a box per surface; boxes in each note). The sheet has NO brown chip: the wood tone is a drawn-surface sample. GLOW (drawn on the sheet): the snowball flames + a faint blue under-glow at the snow-pile foot; peak emission (max channel / 255 x emission_scale x material emission_strength) stays under the 2.0 cap.",
+ "regions": {
+  "snow":        {"rgb": [237, 238, 242], "note": "head / middle ball / skirt: chip 237,238,242; drawn front skirt box (230,650)-(270,690) median 233,236,243, head box (200,410)-(230,440) 222,229,244"},
+  "snow_shade":  {"rgb": [193, 215, 237], "note": "blue snow shadow on the down-facing surfaces: chip 193,215,237; drawn under-head box (220,462)-(280,470) median 175,195,235, low skirt (150,740)-(200,770) 169,192,239"},
+  "snow_glow":   {"rgb": [92, 173, 214],  "emission": [92, 173, 214], "emission_scale": 0.30, "note": "faint blue under-glow at the pile foot: chip 92,173,214; drawn glow patches (140,788)-(165,797) median 88,157,231, (270,790)-(295,798) 92,165,234"},
+  "nose":        {"rgb": [246, 245, 247], "note": "pointed snow nose: drawn front box (248,410)-(262,420) median 246,245,247 (its own region: brighter than the head)"},
+  "eye_rim":     {"rgb": [85, 120, 183],  "note": "thin blue eye outline: drawn front row y 390 x 214 69,105,172 / x 236 88,121,184, col x 225 y 376 98,134,194; panel 84,117,180 -- NOT a chip"},
+  "eye_iris":    {"rgb": [204, 219, 243], "note": "the pale-blue oval fill round the pupil (the drawn 'blue iris'): front row y 390 x 216-222 186-215,209-225,242-245; panel row y 134 x 1274-1278 202-207,217-219,240-244 -- the brief's 92,173,214 is not what the eye draws (reported)"},
+  "pupil":       {"rgb": [15, 24, 38],    "note": "dark pupil: drawn front box (224,384)-(227,393) median 15,24,38"},
+  "eye_hi":      {"rgb": [248, 247, 240], "note": "pupil highlight dot: drawn front x 228 y 390 250,246,233"},
+  "mouth":       {"rgb": [46, 67, 108],   "note": "small 'o' mouth: chip 46,67,108; drawn front box (250,444)-(255,449) median 57,82,136"},
+  "wood":        {"rgb": [156, 122, 109], "note": "branch arms, fingers, twig horns: drawn side forearm box (1040,640)-(1055,660) median 156,122,109 (front upper arm (355,555)-(365,565) 132,105,100, forearm (385,610)-(395,620) 177,144,132, horn (196,305)-(204,320) 175,143,130)"},
+  "orb":         {"rgb": [195, 220, 253], "note": "floating snowballs (flame-lit icy white): drawn upper-right ball box (400,345)-(440,365) median 195,220,253"},
+  "flame_outer": {"rgb": [139, 93, 253],  "emission": [139, 93, 253],  "emission_scale": 0.85, "note": "violet outer licks + the tall tip: chip 139,93,253; drawn flame violet pixels (upper-right flame box 375-470 x 230-330) median 157,130,251"},
+  "flame_mid":   {"rgb": [92, 173, 214],  "emission": [92, 173, 214],  "emission_scale": 1.00, "note": "cyan licks: chip 92,173,214; drawn flame cyan pixels (same box) median 106,177,253"},
+  "flame_core":  {"rgb": [236, 248, 253], "emission": [236, 248, 253], "emission_scale": 1.20, "note": "hot pale core over the ball top: drawn top-flame core box (243,190)-(253,200) median 236,248,253 -- NOT a chip"}
+ },
+ "material": {"roughness": 0.9, "emission_strength": 1.5, "alpha": 1.0}
+}

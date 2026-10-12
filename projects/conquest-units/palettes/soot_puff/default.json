@@ -1,0 +1,12 @@
+{
+ "unit": "soot_puff",
+ "skin": "default",
+ "description": "Soot Puff default look, PIXEL-SAMPLED from design/reference/soot_puff-character-sheet.webp: the four palette chips (intake.json swatches 0,0,0 / 15,15,15 / 113,113,115 / 255,255,255) cross-checked against the drawn surfaces (sampler: service venv PIL, front view, body mask by edge distance, eyes masked out). Matte, dusty, no sheen, no glow (the sheet draws none).",
+ "regions": {
+  "body": {"rgb": [0, 0, 0],       "note": "base / crevices: chip 0,0,0 (x1300 y877); drawn front-view interior 8-15 px in from the edge median 2,2,2 (p10 0,0,0)"},
+  "fuzz": {"rgb": [15, 15, 15],    "note": "fuzz crowns (puff crests): chip 15,15,15 (x1384 y877); drawn rim 0-3 px in from the edge median 17,17,17, FUZZY EDGE panel median 14,14,15"},
+  "dust": {"rgb": [113, 113, 115], "note": "dusty highlight on a few upper puff crowns: chip 113,113,115 (x1469 y877). The three views barely draw it (inside-body pixels > 60 lum: front 0, side 0, back 2; FUZZY EDGE panel crest highlights reach 66) -- the chip value is used, on a small seeded share of upper crowns (DUST_P)"},
+  "face": {"rgb": [255, 255, 255], "note": "eyes + mouth: chip 255,255,255 (x1554 y876); drawn eye / mouth blobs (lum > 128) are pure white"}
+ },
+ "material": {"roughness": 0.95, "emission_strength": 1.0}
+}

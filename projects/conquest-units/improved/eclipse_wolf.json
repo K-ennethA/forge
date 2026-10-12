@@ -1,0 +1,804 @@
+{
+ "unit": "eclipse_wolf",
+ "conquest_character_id": "eclipse_wolf",
+ "source": "none: from-scratch unit (sheet design/reference/eclipse_wolf-character-sheet.png)",
+ "tier": "regular",
+ "tri_budget": [
+  8000,
+  22000
+ ],
+ "units": "sheet units: 1 unit = 100 px; heights / depths off the side view, widths off the front + back views; floor z = 0",
+ "overrides": {},
+ "sdf": {
+  "step": 0.025,
+  "band": 0.18,
+  "grid": [
+   149,
+   209,
+   235
+  ],
+  "ops": 1423,
+  "high_tris": 703292,
+  "high_verts": 351630,
+  "toe_creases": 8,
+  "crumbs": {
+   "pieces": 2,
+   "dropped_verts": 14
+  },
+  "seconds": 12.4
+ },
+ "fleece": {
+  "seed": 11,
+  "clumps": {
+   "draws": 9000,
+   "on_outer_surface_half": 3488,
+   "clumps_half": 178,
+   "spheres_total": 1394,
+   "coarse_base_tris": 104260,
+   "per_base_spheres": {
+    "ruff": 527,
+    "mantle": 469,
+    "tail": 398
+   }
+  },
+  "k": 0.1,
+  "rule": "area-weighted seeded draws on the coarse-polygonised base surface -> outer surface only -> dart-throwing (spacing 0.20) -> big clump + 3 sub-lobes; X >= 0 mirrored"
+ },
+ "retopo": {
+  "method": "SDF marching tetrahedra (step 0.025) -> collapse decimation (deterministic)",
+  "decimated_tris": 15294,
+  "specks": {
+   "pieces": 1,
+   "dropped_verts": 0
+  },
+  "doubled_faces_removed": 0,
+  "mirror_halved": {
+   "seam_verts": 415,
+   "rule": "X >= 0 half + its mirror (symmetric rest mesh)"
+  },
+  "low_to_high": {
+   "mean": 0.00159,
+   "p99": 0.00499,
+   "max": 0.01317
+  },
+  "high_to_low_sampled": {
+   "p99": 0.00472,
+   "max": 0.01225
+  },
+  "bbox_high": [
+   2.6973,
+   4.2229,
+   5.4586
+  ],
+  "bbox_low": [
+   2.7012,
+   4.2232,
+   5.4622
+  ],
+  "bbox_low_over_high": [
+   1.00146,
+   1.00006,
+   1.00067
+  ],
+  "seconds": 10.2
+ },
+ "field_seconds": 1.9,
+ "tail_leg_clearance": {
+  "min_gap": 0.1397,
+  "need": "> PUFF_K / 2 = 0.050 (no smooth-union bridge)",
+  "rule": "tail-owned shell points below z 1.6 -> nearest hind leg"
+ },
+ "mouth": {
+  "depth_max": 0.163,
+  "depth_p90": 0.1501,
+  "target": 0.16,
+  "faces": 554,
+  "rule": "mouth-region shell vertices -> depth below the UNCARVED face surface (-sd_face)"
+ },
+ "iso_cuts": {
+  "cuts": [
+   {
+    "field": "fleece",
+    "tau": 0.0,
+    "edge_splits": 261,
+    "face_connects": 300
+   },
+   {
+    "field": "lit",
+    "tau": 0.0,
+    "edge_splits": 641,
+    "face_connects": 764
+   },
+   {
+    "field": "mouth",
+    "tau": 0.0,
+    "edge_splits": 85,
+    "face_connects": 108
+   },
+   {
+    "field": "inner",
+    "tau": 0.0,
+    "edge_splits": 80,
+    "face_connects": 92
+   }
+  ],
+  "seconds": 11.9,
+  "shell_tris_after_cuts": 17428
+ },
+ "centre_shift": [
+  0.0,
+  0.63283,
+  -1e-06
+ ],
+ "glow": {
+  "skin": "default",
+  "emission_scale_tiers": {
+   "horn_glow": 0.9,
+   "orb_ring": 1.0,
+   "band": 1.0
+  },
+  "emission_strength": 1.5,
+  "only_drawn_glow": true,
+  "cap": 2.0,
+  "cap_pass": true,
+  "max_effective": 1.5
+ },
+ "regions_faces": {
+  "eclipse_wolf": {
+   "fur": 5360,
+   "ear_inner": 268,
+   "fleece": 6932,
+   "fleece_lit": 4314,
+   "mouth": 554,
+   "teeth": 75,
+   "eye_white": 392,
+   "pupil": 200,
+   "nose": 140,
+   "horn": 650,
+   "horn_glow": 70,
+   "orb": 308,
+   "orb_ring": 160,
+   "band": 400
+  }
+ },
+ "regions_area_share": {
+  "fur": 0.2896,
+  "ear_inner": 0.0083,
+  "fleece": 0.2701,
+  "fleece_lit": 0.1448,
+  "mouth": 0.0125,
+  "teeth": 0.0149,
+  "eye_white": 0.0069,
+  "pupil": 0.0016,
+  "nose": 0.0008,
+  "horn": 0.1842,
+  "horn_glow": 0.0106,
+  "orb": 0.0224,
+  "orb_ring": 0.0114,
+  "band": 0.0219
+ },
+ "facing": {
+  "rule": "head centre (HEAD_C) -> the nose (front cast on the midline at NOSE_Z)",
+  "anchor": [
+   0.0,
+   -1.1328,
+   4.3
+  ],
+  "landmark": [
+   0.0,
+   -2.0535,
+   4.01
+  ],
+  "angle_from_minusY_deg": 0.0
+ },
+ "face": {
+  "eye.L": {
+   "surface": [
+    0.33000001311302185,
+    -1.05840003490448,
+    4.21999979019165
+   ],
+   "normal": [
+    0.3515,
+    -0.9335,
+    0.071
+   ],
+   "pupil": [
+    0.2179,
+    -1.1014,
+    4.21
+   ]
+  },
+  "nose": {
+   "surface": [
+    0.0,
+    -1.420699954032898,
+    4.010000228881836
+   ],
+   "normal": [
+    0.0446,
+    -0.9752,
+    0.217
+   ]
+  }
+ },
+ "teeth": {
+  "upper": 8,
+  "lower": 7,
+  "fill": 0.72,
+  "base": 0.92,
+  "mouth_purple_share_front": 0.5009,
+  "rule": "front-view (x, z): share of the mouth outline not covered by an (inset) tooth triangle",
+  "teeth": [
+   {
+    "name": "tooth.upper.01",
+    "front_xz": [
+     [
+      -0.614,
+      4.057
+     ],
+     [
+      -0.471,
+      3.992
+     ],
+     [
+      -0.542,
+      3.989
+     ]
+    ]
+   },
+   {
+    "name": "tooth.upper.02",
+    "front_xz": [
+     [
+      -0.459,
+      3.988
+     ],
+     [
+      -0.316,
+      3.942
+     ],
+     [
+      -0.388,
+      3.865
+     ]
+    ]
+   },
+   {
+    "name": "tooth.upper.03",
+    "front_xz": [
+     [
+      -0.304,
+      3.938
+     ],
+     [
+      -0.161,
+      3.911
+     ],
+     [
+      -0.232,
+      3.771
+     ]
+    ]
+   },
+   {
+    "name": "tooth.upper.04",
+    "front_xz": [
+     [
+      -0.149,
+      3.909
+     ],
+     [
+      -0.006,
+      3.9
+     ],
+     [
+      -0.078,
+      3.71
+     ]
+    ]
+   },
+   {
+    "name": "tooth.upper.05",
+    "front_xz": [
+     [
+      0.006,
+      3.9
+     ],
+     [
+      0.149,
+      3.909
+     ],
+     [
+      0.078,
+      3.71
+     ]
+    ]
+   },
+   {
+    "name": "tooth.upper.06",
+    "front_xz": [
+     [
+      0.161,
+      3.911
+     ],
+     [
+      0.304,
+      3.938
+     ],
+     [
+      0.233,
+      3.771
+     ]
+    ]
+   },
+   {
+    "name": "tooth.upper.07",
+    "front_xz": [
+     [
+      0.316,
+      3.942
+     ],
+     [
+      0.459,
+      3.988
+     ],
+     [
+      0.388,
+      3.865
+     ]
+    ]
+   },
+   {
+    "name": "tooth.upper.08",
+    "front_xz": [
+     [
+      0.471,
+      3.992
+     ],
+     [
+      0.614,
+      4.057
+     ],
+     [
+      0.543,
+      3.989
+     ]
+    ]
+   },
+   {
+    "name": "tooth.lower.01",
+    "front_xz": [
+     [
+      -0.536,
+      3.969
+     ],
+     [
+      -0.394,
+      3.833
+     ],
+     [
+      -0.465,
+      3.964
+     ]
+    ]
+   },
+   {
+    "name": "tooth.lower.02",
+    "front_xz": [
+     [
+      -0.381,
+      3.822
+     ],
+     [
+      -0.239,
+      3.716
+     ],
+     [
+      -0.31,
+      3.891
+     ]
+    ]
+   },
+   {
+    "name": "tooth.lower.03",
+    "front_xz": [
+     [
+      -0.226,
+      3.708
+     ],
+     [
+      -0.084,
+      3.638
+     ],
+     [
+      -0.155,
+      3.842
+     ]
+    ]
+   },
+   {
+    "name": "tooth.lower.04",
+    "front_xz": [
+     [
+      -0.071,
+      3.634
+     ],
+     [
+      0.071,
+      3.634
+     ],
+     [
+      0.0,
+      3.822
+     ]
+    ]
+   },
+   {
+    "name": "tooth.lower.05",
+    "front_xz": [
+     [
+      0.084,
+      3.638
+     ],
+     [
+      0.226,
+      3.708
+     ],
+     [
+      0.155,
+      3.842
+     ]
+    ]
+   },
+   {
+    "name": "tooth.lower.06",
+    "front_xz": [
+     [
+      0.239,
+      3.716
+     ],
+     [
+      0.381,
+      3.822
+     ],
+     [
+      0.31,
+      3.891
+     ]
+    ]
+   },
+   {
+    "name": "tooth.lower.07",
+    "front_xz": [
+     [
+      0.394,
+      3.833
+     ],
+     [
+      0.536,
+      3.969
+     ],
+     [
+      0.465,
+      3.964
+     ]
+    ]
+   }
+  ]
+ },
+ "horns": {
+  "plane_normal_L": [
+   0.7415,
+   -0.6708,
+   0.0121
+  ],
+  "knots_off_plane_max": 0.0165,
+  "path_len": 4.8124,
+  "sections": 36
+ },
+ "bands": [
+  {
+   "name": "band.fore.L",
+   "centre": [
+    0.4777,
+    -0.3531,
+    0.47
+   ],
+   "leg_radius": 0.1983,
+   "clearance": 0.0567
+  },
+  {
+   "name": "band.hind.L",
+   "centre": [
+    0.62,
+    1.6079,
+    0.47
+   ],
+   "leg_radius": 0.1753,
+   "clearance": 0.0797
+  }
+ ],
+ "mirror_test": {
+  "max_abs_asymmetry": 0.00473,
+  "p99": 0.00017,
+  "per_piece_max": {},
+  "rule": "every rest vertex mirrored across X = 0 -> distance to the nearest point of the mesh"
+ },
+ "tris": {
+  "total": 21872,
+  "shell": 17428,
+  "shell_before_cuts": 15294,
+  "eye_whites": 672,
+  "pupils": 320,
+  "nose": 240,
+  "teeth": 120,
+  "horns": 1400,
+  "orb": 572,
+  "orb_ring": 320,
+  "leg_bands": 800,
+  "per_part": {
+   "eye.L": 336,
+   "pupil.L": 160,
+   "eye.R": 336,
+   "pupil.R": 160,
+   "nose": 240,
+   "tooth.upper.01": 8,
+   "tooth.upper.02": 8,
+   "tooth.upper.03": 8,
+   "tooth.upper.04": 8,
+   "tooth.upper.05": 8,
+   "tooth.upper.06": 8,
+   "tooth.upper.07": 8,
+   "tooth.upper.08": 8,
+   "tooth.lower.01": 8,
+   "tooth.lower.02": 8,
+   "tooth.lower.03": 8,
+   "tooth.lower.04": 8,
+   "tooth.lower.05": 8,
+   "tooth.lower.06": 8,
+   "tooth.lower.07": 8,
+   "horn.L": 700,
+   "horn.R": 700,
+   "orb": 572,
+   "orb_ring": 320,
+   "band.fore.L": 200,
+   "band.hind.L": 200,
+   "band.fore.R": 200,
+   "band.hind.R": 200
+  }
+ },
+ "tier_rationale": "REGULAR role (a line unit): window [8000, 22000]. The shell carries the head, the ears, four slim legs + paws and the clumped fleece mantle + tail (the big clumps in the silhouette, the small curls in the normal map); the horns, orb and bands are low closed sweeps / tori.",
+ "open_edges": {
+  "closed_parts": [
+   "band.fore.L",
+   "band.fore.R",
+   "band.hind.L",
+   "band.hind.R",
+   "eye.L",
+   "eye.R",
+   "horn.L",
+   "horn.R",
+   "nose",
+   "orb",
+   "orb_ring",
+   "pupil.L",
+   "pupil.R",
+   "shell",
+   "tooth.lower.01",
+   "tooth.lower.02",
+   "tooth.lower.03",
+   "tooth.lower.04",
+   "tooth.lower.05",
+   "tooth.lower.06",
+   "tooth.lower.07",
+   "tooth.upper.01",
+   "tooth.upper.02",
+   "tooth.upper.03",
+   "tooth.upper.04",
+   "tooth.upper.05",
+   "tooth.upper.06",
+   "tooth.upper.07",
+   "tooth.upper.08"
+  ],
+  "open_parts": {},
+  "rule": "every piece is a closed solid (shell, decals, teeth, horns, orb, ring, bands)"
+ },
+ "measure": {
+  "bbox": [
+   [
+    -1.7643,
+    -2.1116,
+    0.0
+   ],
+   [
+    1.7643,
+    2.1116,
+    6.33
+   ]
+  ],
+  "height": 6.33,
+  "width_x": 3.5286,
+  "depth_y": 4.2232,
+  "sheet_px_equivalent": {
+   "height_px": 633.0,
+   "width_px": 352.9,
+   "depth_px": 422.3
+  },
+  "sheet": {
+   "front_view_height_px": 639,
+   "front_view_width_px": 436,
+   "side_view_height_px": 635,
+   "side_view_length_px": 430
+  },
+  "export_cell_fit_report_only": {
+   "scale": 0.28436,
+   "height_m": 1.8,
+   "footprint_m": 1.2009,
+   "bound_by": "height"
+  }
+ },
+ "bake": {
+  "NORMAL": {
+   "result": [
+    "FINISHED"
+   ],
+   "seconds": 0.9
+  },
+  "AO": {
+   "result": [
+    "FINISHED"
+   ],
+   "seconds": 0.6
+  },
+  "cage_extrusion": 0.02,
+  "cage_rule": "3 x the sampled high->low p99 distance (floor 0.02)",
+  "resolution": {
+   "normal": 1024,
+   "ao": 512
+  },
+  "high_tris": 705687,
+  "high_rule": "SDF shell (marching tets, every fleece curl at full density) + every closed part",
+  "body_uv_texels_normal": 384445,
+  "normal_baked_pct_of_body_texels": 99.8,
+  "normal_detail_fraction_dev_gt_0.05": 0.5388,
+  "ao_baked_pct_of_body_texels": 100.0,
+  "ao_mean": 0.7528,
+  "ao_p05": 0.1882,
+  "ao_floor": {
+   "all": 0.55,
+   "fleece": 0.7,
+   "fleece_texels": 40001
+  },
+  "pixel_sha": {
+   "normal": "0bba7af9af51261e",
+   "ao": "bcabb0550c8db8ef"
+  },
+  "seconds": 5.5
+ },
+ "digest_geometry_colour_uv": "b764db811cafb814",
+ "palette": {
+  "default": {
+   "fur": {
+    "rgb": [
+     35,
+     30,
+     35
+    ]
+   },
+   "ear_inner": {
+    "rgb": [
+     229,
+     221,
+     217
+    ]
+   },
+   "fleece": {
+    "rgb": [
+     126,
+     110,
+     109
+    ]
+   },
+   "fleece_lit": {
+    "rgb": [
+     168,
+     148,
+     144
+    ]
+   },
+   "mouth": {
+    "rgb": [
+     253,
+     49,
+     253
+    ]
+   },
+   "teeth": {
+    "rgb": [
+     229,
+     221,
+     217
+    ]
+   },
+   "eye_white": {
+    "rgb": [
+     233,
+     227,
+     222
+    ]
+   },
+   "pupil": {
+    "rgb": [
+     4,
+     3,
+     3
+    ]
+   },
+   "nose": {
+    "rgb": [
+     6,
+     5,
+     6
+    ]
+   },
+   "horn": {
+    "rgb": [
+     56,
+     28,
+     58
+    ]
+   },
+   "horn_glow": {
+    "rgb": [
+     253,
+     49,
+     253
+    ],
+    "emission": [
+     253,
+     49,
+     253
+    ],
+    "emission_scale": 0.9
+   },
+   "orb": {
+    "rgb": [
+     17,
+     12,
+     17
+    ]
+   },
+   "orb_ring": {
+    "rgb": [
+     253,
+     49,
+     253
+    ],
+    "emission": [
+     253,
+     49,
+     253
+    ],
+    "emission_scale": 1.0
+   },
+   "band": {
+    "rgb": [
+     253,
+     49,
+     253
+    ],
+    "emission": [
+     253,
+     49,
+     253
+    ],
+    "emission_scale": 1.0
+   }
+  },
+  "files": [
+   "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\palettes\\eclipse_wolf\\default.json"
+  ],
+  "provenance": "pixel-sampled from the sheet's chips + drawn surfaces (see the palette notes)"
+ }
+}

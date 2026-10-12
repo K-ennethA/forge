@@ -1,0 +1,637 @@
+{
+ "unit": "storm_vessel",
+ "conquest_character_id": "storm_vessel",
+ "source": "none: from-scratch unit (sheet design/reference/storm_vessel-character-sheet.png)",
+ "tier": "regular",
+ "tri_budget": [
+  8000,
+  22000
+ ],
+ "units": "sheet units: 1 unit = 100 px; front + back true orthos, side a 3/4 slant (66 deg); floor z = 0 at the bolt tip (it floats)",
+ "overrides": {},
+ "sdf": {
+  "step": 0.025,
+  "band": 0.15,
+  "grid": [
+   141,
+   121,
+   151
+  ],
+  "ops": 3,
+  "high_tris": 464088,
+  "high_verts": 232046,
+  "crumbs": {
+   "pieces": 1,
+   "dropped_verts": 0
+  },
+  "seconds_fields": 0.3,
+  "seconds": 3.2
+ },
+ "retopo": {
+  "method": "SDF marching tetrahedra (step 0.025) -> collapse decimation (deterministic)",
+  "decimated_tris": 6000,
+  "specks": {
+   "pieces": 1,
+   "dropped_verts": 0
+  },
+  "low_to_high": {
+   "mean": 0.0008,
+   "p99": 0.00191,
+   "max": 0.00281
+  },
+  "high_to_low_sampled": {
+   "p99": 0.00166,
+   "max": 0.00492
+  },
+  "bbox_high": [
+   3.2799,
+   2.76,
+   3.52
+  ],
+  "bbox_low": [
+   3.2809,
+   2.7603,
+   3.521
+  ],
+  "bbox_low_over_high": [
+   1.00031,
+   1.00012,
+   1.00031
+  ],
+  "seconds": 5.0
+ },
+ "iso_cuts": {
+  "shell": [],
+  "shell_tris_after_cuts": 6000,
+  "parts": {
+   "head_face": [
+    {
+     "field": "eye",
+     "tau": 0.0,
+     "edge_splits": 32,
+     "face_connects": 40
+    }
+   ]
+  }
+ },
+ "parts_built": {
+  "core_frame": {
+   "tris_before_cuts": 1080,
+   "open_edges": 0
+  },
+  "core_dome": {
+   "tris_before_cuts": 800,
+   "open_edges": 0
+  },
+  "core_filaments": {
+   "tris_before_cuts": 720,
+   "open_edges": 0
+  },
+  "neck_spray": {
+   "tris_before_cuts": 1350,
+   "open_edges": 0
+  },
+  "neck_pool": {
+   "tris_before_cuts": 288,
+   "open_edges": 0
+  },
+  "head_face": {
+   "tris_before_cuts": 1800,
+   "open_edges": 0
+  },
+  "visor": {
+   "tris_before_cuts": 760,
+   "open_edges": 0
+  },
+  "horn.L": {
+   "tris_before_cuts": 132,
+   "open_edges": 0
+  },
+  "horn.R": {
+   "tris_before_cuts": 132,
+   "open_edges": 0
+  },
+  "arm_band.L": {
+   "tris_before_cuts": 400,
+   "open_edges": 0
+  },
+  "hand.L": {
+   "tris_before_cuts": 840,
+   "open_edges": 0
+  },
+  "arm_glow.L": {
+   "tris_before_cuts": 560,
+   "open_edges": 0
+  },
+  "burst.L": {
+   "tris_before_cuts": 880,
+   "open_edges": 0
+  },
+  "arm_band.R": {
+   "tris_before_cuts": 400,
+   "open_edges": 0
+  },
+  "hand.R": {
+   "tris_before_cuts": 840,
+   "open_edges": 0
+  },
+  "arm_glow.R": {
+   "tris_before_cuts": 560,
+   "open_edges": 0
+  },
+  "burst.R": {
+   "tris_before_cuts": 880,
+   "open_edges": 0
+  },
+  "bolt": {
+   "tris_before_cuts": 92,
+   "open_edges": 0
+  },
+  "sparks": {
+   "tris_before_cuts": 728,
+   "open_edges": 0
+  }
+ },
+ "centre_shift": [
+  0.0,
+  -0.055133,
+  0.0
+ ],
+ "glow_tiers": {
+  "default": {
+   "skin": "default",
+   "emission_scale_tiers": {
+    "neck_glow": 0.8,
+    "core": 0.75,
+    "core_deep": 0.65,
+    "core_rim": 0.45,
+    "core_fil": 0.9,
+    "filament": 0.9,
+    "arm_glow": 0.7,
+    "arm_glow_ring": 0.85,
+    "bolt": 0.75,
+    "bolt_hi": 0.9,
+    "spark": 0.9
+   },
+   "emission_strength": 1.5,
+   "only_drawn_glow": true,
+   "cap": 2.0,
+   "cap_pass": true,
+   "max_effective": 1.35
+  }
+ },
+ "regions_faces": {
+  "storm_vessel": {
+   "body": 6000,
+   "neck_glow": 180,
+   "frame": 510,
+   "frame_seam": 30,
+   "core": 280,
+   "core_deep": 80,
+   "core_rim": 80,
+   "core_fil": 400,
+   "filament": 1688,
+   "visor": 524,
+   "face": 1742,
+   "eye": 122,
+   "arm_band": 400,
+   "hand": 900,
+   "hand_mark": 24,
+   "arm_glow": 560,
+   "arm_glow_ring": 80,
+   "bolt": 36,
+   "bolt_hi": 20,
+   "spark": 400
+  }
+ },
+ "regions_area_share": {
+  "body": 0.4452,
+  "neck_glow": 0.0216,
+  "frame": 0.0398,
+  "frame_seam": 0.0009,
+  "core": 0.0214,
+  "core_deep": 0.0004,
+  "core_rim": 0.0023,
+  "core_fil": 0.0028,
+  "filament": 0.0152,
+  "visor": 0.08,
+  "face": 0.0706,
+  "eye": 0.0009,
+  "arm_band": 0.0901,
+  "hand": 0.0692,
+  "hand_mark": 0.0005,
+  "arm_glow": 0.0765,
+  "arm_glow_ring": 0.0083,
+  "bolt": 0.0341,
+  "bolt_hi": 0.0173,
+  "spark": 0.003
+ },
+ "facing": {
+  "rule": "orb centre -> the glowing core's front point (the core + the eyes face -Y)",
+  "anchor": [
+   0.0,
+   0.0551,
+   3.5
+  ],
+  "landmark": [
+   0.0,
+   -1.4239,
+   3.44
+  ],
+  "angle_from_minusY_deg": 0.0
+ },
+ "tris": {
+  "total": 19306,
+  "window": [
+   8000,
+   22000
+  ],
+  "shell": 6000,
+  "shell_before_cuts": 6000,
+  "per_part": {
+   "body shell (orb + neck)": 6000,
+   "core_frame": 1080,
+   "core_dome": 800,
+   "core_filaments": 720,
+   "neck_spray": 1350,
+   "neck_pool": 288,
+   "head_face": 1864,
+   "visor": 760,
+   "horn.L": 132,
+   "horn.R": 132,
+   "arm_band.L": 400,
+   "hand.L": 840,
+   "arm_glow.L": 560,
+   "burst.L": 880,
+   "arm_band.R": 400,
+   "hand.R": 840,
+   "arm_glow.R": 560,
+   "burst.R": 880,
+   "bolt": 92,
+   "sparks": 728
+  },
+  "per_region": {
+   "body": 6000,
+   "neck_glow": 180,
+   "frame": 510,
+   "frame_seam": 30,
+   "core": 280,
+   "core_deep": 80,
+   "core_rim": 80,
+   "core_fil": 400,
+   "filament": 1688,
+   "visor": 524,
+   "face": 1742,
+   "eye": 122,
+   "arm_band": 400,
+   "hand": 900,
+   "hand_mark": 24,
+   "arm_glow": 560,
+   "arm_glow_ring": 80,
+   "bolt": 36,
+   "bolt_hi": 20,
+   "spark": 400
+  }
+ },
+ "tier_rationale": "REGULAR role: window [8000, 22000]. The orb + neck shell is light (~6000 decimated tris); the core (frame + dome + strands), the floating head (face, visor, horns), the two floating arms (band, hand, burst disc, strands), the bolt + sparks and the neck spray (closed parts) carry the rest.",
+ "open_edges": {
+  "per_piece": {
+   "shell": 0,
+   "core_frame": 0,
+   "core_dome": 0,
+   "core_filaments": 0,
+   "neck_spray": 0,
+   "neck_pool": 0,
+   "head_face": 0,
+   "visor": 0,
+   "horn.L": 0,
+   "horn.R": 0,
+   "arm_band.L": 0,
+   "hand.L": 0,
+   "arm_glow.L": 0,
+   "burst.L": 0,
+   "arm_band.R": 0,
+   "hand.R": 0,
+   "arm_glow.R": 0,
+   "burst.R": 0,
+   "bolt": 0,
+   "sparks": 0
+  },
+  "closed_parts": [
+   "arm_band.L",
+   "arm_band.R",
+   "arm_glow.L",
+   "arm_glow.R",
+   "bolt",
+   "burst.L",
+   "burst.R",
+   "core_dome",
+   "core_filaments",
+   "core_frame",
+   "hand.L",
+   "hand.R",
+   "head_face",
+   "horn.L",
+   "horn.R",
+   "neck_pool",
+   "neck_spray",
+   "shell",
+   "sparks",
+   "visor"
+  ],
+  "open_parts": {},
+  "rule": "every piece is a closed solid (SDF shell; lathes / rings / tubes with welded poles; the extruded bolt); the eyes are an iso-cut region, the seams / ticks / rings / core zones are grid-aligned regions, the neck glow is its own pool part (no decals)"
+ },
+ "measure": {
+  "bbox": [
+   [
+    -2.3943,
+    -1.4347,
+    0.0
+   ],
+   [
+    2.3943,
+    1.4347,
+    6.62
+   ]
+  ],
+  "height": 6.62,
+  "width_x": 4.7886,
+  "depth_y": 2.8694,
+  "sheet_px_equivalent": {
+   "height_px": 662.0,
+   "width_px": 478.9
+  },
+  "sheet": {
+   "front": "H 6.62 W 4.62",
+   "back": "H 6.60 W 4.12",
+   "side (3/4)": "H 6.63 W 3.05"
+  },
+  "export_cell_fit_report_only": {
+   "scale": 0.2719,
+   "height_m": 1.8,
+   "footprint_m": 1.302,
+   "bound_by": "height"
+  }
+ },
+ "bake_high_smooth": {
+  "passes": 4,
+  "max_move": 0.0142
+ },
+ "bake": {
+  "NORMAL": {
+   "result": [
+    "FINISHED"
+   ],
+   "seconds": 0.7
+  },
+  "AO": {
+   "result": [
+    "FINISHED"
+   ],
+   "seconds": 1.5
+  },
+  "cage_extrusion": 0.02,
+  "cage_rule": "3 x the sampled high->low p99 distance (floor 0.02)",
+  "resolution": {
+   "normal": 1024,
+   "ao": 512
+  },
+  "high_tris": 498180,
+  "high_rule": "SDF shell (marching tets: orb + neck - cavity) + every part re-generated at 3x rows + columns (the smooth curvature the flat low faces bake their normals from; tubes + bolt as built)",
+  "body_uv_texels_normal": 534010,
+  "normal_baked_pct_of_body_texels": 92.49,
+  "normal_detail_fraction_dev_gt_0.05": 0.0329,
+  "ao_baked_pct_of_body_texels": 100.0,
+  "ao_mean": 0.5994,
+  "ao_p05": 0.0,
+  "ao_floor": {
+   "rule": {
+    "clean": 1.0,
+    "other": 0.55
+   },
+   "clean_texels": 47369,
+   "ao_p05_after_floor": 0.55
+  },
+  "pixel_sha": {
+   "normal": "00cb052c068eabe7",
+   "ao": "2474fe4a92ac5378"
+  },
+  "seconds": 5.9
+ },
+ "digest_geometry_colour_uv": "f0f46812eb169939",
+ "palette": {
+  "default": {
+   "body": {
+    "rgb": [
+     156,
+     205,
+     241
+    ]
+   },
+   "neck_glow": {
+    "rgb": [
+     251,
+     158,
+     32
+    ],
+    "emission": [
+     251,
+     158,
+     32
+    ],
+    "emission_scale": 0.8
+   },
+   "frame": {
+    "rgb": [
+     143,
+     148,
+     159
+    ]
+   },
+   "frame_seam": {
+    "rgb": [
+     92,
+     97,
+     107
+    ]
+   },
+   "core": {
+    "rgb": [
+     254,
+     102,
+     2
+    ],
+    "emission": [
+     254,
+     102,
+     2
+    ],
+    "emission_scale": 0.75
+   },
+   "core_deep": {
+    "rgb": [
+     253,
+     73,
+     1
+    ],
+    "emission": [
+     253,
+     73,
+     1
+    ],
+    "emission_scale": 0.65
+   },
+   "core_rim": {
+    "rgb": [
+     220,
+     192,
+     172
+    ],
+    "emission": [
+     220,
+     192,
+     172
+    ],
+    "emission_scale": 0.45
+   },
+   "core_fil": {
+    "rgb": [
+     253,
+     184,
+     100
+    ],
+    "emission": [
+     253,
+     184,
+     100
+    ],
+    "emission_scale": 0.9
+   },
+   "filament": {
+    "rgb": [
+     248,
+     195,
+     68
+    ],
+    "emission": [
+     248,
+     195,
+     68
+    ],
+    "emission_scale": 0.9
+   },
+   "visor": {
+    "rgb": [
+     150,
+     201,
+     239
+    ]
+   },
+   "face": {
+    "rgb": [
+     247,
+     247,
+     247
+    ]
+   },
+   "eye": {
+    "rgb": [
+     4,
+     4,
+     4
+    ]
+   },
+   "arm_band": {
+    "rgb": [
+     150,
+     201,
+     239
+    ]
+   },
+   "hand": {
+    "rgb": [
+     247,
+     247,
+     247
+    ]
+   },
+   "hand_mark": {
+    "rgb": [
+     54,
+     58,
+     64
+    ]
+   },
+   "arm_glow": {
+    "rgb": [
+     250,
+     79,
+     5
+    ],
+    "emission": [
+     250,
+     79,
+     5
+    ],
+    "emission_scale": 0.7
+   },
+   "arm_glow_ring": {
+    "rgb": [
+     254,
+     212,
+     133
+    ],
+    "emission": [
+     254,
+     212,
+     133
+    ],
+    "emission_scale": 0.85
+   },
+   "bolt": {
+    "rgb": [
+     251,
+     80,
+     2
+    ],
+    "emission": [
+     251,
+     80,
+     2
+    ],
+    "emission_scale": 0.75
+   },
+   "bolt_hi": {
+    "rgb": [
+     254,
+     175,
+     20
+    ],
+    "emission": [
+     254,
+     175,
+     20
+    ],
+    "emission_scale": 0.9
+   },
+   "spark": {
+    "rgb": [
+     235,
+     158,
+     42
+    ],
+    "emission": [
+     235,
+     158,
+     42
+    ],
+    "emission_scale": 0.9
+   }
+  },
+  "files": [
+   "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\palettes\\storm_vessel\\default.json"
+  ],
+  "provenance": "pixel-sampled from the drawn surfaces + the sheet's six chips, cited per region (see the palette notes)"
+ }
+}

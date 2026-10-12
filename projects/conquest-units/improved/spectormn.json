@@ -1,0 +1,636 @@
+{
+ "unit": "spectormn",
+ "conquest_character_id": "spectormn",
+ "source": "none: from-scratch unit (sheet design/reference/spectormn-character-sheet.png)",
+ "tier": "regular",
+ "tri_budget": [
+  8000,
+  22000
+ ],
+ "units": "sheet units: 1 unit = 100 sheet px (front + back true orthos; the side is a 3/4 view); floor z = 0 at the lowest mist wisp (it floats)",
+ "overrides": {},
+ "grid_x_symmetry": 0.0,
+ "strands": [
+  {
+   "theta_deg": 0.0,
+   "root_z": 1.077,
+   "tip_z": 0.27,
+   "flare": 1.084
+  },
+  {
+   "theta_deg": 12.9,
+   "root_z": 1.089,
+   "tip_z": 0.45,
+   "flare": 1.01
+  },
+  {
+   "theta_deg": 32.0,
+   "root_z": 1.569,
+   "tip_z": 0.321,
+   "flare": 1.052
+  },
+  {
+   "theta_deg": 54.1,
+   "root_z": 1.398,
+   "tip_z": 0.176,
+   "flare": 1.019
+  },
+  {
+   "theta_deg": 75.1,
+   "root_z": 1.402,
+   "tip_z": 0.275,
+   "flare": 1.114
+  },
+  {
+   "theta_deg": 90.5,
+   "root_z": 1.589,
+   "tip_z": 0.146,
+   "flare": 1.078
+  },
+  {
+   "theta_deg": 107.8,
+   "root_z": 1.212,
+   "tip_z": 0.308,
+   "flare": 1.033
+  },
+  {
+   "theta_deg": 129.3,
+   "root_z": 1.52,
+   "tip_z": 0.114,
+   "flare": 1.065
+  },
+  {
+   "theta_deg": 141.6,
+   "root_z": 1.05,
+   "tip_z": 0.436,
+   "flare": 1.06
+  },
+  {
+   "theta_deg": 158.2,
+   "root_z": 1.404,
+   "tip_z": 0.145,
+   "flare": 1.126
+  },
+  {
+   "theta_deg": 180.0,
+   "root_z": 1.13,
+   "tip_z": 0.074,
+   "flare": 1.028
+  }
+ ],
+ "sdf": {
+  "step": 0.025,
+  "band": 0.3,
+  "grid": [
+   148,
+   95,
+   278
+  ],
+  "ops": 150,
+  "high_tris": 609520,
+  "high_verts": 304746,
+  "crumbs": {
+   "pieces": 2,
+   "dropped_verts": 14
+  },
+  "high_min_z": -0.009033,
+  "wisp_blobs": 140,
+  "sunk_high_verts": 1571,
+  "seconds_fields": 21.2,
+  "seconds": 25.2
+ },
+ "retopo": {
+  "method": "SDF marching tetrahedra (step 0.025) -> collapse decimation (deterministic)",
+  "decimated_tris": 10398,
+  "specks": {
+   "pieces": 1,
+   "dropped_verts": 0
+  },
+  "face_densify": {
+   "rounds": 1,
+   "zone": 0.06,
+   "new_verts": 449
+  },
+  "low_to_high": {
+   "mean": 0.00143,
+   "p99": 0.00567,
+   "max": 0.00859
+  },
+  "high_to_low_sampled": {
+   "p99": 0.00482,
+   "max": 0.02838
+  },
+  "bbox_high": [
+   3.449,
+   2.0618,
+   6.7273
+  ],
+  "bbox_low": [
+   3.4501,
+   2.0594,
+   6.7301
+  ],
+  "bbox_low_over_high": [
+   1.00031,
+   0.99886,
+   1.00042
+  ],
+  "seconds": 7.7
+ },
+ "iso_cuts": {
+  "cuts": [
+   {
+    "field": "mist",
+    "tau": 0.0,
+    "edge_splits": 309,
+    "face_connects": 374
+   },
+   {
+    "field": "eye.L",
+    "tau": 0.0,
+    "edge_splits": 39,
+    "face_connects": 47
+   },
+   {
+    "field": "eye.R",
+    "tau": 0.0,
+    "edge_splits": 33,
+    "face_connects": 38
+   },
+   {
+    "field": "slit.C",
+    "tau": 0.0,
+    "edge_splits": 36,
+    "face_connects": 39
+   },
+   {
+    "field": "slit.L",
+    "tau": 0.0,
+    "edge_splits": 38,
+    "face_connects": 43
+   },
+   {
+    "field": "slit.R",
+    "tau": 0.0,
+    "edge_splits": 32,
+    "face_connects": 38
+   },
+   {
+    "field": "shade",
+    "tau": 0.0,
+    "edge_splits": 353,
+    "face_connects": 396
+   },
+   {
+    "field": "stripe",
+    "tau": 0.35,
+    "edge_splits": 529,
+    "face_connects": 615
+   },
+   {
+    "field": "stripe",
+    "tau": -0.35,
+    "edge_splits": 544,
+    "face_connects": 633
+   }
+  ],
+  "seconds": 15.1,
+  "shell_tris_after_cuts": 14224,
+  "tone_islands_merged": 18,
+  "faces_before_merge": {
+   "cloth": 4195,
+   "cloth_fold": 1271,
+   "mist_lavender": 4492,
+   "mist_purple": 1858,
+   "mist_pink": 1729,
+   "eye": 311,
+   "slit": 368
+  }
+ },
+ "chain": {
+  "links_per_strand": 8,
+  "strands_per_wrist": 2,
+  "links_per_wrist": 16,
+  "pitch": 0.258,
+  "link_half_len_w_wire": [
+   0.175,
+   0.09,
+   0.04
+  ],
+  "strand_length": 2.156,
+  "strands": {
+   "outer": {
+    "top": [
+     1.7136,
+     -0.2347,
+     3.4919
+    ],
+    "bottom": [
+     1.73,
+     -0.2347,
+     1.15
+    ],
+    "path_length": 2.342
+   },
+   "inner": {
+    "top": [
+     1.4087,
+     -0.2594,
+     3.3435
+    ],
+    "bottom": [
+     1.41,
+     -0.2594,
+     1.15
+    ],
+    "path_length": 2.1935
+   }
+  },
+  "shackle": {
+   "centre": [
+    1.5612,
+    -0.2471,
+    3.4177
+   ],
+   "R0": 0.17,
+   "tube": 0.05
+  },
+  "rule": "two strands of 8 closed stadium links per wrist hanging from the shackle ring (the sheet's two free-hanging strands); link planes alternate 90 deg (even links face the front)"
+ },
+ "centre_shift": [
+  0.0,
+  0.382214,
+  -0.009437
+ ],
+ "glow": {
+  "default": {
+   "skin": "default",
+   "glowing_regions": [
+    "chain_link",
+    "eye",
+    "slit"
+   ],
+   "peak_x_strength": {
+    "chain_link": 1.1859,
+    "eye": 1.6941,
+    "slit": 1.44
+   },
+   "cap": 2.0,
+   "tiers": {
+    "chain_link": 1.4,
+    "slit": 1.7,
+    "eye": 2.0
+   },
+   "grade": [
+    "chain_link",
+    "slit",
+    "eye"
+   ],
+   "emission_hue_deg": {
+    "chain_link": 356.1,
+    "eye": 356.1,
+    "slit": 356.1
+   },
+   "red_hue_window": [
+    345,
+    10
+   ],
+   "ok": true
+  }
+ },
+ "regions_faces": {
+  "spectormn": {
+   "cloth": 4207,
+   "cloth_fold": 1259,
+   "eye": 311,
+   "slit": 368,
+   "mist_lavender": 4502,
+   "mist_purple": 1876,
+   "mist_pink": 1701,
+   "shackle": 384,
+   "chain_link": 1440,
+   "chain_iron": 480
+  },
+  "spectormn.mist_grade": {
+   "mist_corners": 24237,
+   "alpha_range": [
+    0.1485,
+    0.55
+   ],
+   "light_mix_range": [
+    0.0,
+    0.85
+   ],
+   "grade": {
+    "light_region": "mist_lavender",
+    "light_mix": [
+     0.85,
+     0.0
+    ],
+    "light_z": [
+     3.0,
+     1.8
+    ],
+    "alpha_z": [
+     3.3,
+     0.0
+    ],
+    "alpha_bottom": 0.27,
+    "note": "per-corner gradient: streak colours mix toward mist_lavender by 0.85 at z >= 3.0 -> 0 at z <= 1.8; alpha = region alpha (0.55) x (0.27 + 0.73 x ramp), ramp 1 at z >= 3.3 -> 0 at the floor: 0.55 under the tatters -> 0.15 at the bottom (gate 2026-10-11)"
+   }
+  }
+ },
+ "alpha": {
+  "main": {
+   "cloth": 1.0,
+   "cloth_fold": 1.0,
+   "eye": 1.0,
+   "slit": 1.0,
+   "mist_lavender": 0.550000011920929,
+   "mist_purple": 0.550000011920929,
+   "mist_pink": 0.550000011920929,
+   "shackle": 1.0,
+   "chain_link": 1.0,
+   "chain_iron": 1.0
+  },
+  "material_alpha": 1.0,
+  "mist_render_method": "BLENDED",
+  "mist_transparency_overlap": false,
+  "mist_transparent_shadow": false
+ },
+ "regions_area_share": {
+  "cloth": 0.3189,
+  "cloth_fold": 0.0487,
+  "eye": 0.0025,
+  "slit": 0.0031,
+  "mist_lavender": 0.2928,
+  "mist_purple": 0.0961,
+  "mist_pink": 0.0892,
+  "shackle": 0.0132,
+  "chain_link": 0.1017,
+  "chain_iron": 0.0339
+ },
+ "facing": {
+  "rule": "hood centre at eye height -> the midpoint of the two eyes (the face looks -Y)",
+  "anchor": [
+   0.0,
+   -0.3822,
+   5.8824
+  ],
+  "landmark": [
+   0.0026,
+   -0.7554,
+   5.8793
+  ],
+  "eyes_world": {
+   "L": [
+    0.1633,
+    -0.7557,
+    5.8762
+   ],
+   "R": [
+    -0.158,
+    -0.7551,
+    5.8824
+   ]
+  },
+  "angle_from_minusY_deg": 0.406
+ },
+ "mirror_test": {
+  "about": "world X = 0 (after the centring shift 0.000000)",
+  "max_abs_asymmetry": 0.02663,
+  "p99": 0.00964,
+  "shell_max": 0.02663,
+  "parts_max": 0.0,
+  "rule": "rest pose mirror-symmetric (house rule); the shell's residual = marching-tet triangulation + collapse decimation (fields and grid nodes are exactly symmetric)"
+ },
+ "tris": {
+  "total": 18832,
+  "window": [
+   8000,
+   22000
+  ],
+  "per_part": {
+   "shell (one closed SDF shell)": 14224,
+   "shackle.L": 384,
+   "chain.L.outer": 960,
+   "chain.L.inner": 960,
+   "shackle.R": 384,
+   "chain.R.outer": 960,
+   "chain.R.inner": 960
+  },
+  "per_part_by_owner_group": {
+   "body": 4794,
+   "shoulder": 99,
+   "arm": 1248,
+   "mist": 3548,
+   "wisp": 4535
+  },
+  "per_region": {
+   "cloth": 4207,
+   "cloth_fold": 1259,
+   "eye": 311,
+   "slit": 368,
+   "mist_lavender": 4502,
+   "mist_purple": 1876,
+   "mist_pink": 1701,
+   "shackle": 384,
+   "chain_link": 1440,
+   "chain_iron": 480
+  }
+ },
+ "tier_rationale": "REGULAR role (a line unit): window [8000, 22000]. One smooth cloth / mist shell carries most of the budget (folds, hem tatters, mist bands need density under flat shading; the face zone is densified for the eye / slit outlines); 32 closed chain links + 2 shackles take the rest.",
+ "open_edges": {
+  "per_part": {
+   "shell": 0,
+   "shackle.L": 0,
+   "chain.L.outer": 0,
+   "chain.L.inner": 0,
+   "shackle.R": 0,
+   "chain.R.outer": 0,
+   "chain.R.inner": 0
+  },
+  "open_parts": {},
+  "rule": "one closed SDF shell + closed tori (shackles) + closed stadium tubes (links)"
+ },
+ "measure": {
+  "bbox": [
+   [
+    -1.8588,
+    -1.0297,
+    0.0
+   ],
+   [
+    1.8588,
+    1.0297,
+    6.7301
+   ]
+  ],
+  "height": 6.7301,
+  "width_x": 3.7176,
+  "depth_y": 2.0594,
+  "sheet": {
+   "front_height": 6.74,
+   "back_height": 6.78,
+   "front_width": 4.35,
+   "back_width": 4.09,
+   "front_width_without_mist_halo_to_chain_edges": "x -2.05 .. 1.96 (chains)"
+  },
+  "export_cell_fit_report_only": {
+   "scale": 0.26746,
+   "height_m": 1.8,
+   "footprint_m": 0.9943,
+   "bound_by": "height"
+  }
+ },
+ "sheet_deviations": [
+  "SYMMETRY (house rule): the sheet's face + chest features sit 0.09 u to image right of the body axis (eye midpoint x 240.9 vs axis 232: the face drawn slightly turned) -> built centred on X = 0; the front mist's lower wisps drift to the unit's left (+X: front z 0.39 -0.55..1.31, back z 0.21 -1.50..0.51 mirrored) -> built symmetric",
+  "SIDE VIEW is a 3/4 drawing, not an ortho: every half-depth (head 0.82 x width, torso 0.40-0.47, skirt 0.70 x width), the sleeves' forward hang (wrist y -0.25) and the mist's backward trail (y-centre 0 -> +0.55 at the bottom) are estimates read off it",
+  "CHAINS: the brief says 'a hanging loop ... closed torus-link chain, 12-16 links per loop'; the SHEET draws, at each wrist, TWO strands hanging from the shackle with FREE ends (front x 52 / 85 px, bottoms y ~690-710) -> built as the sheet draws: 2 strands x 8 closed links = 16 per wrist (each link a closed tube; the strands do not join)",
+  "CHAIN COLOUR: the first link (at the shackle) and the free end link of each strand are dark iron (chain_iron, 38,39,43), the rest glow red, as drawn; the sheet's darker shading of the edge-on links is not painted",
+  "CHAIN PLANE: strands separate in X (front x -1.80 / -1.47) and hang straight; the sheet's slight curl / twist of the strands is not modelled",
+  "TATTERS: GEOMETRY -- the robe solid is clipped by a ring of 12 seeded pointed tatters (mirror-symmetric, tips z 2.50-3.00) hanging over an inset mist column; the tatters are solid wedges of the robe (no thin double-sided flaps), their cut undersides take the fold shadow",
+  "MIST: a closed rippled column + 20 strands of 7 closed blobs (fogeist approach), BLENDED alpha graded per corner down the height (no band steps), lavender-white with purple / pink-red streaks (streak regions are hard-edged region boundaries); the sheet's feathered smoke edges and fine curls are not modelled; the mist casts a solid shadow",
+  "EYES / SLITS: one flat glowing red region each, sunk 0.050 / 0.040 u; the sheet's brighter inner core, dark-red rim and soft halo are not modelled",
+  "FOLDS: soft vertical ridges + groove shadows on the robe below the chest and in the mist, plus underside shadow on the sleeves / drapes; the sheet's diagonal draping creases on the hood, shoulders and sleeves are not modelled",
+  "SLEEVE ENDS: the sheet shows no hands; each sleeve ends in a gathered rounded tuft just through the shackle",
+  "GLOW HALOS: the sheet's red glow aura round the chains / eyes is not geometry (emission only)",
+  "INK LINES: the thin dark contour lines are line art, not modelled"
+ ],
+ "bake": {
+  "NORMAL": {
+   "result": [
+    "FINISHED"
+   ],
+   "seconds": 0.8
+  },
+  "AO": {
+   "result": [
+    "FINISHED"
+   ],
+   "seconds": 1.1
+  },
+  "cage_extrusion": 0.04,
+  "cage_rule": "3 x the shell high->low sampled p99 distance (floor BAKE_CAGE_FLOOR 0.04)",
+  "resolution": {
+   "normal": 1024,
+   "ao": 512
+  },
+  "ao_samples": 32,
+  "high_tris": 611824,
+  "high_rule": "the cloth SDF high (eyes + slits sunk) + every closed part",
+  "normal_reference": "FLAT low faces (the cloth reads smooth under the flat_shaded contract); wired into both materials",
+  "uv_texels_normal": 361674,
+  "normal_baked_pct_of_texels": 97.44,
+  "normal_dev_p50_p95": [
+   0.0237,
+   0.1508
+  ],
+  "ao_baked_pct_of_texels": 100.0,
+  "ao_raw_mean": 0.7961,
+  "ao_raw_p05": 0.251,
+  "ao_floor": 0.62,
+  "pixel_sha": {
+   "normal": "0bc7d935b4204cb5",
+   "ao": "82baa2f7f4af49fb"
+  },
+  "seconds": 5.7
+ },
+ "digest_geometry_colour_uv": "122ce5f7772322d4",
+ "palette": {
+  "default": {
+   "cloth": {
+    "rgb": [
+     247,
+     241,
+     237
+    ]
+   },
+   "cloth_fold": {
+    "rgb": [
+     206,
+     198,
+     199
+    ]
+   },
+   "eye": {
+    "rgb": [
+     216,
+     3,
+     17
+    ],
+    "emission": [
+     216,
+     3,
+     17
+    ],
+    "emission_scale": 2.0
+   },
+   "slit": {
+    "rgb": [
+     216,
+     3,
+     17
+    ],
+    "emission": [
+     216,
+     3,
+     17
+    ],
+    "emission_scale": 1.7
+   },
+   "chain_link": {
+    "rgb": [
+     216,
+     3,
+     17
+    ],
+    "emission": [
+     216,
+     3,
+     17
+    ],
+    "emission_scale": 1.4
+   },
+   "shackle": {
+    "rgb": [
+     38,
+     39,
+     43
+    ]
+   },
+   "mist_lavender": {
+    "rgb": [
+     232,
+     210,
+     226
+    ]
+   },
+   "mist_purple": {
+    "rgb": [
+     116,
+     84,
+     111
+    ]
+   },
+   "mist_pink": {
+    "rgb": [
+     185,
+     82,
+     94
+    ]
+   },
+   "chain_iron": {
+    "rgb": [
+     38,
+     39,
+     43
+    ]
+   }
+  },
+  "files": [
+   "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\palettes\\spectormn\\default.json"
+  ],
+  "provenance": "pixel-sampled from the sheet's six palette chips + drawn-surface samples (see the palette notes)"
+ }
+}

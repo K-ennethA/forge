@@ -1,0 +1,22 @@
+{
+ "unit": "petal_cobra",
+ "skin": "default",
+ "description": "Petal Cobra default look, PIXEL-SAMPLED from design/reference/petal_cobra-character-sheet.png (intake.json swatch chips 215,219,202 / 127,146,121 / 76,95,86 / 225,205,170 / 245,212,154 / 41,51,47 + direct medians of the drawn surfaces, sample px cited per region). A pale-sage upright serpent with narrow almond amber eyes, a thin ink smile, three pairs of oval amber torso markings and two large cupped hood petals: inner face green shading from light at the bottom to dark under the curl (five bands), darker vein strokes, a lighter-green back face, and a cream rim rolling over at the top tip. The ink outline 41,51,47 is drawing style and is not a region (only the smile stroke uses it). No glow (the sheet draws none): every region writes zero Glow.",
+ "regions": {
+  "body":             {"rgb": [215, 219, 202], "note": "pale-sage body: chip 215,219,202; drawn medians front head (250,300) 214,218,201 / front tail (250,560) 213,217,200 / side tail (1050,600) 214,218,200"},
+  "eye":              {"rgb": [245, 212, 154], "note": "narrow almond amber eyes: chip 245,212,154; drawn amber blobs front (226,365) 248,223,179 / (277,364) 248,221,173 / side (931,360) 247,222,178"},
+  "marking":          {"rgb": [245, 212, 154], "note": "oval amber torso markings: chip 245,212,154; drawn blobs front (192,406) 244,218,172 / (312,405) 242,219,178 / (200,443) 245,215,167 / (306,478) 243,219,173"},
+  "mouth":            {"rgb": [41, 51, 47],    "note": "the gentle smile is an ink stroke (front (243-262, 393-396), face panel): the ink chip 41,51,47 (intake: inferred by spacing)"},
+  "petal_light":      {"rgb": [127, 146, 121], "note": "inner face, lowest band (row z < 3.0): chip 127,146,121; drawn front R (390,500-520) 129-132,152-157,127-130 / L (100,500) 129,151,126"},
+  "petal_light2":     {"rgb": [116, 138, 115], "note": "inner face band z 3.0-3.4: drawn medians front R (395,460-480) 115-118,137-141,115-118 / L 116-121,138-143,115-119"},
+  "petal_mid":        {"rgb": [104, 126, 107], "note": "inner face band z 3.4-4.0: drawn medians front R (395,400-440) 104-110,125-133,106-112 / L 101-109,122-131,104-111 / side (1095,420-440) 102-105,124-127,106-108"},
+  "petal_mid2":       {"rgb": [96, 117, 101],  "note": "inner face band z 4.0-5.0: drawn medians front R (395,300-380) 95-97,115-119,99-102 / side (1095,300-380) 94-101,114-122,98-105"},
+  "petal_dark":       {"rgb": [76, 95, 86],    "note": "inner face top band under the curl (z > 5.0): chip 76,95,86; drawn front R (395,240-260) 76-80,95-99,85-88"},
+  "petal_vein":       {"rgb": [87, 107, 94],   "note": "vein strokes on the inner face: the sheet draws them DARKER than the surface (local-median line detector, front R (350-455, 280-480) 87,107,94 vs surround 101,122,105; hood panel 79,98,88)"},
+  "petal_back":       {"rgb": [127, 146, 121], "note": "petal back face: chip 127,146,121; drawn back view (560,430) 127,147,120 / (800,400) 128,148,121"},
+  "petal_back_shade": {"rgb": [108, 129, 109], "note": "petal back face lowest band (row z < 3.0): drawn back view (585,500-520) 105-110,126-132,107-110"},
+  "petal_back_vein":  {"rgb": [117, 136, 114], "note": "vein strokes on the back face: drawn back view R (720-850, 300-480) dark-line median 117,136,114 vs surround 128,148,121"},
+  "petal_rim":        {"rgb": [225, 205, 170], "note": "cream rim + rolled top curl: chip 225,205,170 (drawn rim lit median 225,221,200, crease 210,195,164; the chip is the artist's declared rim tone)"}
+ },
+ "material": {"roughness": 0.80, "emission_strength": 1.0, "alpha": 1.0}
+}

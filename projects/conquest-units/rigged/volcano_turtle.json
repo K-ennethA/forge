@@ -1,0 +1,665 @@
+{
+ "unit": "volcano_turtle",
+ "source": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\improved\\volcano_turtle.blend",
+ "fps": 24,
+ "weights": {
+  "max_influences": 4,
+  "unweighted": 0,
+  "sum_dev_max": 2.220446049250313e-16,
+  "per_bone_dominant": {
+   "hips": 294,
+   "spine": 1403,
+   "chest": 1285,
+   "head": 2012,
+   "flame": 904,
+   "tail": 319,
+   "arm_L.upper": 499,
+   "arm_L.fore": 150,
+   "arm_L.fist": 751,
+   "leg_L.thigh": 241,
+   "leg_L.shin": 197,
+   "leg_L.foot": 274,
+   "arm_R.upper": 499,
+   "arm_R.fore": 150,
+   "arm_R.fist": 751,
+   "leg_R.thigh": 239,
+   "leg_R.shin": 208,
+   "leg_R.foot": 271
+  },
+  "rule": "body: membership by SDF ownership (head / tail / legs, +-0.12 blend), the rest hips | spine | chest by height [1.7, 2.65]; legs thigh | shin | foot by height [0.85, 0.25]; arms upper | fore | fist by height [3.05, 2.58]; shell spine -> chest; face decals 1.0 head; flame tongues + flicks 1.0 flame"
+ },
+ "clips": {
+  "idle": {
+   "frames": [
+    1,
+    97
+   ],
+   "period_frames": 96,
+   "seconds": 4.0,
+   "cyclic": true,
+   "seam_main_mm": 0.0,
+   "root_offset_max": 0.0,
+   "clearance_min_z": -0.0,
+   "soles": {
+    "L": {
+     "min_z": -0.0,
+     "lift_max": -0.0,
+     "planted_frames": 96,
+     "frames": 96,
+     "planted_sole_top_z_range": [
+      0.015215,
+      0.015215
+     ]
+    },
+    "R": {
+     "min_z": 1e-06,
+     "lift_max": 0.0,
+     "planted_frames": 96,
+     "frames": 96,
+     "planted_sole_top_z_range": [
+      0.017784,
+      0.017784
+     ]
+    }
+   },
+   "flame_length_scale": [
+    0.9264,
+    1.0736
+   ]
+  },
+  "walk": {
+   "frames": [
+    1,
+    49
+   ],
+   "period_frames": 48,
+   "seconds": 2.0,
+   "cyclic": true,
+   "seam_main_mm": 0.0,
+   "root_offset_max": 0.0,
+   "clearance_min_z": -0.0,
+   "soles": {
+    "L": {
+     "min_z": -0.0,
+     "lift_max": 0.1675,
+     "planted_frames": 25,
+     "frames": 48,
+     "planted_sole_top_z_range": [
+      0.015215,
+      0.015215
+     ]
+    },
+    "R": {
+     "min_z": 1e-06,
+     "lift_max": 0.1675,
+     "planted_frames": 25,
+     "frames": 48,
+     "planted_sole_top_z_range": [
+      0.017784,
+      0.017784
+     ]
+    }
+   },
+   "flame_length_scale": [
+    0.9437,
+    1.1211
+   ]
+  }
+ },
+ "bones": [
+  {
+   "name": "root",
+   "parent": null,
+   "deform": false,
+   "head": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "tail": [
+    0.0,
+    0.0,
+    0.4
+   ]
+  },
+  {
+   "name": "hips",
+   "parent": "root",
+   "deform": true,
+   "head": [
+    0.0,
+    -0.4783,
+    1.0
+   ],
+   "tail": [
+    0.0,
+    -0.522,
+    1.7
+   ]
+  },
+  {
+   "name": "spine",
+   "parent": "hips",
+   "deform": true,
+   "head": [
+    0.0,
+    -0.522,
+    1.7
+   ],
+   "tail": [
+    0.0,
+    -0.5267,
+    2.65
+   ]
+  },
+  {
+   "name": "chest",
+   "parent": "spine",
+   "deform": true,
+   "head": [
+    0.0,
+    -0.5267,
+    2.65
+   ],
+   "tail": [
+    0.0,
+    -0.3095,
+    3.75
+   ]
+  },
+  {
+   "name": "head",
+   "parent": "chest",
+   "deform": true,
+   "head": [
+    0.0,
+    -0.6339,
+    3.75
+   ],
+   "tail": [
+    0.0,
+    -0.6339,
+    4.8
+   ]
+  },
+  {
+   "name": "flame",
+   "parent": "head",
+   "deform": true,
+   "head": [
+    0.0,
+    -0.4839,
+    4.9
+   ],
+   "tail": [
+    0.0,
+    -0.2839,
+    6.65
+   ]
+  },
+  {
+   "name": "arm_L.upper",
+   "parent": "chest",
+   "deform": true,
+   "head": [
+    1.18,
+    -0.2339,
+    3.55
+   ],
+   "tail": [
+    1.3,
+    -0.2839,
+    2.95
+   ]
+  },
+  {
+   "name": "arm_L.fore",
+   "parent": "arm_L.upper",
+   "deform": true,
+   "head": [
+    1.3,
+    -0.2839,
+    2.95
+   ],
+   "tail": [
+    1.38,
+    -0.3839,
+    2.58
+   ]
+  },
+  {
+   "name": "arm_L.fist",
+   "parent": "arm_L.fore",
+   "deform": true,
+   "head": [
+    1.38,
+    -0.3839,
+    2.58
+   ],
+   "tail": [
+    1.38,
+    -0.4839,
+    1.3
+   ]
+  },
+  {
+   "name": "arm_R.upper",
+   "parent": "chest",
+   "deform": true,
+   "head": [
+    -1.18,
+    -0.2339,
+    3.55
+   ],
+   "tail": [
+    -1.3,
+    -0.2839,
+    2.95
+   ]
+  },
+  {
+   "name": "arm_R.fore",
+   "parent": "arm_R.upper",
+   "deform": true,
+   "head": [
+    -1.3,
+    -0.2839,
+    2.95
+   ],
+   "tail": [
+    -1.38,
+    -0.3839,
+    2.58
+   ]
+  },
+  {
+   "name": "arm_R.fist",
+   "parent": "arm_R.fore",
+   "deform": true,
+   "head": [
+    -1.38,
+    -0.3839,
+    2.58
+   ],
+   "tail": [
+    -1.38,
+    -0.4839,
+    1.3
+   ]
+  },
+  {
+   "name": "tail",
+   "parent": "hips",
+   "deform": true,
+   "head": [
+    0.0,
+    0.5161,
+    1.15
+   ],
+   "tail": [
+    0.0,
+    1.4861,
+    0.5
+   ]
+  },
+  {
+   "name": "leg_L.thigh",
+   "parent": "hips",
+   "deform": true,
+   "head": [
+    1.05,
+    -0.3039,
+    1.5
+   ],
+   "tail": [
+    1.05,
+    -0.3039,
+    0.85
+   ]
+  },
+  {
+   "name": "leg_L.shin",
+   "parent": "leg_L.thigh",
+   "deform": true,
+   "head": [
+    1.05,
+    -0.3039,
+    0.85
+   ],
+   "tail": [
+    1.05,
+    -0.3039,
+    0.25
+   ]
+  },
+  {
+   "name": "leg_L.foot",
+   "parent": "leg_L.shin",
+   "deform": true,
+   "head": [
+    1.05,
+    -0.3039,
+    0.25
+   ],
+   "tail": [
+    1.05,
+    -1.1039,
+    0.25
+   ]
+  },
+  {
+   "name": "leg_R.thigh",
+   "parent": "hips",
+   "deform": true,
+   "head": [
+    -1.05,
+    -0.3039,
+    1.5
+   ],
+   "tail": [
+    -1.05,
+    -0.3039,
+    0.85
+   ]
+  },
+  {
+   "name": "leg_R.shin",
+   "parent": "leg_R.thigh",
+   "deform": true,
+   "head": [
+    -1.05,
+    -0.3039,
+    0.85
+   ],
+   "tail": [
+    -1.05,
+    -0.3039,
+    0.25
+   ]
+  },
+  {
+   "name": "leg_R.foot",
+   "parent": "leg_R.shin",
+   "deform": true,
+   "head": [
+    -1.05,
+    -0.3039,
+    0.25
+   ],
+   "tail": [
+    -1.05,
+    -1.1039,
+    0.25
+   ]
+  }
+ ],
+ "bone_count": 19,
+ "deform_bone_count": 18,
+ "digest": {
+  "parts": {
+   "bake_normal": "6a87e17389d0caef",
+   "bake_ao": "633e1284f7ff50ed",
+   "geometry_colour_uv": "555573c96392cdab",
+   "weights": "507532c11d7ed3b1",
+   "keys": "4f74875b6b2d3a08",
+   "clip_samples": "6d9ad6cb68ec596f"
+  },
+  "combined": "09d385fddc6a0dc7"
+ },
+ "glb": {
+  "path": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\rigged\\volcano_turtle.glb",
+  "bytes": 6260276,
+  "seconds": 0.9,
+  "carries": {
+   "materials": [
+    {
+     "name": "volcano_turtle_body",
+     "alphaMode": "OPAQUE",
+     "doubleSided": false,
+     "textures": [
+      "baseColorTexture",
+      "normalTexture"
+     ]
+    },
+    {
+     "name": "volcano_turtle_flame",
+     "alphaMode": "OPAQUE",
+     "doubleSided": false,
+     "textures": []
+    }
+   ],
+   "primitives": [
+    {
+     "mesh": "volcano_turtle",
+     "material": "volcano_turtle_body",
+     "attributes": [
+      "COLOR_0",
+      "COLOR_1",
+      "JOINTS_0",
+      "NORMAL",
+      "POSITION",
+      "TEXCOORD_0",
+      "WEIGHTS_0",
+      "_GLOW"
+     ]
+    },
+    {
+     "mesh": "volcano_turtle",
+     "material": "volcano_turtle_flame",
+     "attributes": [
+      "COLOR_0",
+      "COLOR_1",
+      "JOINTS_0",
+      "NORMAL",
+      "POSITION",
+      "TEXCOORD_0",
+      "WEIGHTS_0",
+      "_GLOW"
+     ]
+    }
+   ],
+   "animations": [
+    "idle",
+    "walk"
+   ],
+   "skins": 1,
+   "joints": 19
+  },
+  "structure": "armature identity + skinned 'volcano_turtle' (opaque body primitive + opaque emissive flame primitive); natural scale; report-only cell fit 0.26847"
+ },
+ "skins": {
+  "default": {
+   "file": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\rigged\\volcano_turtle.blend",
+   "palette": {
+    "skin": {
+     "rgb": [
+      94,
+      77,
+      71
+     ]
+    },
+    "plastron": {
+     "rgb": [
+      170,
+      137,
+      116
+     ]
+    },
+    "plastron_line": {
+     "rgb": [
+      94,
+      77,
+      71
+     ]
+    },
+    "toe": {
+     "rgb": [
+      170,
+      137,
+      116
+     ]
+    },
+    "tail_under": {
+     "rgb": [
+      170,
+      137,
+      116
+     ]
+    },
+    "arm_rock": {
+     "rgb": [
+      94,
+      77,
+      71
+     ]
+    },
+    "knuckle": {
+     "rgb": [
+      170,
+      137,
+      116
+     ]
+    },
+    "shell_plate": {
+     "rgb": [
+      61,
+      57,
+      58
+     ]
+    },
+    "shell_rim": {
+     "rgb": [
+      170,
+      137,
+      116
+     ]
+    },
+    "brow": {
+     "rgb": [
+      31,
+      27,
+      26
+     ]
+    },
+    "eye_socket": {
+     "rgb": [
+      31,
+      27,
+      26
+     ]
+    },
+    "face_line": {
+     "rgb": [
+      31,
+      27,
+      26
+     ]
+    },
+    "eye": {
+     "rgb": [
+      254,
+      143,
+      58
+     ],
+     "emission": [
+      254,
+      143,
+      58
+     ],
+     "emission_scale": 0.65
+    },
+    "crack": {
+     "rgb": [
+      254,
+      143,
+      58
+     ],
+     "emission": [
+      254,
+      143,
+      58
+     ],
+     "emission_scale": 0.6
+    },
+    "lava_drip": {
+     "rgb": [
+      136,
+      58,
+      47
+     ],
+     "emission": [
+      136,
+      58,
+      47
+     ],
+     "emission_scale": 0.5
+    },
+    "crater": {
+     "rgb": [
+      254,
+      143,
+      58
+     ],
+     "emission": [
+      254,
+      143,
+      58
+     ],
+     "emission_scale": 0.7
+    },
+    "flame_outer": {
+     "rgb": [
+      254,
+      143,
+      58
+     ],
+     "emission": [
+      254,
+      143,
+      58
+     ],
+     "emission_scale": 0.75
+    },
+    "flame_inner": {
+     "rgb": [
+      254,
+      192,
+      83
+     ],
+     "emission": [
+      254,
+      192,
+      83
+     ],
+     "emission_scale": 0.9
+    }
+   },
+   "glow": {
+    "skin": "default",
+    "emission_scale_tiers": {
+     "eye": 0.65,
+     "crack": 0.6,
+     "lava_drip": 0.5,
+     "crater": 0.7,
+     "flame_outer": 0.75,
+     "flame_inner": 0.9
+    },
+    "peak_x_strength": {
+     "eye": 0.6475,
+     "crack": 0.5976,
+     "lava_drip": 0.2667,
+     "crater": 0.6973,
+     "flame_outer": 0.7471,
+     "flame_inner": 0.8965
+    },
+    "cap": 2.0,
+    "only_drawn_glow": true,
+    "grade_pass": true,
+    "cap_pass": true
+   }
+  },
+  "rule": "default skin only (brief)"
+ },
+ "improved_report": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\improved\\volcano_turtle.json",
+ "seconds": 59.3
+}

@@ -1,0 +1,490 @@
+{
+ "unit": "winged_cat",
+ "source": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\improved\\winged_cat.blend",
+ "fps": 24,
+ "weights": {
+  "max_influences": 4,
+  "unweighted": 0,
+  "sum_dev_max": 2.220446049250313e-16,
+  "per_bone_dominant": {
+   "spine": 1551,
+   "neck": 1852,
+   "head": 1843,
+   "ear_L": 108,
+   "ear_R": 179,
+   "wing_L.001": 264,
+   "wing_L.002": 361,
+   "wing_R.001": 264,
+   "wing_R.002": 361,
+   "tail.001": 552,
+   "tail.002": 762,
+   "tail.003": 498,
+   "foreleg_L": 203,
+   "foreleg_R": 193
+  },
+  "rule": "shell: soft SDF ownership (tau 0.06) between torso, haunches, neck, collar, head, ears, front legs, tail root; neck spine -> neck -> head by z bands; collar rides the neck; ears blend from the head along the ear axis; front legs blend into the spine at the shoulder; wings + tail blades: rigkit.vine_weights along their chains (parent spine); eyes, pupils, fangs rigid on the head"
+ },
+ "clips": {
+  "idle": {
+   "frames": [
+    1,
+    97
+   ],
+   "period_frames": 96,
+   "seconds": 4.0,
+   "cyclic": true,
+   "seam_main_mm": 0.0,
+   "root_offset_max": 0.0,
+   "clearance_min_z": 0.0,
+   "spine_lift": [
+    0.0,
+    0.01307
+   ],
+   "floor_guard_lift": {
+    "frames_lifted": 88,
+    "max": 0.01307
+   },
+   "wing_tip_L_p2p_xyz": [
+    0.5904,
+    0.4656,
+    0.2792
+   ],
+   "wing_tip_R_p2p_xyz": [
+    0.5904,
+    0.4656,
+    0.2792
+   ],
+   "tail_tip_p2p_xyz": [
+    0.9106,
+    0.0878,
+    0.0743
+   ],
+   "head_top_p2p_xyz": [
+    0.0148,
+    0.0484,
+    0.0126
+   ]
+  },
+  "walk": {
+   "frames": [
+    1,
+    49
+   ],
+   "period_frames": 48,
+   "seconds": 2.0,
+   "cyclic": true,
+   "seam_main_mm": 0.0,
+   "root_offset_max": 0.0,
+   "clearance_min_z": 0.0001,
+   "spine_lift": [
+    0.00297,
+    0.03141
+   ],
+   "floor_guard_lift": {
+    "frames_lifted": 48,
+    "max": 0.03141
+   },
+   "wing_tip_L_p2p_xyz": [
+    0.3811,
+    0.2591,
+    0.1709
+   ],
+   "wing_tip_R_p2p_xyz": [
+    0.3811,
+    0.2591,
+    0.1706
+   ],
+   "tail_tip_p2p_xyz": [
+    0.7317,
+    0.0636,
+    0.0598
+   ],
+   "head_top_p2p_xyz": [
+    0.0846,
+    0.0399,
+    0.0403
+   ]
+  }
+ },
+ "clip_seconds": 1.4,
+ "bones": [
+  {
+   "name": "root",
+   "parent": null,
+   "deform": false,
+   "head": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "tail": [
+    0.0,
+    0.0,
+    0.4
+   ]
+  },
+  {
+   "name": "spine",
+   "parent": "root",
+   "deform": true,
+   "head": [
+    0.0,
+    -0.2322,
+    0.5508
+   ],
+   "tail": [
+    0.0,
+    -0.7022,
+    1.3808
+   ]
+  },
+  {
+   "name": "neck",
+   "parent": "spine",
+   "deform": true,
+   "head": [
+    0.0,
+    -0.7022,
+    1.3808
+   ],
+   "tail": [
+    0.0,
+    -0.9322,
+    1.9808
+   ]
+  },
+  {
+   "name": "head",
+   "parent": "neck",
+   "deform": true,
+   "head": [
+    0.0,
+    -0.9322,
+    1.9808
+   ],
+   "tail": [
+    0.0,
+    -1.0722,
+    3.4008
+   ]
+  },
+  {
+   "name": "ear_L",
+   "parent": "head",
+   "deform": true,
+   "head": [
+    0.6206,
+    -0.7578,
+    3.4444
+   ],
+   "tail": [
+    0.84,
+    -0.8422,
+    4.2208
+   ]
+  },
+  {
+   "name": "ear_R",
+   "parent": "head",
+   "deform": true,
+   "head": [
+    -0.6206,
+    -0.7578,
+    3.4444
+   ],
+   "tail": [
+    -0.84,
+    -0.8422,
+    4.2208
+   ]
+  },
+  {
+   "name": "wing_L.001",
+   "parent": "spine",
+   "deform": true,
+   "head": [
+    0.26,
+    -0.0622,
+    1.5708
+   ],
+   "tail": [
+    0.8739,
+    0.6442,
+    1.9654
+   ]
+  },
+  {
+   "name": "wing_L.002",
+   "parent": "wing_L.001",
+   "deform": true,
+   "head": [
+    0.8739,
+    0.6442,
+    1.9654
+   ],
+   "tail": [
+    1.5,
+    1.0978,
+    2.6208
+   ]
+  },
+  {
+   "name": "wing_R.001",
+   "parent": "spine",
+   "deform": true,
+   "head": [
+    -0.26,
+    -0.0622,
+    1.5708
+   ],
+   "tail": [
+    -0.8739,
+    0.6442,
+    1.9654
+   ]
+  },
+  {
+   "name": "wing_R.002",
+   "parent": "wing_R.001",
+   "deform": true,
+   "head": [
+    -0.8739,
+    0.6442,
+    1.9654
+   ],
+   "tail": [
+    -1.5,
+    1.0978,
+    2.6208
+   ]
+  },
+  {
+   "name": "tail.001",
+   "parent": "spine",
+   "deform": true,
+   "head": [
+    0.0,
+    0.4678,
+    0.9508
+   ],
+   "tail": [
+    0.0,
+    1.0427,
+    1.0099
+   ]
+  },
+  {
+   "name": "tail.002",
+   "parent": "tail.001",
+   "deform": true,
+   "head": [
+    0.0,
+    1.0427,
+    1.0099
+   ],
+   "tail": [
+    0.0,
+    1.6176,
+    1.0689
+   ]
+  },
+  {
+   "name": "tail.003",
+   "parent": "tail.002",
+   "deform": true,
+   "head": [
+    0.0,
+    1.6176,
+    1.0689
+   ],
+   "tail": [
+    0.0,
+    2.1926,
+    1.128
+   ]
+  },
+  {
+   "name": "foreleg_L",
+   "parent": "spine",
+   "deform": true,
+   "head": [
+    0.36,
+    -0.9322,
+    1.1508
+   ],
+   "tail": [
+    0.38,
+    -1.2222,
+    0.1208
+   ]
+  },
+  {
+   "name": "foreleg_R",
+   "parent": "spine",
+   "deform": true,
+   "head": [
+    -0.36,
+    -0.9322,
+    1.1508
+   ],
+   "tail": [
+    -0.38,
+    -1.2222,
+    0.1208
+   ]
+  }
+ ],
+ "bone_count": 15,
+ "deform_bone_count": 14,
+ "digest": {
+  "parts": {
+   "bake_normal": "62f46766506c0ffd",
+   "bake_ao": "5d5e9b64f46aadf5",
+   "geometry_colour_uv": "12a9ad136a3bd51c",
+   "weights": "94bb72131d6ae34c",
+   "keys": "f0a01a7c303338e3",
+   "clip_samples": "b00f90d9cef9209c"
+  },
+  "combined": "b0304b4529c560d8"
+ },
+ "glb": {
+  "path": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\rigged\\winged_cat.glb",
+  "bytes": 5804736,
+  "seconds": 0.7,
+  "carries": {
+   "materials": [
+    {
+     "name": "winged_cat_body",
+     "alphaMode": "OPAQUE",
+     "doubleSided": false,
+     "textures": [
+      "baseColorTexture",
+      "normalTexture"
+     ]
+    }
+   ],
+   "primitives": [
+    {
+     "mesh": "winged_cat",
+     "material": "winged_cat_body",
+     "attributes": [
+      "COLOR_0",
+      "COLOR_1",
+      "JOINTS_0",
+      "NORMAL",
+      "POSITION",
+      "TEXCOORD_0",
+      "WEIGHTS_0",
+      "_GLOW"
+     ]
+    }
+   ],
+   "animations": [
+    "idle",
+    "walk"
+   ],
+   "skins": 1,
+   "joints": 15
+  },
+  "structure": "armature identity + skinned 'winged_cat' (one opaque body material); natural scale; report-only cell fit 0.42082"
+ },
+ "skins": {
+  "default": {
+   "file": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\rigged\\winged_cat.blend",
+   "palette": {
+    "fur": {
+     "rgb": [
+      24,
+      180,
+      60
+     ]
+    },
+    "ear_inner": {
+     "rgb": [
+      245,
+      237,
+      229
+     ]
+    },
+    "collar": {
+     "rgb": [
+      245,
+      44,
+      29
+     ]
+    },
+    "mouth": {
+     "rgb": [
+      250,
+      243,
+      237
+     ]
+    },
+    "eye": {
+     "rgb": [
+      253,
+      248,
+      246
+     ]
+    },
+    "pupil": {
+     "rgb": [
+      8,
+      9,
+      8
+     ]
+    },
+    "fang": {
+     "rgb": [
+      254,
+      253,
+      254
+     ]
+    },
+    "wing": {
+     "rgb": [
+      24,
+      180,
+      60
+     ]
+    },
+    "wing_root": {
+     "rgb": [
+      18,
+      106,
+      41
+     ]
+    },
+    "wing_vein": {
+     "rgb": [
+      18,
+      128,
+      45
+     ]
+    },
+    "tail": {
+     "rgb": [
+      69,
+      27,
+      18
+     ]
+    },
+    "tail_line": {
+     "rgb": [
+      41,
+      15,
+      10
+     ]
+    }
+   },
+   "glow": {
+    "skin": "default",
+    "glowing_regions": [],
+    "rule": "no glow (the sheet draws none): zero Glow"
+   }
+  },
+  "rule": "default skin only (brief)"
+ },
+ "improved_report": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\improved\\winged_cat.json",
+ "seconds": 26.8
+}

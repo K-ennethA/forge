@@ -1,0 +1,2 @@
+C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\improve\eye_totem_build.py:554: DeprecationWarning: 'Material.use_nodes' is expected to be removed in Blender 6.0
+  mat.use_nodes = True

@@ -1,0 +1,20 @@
+{
+ "unit": "winged_cat",
+ "skin": "default",
+ "description": "Winged Cat default look, PIXEL-SAMPLED from design/reference/winged_cat-character-sheet.png (intake.json swatch chips 24,180,60 / 18,106,41 / 245,44,29 / 69,27,18 / 245,237,229 + direct medians of the drawn surfaces, sample px cited per region). A bright-green sitting cat with cream inner ears, white almond eyes with black slit pupils, an open cream-white mouth with two white fangs, a fluffy red-orange collar, two bright-green leaf / bat wings with dark-green roots + veins, and a dark-brown broom / fan tail with darker layer lines. The black ink outline is drawing style and is not a region. No glow (the sheet draws none): every region writes zero Glow.",
+ "regions": {
+  "fur":        {"rgb": [24, 180, 60],   "note": "bright-green body: chip 24,180,60; drawn medians side body (1020,620) 23,179,59 / side head (940,460) 22,179,58 / back head (617,420) 22,179,58 / front face (180,470) 23,181,60"},
+  "ear_inner":  {"rgb": [245, 237, 229], "note": "cream inner ear: chip 245,237,229 (drawn side near ear (928,340) 250,246,241 / front ear (120,340) 250,242,234, the chip is the darker of the three)"},
+  "collar":     {"rgb": [245, 44, 29],   "note": "fluffy red-orange collar: chip 245,44,29; drawn side (920,560) 245,44,28 / back (620,515) 245,39,26"},
+  "mouth":      {"rgb": [250, 243, 237], "note": "open-mouth interior (cream-white): face panel (1320,185) 250,243,237; side view (845,505) 250,248,247"},
+  "eye":        {"rgb": [253, 248, 246], "note": "almond eye white: side eye (885,435) 253,248,246; face panel (1355,113) 249,244,240"},
+  "pupil":      {"rgb": [8, 9, 8],       "note": "black vertical slit pupil: face panel (1283,113) 7,7,7 / side (870,430) 8,11,8"},
+  "fang":       {"rgb": [254, 253, 254], "note": "two small white fangs: brightest decile of the side fang (842,492) 254,253,254; face panel fangs 255,255,255"},
+  "wing":       {"rgb": [24, 180, 60],   "note": "bright-green leaf wings: chip 24,180,60; drawn side wing (1100,470) 23,177,59 / back wing (500,480) 23,179,59"},
+  "wing_root":  {"rgb": [18, 106, 41],   "note": "dark-green wing root (the sheet's dark green sits where the wings meet the back: side (1015,535) median 18,128,45, dark decile 11,97,35; back (590,540)); chip 18,106,41"},
+  "wing_vein":  {"rgb": [18, 128, 45],   "note": "darker-green vein strips (spec 'darker-green veins'; the sheet draws faint streaks from the root): the drawn wing-root shade median (1015,535) 18,128,45 -- between the bright green and the chip, so the veins stay faint"},
+  "tail":       {"rgb": [69, 27, 18],    "note": "dark-brown fan blades: chip 69,27,18; drawn side (1150,600) 68,25,17 / back (600,620) 68,24,17 / tail panel median 67,24,16"},
+  "tail_line":  {"rgb": [41, 15, 10],    "note": "the darker layer line on each blade's overlapped edge: 5th percentile of the drawn brown (the anti-aliased layer lines) side 41,15,10 / back 41,14,10"}
+ },
+ "material": {"roughness": 0.80, "emission_strength": 1.0, "alpha": 1.0}
+}

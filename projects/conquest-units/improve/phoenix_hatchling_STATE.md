@@ -1,0 +1,25 @@
+# phoenix_hatchling STATE (scaffolded 2026-10-10)
+
+- Version: v1.2 (2026-10-10: artist collar verdict - collar half height, COLLAR_CENTRE_T 0.55 thinner at the front/back centre; body top lifted to meet it). DIGEST build=bffbb1c8cbac149e except-bake_normal gate PASS. Checks: improved 7/1 failed, rigged 11/1 failed (cell_fit only). 16,090 tris (REGULAR [8000, 22000]); 0 open edges.
+- Spec: design/review-log.md entry '2026-10-10 — NEW UNITS x4' (section PHOENIX_HATCHLING) + design/reference/phoenix_hatchling-character-sheet.png (intake: design/reference/phoenix_hatchling/intake.json; 3 true orthos)
+- Pattern: firefly (SDF shell: head + crest + beak + collar + pear body + wings + tail; closed parts: legs, rings, toes, pads, eyes, embers, ash, jewel)
+- LOCKED: (nothing yet - awaiting artist verdict)
+- Knobs that matter:
+  - crest: CREST_MAIN, CURL_MAIN, CURL_AXIS
+  - collar + ring: COLLAR_AB, COLLAR_C, COLLAR_FILL, PUFF_BIG, WISP_P, RING_Z, RING_W
+  - face: EYE_HALF_W/H, BEAK_CHAIN, BEAK_SX
+  - body + wings + tail: BODY_RXY/RZ, WING_T/WING_DROP/WING_X0/WING_HEM, TAIL_FEATHERS, TOE_R
+  - clips: IDLE_BREATH, CREST_SWAY, WALK_ROLL, WALK_LIFT
+- Deviations:
+  - The eyes follow the front view (side view: 0.25 u forward of the drawing).
+  - The beak is a symmetric rounded wedge on the centreline (the sheet draws it offset and crescent-hooked).
+  - The glow band is level (the sheet's arc is not reproduced).
+  - The collar is now half height (artist), so the body reads as a taller egg up to the collar (z 0.96-3.07), straighter-sided than the sheet.
+  - The body is narrower under the collar; the hem scallops are subtle.
+  - The crest is slightly narrow, with knob curls.
+  - The back-view tail reads as a small blob.
+  - Embers and ash are static flecks.
+  - Not modelled: the ink outline, rim light, brush strokes.
+- Clips: idle (breathing bob + crest sway) and walk (in-place waddle) are PLACEHOLDER.
+- Unit gates: contract checks (cell_fit report-only), digest twins, bake gate
+- Open artist questions: design/OPEN-QUESTIONS.md section 'Soot Puff / Winged Cat / Phoenix Hatchling / Chest Monster' (N4, N5)

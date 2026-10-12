@@ -1,0 +1,550 @@
+{
+ "unit": "mystic_snow_spirit",
+ "conquest_character_id": "mystic_snow_spirit",
+ "source": "none: from-scratch unit (sheet design/reference/mystic_snow_spirit-character-sheet.png)",
+ "tier": "regular",
+ "tri_budget": [
+  8000,
+  22000
+ ],
+ "units": "sheet units: 1 unit = 100 px; floor z = 0 at the sheet floor line (front y 821); X from the front view (axis 248), Y from the side view (axis 1032)",
+ "overrides": {},
+ "axes": {
+  "front": 248.0,
+  "side": 1032.0,
+  "back": 671.0,
+  "rule": "re-pinned (intake --axis front=248,back=671): front/back = the head + middle-ball axis; side kept at the skirt base centre"
+ },
+ "sdf": {
+  "step": 0.02,
+  "band": 0.16,
+  "grid": [
+   195,
+   177,
+   255
+  ],
+  "high_tris": 862092,
+  "crumbs": {
+   "pieces": 1,
+   "kept": 1,
+   "dropped_verts": 0
+  },
+  "low_source": "the same SDF without the snow lumps (smooth), 857756 tris",
+  "rim_lumps": 14,
+  "foot_lumps": 10,
+  "seconds": 24.5
+ },
+ "retopo": {
+  "method": "SDF marching tetrahedra (step 0.020) -> collapse decimation (deterministic) -> mirror-halved",
+  "decimated_tris": 6520,
+  "specks": {
+   "pieces": 1,
+   "kept": 1,
+   "dropped_verts": 0
+  },
+  "floor_snap": {
+   "verts_snapped_to_floor": 2,
+   "worst_dip": 0.000127
+  },
+  "mirror_halved": {
+   "seam_verts": 252,
+   "rule": "X >= 0 half + its mirror (symmetric rest mesh)"
+  },
+  "low_to_high": {
+   "mean": 0.00397,
+   "p99": 0.01373,
+   "max": 0.02051
+  },
+  "high_to_low_sampled": {
+   "p99": 0.01274,
+   "max": 0.02012
+  },
+  "bbox_low_over_high": [
+   0.9948,
+   0.99619,
+   0.99835
+  ]
+ },
+ "iso_cuts": {
+  "body": {
+   "cuts": [
+    {
+     "field": "shade",
+     "tau": 0.0,
+     "edge_splits": 654,
+     "face_connects": 753
+    },
+    {
+     "field": "glow",
+     "tau": 0.0,
+     "edge_splits": 158,
+     "face_connects": 170
+    },
+    {
+     "degenerate_dissolved_faces": 0,
+     "sliver_edge_flips": 0,
+     "min_face_area": 1.1853027359620683e-07
+    }
+   ],
+   "tris_after": 8144,
+   "seconds": 2.6
+  }
+ },
+ "centre_shift": [
+  0.0,
+  0.025266,
+  0.0
+ ],
+ "mirror_test": {
+  "rule": "every rest vertex mirrored across X = 0 -> distance to the nearest point of the mesh",
+  "max_abs_asymmetry": 0.0,
+  "p99": 0.0,
+  "mean": 0.0,
+  "shift_x": 0.0,
+  "bbox_x": [
+   -2.31557,
+   2.31557
+  ]
+ },
+ "glow": {
+  "default": {
+   "skin": "default",
+   "emission_scale_tiers": {
+    "snow_glow": 0.3,
+    "flame_outer": 0.85,
+    "flame_mid": 1.0,
+    "flame_core": 1.2
+   },
+   "peak_x_strength": {
+    "snow_glow": 0.3776,
+    "flame_outer": 1.265,
+    "flame_mid": 1.2588,
+    "flame_core": 1.7859
+   },
+   "cap": 2.0,
+   "only_drawn_glow": true,
+   "grade_pass": true,
+   "faint_base_glow": true,
+   "cap_pass": true
+  }
+ },
+ "regions_faces": {
+  "mystic_snow_spirit": {
+   "snow": 7096,
+   "snow_shade": 1354,
+   "snow_glow": 1102,
+   "nose": 90,
+   "eye_rim": 144,
+   "eye_iris": 96,
+   "pupil": 96,
+   "eye_hi": 100,
+   "mouth": 64,
+   "wood": 1102,
+   "orb": 1210,
+   "flame_outer": 1470,
+   "flame_mid": 420,
+   "flame_core": 360
+  }
+ },
+ "regions_area_share": {
+  "snow": 0.4179,
+  "snow_shade": 0.0794,
+  "snow_glow": 0.0375,
+  "nose": 0.0027,
+  "eye_rim": 0.0029,
+  "eye_iris": 0.0009,
+  "pupil": 0.0003,
+  "eye_hi": 0.0001,
+  "mouth": 0.0003,
+  "wood": 0.1075,
+  "orb": 0.0851,
+  "flame_outer": 0.1544,
+  "flame_mid": 0.0498,
+  "flame_core": 0.0613
+ },
+ "facing": {
+  "rule": "head centre at eye height -> the head's front surface between the eyes (the face looks -Y)",
+  "anchor": [
+   0.0,
+   -0.5803,
+   4.33
+  ],
+  "landmark": [
+   0.0,
+   -1.3145,
+   4.33
+  ],
+  "angle_from_minusY_deg": 0.0
+ },
+ "tris": {
+  "total": 19312,
+  "window": [
+   8000,
+   22000
+  ],
+  "per_part_family": {
+   "body": 8144,
+   "eye": 576,
+   "eye_hi": 160,
+   "mouth": 96,
+   "nose": 160,
+   "horn": 392,
+   "horn_twig_a": 216,
+   "horn_twig_b": 192,
+   "horn_snow": 768,
+   "arm": 576,
+   "finger": 648,
+   "finger_snow": 576,
+   "arm_snow": 768,
+   "orb": 2200,
+   "flame": 3840
+  },
+  "per_region": {
+   "snow": 7096,
+   "snow_shade": 1354,
+   "snow_glow": 1102,
+   "nose": 90,
+   "eye_rim": 144,
+   "eye_iris": 96,
+   "pupil": 96,
+   "eye_hi": 100,
+   "mouth": 64,
+   "wood": 1102,
+   "orb": 1210,
+   "flame_outer": 1470,
+   "flame_mid": 420,
+   "flame_core": 360
+  }
+ },
+ "tier_rationale": "REGULAR role (a line unit): window [8000, 22000]. The SDF snowman shell (head, middle ball, skirt + lumpy rim, iso-cut) carries the largest share; five snowballs with 10-lick flames, two branch arms with fingers, two forked horns, the face parts the rest.",
+ "open_edges": {
+  "closed_parts": 120,
+  "parts": 120,
+  "open_parts": {},
+  "rule": "every part is closed: the SDF shell (mirror-welded), branches, snow clumps, domes, ellipsoids, flame licks"
+ },
+ "measure": {
+  "bbox": [
+   [
+    -2.3156,
+    -1.5576,
+    0.0
+   ],
+   [
+    2.3156,
+    1.5576,
+    7.09
+   ]
+  ],
+  "height": 7.09,
+  "width_x": 4.6311,
+  "depth_y": 3.1152,
+  "sheet_height_units": {
+   "front": 7.04,
+   "back": 7.08,
+   "side": 7.03
+  },
+  "sheet_width_units_front": 4.67,
+  "export_cell_fit_report_only": {
+   "scale": 0.25388,
+   "height_m": 1.8,
+   "footprint_m": 1.1757,
+   "bound_by": "height"
+  }
+ },
+ "bake": {
+  "NORMAL": {
+   "result": [
+    "FINISHED"
+   ],
+   "seconds": 1.1
+  },
+  "AO": {
+   "result": [
+    "FINISHED"
+   ],
+   "seconds": 0.5
+  },
+  "cage_extrusion": 0.0382,
+  "cage_rule": "3 x the body's sampled high->low p99 distance (floor 0.02)",
+  "resolution": {
+   "normal": 1024,
+   "ao": 512
+  },
+  "high_tris": 875432,
+  "high_rule": "the body SDF high (with the gentle snow lumps) + every closed part except the flames",
+  "body_uv_texels_normal": 212390,
+  "normal_baked_pct_of_body_texels": 99.77,
+  "normal_detail_fraction_dev_gt_0.05": 0.3781,
+  "normal_dev_p99": 0.4884,
+  "ao_baked_pct_of_body_texels": 100.0,
+  "ao_mean": 0.7929,
+  "ao_p05": 0.0,
+  "pixel_sha": {
+   "normal": "cbdf123cb69a18e9",
+   "ao": "c100d3b7df25a2d1"
+  },
+  "seconds": 4.2
+ },
+ "digest_geometry_colour_uv": "b9365f01a19a1365",
+ "palette": {
+  "default": {
+   "snow": {
+    "rgb": [
+     237,
+     238,
+     242
+    ]
+   },
+   "snow_shade": {
+    "rgb": [
+     193,
+     215,
+     237
+    ]
+   },
+   "snow_glow": {
+    "rgb": [
+     92,
+     173,
+     214
+    ],
+    "emission": [
+     92,
+     173,
+     214
+    ],
+    "emission_scale": 0.3
+   },
+   "nose": {
+    "rgb": [
+     246,
+     245,
+     247
+    ]
+   },
+   "eye_rim": {
+    "rgb": [
+     85,
+     120,
+     183
+    ]
+   },
+   "eye_iris": {
+    "rgb": [
+     204,
+     219,
+     243
+    ]
+   },
+   "pupil": {
+    "rgb": [
+     15,
+     24,
+     38
+    ]
+   },
+   "eye_hi": {
+    "rgb": [
+     248,
+     247,
+     240
+    ]
+   },
+   "mouth": {
+    "rgb": [
+     46,
+     67,
+     108
+    ]
+   },
+   "wood": {
+    "rgb": [
+     156,
+     122,
+     109
+    ]
+   },
+   "orb": {
+    "rgb": [
+     195,
+     220,
+     253
+    ]
+   },
+   "flame_outer": {
+    "rgb": [
+     139,
+     93,
+     253
+    ],
+    "emission": [
+     139,
+     93,
+     253
+    ],
+    "emission_scale": 0.85
+   },
+   "flame_mid": {
+    "rgb": [
+     92,
+     173,
+     214
+    ],
+    "emission": [
+     92,
+     173,
+     214
+    ],
+    "emission_scale": 1.0
+   },
+   "flame_core": {
+    "rgb": [
+     236,
+     248,
+     253
+    ],
+    "emission": [
+     236,
+     248,
+     253
+    ],
+    "emission_scale": 1.2
+   }
+  },
+  "files": [
+   "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\palettes\\mystic_snow_spirit\\default.json"
+  ],
+  "provenance": "pixel-sampled from the sheet's palette chips (intake swatches) + drawn-surface samples (see the palette notes)"
+ },
+ "face": {
+  "eye_L": {
+   "surface": [
+    0.27,
+    -1.2475,
+    4.33
+   ],
+   "normal": [
+    0.2946,
+    -0.9243,
+    0.2427
+   ],
+   "half_uv": [
+    0.12,
+    0.165
+   ]
+  },
+  "nose_tip": [
+   0.0,
+   -1.5323,
+   3.8219
+  ],
+  "mouth": [
+   0.0,
+   -1.1725,
+   3.74
+  ]
+ },
+ "orbs": {
+  "001": {
+   "kind": "top",
+   "side": "C",
+   "centre": [
+    0.0,
+    0.05,
+    5.89
+   ],
+   "axis": [
+    0.0,
+    0.0,
+    1.0
+   ],
+   "tip": [
+    0.0,
+    0.05,
+    7.09
+   ],
+   "licks": 10
+  },
+  "002": {
+   "kind": "up",
+   "side": "L",
+   "centre": [
+    1.645,
+    0.825,
+    4.79
+   ],
+   "axis": [
+    0.3479,
+    0.1292,
+    0.9286
+   ],
+   "tip": [
+    2.0518,
+    0.9761,
+    5.8759
+   ],
+   "licks": 10
+  },
+  "003": {
+   "kind": "up",
+   "side": "R",
+   "centre": [
+    -1.645,
+    0.825,
+    4.79
+   ],
+   "axis": [
+    -0.3479,
+    0.1292,
+    0.9286
+   ],
+   "tip": [
+    -2.0518,
+    0.9761,
+    5.8759
+   ],
+   "licks": 10
+  },
+  "004": {
+   "kind": "low",
+   "side": "L",
+   "centre": [
+    1.815,
+    0.6,
+    3.18
+   ],
+   "axis": [
+    0.233,
+    0.1341,
+    0.9632
+   ],
+   "tip": [
+    2.0732,
+    0.7486,
+    4.2474
+   ],
+   "licks": 10
+  },
+  "005": {
+   "kind": "low",
+   "side": "R",
+   "centre": [
+    -1.815,
+    0.6,
+    3.18
+   ],
+   "axis": [
+    -0.233,
+    0.1341,
+    0.9632
+   ],
+   "tip": [
+    -2.0732,
+    0.7486,
+    4.2474
+   ],
+   "licks": 10
+  }
+ }
+}

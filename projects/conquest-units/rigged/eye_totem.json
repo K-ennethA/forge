@@ -1,0 +1,296 @@
+{
+ "unit": "eye_totem",
+ "source": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\improved\\eye_totem.blend",
+ "fps": 24,
+ "weights": {
+  "max_influences": 2,
+  "unweighted": 0,
+  "sum_dev_max": 0.0,
+  "per_bone_dominant": {
+   "body": 7186,
+   "spire.001": 1054,
+   "spire.002": 1053,
+   "droplet": 621
+  },
+  "rule": "disc + eye 1.0 body; the spire owned by smoothstep(+-0.10) of (disc distance - spire distance), split along z by rigkit.vine_weights from z 3.15 (body -> spire.001 blend from 0.20 below); neck + droplet the same against the lower SDF -> droplet"
+ },
+ "clips": {
+  "idle": {
+   "frames": [
+    1,
+    97
+   ],
+   "period_frames": 96,
+   "seconds": 4.0,
+   "cyclic": true,
+   "seam_main_mm": 0.0,
+   "root_offset_max": 0.0,
+   "clearance_min_z": 0.00237,
+   "body_lift": [
+    0.0,
+    0.3
+   ],
+   "pitch_deg": [
+    -1.102,
+    1.102
+   ],
+   "roll_deg": [
+    -0.855,
+    0.855
+   ],
+   "spire_tip_p2p_xyz": [
+    0.2406,
+    0.2872,
+    0.2997
+   ],
+   "droplet_tip_p2p_xyz": [
+    0.1076,
+    0.1718,
+    0.3021
+   ]
+  },
+  "walk": {
+   "frames": [
+    1,
+    49
+   ],
+   "period_frames": 48,
+   "seconds": 2.0,
+   "cyclic": true,
+   "seam_main_mm": 0.0,
+   "root_offset_max": 0.0,
+   "clearance_min_z": 0.16155,
+   "body_lift": [
+    0.12,
+    0.18
+   ],
+   "pitch_deg": [
+    7.001,
+    9.002
+   ],
+   "roll_deg": [
+    -1.498,
+    1.498
+   ],
+   "spire_tip_p2p_xyz": [
+    0.3774,
+    0.247,
+    0.0533
+   ],
+   "droplet_tip_p2p_xyz": [
+    0.1579,
+    0.1146,
+    0.0656
+   ]
+  }
+ },
+ "hover": {
+  "rest_height_units": 6.7029,
+  "idle_lift_units": [
+   0.0,
+   0.3
+  ],
+  "walk_lift_units": 0.15,
+  "rule": "rest pose: droplet tip on the floor (contract feet_origin, z 0); idle keys body.location z = IDLE_LIFT[0] .. [1] (slow bob), walk WALK_LIFT + bob; the contract root never moves. The sheet's floor shadow sits well under the tip: the in-game hover height is the artist's open question"
+ },
+ "bones": [
+  {
+   "name": "root",
+   "parent": null,
+   "deform": false,
+   "head": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "tail": [
+    0.0,
+    0.0,
+    0.4
+   ]
+  },
+  {
+   "name": "body",
+   "parent": "root",
+   "deform": true,
+   "head": [
+    0.0006,
+    -0.0012,
+    2.2008
+   ],
+   "tail": [
+    0.0006,
+    -0.0012,
+    3.0008
+   ]
+  },
+  {
+   "name": "spire.001",
+   "parent": "body",
+   "deform": true,
+   "head": [
+    0.0256,
+    -0.0012,
+    3.1508
+   ],
+   "tail": [
+    -0.0074,
+    -0.0012,
+    4.9008
+   ]
+  },
+  {
+   "name": "spire.002",
+   "parent": "spire.001",
+   "deform": true,
+   "head": [
+    -0.0074,
+    -0.0012,
+    4.9008
+   ],
+   "tail": [
+    0.0013,
+    -0.0012,
+    6.7108
+   ]
+  },
+  {
+   "name": "droplet",
+   "parent": "body",
+   "deform": true,
+   "head": [
+    0.0306,
+    -0.0012,
+    1.2508
+   ],
+   "tail": [
+    0.0306,
+    -0.0012,
+    0.0008
+   ]
+  }
+ ],
+ "bone_count": 5,
+ "deform_bone_count": 4,
+ "digest": {
+  "parts": {
+   "bake_normal": "40aeae373a220c08",
+   "bake_ao": "a6d6f3e01db35d13",
+   "geometry_colour_uv": "f5b844c4168922fa",
+   "weights": "cd75ffb0c1a05fc3",
+   "keys": "ac485b6b611e6095",
+   "clip_samples": "c6490db394ad4cf9"
+  },
+  "combined": "59a41bf3656d8c28"
+ },
+ "glb": {
+  "path": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\rigged\\eye_totem.glb",
+  "bytes": 6065624,
+  "seconds": 0.8,
+  "carries": {
+   "materials": [
+    {
+     "name": "eye_totem_body",
+     "alphaMode": "OPAQUE",
+     "doubleSided": false,
+     "textures": [
+      "baseColorTexture",
+      "normalTexture"
+     ]
+    }
+   ],
+   "primitives": [
+    {
+     "mesh": "eye_totem",
+     "material": "eye_totem_body",
+     "attributes": [
+      "COLOR_0",
+      "COLOR_1",
+      "JOINTS_0",
+      "NORMAL",
+      "POSITION",
+      "TEXCOORD_0",
+      "WEIGHTS_0",
+      "_GLOW"
+     ]
+    }
+   ],
+   "animations": [
+    "idle",
+    "walk"
+   ],
+   "skins": 1,
+   "joints": 5
+  },
+  "structure": "armature identity + skinned 'eye_totem' (one opaque body primitive); natural scale; report-only cell fit 0.26854"
+ },
+ "skins": {
+  "default": {
+   "file": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\rigged\\eye_totem.blend",
+   "palette": {
+    "body": {
+     "rgb": [
+      10,
+      3,
+      3
+     ]
+    },
+    "rim": {
+     "rgb": [
+      124,
+      7,
+      7
+     ],
+     "emission": [
+      163,
+      20,
+      23
+     ],
+     "emission_scale": 0.45
+    },
+    "ring": {
+     "rgb": [
+      251,
+      242,
+      233
+     ]
+    },
+    "pupil": {
+     "rgb": [
+      23,
+      10,
+      10
+     ]
+    },
+    "pupil_mark": {
+     "rgb": [
+      124,
+      7,
+      7
+     ],
+     "emission": [
+      163,
+      20,
+      23
+     ],
+     "emission_scale": 0.45
+    }
+   },
+   "glow": {
+    "skin": "default",
+    "glowing_regions": [
+     "pupil_mark",
+     "rim"
+    ],
+    "peak_srgb_x_scale": 0.2876,
+    "peak_x_strength": 0.2876,
+    "cap": 2.0,
+    "ok": true,
+    "rule": "rim = |n_y| < 0.40 of the shape normal (the lens equator: the outline from the front / back); faint tier under the 2.0 cap"
+   }
+  },
+  "rule": "default skin only (brief)"
+ },
+ "improved_report": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\improved\\eye_totem.json",
+ "seconds": 43.0
+}

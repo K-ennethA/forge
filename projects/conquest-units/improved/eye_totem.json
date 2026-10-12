@@ -1,0 +1,367 @@
+{
+ "unit": "eye_totem",
+ "conquest_character_id": "eye_totem",
+ "source": "none: from-scratch unit (sheet design/reference/eye_totem-character-sheet.png)",
+ "tier": "regular",
+ "tri_budget": [
+  8000,
+  22000
+ ],
+ "units": "sheet units: 1 unit = 100 px; front + back true orthos, side a 3/4 slant; floor z = 0 at the droplet tip (it floats)",
+ "overrides": {},
+ "sdf": {
+  "step": 0.02,
+  "band": 0.18,
+  "grid": [
+   124,
+   76,
+   348
+  ],
+  "ops": 3,
+  "high_tris": 465168,
+  "high_verts": 232586,
+  "crumbs": {
+   "pieces": 1,
+   "dropped_verts": 0
+  },
+  "eye_face_projected": {
+   "high_verts": 23053,
+   "max_move": 0.00014
+  },
+  "seconds_fields": 4.9,
+  "seconds": 9.1
+ },
+ "retopo": {
+  "method": "SDF marching tetrahedra (step 0.020) -> collapse decimation (deterministic)",
+  "decimated_tris": 9000,
+  "specks": {
+   "pieces": 1,
+   "dropped_verts": 0
+  },
+  "low_to_high": {
+   "mean": 0.00059,
+   "p99": 0.00165,
+   "max": 0.00225
+  },
+  "high_to_low_sampled": {
+   "p99": 0.00148,
+   "max": 0.00283
+  },
+  "bbox_high": [
+   2.2488,
+   1.3016,
+   6.702
+  ],
+  "bbox_low": [
+   2.2499,
+   1.3029,
+   6.7029
+  ],
+  "bbox_low_over_high": [
+   1.00051,
+   1.001,
+   1.00014
+  ],
+  "seconds": 5.4,
+  "eye_densify": {
+   "zones": [
+    [
+     0.04,
+     2
+    ],
+    [
+     0.04,
+     2
+    ],
+    [
+     0.04,
+     3
+    ]
+   ],
+   "area_rounds": 2,
+   "rounds": [
+    {
+     "round": 1,
+     "faces": 517,
+     "tris_after": 10612
+    },
+    {
+     "round": 2,
+     "faces": 1957,
+     "tris_after": 16602
+    },
+    {
+     "round": 3,
+     "faces": 380,
+     "tris_after": 17840
+    }
+   ],
+   "eye_face_projected": {
+    "low_verts": 4124,
+    "max_move": 0.00115
+   },
+   "new_verts": 4420,
+   "tris_after": 17840
+  }
+ },
+ "iso_cuts": {
+  "cuts": [
+   {
+    "field": "ring",
+    "tau": 0.0,
+    "edge_splits": 191,
+    "face_connects": 241
+   },
+   {
+    "field": "pupil",
+    "tau": 0.0,
+    "edge_splits": 108,
+    "face_connects": 136
+   },
+   {
+    "field": "loop",
+    "tau": 0.0,
+    "edge_splits": 190,
+    "face_connects": 231
+   },
+   {
+    "field": "rim",
+    "tau": 0.0,
+    "edge_splits": 503,
+    "face_connects": 616
+   }
+  ],
+  "seconds": 13.3,
+  "shell_tris_after_cuts": 19824
+ },
+ "centre_shift": [
+  -0.030608,
+  0.001211,
+  -0.000794
+ ],
+ "glow": {
+  "skin": "default",
+  "glowing_regions": [
+   "pupil_mark",
+   "rim"
+  ],
+  "peak_srgb_x_scale": 0.2876,
+  "peak_x_strength": 0.2876,
+  "cap": 2.0,
+  "ok": true,
+  "rule": "rim = |n_y| < 0.40 of the shape normal (the lens equator: the outline from the front / back); faint tier under the 2.0 cap"
+ },
+ "regions_faces": {
+  "eye_totem": {
+   "body": 9693,
+   "rim": 2574,
+   "ring": 4104,
+   "pupil": 2917,
+   "pupil_mark": 536
+  }
+ },
+ "regions_area_share": {
+  "body": 0.734,
+  "rim": 0.1864,
+  "ring": 0.0519,
+  "pupil": 0.0262,
+  "pupil_mark": 0.0014
+ },
+ "facing": {
+  "rule": "disc centre -> the eye's front point (the eye faces -Y)",
+  "anchor": [
+   0.0006,
+   -0.0012,
+   2.2008
+  ],
+  "landmark": [
+   0.0006,
+   -0.651,
+   2.2008
+  ],
+  "angle_from_minusY_deg": 0.0
+ },
+ "eye": {
+  "ring": {
+   "centre_xz": [
+    -0.03,
+    2.185
+   ],
+   "half_wh": [
+    0.725,
+    0.69
+   ],
+   "rough_rms": 0.004
+  },
+  "pupil": {
+   "centre_xz": [
+    -0.059,
+    2.291
+   ],
+   "half_wh": [
+    0.41,
+    0.44
+   ],
+   "rough_rms": 0.0
+  },
+  "loop": {
+   "centre_xz": [
+    -0.1,
+    2.345
+   ],
+   "half_wh": [
+    0.15,
+    0.22
+   ],
+   "half_line_w": 0.0125
+  },
+  "rule": "front-projected ovals iso-cut into the disc's front surface (y < 0); the back is plain body"
+ },
+ "tris": {
+  "total": 19824,
+  "shell": 19824,
+  "shell_before_eye_densify": 9000,
+  "per_region": {
+   "body": 9693,
+   "rim": 2574,
+   "ring": 4104,
+   "pupil": 2917,
+   "pupil_mark": 536
+  },
+  "per_part": {
+   "spire": 4790,
+   "disc (+ eye)": 13791,
+   "neck + droplet": 1243
+  },
+  "per_part_rule": "one SDF shell; each face counted to the piece whose SDF is lowest at its centre"
+ },
+ "tier_rationale": "REGULAR role: window [8000, 22000]. One shell carries everything: ~9000 decimated tris keep the spire's measured notches + wobble in the LOW silhouette; the eye's densified cut curves (ring, pupil, the thin pupil loop) and the rim cuts add the rest.",
+ "open_edges": {
+  "closed_parts": [
+   "shell"
+  ],
+  "open_parts": {},
+  "rule": "one closed SDF shell (spire + disc + droplet); the eye + rim are iso-cut into it (no decals)"
+ },
+ "measure": {
+  "bbox": [
+   [
+    -1.125,
+    -0.6512,
+    0.0
+   ],
+   [
+    1.125,
+    0.6512,
+    6.7029
+   ]
+  ],
+  "height": 6.7029,
+  "width_x": 2.2499,
+  "depth_y": 1.3024,
+  "sheet_px_equivalent": {
+   "height_px": 670.3,
+   "width_px": 225.0,
+   "sheet": {
+    "front": "H 6.65 W 2.24",
+    "back": "H 6.77 W 2.24",
+    "side (3/4)": "H 6.68 D 1.29"
+   }
+  },
+  "export_cell_fit_report_only": {
+   "scale": 0.26854,
+   "height_m": 1.8,
+   "footprint_m": 0.6042,
+   "bound_by": "height"
+  }
+ },
+ "bake": {
+  "NORMAL": {
+   "result": [
+    "FINISHED"
+   ],
+   "seconds": 0.9
+  },
+  "AO": {
+   "result": [
+    "FINISHED"
+   ],
+   "seconds": 0.6
+  },
+  "cage_extrusion": 0.02,
+  "cage_rule": "3 x the sampled high->low p99 distance (floor 0.02)",
+  "resolution": {
+   "normal": 1024,
+   "ao": 512
+  },
+  "high_tris": 465168,
+  "high_rule": "the SDF shell (marching tets: spire + disc + droplet + painterly grain)",
+  "body_uv_texels_normal": 590959,
+  "normal_baked_pct_of_body_texels": 100.0,
+  "normal_detail_fraction_dev_gt_0.05": 0.1008,
+  "ao_baked_pct_of_body_texels": 100.0,
+  "ao_mean": 0.9868,
+  "ao_p05": 0.9373,
+  "pixel_sha": {
+   "normal": "40aeae373a220c08",
+   "ao": "a6d6f3e01db35d13"
+  },
+  "seconds": 6.1
+ },
+ "digest_geometry_colour_uv": "f5b844c4168922fa",
+ "palette": {
+  "default": {
+   "body": {
+    "rgb": [
+     10,
+     3,
+     3
+    ]
+   },
+   "rim": {
+    "rgb": [
+     124,
+     7,
+     7
+    ],
+    "emission": [
+     163,
+     20,
+     23
+    ],
+    "emission_scale": 0.45
+   },
+   "ring": {
+    "rgb": [
+     251,
+     242,
+     233
+    ]
+   },
+   "pupil": {
+    "rgb": [
+     23,
+     10,
+     10
+    ]
+   },
+   "pupil_mark": {
+    "rgb": [
+     124,
+     7,
+     7
+    ],
+    "emission": [
+     163,
+     20,
+     23
+    ],
+    "emission_scale": 0.45
+   }
+  },
+  "files": [
+   "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\palettes\\eye_totem\\default.json"
+  ],
+  "provenance": "pixel-sampled from the sheet's five palette chips (intake swatches) + drawn-surface samples (see the palette notes); the charcoal-gray chip is unused (not drawn on the body)"
+ }
+}

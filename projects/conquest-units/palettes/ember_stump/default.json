@@ -1,0 +1,22 @@
+{
+ "unit": "ember_stump",
+ "skin": "default",
+ "description": "Ember Stump default look, PIXEL-SAMPLED from design/reference/ember_stump-character-sheet.png: the six palette chips (intake.json swatches char 24,23,23 / ash-grey 77,77,77 / bark 79,68,60 / ember red 236,33,18 / flame orange 253,121,29 / ash-pale 193,187,179) cross-checked against the drawn surfaces (service venv PIL, median of a box per surface; boxes in each note). GLOW (drawn on the sheet): the eyes and the fire only; peak emission (max channel / 255 x emission_scale x material emission_strength) stays under the 2.0 cap.",
+ "regions": {
+  "bark":       {"rgb": [79, 68, 60],    "note": "trunk + branch arms + split slabs: chip 79,68,60 (x1398 y864); drawn back-view trunk box (650,450)-(680,480) median 82,70,63, branch (565,520)-(580,530) 88,74,66"},
+  "bark_char":  {"rgb": [24, 23, 23],    "note": "charred bark grooves (vertical streaks): chip 24,23,23 (x1264 y863); 22.6% of the upper back-view trunk box (600-690, 400-600) is darker than lum 40"},
+  "bark_ash":   {"rgb": [193, 187, 179], "note": "ash-pale bark streaks: chip 193,187,179 (x1602 y863); drawn lower back-view trunk specks (lum > 140) median 163,158,149 -- the chip is used (the specks are anti-aliased against the bark)"},
+  "splinter":   {"rgb": [116, 75, 62],   "note": "reddish split wood on the arm slabs' split tops: drawn slab pixels with R - G > 28 (back view 116,75,62, front 117,73,59 / 111,74,61, side 122,83,70), all in y 440-560 (the prong tops); NOT a palette chip -- drawn on the sheet, reported"},
+  "mask":       {"rgb": [79, 66, 58],    "note": "jagged wooden mask slab: drawn front-view mask box (215,415)-(255,428) median 79,66,58 (the bark tone; its own region so it can be nudged apart from the trunk)"},
+  "mask_char":  {"rgb": [24, 23, 23],    "note": "char cracks on the mask face: chip 24,23,23 (FACE DETAIL panel draws a few vertical dark cracks)"},
+  "tooth_edge": {"rgb": [193, 187, 179], "note": "the zig-zag tooth edges: the sheet draws a pale line along every tooth (FACE DETAIL panel); chip 193,187,179"},
+  "mouth":      {"rgb": [24, 23, 23],    "note": "dark mouth back behind the fire: chip 24,23,23"},
+  "eye_socket": {"rgb": [24, 23, 23],    "note": "dark rim round each glowing eye: the sheet's black eye outline, chip 24,23,23"},
+  "eye":        {"rgb": [236, 33, 18],   "emission": [236, 33, 18],  "emission_scale": 0.90, "note": "GLOWING RED angular eyes: chip 236,33,18 (x1466 y865); drawn front eye boxes (200,402)-(218,408) median 245,39,4, (245,401)-(262,407) 239,21,3"},
+  "crest":      {"rgb": [24, 23, 23],    "note": "soot-crest feathers + core: chip 24,23,23; drawn back-view crest centre (620,330)-(660,360) median 1,1,0 (pure black line-art fill) -- the chip is used"},
+  "crest_hi":   {"rgb": [77, 77, 77],    "note": "grey ash highlights on the feathers: chip 77,77,77 (x1332 y863); drawn back-view crest grey (700,280)-(720,300) p75 63,63,63"},
+  "flame_edge": {"rgb": [236, 33, 18],   "emission": [236, 33, 18],  "emission_scale": 1.00, "note": "outer red flame tongues: chip 236,33,18; drawn side-view flame tip (885,470)-(900,480) median 219,28,9"},
+  "flame_core": {"rgb": [253, 121, 29],  "emission": [253, 121, 29], "emission_scale": 1.25, "note": "inner orange flame tongues: chip 253,121,29 (x1534 y863); the drawn flame centre is hotter (side (940,450)-(960,465) median 254,181,1, yellow) -- the chip is used, reported"}
+ },
+ "material": {"roughness": 0.95, "emission_strength": 1.5, "alpha": 1.0}
+}

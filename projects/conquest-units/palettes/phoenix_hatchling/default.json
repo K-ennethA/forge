@@ -1,0 +1,25 @@
+{
+ "unit": "phoenix_hatchling",
+ "skin": "default",
+ "description": "Phoenix Hatchling default look, PIXEL-SAMPLED from design/reference/phoenix_hatchling-character-sheet.png: the five palette chips (intake.json swatches maroon 79,20,17 / orange 245,143,28 / taupe 117,87,80 / pink 232,129,122 / smoke 27,23,22) cross-checked against the drawn surfaces (sampler: service venv PIL, median of a masked box per surface; boxes in each note). Glow (drawn on the sheet): the collar ring, the chest jewel and the ember flecks only; peak emission (max channel / 255 x emission_scale x material emission_strength) stays under the 2.0 phone cap.",
+ "regions": {
+  "head":        {"rgb": [79, 20, 17],    "note": "big round head: chip 79,20,17 (x1259 y870); drawn front interior x150-260 y320-380 median 80,20,17, side 81,20,17, back 82,20,17"},
+  "crest":       {"rgb": [79, 20, 17],    "note": "curled feather crest: same maroon (front crest x185-215 y255-285 median 80,19,16); its own region so it can be nudged apart from the head"},
+  "collar":      {"rgb": [27, 23, 22],    "note": "smoky fluff collar: chip 27,23,22 (inferred by spacing, x1589 y869); drawn collar front x70-340 y515-560 (max channel < 60) median 30,25,24"},
+  "smoke_light": {"rgb": [47, 37, 35],    "note": "the subtle dark-grey puff highlights on the collar: drawn collar boxes, pixels with max channel 40-60 and R - B < 30 (grey, not taupe): front x80-330 y518-550 median 47,37,35, side 47,37,35, back 47,37,35, SMOKE COLLAR panel 47,37,34. v1 used 97,71,66 (the thin brighter strokes + taupe bleed) and read as polka dots"},
+  "body":        {"rgb": [117, 87, 80],   "note": "small round body: chip 117,87,80 (x1423 y869); drawn belly front x180-230 y640-700 median 118,87,81, side 117,86,80"},
+  "wing":        {"rgb": [117, 87, 80],   "note": "feather-scalloped wing shapes: drawn front wing x90-140 y640-690 median 116,85,80 (same taupe)"},
+  "tail":        {"rgb": [117, 87, 80],   "note": "short tail tuft: taupe chip; the side view draws it in shade (x1110-1150 y650-680 median 105,75,69) -- drawn shading, not a separate tone"},
+  "eye":         {"rgb": [7, 6, 6],       "note": "large round glossy black eyes: drawn front eye x85-115 y390-420 (max channel < 60) median 7,6,6; glossy = the eye material's low roughness (build EYE_ROUGHNESS)"},
+  "eye_hi":      {"rgb": [242, 242, 242], "note": "white highlight dot: drawn front x105-116 y388-398 (min channel > 200) median 242,242,242"},
+  "beak":        {"rgb": [245, 143, 28],  "note": "small orange beak: chip 245,143,28 (x1342 y869); drawn front beak median 244,142,25, side 244,143,26"},
+  "ring":        {"rgb": [250, 146, 19],  "emission": [250, 146, 19], "emission_scale": 0.85, "note": "GLOWING ORANGE RING at the head base (the band of head surface where it sits into the collar): drawn front band x120-290 y488-515 (R > 180, G > 60) median 250,146,19"},
+  "jewel":       {"rgb": [249, 149, 28],  "emission": [249, 149, 28], "emission_scale": 0.70, "note": "chest EMBER JEWEL (diamond): drawn front x195-216 y600-632 (R > 180) median 249,149,28"},
+  "jewel_core":  {"rgb": [245, 72, 10],   "emission": [245, 72, 10],  "emission_scale": 0.90, "note": "the jewel's inner red-orange diamond: drawn front x200-212 y608-625 (R > 180, G < 110) median 245,72,10"},
+  "leg":         {"rgb": [232, 129, 122], "note": "thin pink legs + three-toed feet + back toe: chip 232,129,122 (x1506 y869); drawn front leg median 236,133,126, side 233,131,125, foot 233,130,124"},
+  "leg_ring":    {"rgb": [67, 41, 40],    "note": "the leg ring segments (drawn as dark lines across the leg): front x140-165 y745-755 (R < 170) median 67,41,40"},
+  "ember":       {"rgb": [247, 100, 15],  "emission": [247, 100, 15], "emission_scale": 1.00, "note": "small ember flecks by the crest: drawn front x155-210 y175-240 (R > 190) median 247,100,15"},
+  "ash":         {"rgb": [24, 19, 19],    "note": "floating ash flecks round the collar: drawn front blobs x40-62 y460-505 (max channel < 32) median 24,19,19"}
+ },
+ "material": {"roughness": 0.72, "emission_strength": 1.5}
+}

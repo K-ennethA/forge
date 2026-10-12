@@ -1,0 +1,235 @@
+{
+ "unit": "leaf_bird",
+ "sheet": "design/reference/leaf_bird-character-sheet.png",
+ "size_px": [
+  1672,
+  941
+ ],
+ "background_rgb": [
+  31,
+  30,
+  30
+ ],
+ "bg_tol": 26.0,
+ "views": {
+  "front": {
+   "bbox_px": [
+    40,
+    222,
+    429,
+    672
+   ],
+   "axis_x_px": 235.0,
+   "floor_y_px": 671,
+   "height_px": 450,
+   "height_units": 4.5,
+   "width_units": 3.89,
+   "half_width_profile": {
+    "0.00": {
+     "y_px": 671,
+     "half_w_units": 0.0
+    },
+    "0.10": {
+     "y_px": 626,
+     "half_w_units": 0.53
+    },
+    "0.25": {
+     "y_px": 559,
+     "half_w_units": 1.31
+    },
+    "0.50": {
+     "y_px": 446,
+     "half_w_units": 1.81
+    },
+    "0.75": {
+     "y_px": 334,
+     "half_w_units": 0.25
+    },
+    "0.90": {
+     "y_px": 267,
+     "half_w_units": 0.08
+    }
+   },
+   "transform": "z = (671 - y_px) / 100 ; x = (x_px - 235.0) / 100"
+  },
+  "back": {
+   "bbox_px": [
+    456,
+    186,
+    712,
+    694
+   ],
+   "axis_x_px": 586.0,
+   "floor_y_px": 693,
+   "height_px": 508,
+   "height_units": 5.08,
+   "width_units": 2.56,
+   "half_width_profile": {
+    "0.00": {
+     "y_px": 693,
+     "half_w_units": 0.0
+    },
+    "0.10": {
+     "y_px": 642,
+     "half_w_units": 0.13
+    },
+    "0.25": {
+     "y_px": 566,
+     "half_w_units": 1.2
+    },
+    "0.50": {
+     "y_px": 440,
+     "half_w_units": 1.01
+    },
+    "0.75": {
+     "y_px": 313,
+     "half_w_units": 0.89
+    },
+    "0.90": {
+     "y_px": 237,
+     "half_w_units": 0.13
+    }
+   },
+   "transform": "z = (693 - y_px) / 100 ; x = (x_px - 586.0) / 100"
+  },
+  "side": {
+   "bbox_px": [
+    712,
+    250,
+    1212,
+    684
+   ],
+   "axis_x_px": 960.0,
+   "floor_y_px": 683,
+   "height_px": 434,
+   "height_units": 4.34,
+   "width_units": 5.0,
+   "half_width_profile": {
+    "0.00": {
+     "y_px": 683,
+     "half_w_units": 1.22
+    },
+    "0.10": {
+     "y_px": 640,
+     "half_w_units": 2.36
+    },
+    "0.25": {
+     "y_px": 575,
+     "half_w_units": 1.7
+    },
+    "0.50": {
+     "y_px": 466,
+     "half_w_units": 1.99
+    },
+    "0.75": {
+     "y_px": 358,
+     "half_w_units": 2.17
+    },
+    "0.90": {
+     "y_px": 293,
+     "half_w_units": 2.21
+    }
+   },
+   "transform": "z = (683 - y_px) / 100 ; x = (x_px - 960.0) / 100"
+  }
+ },
+ "ortho_frame": {
+  "views": [
+   "front",
+   "side"
+  ],
+  "width_px": 550,
+  "height_px": 570,
+  "below_floor_px": 20,
+  "crops": {
+   "front": [
+    -40,
+    121,
+    510,
+    691
+   ],
+   "back": [
+    311,
+    143,
+    861,
+    713
+   ],
+   "side": [
+    685,
+    133,
+    1235,
+    703
+   ]
+  }
+ },
+ "unnamed_extra_segments_px": [],
+ "swatches": [
+  {
+   "centre_px": [
+    1249.6,
+    758.0
+   ],
+   "rgb": [
+    56,
+    191,
+    33
+   ],
+   "diameter_px": 36
+  },
+  {
+   "centre_px": [
+    1250.0,
+    796.0
+   ],
+   "rgb": [
+    4,
+    115,
+    25
+   ],
+   "diameter_px": 34
+  },
+  {
+   "centre_px": [
+    1249.9,
+    835.0
+   ],
+   "rgb": [
+    121,
+    190,
+    91
+   ],
+   "diameter_px": 34
+  },
+  {
+   "centre_px": [
+    1249.8,
+    873.0
+   ],
+   "rgb": [
+    200,
+    133,
+    30
+   ],
+   "diameter_px": 34
+  },
+  {
+   "centre_px": [
+    1249.8,
+    907.0
+   ],
+   "rgb": [
+    254,
+    248,
+    220
+   ],
+   "diameter_px": 34
+  }
+ ],
+ "swatch_rejects_off_column": [],
+ "base_frac": 0.06,
+ "axis_overrides": {
+  "side": 960.0
+ },
+ "units_rule": "1 sheet unit = 100 px; per view z = (floor_y - y) / 100, x = (x - axis_x) / 100",
+ "caveat": "automatic split: VERIFY intake_overlay.png before dispatch (overlapping views or a floor shadow fuse / extend a view; rerun with --views or --bg-tol). A DARK subject on a dark sheet (shadowbun) loses its outline into the background: the floor line can sit high by ~15 px - check the soles"
+}

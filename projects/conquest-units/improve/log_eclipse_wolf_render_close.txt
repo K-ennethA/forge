@@ -1,0 +1,12 @@
+00:01.516  blend            | Read blend: "C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\rigged\eclipse_wolf.blend"
+00:03.781  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\eclipse_wolf\eclipse_wolf_bands.png'
+00:04.313  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\eclipse_wolf\eclipse_wolf_chest.png'
+00:04.766  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\eclipse_wolf\eclipse_wolf_face.png'
+00:05.125  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\eclipse_wolf\eclipse_wolf_halo.png'
+00:05.500  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\eclipse_wolf\eclipse_wolf_tail.png'
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\eclipse_wolf\eclipse_wolf_bands.png
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\eclipse_wolf\eclipse_wolf_chest.png
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\eclipse_wolf\eclipse_wolf_face.png
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\eclipse_wolf\eclipse_wolf_halo.png
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\eclipse_wolf\eclipse_wolf_tail.png
+Blender 5.0.1 (hash a3db93c5b259 built 2025-12-16 01:32:30)

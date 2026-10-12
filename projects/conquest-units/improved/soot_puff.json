@@ -1,0 +1,352 @@
+{
+ "unit": "soot_puff",
+ "conquest_character_id": "soot_puff",
+ "source": "none: from-scratch unit (sheet design/reference/soot_puff-character-sheet.webp)",
+ "tier": "regular",
+ "tri_budget": [
+  8000,
+  22000
+ ],
+ "units": "sheet units: 1 unit = 100 px; three true orthos; floor z = 0 at the arm tips (it floats)",
+ "overrides": {},
+ "fuzz": {
+  "seed": 7,
+  "puffs": {
+   "big": 459,
+   "small": 1264,
+   "arm.L": 60,
+   "arm.R": 60
+  },
+  "dropped_face_or_arm": {
+   "big": 21,
+   "small": 36
+  },
+  "dust_puffs": 0,
+  "k": 0.06
+ },
+ "sdf": {
+  "step": 0.02,
+  "band": 0.16,
+  "grid": [
+   202,
+   163,
+   212
+  ],
+  "ops": 1846,
+  "high_tris": 970016,
+  "high_verts": 485004,
+  "crumbs": {
+   "pieces": 1,
+   "dropped_verts": 0
+  },
+  "seconds_fields": 5.6,
+  "seconds": 12.2
+ },
+ "retopo": {
+  "method": "SDF marching tetrahedra (step 0.020) -> collapse decimation (deterministic)",
+  "decimated_tris": 10500,
+  "specks": {
+   "pieces": 1,
+   "dropped_verts": 0
+  },
+  "low_to_high": {
+   "mean": 0.00188,
+   "p99": 0.00514,
+   "max": 0.00649
+  },
+  "high_to_low_sampled": {
+   "p99": 0.00448,
+   "max": 0.00887
+  },
+  "bbox_high": [
+   3.8028,
+   3.0339,
+   4.0377
+  ],
+  "bbox_low": [
+   3.8025,
+   3.0347,
+   4.0406
+  ],
+  "bbox_low_over_high": [
+   0.99991,
+   1.00026,
+   1.00074
+  ],
+  "seconds": 12.7,
+  "face_densify": {
+   "rounds": 2,
+   "zone": 0.1,
+   "new_verts": 1113,
+   "tris_after": 12726
+  }
+ },
+ "iso_cuts": {
+  "cuts": [
+   {
+    "field": "eye.L",
+    "tau": 0.0,
+    "edge_splits": 50,
+    "face_connects": 58
+   },
+   {
+    "field": "eye.R",
+    "tau": 0.0,
+    "edge_splits": 52,
+    "face_connects": 59
+   },
+   {
+    "field": "mouth",
+    "tau": 0.0,
+    "edge_splits": 34,
+    "face_connects": 40
+   },
+   {
+    "field": "fuzz",
+    "tau": 0.012,
+    "edge_splits": 2500,
+    "face_connects": 3085
+   },
+   {
+    "field": "dust",
+    "tau": 0.055,
+    "edge_splits": 0,
+    "face_connects": 0
+   }
+  ],
+  "seconds": 25.0,
+  "shell_tris_after_cuts": 17998
+ },
+ "centre_shift": [
+  0.001836,
+  0.006527,
+  -0.015488
+ ],
+ "glow": {
+  "glowing_regions": [],
+  "rule": "no glow: the sheet draws none (Glow attribute all zero)"
+ },
+ "regions_faces": {
+  "soot_puff": {
+   "body": 7714,
+   "fuzz": 9737,
+   "dust": 0,
+   "face": 547
+  }
+ },
+ "regions_area_share": {
+  "body": 0.3452,
+  "fuzz": 0.6483,
+  "dust": 0.0,
+  "face": 0.0065
+ },
+ "facing": {
+  "rule": "ball centre -> the face's front point on the midline (eyes + mouth face -Y)",
+  "anchor": [
+   -0.0018,
+   -0.0065,
+   2.1655
+  ],
+  "landmark": [
+   -0.0018,
+   -1.4476,
+   2.1655
+  ],
+  "angle_from_minusY_deg": 0.0
+ },
+ "face": {
+  "eye.L": {
+   "centre_xz": [
+    0.411,
+    2.453
+   ],
+   "half_wh": [
+    0.165,
+    0.22
+   ],
+   "rule": "front-projected oval iso-cut into the shell"
+  },
+  "eye.R": {
+   "centre_xz": [
+    -0.411,
+    2.453
+   ],
+   "half_wh": [
+    0.165,
+    0.22
+   ],
+   "rule": "front-projected oval iso-cut into the shell"
+  },
+  "mouth": {
+   "centre_xz": [
+    0.0,
+    1.893
+   ],
+   "half_wh": [
+    0.12,
+    0.14
+   ],
+   "rule": "front-projected oval iso-cut into the shell"
+  }
+ },
+ "arms": {
+  "L": {
+   "top": [
+    1.2982,
+    -0.9865,
+    1.3155
+   ],
+   "tip_centre": [
+    1.0882,
+    -0.7665,
+    0.2155
+   ],
+   "radius": [
+    0.19,
+    0.16
+   ],
+   "length": 1.1413
+  },
+  "R": {
+   "top": [
+    -1.3018,
+    -0.9865,
+    1.3155
+   ],
+   "tip_centre": [
+    -1.0918,
+    -0.7665,
+    0.2155
+   ],
+   "radius": [
+    0.19,
+    0.16
+   ],
+   "length": 1.1413
+  }
+ },
+ "tris": {
+  "total": 17998,
+  "shell": 17998,
+  "shell_before_cuts": 12726,
+  "per_region": {
+   "body": 7714,
+   "fuzz": 9737,
+   "dust": 0,
+   "face": 547
+  },
+  "per_part": {
+   "shell (ball + arms + fuzz, one SDF)": 17998
+  }
+ },
+ "tier_rationale": "REGULAR role (a line unit): window [8000, 22000]. One shell carries everything: the big fuzz puffs need ~12k tris to stay lumpy in the LOW silhouette; the small puffs ride the normal map; the colour cuts (face ovals, fuzz crowns, dust) add the rest.",
+ "open_edges": {
+  "closed_parts": [
+   "shell"
+  ],
+  "open_parts": {},
+  "rule": "one closed SDF shell (ball + arms + puffs); the face is iso-cut into it (no decals)"
+ },
+ "measure": {
+  "bbox": [
+   [
+    -1.9012,
+    -1.5174,
+    0.0
+   ],
+   [
+    1.9012,
+    1.5174,
+    4.0406
+   ]
+  ],
+  "height": 4.0406,
+  "width_x": 3.8025,
+  "depth_y": 3.0347,
+  "sheet_px_equivalent": {
+   "height_px": 404.1,
+   "width_px": 380.2,
+   "sheet": {
+    "front": "H 4.09 W 3.90",
+    "side": "H 4.14 D 3.11",
+    "back": "H 4.04 W 3.74"
+   }
+  },
+  "export_cell_fit_report_only": {
+   "scale": 0.44547,
+   "height_m": 1.8,
+   "footprint_m": 1.6939,
+   "bound_by": "height"
+  }
+ },
+ "bake": {
+  "NORMAL": {
+   "result": [
+    "FINISHED"
+   ],
+   "seconds": 1.6
+  },
+  "AO": {
+   "result": [
+    "FINISHED"
+   ],
+   "seconds": 1.0
+  },
+  "cage_extrusion": 0.02,
+  "cage_rule": "3 x the sampled high->low p99 distance (floor 0.02)",
+  "resolution": {
+   "normal": 1024,
+   "ao": 512
+  },
+  "high_tris": 970016,
+  "high_rule": "the SDF shell (marching tets: ball + arms + every puff)",
+  "body_uv_texels_normal": 581793,
+  "normal_baked_pct_of_body_texels": 99.99,
+  "normal_detail_fraction_dev_gt_0.05": 0.6036,
+  "ao_baked_pct_of_body_texels": 100.0,
+  "ao_mean": 0.9424,
+  "ao_p05": 0.749,
+  "pixel_sha": {
+   "normal": "f79fe932b89d0fe8",
+   "ao": "bfad286454a7248b"
+  },
+  "seconds": 6.0
+ },
+ "digest_geometry_colour_uv": "c8f31b5ad2436641",
+ "palette": {
+  "default": {
+   "body": {
+    "rgb": [
+     0,
+     0,
+     0
+    ]
+   },
+   "fuzz": {
+    "rgb": [
+     15,
+     15,
+     15
+    ]
+   },
+   "dust": {
+    "rgb": [
+     113,
+     113,
+     115
+    ]
+   },
+   "face": {
+    "rgb": [
+     255,
+     255,
+     255
+    ]
+   }
+  },
+  "files": [
+   "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\palettes\\soot_puff\\default.json"
+  ],
+  "provenance": "pixel-sampled from the sheet's four palette chips (intake swatches) + drawn-surface samples (see the palette notes)"
+ }
+}

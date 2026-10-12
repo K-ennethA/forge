@@ -1,0 +1,12 @@
+00:01.687  blend            | Read blend: "C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\rigged\shield_rodent.blend"
+00:04.562  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\shield_rodent\shield_rodent_front.png'
+00:05.125  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\shield_rodent\shield_rodent_threequarter.png'
+00:05.625  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\shield_rodent\shield_rodent_side.png'
+00:06.109  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\shield_rodent\shield_rodent_back.png'
+00:06.297  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\shield_rodent\shield_rodent_tactical.png'
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\shield_rodent\shield_rodent_front.png
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\shield_rodent\shield_rodent_threequarter.png
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\shield_rodent\shield_rodent_side.png
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\shield_rodent\shield_rodent_back.png
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\shield_rodent\shield_rodent_tactical.png
+Blender 5.0.1 (hash a3db93c5b259 built 2025-12-16 01:32:30)

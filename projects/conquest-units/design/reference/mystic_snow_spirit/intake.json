@@ -1,0 +1,249 @@
+{
+ "unit": "mystic_snow_spirit",
+ "sheet": "design/reference/mystic_snow_spirit-character-sheet.png",
+ "size_px": [
+  1672,
+  941
+ ],
+ "background_rgb": [
+  36,
+  38,
+  42
+ ],
+ "bg_tol": 26.0,
+ "views": {
+  "front": {
+   "bbox_px": [
+    18,
+    118,
+    485,
+    822
+   ],
+   "axis_x_px": 248.0,
+   "floor_y_px": 821,
+   "height_px": 704,
+   "height_units": 7.04,
+   "width_units": 4.67,
+   "half_width_profile": {
+    "0.00": {
+     "y_px": 821,
+     "half_w_units": 0.06
+    },
+    "0.10": {
+     "y_px": 751,
+     "half_w_units": 1.85
+    },
+    "0.25": {
+     "y_px": 645,
+     "half_w_units": 1.74
+    },
+    "0.50": {
+     "y_px": 470,
+     "half_w_units": 2.36
+    },
+    "0.75": {
+     "y_px": 294,
+     "half_w_units": 2.26
+    },
+    "0.90": {
+     "y_px": 188,
+     "half_w_units": 0.46
+    }
+   },
+   "transform": "z = (821 - y_px) / 100 ; x = (x_px - 248.0) / 100"
+  },
+  "back": {
+   "bbox_px": [
+    485,
+    112,
+    879,
+    820
+   ],
+   "axis_x_px": 671.0,
+   "floor_y_px": 819,
+   "height_px": 708,
+   "height_units": 7.08,
+   "width_units": 3.94,
+   "half_width_profile": {
+    "0.00": {
+     "y_px": 819,
+     "half_w_units": 1.01
+    },
+    "0.10": {
+     "y_px": 748,
+     "half_w_units": 1.44
+    },
+    "0.25": {
+     "y_px": 642,
+     "half_w_units": 1.75
+    },
+    "0.50": {
+     "y_px": 466,
+     "half_w_units": 1.86
+    },
+    "0.75": {
+     "y_px": 289,
+     "half_w_units": 1.68
+    },
+    "0.90": {
+     "y_px": 183,
+     "half_w_units": 0.45
+    }
+   },
+   "transform": "z = (819 - y_px) / 100 ; x = (x_px - 671.0) / 100"
+  },
+  "side": {
+   "bbox_px": [
+    880,
+    120,
+    1185,
+    823
+   ],
+   "axis_x_px": 1032.0,
+   "floor_y_px": 822,
+   "height_px": 703,
+   "height_units": 7.03,
+   "width_units": 3.05,
+   "half_width_profile": {
+    "0.00": {
+     "y_px": 822,
+     "half_w_units": 0.32
+    },
+    "0.10": {
+     "y_px": 752,
+     "half_w_units": 1.34
+    },
+    "0.25": {
+     "y_px": 646,
+     "half_w_units": 1.02
+    },
+    "0.50": {
+     "y_px": 471,
+     "half_w_units": 1.07
+    },
+    "0.75": {
+     "y_px": 296,
+     "half_w_units": 1.38
+    },
+    "0.90": {
+     "y_px": 190,
+     "half_w_units": 0.45
+    }
+   },
+   "transform": "z = (822 - y_px) / 100 ; x = (x_px - 1032.0) / 100"
+  }
+ },
+ "ortho_frame": {
+  "views": [
+   "front",
+   "side"
+  ],
+  "width_px": 520,
+  "height_px": 770,
+  "below_floor_px": 20,
+  "crops": {
+   "front": [
+    -12,
+    71,
+    508,
+    841
+   ],
+   "back": [
+    411,
+    69,
+    931,
+    839
+   ],
+   "side": [
+    772,
+    72,
+    1292,
+    842
+   ]
+  }
+ },
+ "unnamed_extra_segments_px": [],
+ "swatches": [
+  {
+   "centre_px": [
+    1246.7,
+    872.0
+   ],
+   "rgb": [
+    237,
+    238,
+    242
+   ],
+   "diameter_px": 60
+  },
+  {
+   "centre_px": [
+    1321.1,
+    872.0
+   ],
+   "rgb": [
+    193,
+    215,
+    237
+   ],
+   "diameter_px": 60
+  },
+  {
+   "centre_px": [
+    1395.6,
+    872.0
+   ],
+   "rgb": [
+    92,
+    173,
+    214
+   ],
+   "diameter_px": 60
+  },
+  {
+   "centre_px": [
+    1469.3,
+    872.0
+   ],
+   "rgb": [
+    46,
+    67,
+    108
+   ],
+   "diameter_px": 58
+  },
+  {
+   "centre_px": [
+    1542.8,
+    872.0
+   ],
+   "rgb": [
+    139,
+    93,
+    253
+   ],
+   "diameter_px": 60
+  },
+  {
+   "centre_px": [
+    1616.8,
+    872.0
+   ],
+   "rgb": [
+    51,
+    53,
+    58
+   ],
+   "diameter_px": 60,
+   "inferred_by_spacing": true
+  }
+ ],
+ "swatch_rejects_off_column": [],
+ "base_frac": 0.06,
+ "axis_overrides": {
+  "front": 248.0,
+  "back": 671.0
+ },
+ "units_rule": "1 sheet unit = 100 px; per view z = (floor_y - y) / 100, x = (x - axis_x) / 100",
+ "caveat": "automatic split: VERIFY intake_overlay.png before dispatch (overlapping views or a floor shadow fuse / extend a view; rerun with --views or --bg-tol). A DARK subject on a dark sheet (shadowbun) loses its outline into the background: the floor line can sit high by ~15 px - check the soles"
+}

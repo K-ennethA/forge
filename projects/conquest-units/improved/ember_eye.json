@@ -1,0 +1,540 @@
+{
+ "unit": "ember_eye",
+ "conquest_character_id": "ember_eye",
+ "source": "none: from-scratch unit (sheet design/reference/ember_eye-character-sheet.png)",
+ "tier": "regular",
+ "tri_budget": [
+  8000,
+  22000
+ ],
+ "units": "sheet units: 1 unit = 100 px; front + back true orthos, side a 3/4 slant; floor z = 0 at the stem tip (it floats)",
+ "overrides": {},
+ "sdf": {
+  "step": 0.02,
+  "band": 0.14,
+  "grid": [
+   80,
+   49,
+   190
+  ],
+  "ops": 3,
+  "high_tris": 149048,
+  "high_verts": 74526,
+  "crumbs": {
+   "pieces": 1,
+   "dropped_verts": 0
+  },
+  "seconds_fields": 0.1,
+  "seconds": 1.0
+ },
+ "retopo": {
+  "method": "SDF marching tetrahedra (step 0.020) -> collapse decimation (deterministic)",
+  "decimated_tris": 3200,
+  "specks": {
+   "pieces": 1,
+   "dropped_verts": 0
+  },
+  "low_to_high": {
+   "mean": 0.00047,
+   "p99": 0.00138,
+   "max": 0.00204
+  },
+  "high_to_low_sampled": {
+   "p99": 0.00127,
+   "max": 0.00377
+  },
+  "bbox_high": [
+   1.3798,
+   0.6394,
+   3.5385
+  ],
+  "bbox_low": [
+   1.3795,
+   0.6402,
+   3.5391
+  ],
+  "bbox_low_over_high": [
+   0.99978,
+   1.00121,
+   1.00015
+  ],
+  "seconds": 1.8,
+  "densify": {
+   "zones": [
+    [
+     0.02,
+     0
+    ],
+    [
+     0.02,
+     0
+    ],
+    [
+     0.02,
+     0
+    ],
+    [
+     0.02,
+     0
+    ],
+    [
+     0.02,
+     0
+    ]
+   ],
+   "rounds": [
+    {
+     "eye_face_round": 1,
+     "edges_split": 29,
+     "tris_after": 3258
+    },
+    {
+     "eye_face_round": 2,
+     "edges_split": 45,
+     "tris_after": 3348
+    },
+    {
+     "eye_face_round": 3,
+     "edges_split": 94,
+     "tris_after": 3536
+    },
+    {
+     "eye_face_round": 4,
+     "edges_split": 185,
+     "tris_after": 3906
+    },
+    {
+     "eye_face_round": 5,
+     "edges_split": 316,
+     "tris_after": 4538
+    },
+    {
+     "eye_face_round": 6,
+     "edges_split": 487,
+     "tris_after": 5512
+    },
+    {
+     "eye_face_round": 7,
+     "edges_split": 461,
+     "tris_after": 6434
+    },
+    {
+     "eye_face_round": 8,
+     "edges_split": 194,
+     "tris_after": 6822
+    },
+    {
+     "eye_face_round": 9,
+     "edges_split": 38,
+     "tris_after": 6898
+    },
+    {
+     "eye_face_round": 10,
+     "edges_split": 10,
+     "tris_after": 6918
+    },
+    {
+     "eye_face_round": 11,
+     "edges_split": 3,
+     "tris_after": 6924
+    }
+   ],
+   "new_verts": 1862,
+   "tris_after": 6924
+  }
+ },
+ "iso_cuts": {
+  "shell": [
+   {
+    "field": "stem_own",
+    "tau": 0.0,
+    "edge_splits": 21,
+    "face_connects": 26
+   },
+   {
+    "field": "rim_q",
+    "tau": 0.0,
+    "edge_splits": 82,
+    "face_connects": 112
+   },
+   {
+    "field": "rim_y",
+    "tau": 0.0,
+    "edge_splits": 11,
+    "face_connects": 14
+   },
+   {
+    "field": "back",
+    "tau": 0.0,
+    "edge_splits": 95,
+    "face_connects": 116
+   },
+   {
+    "field": "eye",
+    "tau": 0.0,
+    "edge_splits": 174,
+    "face_connects": 206
+   },
+   {
+    "field": "pupil",
+    "tau": 0.0,
+    "edge_splits": 110,
+    "face_connects": 136
+   },
+   {
+    "field": "core",
+    "tau": 0.0,
+    "edge_splits": 46,
+    "face_connects": 58
+   }
+  ],
+  "shell_tris_after_cuts": 8002,
+  "parts": {
+   "flame_top": [
+    {
+     "field": "hi",
+     "tau": 0.0,
+     "edge_splits": 44,
+     "face_connects": 55
+    }
+   ],
+   "flame.L": [
+    {
+     "field": "hi",
+     "tau": 0.0,
+     "edge_splits": 25,
+     "face_connects": 35
+    }
+   ],
+   "flame.R": [
+    {
+     "field": "hi",
+     "tau": 0.0,
+     "edge_splits": 25,
+     "face_connects": 35
+    }
+   ]
+  }
+ },
+ "parts_built": {
+  "flame_top": {
+   "tris_before_cuts": 3552,
+   "open_edges": 0
+  },
+  "flame.L": {
+   "tris_before_cuts": 1624,
+   "open_edges": 0
+  },
+  "flame.R": {
+   "tris_before_cuts": 1624,
+   "open_edges": 0
+  },
+  "ribbon.C": {
+   "tris_before_cuts": 1536,
+   "open_edges": 0
+  },
+  "ribbon.L": {
+   "tris_before_cuts": 1504,
+   "open_edges": 0
+  },
+  "ribbon.R": {
+   "tris_before_cuts": 1504,
+   "open_edges": 0
+  }
+ },
+ "centre_shift": [
+  0.0,
+  0.041365,
+  0.011069
+ ],
+ "glow": {
+  "skin": "default",
+  "glowing_regions": [],
+  "rule": "NO glow: the sheet draws none beyond the bright colours ('bright red with soft highlight'); zero Glow. The artist can ask for an emissive flame tier."
+ },
+ "regions_faces": {
+  "ember_eye": {
+   "body": 2504,
+   "rim": 916,
+   "back_disc": 641,
+   "eye_white": 1809,
+   "pupil": 986,
+   "pupil_core": 172,
+   "stem": 974,
+   "flame": 3457,
+   "flame_hi": 183,
+   "side_flame": 3150,
+   "side_hi": 198,
+   "ribbon": 2304
+  }
+ },
+ "regions_area_share": {
+  "body": 0.0879,
+  "rim": 0.0884,
+  "back_disc": 0.0303,
+  "eye_white": 0.0157,
+  "pupil": 0.0055,
+  "pupil_core": 0.001,
+  "stem": 0.1059,
+  "flame": 0.2978,
+  "flame_hi": 0.0188,
+  "side_flame": 0.1519,
+  "side_hi": 0.0142,
+  "ribbon": 0.1827
+ },
+ "facing": {
+  "rule": "orb centre -> the eye's front point (the eye faces -Y)",
+  "anchor": [
+   0.0,
+   -0.0414,
+   2.8489
+  ],
+  "landmark": [
+   0.005,
+   -0.3014,
+   2.8219
+  ],
+  "angle_from_minusY_deg": 1.102
+ },
+ "eye": {
+  "white_disc": {
+   "centre_xz": [
+    0.005,
+    2.833
+   ],
+   "radius": 0.383
+  },
+  "pupil_teardrop": {
+   "cx_zb_r_tip": [
+    0.0,
+    2.765,
+    0.19,
+    3.125
+   ]
+  },
+  "inner_flame": {
+   "cx_zb_r_tip": [
+    0.005,
+    2.755,
+    0.065,
+    2.965
+   ]
+  },
+  "rule": "front-projected fields iso-cut into the orb's FLAT front face (smooth, no grain, densified)"
+ },
+ "tris": {
+  "total": 19534,
+  "window": [
+   8000,
+   22000
+  ],
+  "shell": 8002,
+  "shell_before_densify_cuts": 3200,
+  "per_part": {
+   "orb (+ eye, rim, back disc)": 7027,
+   "stem": 975,
+   "flame_top": 3640,
+   "flame.L": 1674,
+   "flame.R": 1674,
+   "ribbon.C": 1536,
+   "ribbon.L": 1504,
+   "ribbon.R": 1504
+  },
+  "per_region": {
+   "body": 2504,
+   "rim": 916,
+   "back_disc": 641,
+   "eye_white": 1809,
+   "pupil": 986,
+   "pupil_core": 172,
+   "stem": 974,
+   "flame": 3457,
+   "flame_hi": 183,
+   "side_flame": 3150,
+   "side_hi": 198,
+   "ribbon": 2304
+  },
+  "per_part_rule": "shell faces counted to orb / stem by the lower SDF at the face centre"
+ },
+ "tier_rationale": "REGULAR role: window [8000, 22000]. The orb + stem shell is light (~3200 decimated tris; its eye and rim cut curves densified); the upper flame's thick wavy tongue, the two side flames and the three tattered ribbon strips (closed pillows) carry the rest.",
+ "open_edges": {
+  "per_piece": {
+   "shell": 0,
+   "flame_top": 0,
+   "flame.L": 0,
+   "flame.R": 0,
+   "ribbon.C": 0,
+   "ribbon.L": 0,
+   "ribbon.R": 0
+  },
+  "closed_parts": [
+   "flame.L",
+   "flame.R",
+   "flame_top",
+   "ribbon.C",
+   "ribbon.L",
+   "ribbon.R",
+   "shell"
+  ],
+  "open_parts": {},
+  "rule": "every piece is a closed solid (SDF shell; pillows with welded tips); the eye, rim, back disc and highlight streaks are iso-cut regions (no decals)"
+ },
+ "measure": {
+  "bbox": [
+   [
+    -1.7713,
+    -0.4265,
+    0.0
+   ],
+   [
+    1.7713,
+    0.4265,
+    6.9589
+   ]
+  ],
+  "height": 6.9589,
+  "width_x": 3.5425,
+  "depth_y": 0.8529,
+  "sheet_px_equivalent": {
+   "height_px": 695.9,
+   "width_px": 354.3
+  },
+  "sheet": {
+   "front": "H 6.98 W 3.58",
+   "back": "H 7.44 W 3.60",
+   "side (3/4)": "H 7.43 W 1.61"
+  },
+  "export_cell_fit_report_only": {
+   "scale": 0.25866,
+   "height_m": 1.8,
+   "footprint_m": 0.9163,
+   "bound_by": "height"
+  }
+ },
+ "bake": {
+  "NORMAL": {
+   "result": [
+    "FINISHED"
+   ],
+   "seconds": 0.7
+  },
+  "AO": {
+   "result": [
+    "FINISHED"
+   ],
+   "seconds": 0.7
+  },
+  "cage_extrusion": 0.02,
+  "cage_rule": "3 x the sampled high->low p99 distance (floor 0.02)",
+  "resolution": {
+   "normal": 1024,
+   "ao": 512
+  },
+  "high_tris": 201032,
+  "high_rule": "SDF shell (marching tets: orb + stem - back inset) + every pillow part re-generated at 3x rows + columns (the smooth curvature the flat low faces bake their normals from)",
+  "body_uv_texels_normal": 536941,
+  "normal_baked_pct_of_body_texels": 99.95,
+  "normal_detail_fraction_dev_gt_0.05": 0.0772,
+  "ao_baked_pct_of_body_texels": 100.0,
+  "ao_mean": 0.8768,
+  "ao_p05": 0.3137,
+  "pixel_sha": {
+   "normal": "38b9f7bb9711c881",
+   "ao": "88358bba95016482"
+  },
+  "seconds": 4.8
+ },
+ "digest_geometry_colour_uv": "054d0ddd6a340b5e",
+ "palette": {
+  "default": {
+   "body": {
+    "rgb": [
+     117,
+     32,
+     31
+    ]
+   },
+   "rim": {
+    "rgb": [
+     85,
+     22,
+     21
+    ]
+   },
+   "back_disc": {
+    "rgb": [
+     99,
+     28,
+     27
+    ]
+   },
+   "eye_white": {
+    "rgb": [
+     245,
+     245,
+     246
+    ]
+   },
+   "pupil": {
+    "rgb": [
+     225,
+     4,
+     6
+    ]
+   },
+   "pupil_core": {
+    "rgb": [
+     245,
+     184,
+     182
+    ]
+   },
+   "stem": {
+    "rgb": [
+     115,
+     32,
+     31
+    ]
+   },
+   "flame": {
+    "rgb": [
+     250,
+     3,
+     5
+    ]
+   },
+   "flame_hi": {
+    "rgb": [
+     248,
+     77,
+     79
+    ]
+   },
+   "side_flame": {
+    "rgb": [
+     243,
+     4,
+     6
+    ]
+   },
+   "side_hi": {
+    "rgb": [
+     241,
+     185,
+     183
+    ]
+   },
+   "ribbon": {
+    "rgb": [
+     247,
+     2,
+     4
+    ]
+   }
+  },
+  "files": [
+   "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\palettes\\ember_eye\\default.json"
+  ],
+  "provenance": "pixel-sampled from the drawn surfaces; the sheet's five chips cited per region (see the palette notes)"
+ }
+}

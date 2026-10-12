@@ -1,0 +1,523 @@
+{
+ "unit": "shield_rodent",
+ "source": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\improved\\shield_rodent.blend",
+ "fps": 24,
+ "weights": {
+  "max_influences": 4,
+  "unweighted": 0,
+  "sum_dev_max": 2.220446049250313e-16,
+  "per_bone_dominant": {
+   "body": 5353,
+   "head": 2240,
+   "ear_L": 289,
+   "ear_R": 666,
+   "foreleg_L.leg": 45,
+   "foreleg_L.foot": 237,
+   "hindleg_L.leg": 58,
+   "hindleg_L.foot": 273,
+   "foreleg_R.leg": 35,
+   "foreleg_R.foot": 227,
+   "hindleg_R.leg": 60,
+   "hindleg_R.foot": 280,
+   "tail.001": 10,
+   "tail.002": 10
+  },
+  "rule": "shell: soft SDF ownership (tau 0.05) between belly, neck, head, ears, 4 legs, 4 feet; neck body -> head along -Y; ears blend from the head along the ear axis; legs body -> leg -> foot by the leg arc (each foot rigid below the ankle); the shield-shell parts (plate, rim, skirt, boss, rivets) rigid on body; snout, teeth, eyes, highlights rigid on head; the tail root block rigid on tail.001, the spike rigid on tail.002"
+ },
+ "clips": {
+  "idle": {
+   "frames": [
+    1,
+    97
+   ],
+   "period_frames": 96,
+   "seconds": 4.0,
+   "cyclic": true,
+   "seam_main_mm": 0.0,
+   "root_offset_max": 0.0,
+   "clearance_min_z": 0.0,
+   "body_lift": [
+    0.00012,
+    0.012
+   ],
+   "floor_guard_lift": {
+    "frames_lifted": 26,
+    "max": 0.00012
+   },
+   "leg_length_change_max": 0.01165,
+   "sole_verts": 122,
+   "planted_sole_slide_max_vs_ground": 0.0,
+   "sole_min_z": 0.0,
+   "tail_tip_p2p_xyz": [
+    0.5287,
+    0.0259,
+    0.0536
+   ],
+   "head_top_p2p_xyz": [
+    0.048,
+    0.0539,
+    0.0495
+   ],
+   "ear_L_tip_p2p_xyz": [
+    0.2062,
+    0.2612,
+    0.0359
+   ]
+  },
+  "walk": {
+   "frames": [
+    1,
+    25
+   ],
+   "period_frames": 24,
+   "seconds": 1.0,
+   "cyclic": true,
+   "seam_main_mm": 0.0,
+   "root_offset_max": 0.0,
+   "clearance_min_z": 2e-05,
+   "body_lift": [
+    0.00091,
+    0.01133
+   ],
+   "floor_guard_lift": {
+    "frames_lifted": 18,
+    "max": 0.00019
+   },
+   "leg_length_change_max": 0.08046,
+   "sole_verts": 122,
+   "planted_sole_slide_max_vs_ground": 7e-05,
+   "sole_min_z": 2e-05,
+   "tail_tip_p2p_xyz": [
+    0.1839,
+    0.0048,
+    0.0124
+   ],
+   "head_top_p2p_xyz": [
+    0.0497,
+    0.0289,
+    0.0337
+   ],
+   "ear_L_tip_p2p_xyz": [
+    0.1238,
+    0.0559,
+    0.0455
+   ]
+  }
+ },
+ "clip_seconds": 0.9,
+ "bones": [
+  {
+   "name": "root",
+   "parent": null,
+   "deform": false,
+   "head": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "tail": [
+    0.0,
+    0.0,
+    0.4
+   ]
+  },
+  {
+   "name": "body",
+   "parent": "root",
+   "deform": true,
+   "head": [
+    0.0,
+    -0.3819,
+    0.22
+   ],
+   "tail": [
+    0.0,
+    -0.3819,
+    0.92
+   ]
+  },
+  {
+   "name": "head",
+   "parent": "body",
+   "deform": true,
+   "head": [
+    0.0,
+    -1.5019,
+    0.57
+   ],
+   "tail": [
+    0.0,
+    -2.1719,
+    1.4
+   ]
+  },
+  {
+   "name": "ear_L",
+   "parent": "head",
+   "deform": true,
+   "head": [
+    0.5475,
+    -1.7325,
+    1.4169
+   ],
+   "tail": [
+    0.9669,
+    -1.291,
+    2.333
+   ]
+  },
+  {
+   "name": "ear_R",
+   "parent": "head",
+   "deform": true,
+   "head": [
+    -0.5475,
+    -1.7325,
+    1.4169
+   ],
+   "tail": [
+    -0.9669,
+    -1.291,
+    2.333
+   ]
+  },
+  {
+   "name": "foreleg_L.leg",
+   "parent": "body",
+   "deform": true,
+   "head": [
+    0.8,
+    -1.1519,
+    0.3
+   ],
+   "tail": [
+    0.91,
+    -1.2519,
+    0.17
+   ]
+  },
+  {
+   "name": "foreleg_L.foot",
+   "parent": "foreleg_L.leg",
+   "deform": true,
+   "head": [
+    0.91,
+    -1.2519,
+    0.17
+   ],
+   "tail": [
+    0.93,
+    -1.5919,
+    0.1
+   ]
+  },
+  {
+   "name": "hindleg_L.leg",
+   "parent": "body",
+   "deform": true,
+   "head": [
+    0.8,
+    0.3281,
+    0.3
+   ],
+   "tail": [
+    0.92,
+    0.4481,
+    0.17
+   ]
+  },
+  {
+   "name": "hindleg_L.foot",
+   "parent": "hindleg_L.leg",
+   "deform": true,
+   "head": [
+    0.92,
+    0.4481,
+    0.17
+   ],
+   "tail": [
+    0.94,
+    0.7881,
+    0.1
+   ]
+  },
+  {
+   "name": "foreleg_R.leg",
+   "parent": "body",
+   "deform": true,
+   "head": [
+    -0.8,
+    -1.1519,
+    0.3
+   ],
+   "tail": [
+    -0.91,
+    -1.2519,
+    0.17
+   ]
+  },
+  {
+   "name": "foreleg_R.foot",
+   "parent": "foreleg_R.leg",
+   "deform": true,
+   "head": [
+    -0.91,
+    -1.2519,
+    0.17
+   ],
+   "tail": [
+    -0.93,
+    -1.5919,
+    0.1
+   ]
+  },
+  {
+   "name": "hindleg_R.leg",
+   "parent": "body",
+   "deform": true,
+   "head": [
+    -0.8,
+    0.3281,
+    0.3
+   ],
+   "tail": [
+    -0.92,
+    0.4481,
+    0.17
+   ]
+  },
+  {
+   "name": "hindleg_R.foot",
+   "parent": "hindleg_R.leg",
+   "deform": true,
+   "head": [
+    -0.92,
+    0.4481,
+    0.17
+   ],
+   "tail": [
+    -0.94,
+    0.7881,
+    0.1
+   ]
+  },
+  {
+   "name": "tail.001",
+   "parent": "body",
+   "deform": true,
+   "head": [
+    0.0,
+    0.9181,
+    0.64
+   ],
+   "tail": [
+    0.0,
+    1.2398,
+    0.91
+   ]
+  },
+  {
+   "name": "tail.002",
+   "parent": "tail.001",
+   "deform": true,
+   "head": [
+    0.0,
+    1.2398,
+    0.91
+   ],
+   "tail": [
+    0.0,
+    2.7719,
+    2.1956
+   ]
+  }
+ ],
+ "bone_count": 15,
+ "deform_bone_count": 14,
+ "digest": {
+  "parts": {
+   "bake_normal": "4e91c35aecb1d9d0",
+   "bake_ao": "29ebf3d6ee08158d",
+   "geometry_colour_uv": "8e19f08b4737c6e9",
+   "weights": "056618d5b8822fa7",
+   "keys": "c9ad6fe0068efd91",
+   "clip_samples": "fc6084245e315c48"
+  },
+  "combined": "51ebb0eec26dc737"
+ },
+ "glb": {
+  "path": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\rigged\\shield_rodent.glb",
+  "bytes": 5829804,
+  "seconds": 0.7,
+  "carries": {
+   "materials": [
+    {
+     "name": "shield_rodent_body",
+     "alphaMode": "OPAQUE",
+     "doubleSided": false,
+     "textures": [
+      "baseColorTexture",
+      "normalTexture"
+     ]
+    }
+   ],
+   "primitives": [
+    {
+     "mesh": "shield_rodent",
+     "material": "shield_rodent_body",
+     "attributes": [
+      "COLOR_0",
+      "COLOR_1",
+      "JOINTS_0",
+      "NORMAL",
+      "POSITION",
+      "TEXCOORD_0",
+      "WEIGHTS_0",
+      "_GLOW"
+     ]
+    }
+   ],
+   "animations": [
+    "idle",
+    "walk"
+   ],
+   "skins": 1,
+   "joints": 15
+  },
+  "structure": "armature identity + skinned 'shield_rodent' (one opaque body material); natural scale; report-only cell fit 0.34272"
+ },
+ "skins": {
+  "default": {
+   "file": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\rigged\\shield_rodent.blend",
+   "palette": {
+    "body": {
+     "rgb": [
+      189,
+      184,
+      181
+     ]
+    },
+    "ear_inner": {
+     "rgb": [
+      121,
+      111,
+      107
+     ]
+    },
+    "seam": {
+     "rgb": [
+      129,
+      132,
+      138
+     ]
+    },
+    "eye": {
+     "rgb": [
+      16,
+      14,
+      14
+     ]
+    },
+    "eye_glint": {
+     "rgb": [
+      255,
+      255,
+      255
+     ]
+    },
+    "snout": {
+     "rgb": [
+      129,
+      132,
+      138
+     ]
+    },
+    "tooth": {
+     "rgb": [
+      189,
+      184,
+      181
+     ]
+    },
+    "plate": {
+     "rgb": [
+      61,
+      64,
+      68
+     ]
+    },
+    "plate_sheen": {
+     "rgb": [
+      90,
+      94,
+      100
+     ]
+    },
+    "rim": {
+     "rgb": [
+      189,
+      184,
+      181
+     ]
+    },
+    "rim_wall": {
+     "rgb": [
+      129,
+      132,
+      138
+     ]
+    },
+    "rivet": {
+     "rgb": [
+      129,
+      132,
+      138
+     ]
+    },
+    "boss_collar": {
+     "rgb": [
+      189,
+      184,
+      181
+     ]
+    },
+    "boss_dome": {
+     "rgb": [
+      129,
+      132,
+      138
+     ]
+    },
+    "skirt": {
+     "rgb": [
+      90,
+      94,
+      100
+     ]
+    },
+    "tail": {
+     "rgb": [
+      189,
+      184,
+      181
+     ]
+    },
+    "tail_shade": {
+     "rgb": [
+      129,
+      132,
+      138
+     ]
+    }
+   },
+   "glow": {
+    "skin": "default",
+    "glowing_regions": [],
+    "rule": "no glow (the sheet draws none): zero Glow"
+   }
+  },
+  "rule": "default skin only (brief)"
+ },
+ "improved_report": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\improved\\shield_rodent.json",
+ "seconds": 32.1
+}

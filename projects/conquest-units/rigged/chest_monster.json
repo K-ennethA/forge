@@ -1,0 +1,555 @@
+{
+ "unit": "chest_monster",
+ "source": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\improved\\chest_monster.blend",
+ "fps": 24,
+ "weights": {
+  "max_influences": 2,
+  "unweighted": 0,
+  "sum_dev_max": 0.0,
+  "per_bone_dominant": {
+   "box": 1428,
+   "lid": 702,
+   "crystal_big": 296,
+   "crystal_small": 222,
+   "leg_BL.0": 123,
+   "leg_BL.1": 956,
+   "leg_BR.0": 123,
+   "leg_BR.1": 956,
+   "leg_FL.0": 123,
+   "leg_FL.1": 956,
+   "leg_FR.0": 123,
+   "leg_FR.1": 956
+  },
+  "rule": "box + eye/iris/glint 1.0 box; lid + smoke + sparks 1.0 lid; each crystal cluster 1.0 its crystal bone (parented to the lid); legs + dots: rigkit.vine_weights along the leg (box -> leg.0 blend over the top quarter, leg.0 -> leg.1 between the bone midpoints)"
+ },
+ "clips": {
+  "idle": {
+   "frames": [
+    1,
+    97
+   ],
+   "period_frames": 96,
+   "seconds": 4.0,
+   "cyclic": true,
+   "seam_main_mm": 0.0,
+   "root_offset_max": 0.0,
+   "clearance_min_z": -0.0038,
+   "box_lift": [
+    0.0,
+    0.0
+   ]
+  },
+  "walk": {
+   "frames": [
+    1,
+    25
+   ],
+   "period_frames": 24,
+   "seconds": 1.0,
+   "cyclic": true,
+   "seam_main_mm": 0.0,
+   "root_offset_max": 0.0,
+   "clearance_min_z": -0.0203,
+   "box_lift": [
+    0.0,
+    0.12
+   ]
+  }
+ },
+ "bones": [
+  {
+   "name": "root",
+   "parent": null,
+   "deform": false,
+   "head": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "tail": [
+    0.0,
+    0.0,
+    0.4
+   ]
+  },
+  {
+   "name": "box",
+   "parent": "root",
+   "deform": true,
+   "head": [
+    0.0,
+    0.0,
+    0.6584
+   ],
+   "tail": [
+    0.0,
+    0.0,
+    2.4184
+   ]
+  },
+  {
+   "name": "lid",
+   "parent": "box",
+   "deform": true,
+   "head": [
+    0.0,
+    1.045,
+    2.4184
+   ],
+   "tail": [
+    0.0,
+    1.045,
+    3.1284
+   ]
+  },
+  {
+   "name": "crystal_big",
+   "parent": "lid",
+   "deform": true,
+   "head": [
+    -0.35,
+    0.05,
+    3.1284
+   ],
+   "tail": [
+    -0.35,
+    0.05,
+    3.9284
+   ]
+  },
+  {
+   "name": "crystal_small",
+   "parent": "lid",
+   "deform": true,
+   "head": [
+    1.1,
+    0.3,
+    3.1284
+   ],
+   "tail": [
+    1.1,
+    0.3,
+    3.9284
+   ]
+  },
+  {
+   "name": "leg_BL.0",
+   "parent": "box",
+   "deform": true,
+   "head": [
+    1.2792,
+    1.0197,
+    1.3384
+   ],
+   "tail": [
+    1.3171,
+    1.0549,
+    0.6684
+   ]
+  },
+  {
+   "name": "leg_BL.1",
+   "parent": "leg_BL.0",
+   "deform": true,
+   "head": [
+    1.3171,
+    1.0549,
+    0.6684
+   ],
+   "tail": [
+    1.3551,
+    1.0901,
+    -0.0016
+   ]
+  },
+  {
+   "name": "leg_BR.0",
+   "parent": "box",
+   "deform": true,
+   "head": [
+    -1.2792,
+    1.0197,
+    1.3384
+   ],
+   "tail": [
+    -1.3171,
+    1.0549,
+    0.6684
+   ]
+  },
+  {
+   "name": "leg_BR.1",
+   "parent": "leg_BR.0",
+   "deform": true,
+   "head": [
+    -1.3171,
+    1.0549,
+    0.6684
+   ],
+   "tail": [
+    -1.3551,
+    1.0901,
+    -0.0016
+   ]
+  },
+  {
+   "name": "leg_FL.0",
+   "parent": "box",
+   "deform": true,
+   "head": [
+    1.2792,
+    -1.0197,
+    1.3384
+   ],
+   "tail": [
+    1.3171,
+    -1.0549,
+    0.6684
+   ]
+  },
+  {
+   "name": "leg_FL.1",
+   "parent": "leg_FL.0",
+   "deform": true,
+   "head": [
+    1.3171,
+    -1.0549,
+    0.6684
+   ],
+   "tail": [
+    1.3551,
+    -1.0901,
+    -0.0016
+   ]
+  },
+  {
+   "name": "leg_FR.0",
+   "parent": "box",
+   "deform": true,
+   "head": [
+    -1.2792,
+    -1.0197,
+    1.3384
+   ],
+   "tail": [
+    -1.3171,
+    -1.0549,
+    0.6684
+   ]
+  },
+  {
+   "name": "leg_FR.1",
+   "parent": "leg_FR.0",
+   "deform": true,
+   "head": [
+    -1.3171,
+    -1.0549,
+    0.6684
+   ],
+   "tail": [
+    -1.3551,
+    -1.0901,
+    -0.0016
+   ]
+  }
+ ],
+ "bone_count": 13,
+ "deform_bone_count": 12,
+ "digest": {
+  "parts": {
+   "bake_normal": "86324e4e0b4e24d4",
+   "bake_ao": "694cff1b5a868fdc",
+   "geometry_colour_uv": "1a54fcdbd026939d",
+   "weights": "db1789a57f5bc2b8",
+   "keys": "d95f9fa6bb468bcd",
+   "clip_samples": "93188ea0aa9d1fd6"
+  },
+  "combined": "a516c7df19004eae"
+ },
+ "glb": {
+  "path": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\rigged\\chest_monster.glb",
+  "bytes": 3236236,
+  "seconds": 0.6,
+  "carries": {
+   "materials": [
+    {
+     "name": "chest_monster_body",
+     "alphaMode": "OPAQUE",
+     "doubleSided": false,
+     "textures": [
+      "baseColorTexture",
+      "normalTexture"
+     ]
+    },
+    {
+     "name": "chest_monster_fx",
+     "alphaMode": "BLEND",
+     "doubleSided": true,
+     "textures": []
+    }
+   ],
+   "primitives": [
+    {
+     "mesh": "chest_monster",
+     "material": "chest_monster_body",
+     "attributes": [
+      "COLOR_0",
+      "COLOR_1",
+      "JOINTS_0",
+      "NORMAL",
+      "POSITION",
+      "TEXCOORD_0",
+      "WEIGHTS_0",
+      "_GLOW"
+     ]
+    },
+    {
+     "mesh": "chest_monster",
+     "material": "chest_monster_fx",
+     "attributes": [
+      "COLOR_0",
+      "COLOR_1",
+      "JOINTS_0",
+      "NORMAL",
+      "POSITION",
+      "TEXCOORD_0",
+      "WEIGHTS_0",
+      "_GLOW"
+     ]
+    }
+   ],
+   "animations": [
+    "idle",
+    "walk"
+   ],
+   "skins": 1,
+   "joints": 13
+  },
+  "structure": "armature identity + skinned 'chest_monster' (opaque body primitive + alpha-blend fx primitive); natural scale; report-only cell fit 0.37220"
+ },
+ "skins": {
+  "default": {
+   "file": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\rigged\\chest_monster.blend",
+   "palette": {
+    "box": {
+     "rgb": [
+      210,
+      154,
+      99
+     ]
+    },
+    "lid": {
+     "rgb": [
+      71,
+      40,
+      17
+     ]
+    },
+    "lid_top": {
+     "rgb": [
+      106,
+      62,
+      34
+     ]
+    },
+    "eye": {
+     "rgb": [
+      253,
+      144,
+      56
+     ]
+    },
+    "iris": {
+     "rgb": [
+      67,
+      37,
+      14
+     ]
+    },
+    "eye_glint": {
+     "rgb": [
+      251,
+      235,
+      217
+     ]
+    },
+    "leg": {
+     "rgb": [
+      122,
+      69,
+      31
+     ]
+    },
+    "leg_ankle": {
+     "rgb": [
+      184,
+      68,
+      22
+     ]
+    },
+    "leg_dot": {
+     "rgb": [
+      240,
+      88,
+      24
+     ]
+    },
+    "toe": {
+     "rgb": [
+      253,
+      97,
+      44
+     ],
+     "emission": [
+      253,
+      97,
+      44
+     ],
+     "emission_scale": 0.55
+    },
+    "toe_tip": {
+     "rgb": [
+      251,
+      150,
+      100
+     ],
+     "emission": [
+      251,
+      150,
+      100
+     ],
+     "emission_scale": 0.85
+    },
+    "crystal_deep": {
+     "rgb": [
+      19,
+      37,
+      251
+     ],
+     "emission": [
+      40,
+      60,
+      253
+     ],
+     "emission_scale": 0.35
+    },
+    "crystal": {
+     "rgb": [
+      73,
+      79,
+      253
+     ],
+     "emission": [
+      73,
+      79,
+      253
+     ],
+     "emission_scale": 0.5
+    },
+    "crystal_light": {
+     "rgb": [
+      134,
+      117,
+      237
+     ],
+     "emission": [
+      120,
+      115,
+      250
+     ],
+     "emission_scale": 0.6
+    },
+    "crystal_streak": {
+     "rgb": [
+      238,
+      236,
+      251
+     ],
+     "emission": [
+      230,
+      232,
+      255
+     ],
+     "emission_scale": 0.9
+    },
+    "smoke_core": {
+     "rgb": [
+      251,
+      211,
+      192
+     ],
+     "emission": [
+      252,
+      200,
+      185
+     ],
+     "emission_scale": 0.7
+    },
+    "smoke_ray": {
+     "rgb": [
+      252,
+      184,
+      170
+     ],
+     "emission": [
+      252,
+      184,
+      170
+     ],
+     "emission_scale": 0.5
+    },
+    "smoke_spark": {
+     "rgb": [
+      226,
+      140,
+      128
+     ],
+     "emission": [
+      240,
+      150,
+      130
+     ],
+     "emission_scale": 0.6
+    }
+   },
+   "glow_tiers": {
+    "skin": "default",
+    "emission_scale_tiers": {
+     "toe": 0.55,
+     "toe_tip": 0.85,
+     "crystal_deep": 0.35,
+     "crystal": 0.5,
+     "crystal_light": 0.6,
+     "crystal_streak": 0.9,
+     "smoke_core": 0.7,
+     "smoke_ray": 0.5,
+     "smoke_spark": 0.6
+    },
+    "families": [
+     [
+      "toe",
+      "toe_tip"
+     ],
+     [
+      "crystal_deep",
+      "crystal",
+      "crystal_light",
+      "crystal_streak"
+     ],
+     [
+      "smoke_ray",
+      "smoke_spark",
+      "smoke_core"
+     ]
+    ],
+    "grade_pass": true,
+    "only_drawn_glow": true,
+    "cap": 2.0,
+    "cap_pass": true
+   }
+  },
+  "rule": "default skin only (brief)"
+ },
+ "improved_report": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\improved\\chest_monster.json",
+ "seconds": 9.9
+}

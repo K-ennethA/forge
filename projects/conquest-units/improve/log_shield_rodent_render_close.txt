@@ -1,0 +1,10 @@
+00:01.719  blend            | Read blend: "C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\rigged\shield_rodent.blend"
+00:04.516  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\shield_rodent\shield_rodent_face.png'
+00:05.094  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\shield_rodent\shield_rodent_feet.png'
+00:05.609  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\shield_rodent\shield_rodent_shell.png'
+00:06.125  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\shield_rodent\shield_rodent_tail.png'
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\shield_rodent\shield_rodent_face.png
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\shield_rodent\shield_rodent_feet.png
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\shield_rodent\shield_rodent_shell.png
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\shield_rodent\shield_rodent_tail.png
+Blender 5.0.1 (hash a3db93c5b259 built 2025-12-16 01:32:30)

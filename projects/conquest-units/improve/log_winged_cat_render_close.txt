@@ -1,0 +1,10 @@
+00:01.734  blend            | Read blend: "C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\rigged\winged_cat.blend"
+00:04.375  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\winged_cat\winged_cat_collar.png'
+00:04.937  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\winged_cat\winged_cat_face.png'
+00:05.515  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\winged_cat\winged_cat_tail.png'
+00:06.047  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\winged_cat\winged_cat_wing.png'
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\winged_cat\winged_cat_collar.png
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\winged_cat\winged_cat_face.png
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\winged_cat\winged_cat_tail.png
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\winged_cat\winged_cat_wing.png
+Blender 5.0.1 (hash a3db93c5b259 built 2025-12-16 01:32:30)

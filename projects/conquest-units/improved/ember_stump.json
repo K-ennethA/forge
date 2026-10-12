@@ -1,0 +1,774 @@
+{
+ "unit": "ember_stump",
+ "conquest_character_id": "ember_stump",
+ "source": "none: from-scratch unit (sheet design/reference/ember_stump-character-sheet.png)",
+ "tier": "regular",
+ "tri_budget": [
+  8000,
+  22000
+ ],
+ "units": "sheet units: 1 unit = 100 px; floor z = 0 at the sheet floor line (y 804); X from the back view, Y from the side view",
+ "overrides": {},
+ "sdf": {
+  "trunk": {
+   "low_source": "the same SDF without ridges (smooth), 441592 tris",
+   "step": 0.02,
+   "band": 0.08,
+   "grid": [
+    127,
+    149,
+    217
+   ],
+   "high_tris": 441716,
+   "crumbs": {
+    "pieces": 1,
+    "kept": 1,
+    "dropped_verts": 0
+   },
+   "decimated_tris": 6298,
+   "specks": {
+    "pieces": 1,
+    "kept": 1,
+    "dropped_verts": 0
+   },
+   "low_to_high": {
+    "mean": 0.00498,
+    "p99": 0.02501,
+    "max": 0.03239
+   },
+   "high_to_low_sampled": {
+    "p99": 0.02122,
+    "max": 0.02733
+   },
+   "bbox_low_over_high": [
+    1.00457,
+    1.00555,
+    1.00005
+   ],
+   "floor_snap": {
+    "verts_snapped_to_floor": 7,
+    "worst_dip": 0.000775
+   },
+   "seconds": 12.5
+  },
+  "mask": {
+   "low_source": "the same SDF without ridges (smooth), 504972 tris",
+   "step": 0.012,
+   "band": 0.05,
+   "grid": [
+    85,
+    111,
+    196
+   ],
+   "high_tris": 507384,
+   "crumbs": {
+    "pieces": 2,
+    "kept": 2,
+    "dropped_verts": 0
+   },
+   "decimated_tris": 1492,
+   "specks": {
+    "pieces": 2,
+    "kept": 2,
+    "dropped_verts": 0
+   },
+   "low_to_high": {
+    "mean": 0.00196,
+    "p99": 0.01145,
+    "max": 0.01368
+   },
+   "high_to_low_sampled": {
+    "p99": 0.01116,
+    "max": 0.01214
+   },
+   "bbox_low_over_high": [
+    1.00002,
+    0.99726,
+    1.00034
+   ],
+   "floor_snap": null,
+   "seconds": 28.2
+  },
+  "arm": {
+   "low_source": "the same SDF without ridges (smooth), 236084 tris",
+   "step": 0.016,
+   "band": 0.09,
+   "grid": [
+    115,
+    98,
+    225
+   ],
+   "high_tris": 236084,
+   "crumbs": {
+    "pieces": 1,
+    "kept": 1,
+    "dropped_verts": 0
+   },
+   "decimated_tris": 1400,
+   "specks": {
+    "pieces": 1,
+    "kept": 1,
+    "dropped_verts": 0
+   },
+   "low_to_high": {
+    "mean": 0.00181,
+    "p99": 0.00594,
+    "max": 0.00773
+   },
+   "high_to_low_sampled": {
+    "p99": 0.00358,
+    "max": 0.01939
+   },
+   "bbox_low_over_high": [
+    0.99783,
+    1.0008,
+    0.99951
+   ],
+   "floor_snap": null,
+   "seconds": 14.2
+  }
+ },
+ "iso_cuts": {
+  "trunk": {
+   "cuts": [
+    {
+     "refined_faces": 0,
+     "max_edge": null
+    },
+    {
+     "field": "char",
+     "tau": 0.0,
+     "edge_splits": 632,
+     "face_connects": 760
+    },
+    {
+     "field": "ash",
+     "tau": 0.0,
+     "edge_splits": 54,
+     "face_connects": 66
+    },
+    {
+     "degenerate_dissolved_faces": 0,
+     "sliver_edge_flips": 0,
+     "min_face_area": 1.2737671568174846e-05
+    }
+   ],
+   "tris_after": 7670,
+   "seconds": 4.0
+  },
+  "mask": {
+   "cuts": [
+    {
+     "refined_faces": 334,
+     "max_edge": 0.12
+    },
+    {
+     "field": "mchar",
+     "tau": 0.0,
+     "edge_splits": 54,
+     "face_connects": 60
+    },
+    {
+     "degenerate_dissolved_faces": 0,
+     "sliver_edge_flips": 1,
+     "min_face_area": 9.402820211334983e-08
+    }
+   ],
+   "tris_after": 2838,
+   "seconds": 0.2
+  },
+  "arm": {
+   "cuts": [
+    {
+     "refined_faces": 637,
+     "max_edge": 0.2
+    },
+    {
+     "field": "own_slab",
+     "tau": 0.0,
+     "edge_splits": 13,
+     "face_connects": 16
+    },
+    {
+     "field": "schar",
+     "tau": 0.0,
+     "edge_splits": 32,
+     "face_connects": 37
+    },
+    {
+     "field": "sash",
+     "tau": 0.0,
+     "edge_splits": 17,
+     "face_connects": 21
+    },
+    {
+     "degenerate_dissolved_faces": 0,
+     "sliver_edge_flips": 0,
+     "min_face_area": 4.205064669804415e-06
+    }
+   ],
+   "tris_after_per_arm": 3852,
+   "seconds": 0.3
+  }
+ },
+ "centre_shift": [
+  0.0,
+  -0.376909,
+  0.0
+ ],
+ "symmetry": {
+  "rule": "mirror each vertex X -> -X; distance to the nearest point on the mesh (0 = mirror-symmetric)",
+  "max": 0.01333,
+  "p99": 0.00431,
+  "mean": 0.00034,
+  "bbox_x": [
+   -1.79036,
+   1.79036
+  ],
+  "per_part_max": {
+   "trunk": 0.01333,
+   "mask": 0.01281,
+   "arm.L": 0.0,
+   "arm.R": 0.0,
+   "mouth_back": 0.0,
+   "crest_core": 0.0
+  },
+  "trunk_knot_x_v1": [
+   -0.555,
+   -0.6,
+   -0.615,
+   -0.505,
+   -0.315,
+   -0.09,
+   0.08,
+   0.11,
+   0.16
+  ],
+  "trunk_knot_x_now": [
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0
+  ]
+ },
+ "glow": {
+  "default": {
+   "skin": "default",
+   "emission_scale_tiers": {
+    "eye": 0.9,
+    "flame_edge": 1.0,
+    "flame_core": 1.25
+   },
+   "peak_x_strength": {
+    "eye": 1.2494,
+    "flame_edge": 1.3882,
+    "flame_core": 1.8603
+   },
+   "cap": 2.0,
+   "only_drawn_glow": true,
+   "grade_pass": true,
+   "cap_pass": true
+  }
+ },
+ "regions_faces": {
+  "ember_stump": {
+   "bark": 12873,
+   "bark_char": 1347,
+   "bark_ash": 122,
+   "splinter": 1032,
+   "mask": 2479,
+   "mask_char": 87,
+   "tooth_edge": 272,
+   "mouth": 16,
+   "eye_socket": 48,
+   "eye": 48,
+   "crest": 908,
+   "crest_hi": 150,
+   "flame_edge": 500,
+   "flame_core": 300
+  }
+ },
+ "regions_area_share": {
+  "bark": 0.4144,
+  "bark_char": 0.025,
+  "bark_ash": 0.0013,
+  "splinter": 0.0268,
+  "mask": 0.0865,
+  "mask_char": 0.0001,
+  "tooth_edge": 0.0213,
+  "mouth": 0.0192,
+  "eye_socket": 0.0028,
+  "eye": 0.0017,
+  "crest": 0.2675,
+  "crest_hi": 0.0502,
+  "flame_edge": 0.0511,
+  "flame_core": 0.0321
+ },
+ "facing": {
+  "rule": "trunk centreline at eye height -> the mask front face between the eyes (the face looks -Y)",
+  "anchor": [
+   0.0,
+   0.3596,
+   3.98
+  ],
+  "landmark": [
+   0.0,
+   -0.3563,
+   3.98
+  ],
+  "angle_from_minusY_deg": 0.0
+ },
+ "tris": {
+  "total": 21668,
+  "per_part_family": {
+   "trunk": 7670,
+   "mask": 2838,
+   "arm": 7704,
+   "eye_socket": 72,
+   "eye": 72,
+   "mouth_back": 24,
+   "crest_core": 168,
+   "crest": 1680,
+   "flame": 1440
+  },
+  "per_region": {
+   "bark": 12873,
+   "bark_char": 1347,
+   "bark_ash": 122,
+   "splinter": 1032,
+   "mask": 2479,
+   "mask_char": 87,
+   "tooth_edge": 272,
+   "mouth": 16,
+   "eye_socket": 48,
+   "eye": 48,
+   "crest": 908,
+   "crest_hi": 150,
+   "flame_edge": 500,
+   "flame_core": 300
+  }
+ },
+ "tier_rationale": "REGULAR role (a line unit): window [8000, 22000]. The arched SDF trunk (root flare + streak cuts) carries the largest share; the two split-slab arms, the mask jaws, 22 crest feathers and 8 flame tongues the rest.",
+ "open_edges": {
+  "closed_parts": 48,
+  "parts": 48,
+  "open_parts": {},
+  "rule": "every part is closed: SDF islands (trunk, 2 mask jaws, 2 arms), plates, ellipsoid, feather blades, flame tongues"
+ },
+ "measure": {
+  "bbox": [
+   [
+    -1.7904,
+    -1.6382,
+    0.0
+   ],
+   [
+    1.7904,
+    1.6382,
+    6.1064
+   ]
+  ],
+  "height": 6.1064,
+  "width_x": 3.5807,
+  "depth_y": 3.2764,
+  "sheet_height_units": {
+   "front": 6.27,
+   "back": 6.29,
+   "side": 6.35
+  },
+  "export_cell_fit_report_only": {
+   "scale": 0.29477,
+   "height_m": 1.8,
+   "footprint_m": 1.0555,
+   "bound_by": "height"
+  }
+ },
+ "bake": {
+  "NORMAL": {
+   "result": [
+    "FINISHED"
+   ],
+   "seconds": 1.7
+  },
+  "AO": {
+   "result": [
+    "FINISHED"
+   ],
+   "seconds": 1.2
+  },
+  "cage_extrusion": 0.0637,
+  "cage_rule": "3 x the worst SDF island's sampled high->low p99 distance (floor 0.02)",
+  "resolution": {
+   "normal": 1024,
+   "ao": 512
+  },
+  "high_tris": 1422438,
+  "high_rule": "trunk + mask + 2 arm SDF highs + every closed part except the flame tongues",
+  "body_uv_texels_normal": 482153,
+  "normal_baked_pct_of_body_texels": 98.7,
+  "normal_detail_fraction_dev_gt_0.05": 0.6456,
+  "ao_baked_pct_of_body_texels": 100.0,
+  "ao_mean": 0.5806,
+  "ao_p05": 0.0,
+  "pixel_sha": {
+   "normal": "c3a819725938bdc9",
+   "ao": "180f5d16b4662b82"
+  },
+  "seconds": 7.5
+ },
+ "digest_geometry_colour_uv": "5673d74cc26e27f4",
+ "palette": {
+  "default": {
+   "bark": {
+    "rgb": [
+     79,
+     68,
+     60
+    ]
+   },
+   "bark_char": {
+    "rgb": [
+     24,
+     23,
+     23
+    ]
+   },
+   "bark_ash": {
+    "rgb": [
+     193,
+     187,
+     179
+    ]
+   },
+   "splinter": {
+    "rgb": [
+     116,
+     75,
+     62
+    ]
+   },
+   "mask": {
+    "rgb": [
+     79,
+     66,
+     58
+    ]
+   },
+   "mask_char": {
+    "rgb": [
+     24,
+     23,
+     23
+    ]
+   },
+   "tooth_edge": {
+    "rgb": [
+     193,
+     187,
+     179
+    ]
+   },
+   "mouth": {
+    "rgb": [
+     24,
+     23,
+     23
+    ]
+   },
+   "eye_socket": {
+    "rgb": [
+     24,
+     23,
+     23
+    ]
+   },
+   "eye": {
+    "rgb": [
+     236,
+     33,
+     18
+    ],
+    "emission": [
+     236,
+     33,
+     18
+    ],
+    "emission_scale": 0.9
+   },
+   "crest": {
+    "rgb": [
+     24,
+     23,
+     23
+    ]
+   },
+   "crest_hi": {
+    "rgb": [
+     77,
+     77,
+     77
+    ]
+   },
+   "flame_edge": {
+    "rgb": [
+     236,
+     33,
+     18
+    ],
+    "emission": [
+     236,
+     33,
+     18
+    ],
+    "emission_scale": 1.0
+   },
+   "flame_core": {
+    "rgb": [
+     253,
+     121,
+     29
+    ],
+    "emission": [
+     253,
+     121,
+     29
+    ],
+    "emission_scale": 1.25
+   }
+  },
+  "files": [
+   "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\palettes\\ember_stump\\default.json"
+  ],
+  "provenance": "pixel-sampled from the sheet's six palette chips (intake swatches) + drawn-surface samples (see the palette notes)"
+ },
+ "crest": [
+  {
+   "az": 9.0,
+   "el": 71.4,
+   "length": 1.636,
+   "half_w": 0.255,
+   "visibility_min_4views": 0.263
+  },
+  {
+   "az": 108.5,
+   "el": 65.3,
+   "length": 1.545,
+   "half_w": 0.269,
+   "visibility_min_4views": 0.37
+  },
+  {
+   "az": 50.0,
+   "el": 56.2,
+   "length": 1.409,
+   "half_w": 0.253,
+   "visibility_min_4views": 0.368
+  },
+  {
+   "az": 145.5,
+   "el": 57.8,
+   "length": 1.255,
+   "half_w": 0.291,
+   "visibility_min_4views": 0.253
+  },
+  {
+   "az": 81.8,
+   "el": 47.1,
+   "length": 1.209,
+   "half_w": 0.261,
+   "visibility_min_4views": 0.299
+  },
+  {
+   "az": 20.4,
+   "el": 44.8,
+   "length": 1.134,
+   "half_w": 0.277,
+   "visibility_min_4views": 0.317
+  },
+  {
+   "az": 128.4,
+   "el": 35.5,
+   "length": 0.843,
+   "half_w": 0.223,
+   "visibility_min_4views": 0.327
+  },
+  {
+   "az": 58.3,
+   "el": 21.4,
+   "length": 0.958,
+   "half_w": 0.196,
+   "visibility_min_4views": 0.362
+  },
+  {
+   "az": 163.6,
+   "el": 25.6,
+   "length": 0.827,
+   "half_w": 0.232,
+   "visibility_min_4views": 0.281
+  },
+  {
+   "az": 95.9,
+   "el": 8.7,
+   "length": 0.683,
+   "half_w": 0.161,
+   "visibility_min_4views": 0.171
+  },
+  {
+   "az": 37.9,
+   "el": 18.9,
+   "length": 0.963,
+   "half_w": 0.209,
+   "visibility_min_4views": 0.239
+  },
+  {
+   "az": 141.8,
+   "el": 6.8,
+   "length": 0.644,
+   "half_w": 0.198,
+   "visibility_min_4views": 0.067
+  },
+  {
+   "az": 80.6,
+   "el": -0.4,
+   "length": 0.73,
+   "half_w": 0.204,
+   "visibility_min_4views": 0.162
+  },
+  {
+   "az": 10.8,
+   "el": 15.7,
+   "length": 0.871,
+   "half_w": 0.187,
+   "visibility_min_4views": 0.276
+  },
+  {
+   "az": 114.9,
+   "el": -19.4,
+   "length": 0.632,
+   "half_w": 0.155,
+   "visibility_min_4views": 0.355
+  }
+ ],
+ "flame": {
+  "root": [
+   0.0,
+   -0.0548,
+   3.4
+  ],
+  "dir": [
+   -0.0,
+   -0.9994,
+   -0.0349
+  ],
+  "tongues": [
+   {
+    "layer": "flame_edge",
+    "tip": [
+     0.0,
+     -1.512,
+     3.716
+    ],
+    "length": 1.12,
+    "radius": 0.2
+   },
+   {
+    "layer": "flame_edge",
+    "tip": [
+     0.0,
+     -1.864,
+     3.625
+    ],
+    "length": 1.45,
+    "radius": 0.23
+   },
+   {
+    "layer": "flame_edge",
+    "tip": [
+     0.0,
+     -2.015,
+     3.393
+    ],
+    "length": 1.58,
+    "radius": 0.24
+   },
+   {
+    "layer": "flame_edge",
+    "tip": [
+     0.0,
+     -1.73,
+     2.927
+    ],
+    "length": 1.38,
+    "radius": 0.23
+   },
+   {
+    "layer": "flame_edge",
+    "tip": [
+     0.0,
+     -1.324,
+     2.789
+    ],
+    "length": 1.08,
+    "radius": 0.19
+   },
+   {
+    "layer": "flame_core",
+    "tip": [
+     0.0,
+     -1.451,
+     3.456
+    ],
+    "length": 1.02,
+    "radius": 0.28
+   },
+   {
+    "layer": "flame_core",
+    "tip": [
+     0.0,
+     -1.601,
+     3.238
+    ],
+    "length": 1.18,
+    "radius": 0.3
+   },
+   {
+    "layer": "flame_core",
+    "tip": [
+     0.0,
+     -1.333,
+     3.205
+    ],
+    "length": 0.92,
+    "radius": 0.26
+   }
+  ]
+ },
+ "eyes": {
+  "R": {
+   "centre": [
+    -0.225,
+    -0.7332,
+    3.98
+   ],
+   "size": [
+    0.275,
+    0.11
+   ]
+  },
+  "L": {
+   "centre": [
+    0.225,
+    -0.7332,
+    3.98
+   ],
+   "size": [
+    0.275,
+    0.11
+   ]
+  }
+ }
+}

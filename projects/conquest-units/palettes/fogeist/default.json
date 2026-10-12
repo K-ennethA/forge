@@ -1,0 +1,16 @@
+{
+ "unit": "fogeist",
+ "skin": "default",
+ "description": "Fogeist default look, PIXEL-SAMPLED from design/reference/fogeist-character-sheet-row.png (service venv PIL, 7x7 medians; intake.json carries no swatches, so the five palette chips were sampled directly at y 592: x 2104 228,228,232 / x 2192 191,197,209 / x 2278 143,157,177 / x 2365 84,100,122 / x 2452 55,66,81) plus 5x5 medians of the drawn surfaces (front view x 82-617, side view x 1384-2444). Drawn-figure luminance shares: front 225+ 8.6 % (224,226,231), 205-225 15.6 % (212,216,225), 180-205 26.9 % (183,190,203), 150-180 15.5 % (157,168,186), 110-150 15.9 % (112,128,149), <110 17.5 % (73,83,98); side 5.4 / 12.5 / 26.5 / 26.8 / 15.6 / 13.1 %. NO GLOW (brief). The mist is semi-transparent: the core (head, neck, chest, body, tail) is OPAQUE (material fogeist_core); the crest + every wisp carry 'alpha' (Col alpha = glTF COLOR_0.a) on the alpha-blended material fogeist_mist (Eevee BLENDED, single-sided, no transparency overlap: smooth, never dithered); material.alpha multiplies every translucent region. The same chip tone may serve an opaque core region and a translucent mist region (separate regions because alpha is per region). The sheet's thin ink contour lines are line art, not modelled.",
+ "regions": {
+  "core_lit":   {"rgb": [227, 227, 232], "note": "lit core (face, head, neck, haunch top): chip 228,228,232 (x2104 y592); drawn face (311,265) 226,227,232, side head (1500,200) 225,226,232, side neck (1500,350) 227,228,234"},
+  "core":       {"rgb": [190, 196, 208], "note": "core mid tone (chest flanks, body sides, tail top): chip 191,197,209 (x2192 y592); drawn front 180-205 band median 183,190,203 (26.9 %), chest (312,420) 206,211,221, side haunch (1700,400) 206,211,221"},
+  "core_shade": {"rgb": [144, 157, 177], "note": "shaded core (puddle rim, tail flanks, underside): chip 143,157,177 (x2278 y592); drawn puddle (150,455) 162,173,190 / (500,455) 127,140,160, chest low (312,455) 154,168,188, side tail end (2300,440) 154,163,178"},
+  "crest_lit":  {"rgb": [190, 196, 208], "alpha": 0.80, "note": "lit crest top: chip 191,197,209; drawn front crest top (330,200) 185,190,204, side crest top (1850,130) 195,197,208"},
+  "crest":      {"rgb": [144, 157, 177], "alpha": 0.72, "note": "crest mid / flanks: chip 143,157,177; drawn front crest R (470,300) 163,172,188 / L (180,300) 118,134,154, side crest mid (1850,220) 173,182,198, crest end (2150,260) 122,133,151"},
+  "crest_deep": {"rgb": [85, 101, 122],  "alpha": 0.60, "note": "crest underside (the deep shade along its bottom edge): chip 84,100,122 (x2365 y592); drawn side crest bottom (1850,300) 55,63,74, front crest low (500,345) 60,69,81 (the background reads through there)"},
+  "wisp":       {"rgb": [144, 157, 177], "alpha": 0.50, "note": "the wisps the crest + tail break into: chip 143,157,177; drawn side tail end (2300,440) 154,163,178, crest end (2150,260) 122,133,151, front wisp (590,350) 60,68,79"},
+  "eye":        {"rgb": [55, 66, 82],    "note": "the two simple dark eyes: chip 55,66,81 (x2452 y592), brief ~55,66,82; drawn eye blob medians (lum < 120) front L 77,86,99 / R 67,77,90, side 64,73,83 (anti-aliased toward the face: the chip is the core)"}
+ },
+ "material": {"roughness": 0.85, "mist_roughness": 0.9, "emission_strength": 1.0, "alpha": 1.0}
+}

@@ -1,0 +1,26 @@
+{
+ "unit": "chest_monster",
+ "skin": "default",
+ "description": "Chest Monster default look, PIXEL-SAMPLED from design/reference/chest_monster-character-sheet.png: the six palette chips (intake.json swatches: box tan 210,154,99 / lid brown 71,40,17 / eye orange 253,144,56 / feet red-orange 253,97,44 / crystal blue 73,79,253 / magic pink 252,184,170) plus direct samples of the drawn surfaces (service venv PIL; front view unless noted; crystal facet tones = 5-means of the big cluster's blue pixels). GLOW (drawn on the sheet): the crystals, the toes and the magic smoke (+ its spark flecks) only; tiers stay under the 2.0 cap. Translucent regions carry 'alpha' (Col alpha = glTF COLOR_0.a; the fx material is alphaMode BLEND, double-sided); material.alpha multiplies every translucent region.",
+ "regions": {
+  "box":            {"rgb": [210, 154, 99],  "note": "tapered box body: chip 210,154,99 (x1244 y855); drawn front face (120,600) 213,156,100 (the drawn side faces 194,131,77 are the sheet's shading, not paint)"},
+  "lid":            {"rgb": [71, 40, 17],    "note": "lid band (sides + underside of the overhang): chip 71,40,17 (x1314 y856); drawn band front (110,460) 69,38,15"},
+  "lid_top":        {"rgb": [106, 62, 34],   "note": "lid top face: drawn (150,405) 106,62,34, back view (720,385) 111,64,36 -- the sheet draws the top lighter than the band"},
+  "eye":            {"rgb": [253, 144, 56],  "note": "eye emblem plate: chip 253,144,56 (x1384 y855); drawn (165,500) 251,141,53"},
+  "iris":           {"rgb": [67, 37, 14],    "note": "dark-brown iris: drawn (186,520) 67,37,14"},
+  "eye_glint":      {"rgb": [251, 235, 217], "note": "white highlight dot: drawn (197,489) 251,235,217"},
+  "leg":            {"rgb": [122, 69, 31],   "note": "leg stalk: drawn front-right leg rows y 627-687 median 122,69,31"},
+  "leg_ankle":      {"rgb": [184, 68, 22],   "note": "brown -> red-orange transition band: drawn rows y 693-699 167,69,24 / 200,66,19"},
+  "leg_dot":        {"rgb": [240, 88, 24],   "note": "orange dots on the stalk: drawn (307,651) 240,86,23 / (308,664) 244,93,25"},
+  "toe":            {"rgb": [253, 97, 44],   "emission": [253, 97, 44],   "emission_scale": 0.55, "note": "clawed toes + foot: chip 253,97,44 (x1454 y855); drawn rows y 705-729 228-252,72-94,19-40. Orange-red glow (sheet FEET panel)"},
+  "toe_tip":        {"rgb": [251, 150, 100], "emission": [251, 150, 100], "emission_scale": 0.85, "note": "glowing claw tips: drawn (307,741) 251,173,122 (the bright inner glow of the claws)"},
+  "crystal_deep":   {"rgb": [19, 37, 251],   "emission": [40, 60, 253],   "emission_scale": 0.35, "alpha": 0.86, "note": "shadow-side facets: crystal 5-means centre 19,37,251"},
+  "crystal":        {"rgb": [73, 79, 253],   "emission": [73, 79, 253],   "emission_scale": 0.50, "alpha": 0.82, "note": "crystal body facets: chip 73,79,253 (x1531 y855); 5-means centre 58,59,249"},
+  "crystal_light":  {"rgb": [134, 117, 237], "emission": [120, 115, 250], "emission_scale": 0.60, "alpha": 0.78, "note": "lit facets (upper-left): 5-means centres 134,117,237 / 174,168,247"},
+  "crystal_streak": {"rgb": [238, 236, 251], "emission": [230, 232, 255], "emission_scale": 0.90, "alpha": 0.95, "note": "white facet streaks: drawn median 238,236,251 (lum > 200 inside the big cluster)"},
+  "smoke_core":     {"rgb": [251, 211, 192], "emission": [252, 200, 185], "emission_scale": 0.70, "alpha": 0.55, "note": "bright centre of the magic burst: drawn (226,384) 251,211,192"},
+  "smoke_ray":      {"rgb": [252, 184, 170], "emission": [252, 184, 170], "emission_scale": 0.50, "alpha": 0.50, "note": "burst rays: chip 252,184,170 (x1604 y855); drawn ray median 242,164,158 / p90 251,205,186"},
+  "smoke_spark":    {"rgb": [226, 140, 128], "emission": [240, 150, 130], "emission_scale": 0.60, "alpha": 1.0, "note": "static spark flecks: median of 6 isolated spark blobs above the lid (front view) 188-239,108-167,98-171"}
+ },
+ "material": {"roughness": 0.7, "emission_strength": 1.5, "alpha": 1.0}
+}

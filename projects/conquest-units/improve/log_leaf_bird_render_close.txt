@@ -1,0 +1,10 @@
+00:01.704  blend            | Read blend: "C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\rigged\leaf_bird.blend"
+00:04.016  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\leaf_bird\leaf_bird_face.png'
+00:04.594  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\leaf_bird\leaf_bird_markings.png'
+00:04.954  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\leaf_bird\leaf_bird_tail.png'
+00:05.360  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\leaf_bird\leaf_bird_wing.png'
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\leaf_bird\leaf_bird_face.png
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\leaf_bird\leaf_bird_markings.png
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\leaf_bird\leaf_bird_tail.png
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\leaf_bird\leaf_bird_wing.png
+Blender 5.0.1 (hash a3db93c5b259 built 2025-12-16 01:32:30)

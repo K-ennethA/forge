@@ -1,0 +1,603 @@
+{
+ "unit": "mystic_snow_spirit",
+ "source": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\improved\\mystic_snow_spirit.blend",
+ "fps": 24,
+ "weights": {
+  "max_influences": 2,
+  "unweighted": 0,
+  "sum_dev_max": 0.0,
+  "per_bone_dominant": {
+   "base": 2895,
+   "middle": 620,
+   "head": 1141,
+   "horn_L": 414,
+   "arm_L.0": 149,
+   "arm_L.1": 492,
+   "horn_R": 414,
+   "arm_R.0": 149,
+   "arm_R.1": 492,
+   "orb.001": 222,
+   "flame.001": 404,
+   "orb.002": 222,
+   "flame.002": 404,
+   "orb.003": 222,
+   "flame.003": 404,
+   "orb.004": 222,
+   "flame.004": 404,
+   "orb.005": 222,
+   "flame.005": 404
+  },
+  "rule": "shell: smoothstep blends at z 2.36 / 3.55 (half-widths [0.1, 0.08]); eyes, mouth, nose 1.0 head; horns 1.0 horn_*; arms by spine arc (middle -> arm.0 over 3-14%, arm.0 -> arm.1 at the elbow +- 7%; fingers 1.0 arm.1); snowballs 1.0 orb.*, flames 1.0 flame.*"
+ },
+ "clips": {
+  "idle": {
+   "frames": [
+    1,
+    97
+   ],
+   "period_frames": 96,
+   "seconds": 4.0,
+   "cyclic": true,
+   "seam_main_mm": 0.0,
+   "root_offset_max": 0.0,
+   "clearance_min_z": 0.0,
+   "base_on_floor": {
+    "min_z": 0.0,
+    "z_spread_max": 0.019526,
+    "base_verts": 194
+   }
+  },
+  "walk": {
+   "frames": [
+    1,
+    49
+   ],
+   "period_frames": 48,
+   "seconds": 2.0,
+   "cyclic": true,
+   "seam_main_mm": 0.0,
+   "root_offset_max": 0.0,
+   "clearance_min_z": -0.0,
+   "base_on_floor": {
+    "min_z": -0.0,
+    "z_spread_max": 0.019526,
+    "base_verts": 194
+   }
+  }
+ },
+ "bones": [
+  {
+   "name": "root",
+   "parent": null,
+   "deform": false,
+   "head": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "tail": [
+    0.0,
+    0.0,
+    0.4
+   ]
+  },
+  {
+   "name": "base",
+   "parent": "root",
+   "deform": true,
+   "head": [
+    0.0,
+    -0.0236,
+    0.0
+   ],
+   "tail": [
+    0.0,
+    -0.2072,
+    2.36
+   ]
+  },
+  {
+   "name": "middle",
+   "parent": "base",
+   "deform": true,
+   "head": [
+    0.0,
+    -0.2072,
+    2.36
+   ],
+   "tail": [
+    0.0,
+    -0.5253,
+    3.55
+   ]
+  },
+  {
+   "name": "head",
+   "parent": "middle",
+   "deform": true,
+   "head": [
+    0.0,
+    -0.5253,
+    3.55
+   ],
+   "tail": [
+    0.0,
+    -0.5803,
+    4.89
+   ]
+  },
+  {
+   "name": "horn_L",
+   "parent": "head",
+   "deform": true,
+   "head": [
+    0.34,
+    -0.6953,
+    4.79
+   ],
+   "tail": [
+    0.75,
+    -0.6253,
+    5.74
+   ]
+  },
+  {
+   "name": "horn_R",
+   "parent": "head",
+   "deform": true,
+   "head": [
+    -0.34,
+    -0.6953,
+    4.79
+   ],
+   "tail": [
+    -0.75,
+    -0.6253,
+    5.74
+   ]
+  },
+  {
+   "name": "arm_L.0",
+   "parent": "middle",
+   "deform": true,
+   "head": [
+    0.4,
+    -0.4753,
+    3.26
+   ],
+   "tail": [
+    1.3144,
+    -0.009,
+    2.3013
+   ]
+  },
+  {
+   "name": "arm_L.1",
+   "parent": "arm_L.0",
+   "deform": true,
+   "head": [
+    1.3144,
+    -0.009,
+    2.3013
+   ],
+   "tail": [
+    1.68,
+    0.2347,
+    1.44
+   ]
+  },
+  {
+   "name": "arm_R.0",
+   "parent": "middle",
+   "deform": true,
+   "head": [
+    -0.4,
+    -0.4753,
+    3.26
+   ],
+   "tail": [
+    -1.3144,
+    -0.009,
+    2.3013
+   ]
+  },
+  {
+   "name": "arm_R.1",
+   "parent": "arm_R.0",
+   "deform": true,
+   "head": [
+    -1.3144,
+    -0.009,
+    2.3013
+   ],
+   "tail": [
+    -1.68,
+    0.2347,
+    1.44
+   ]
+  },
+  {
+   "name": "orb.001",
+   "parent": "base",
+   "deform": true,
+   "head": [
+    0.0,
+    0.0247,
+    5.89
+   ],
+   "tail": [
+    0.0,
+    0.0247,
+    6.34
+   ]
+  },
+  {
+   "name": "flame.001",
+   "parent": "orb.001",
+   "deform": true,
+   "head": [
+    0.0,
+    0.0247,
+    5.989
+   ],
+   "tail": [
+    0.0,
+    0.0247,
+    7.09
+   ]
+  },
+  {
+   "name": "orb.002",
+   "parent": "base",
+   "deform": true,
+   "head": [
+    1.645,
+    0.7997,
+    4.79
+   ],
+   "tail": [
+    1.8015,
+    0.8579,
+    5.2079
+   ]
+  },
+  {
+   "name": "flame.002",
+   "parent": "orb.002",
+   "deform": true,
+   "head": [
+    1.6794,
+    0.8125,
+    4.8819
+   ],
+   "tail": [
+    2.0518,
+    0.9509,
+    5.8759
+   ]
+  },
+  {
+   "name": "orb.003",
+   "parent": "base",
+   "deform": true,
+   "head": [
+    -1.645,
+    0.7997,
+    4.79
+   ],
+   "tail": [
+    -1.8015,
+    0.8579,
+    5.2079
+   ]
+  },
+  {
+   "name": "flame.003",
+   "parent": "orb.003",
+   "deform": true,
+   "head": [
+    -1.6794,
+    0.8125,
+    4.8819
+   ],
+   "tail": [
+    -2.0518,
+    0.9509,
+    5.8759
+   ]
+  },
+  {
+   "name": "orb.004",
+   "parent": "base",
+   "deform": true,
+   "head": [
+    1.815,
+    0.5747,
+    3.18
+   ],
+   "tail": [
+    1.9199,
+    0.6351,
+    3.6134
+   ]
+  },
+  {
+   "name": "flame.004",
+   "parent": "orb.004",
+   "deform": true,
+   "head": [
+    1.8381,
+    0.588,
+    3.2754
+   ],
+   "tail": [
+    2.0732,
+    0.7233,
+    4.2474
+   ]
+  },
+  {
+   "name": "orb.005",
+   "parent": "base",
+   "deform": true,
+   "head": [
+    -1.815,
+    0.5747,
+    3.18
+   ],
+   "tail": [
+    -1.9199,
+    0.6351,
+    3.6134
+   ]
+  },
+  {
+   "name": "flame.005",
+   "parent": "orb.005",
+   "deform": true,
+   "head": [
+    -1.8381,
+    0.588,
+    3.2754
+   ],
+   "tail": [
+    -2.0732,
+    0.7233,
+    4.2474
+   ]
+  }
+ ],
+ "bone_count": 20,
+ "deform_bone_count": 19,
+ "orb_bones": {
+  "orb.001": "top C",
+  "orb.002": "up L",
+  "orb.003": "up R",
+  "orb.004": "low L",
+  "orb.005": "low R"
+ },
+ "digest": {
+  "parts": {
+   "bake_normal": "cbdf123cb69a18e9",
+   "bake_ao": "c100d3b7df25a2d1",
+   "geometry_colour_uv": "b9365f01a19a1365",
+   "weights": "31438ba7509853ea",
+   "keys": "5e2844e88dea0db2",
+   "clip_samples": "1e93d40b97004c55"
+  },
+  "combined": "190cc0f9c6db552b"
+ },
+ "glb": {
+  "path": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\rigged\\mystic_snow_spirit.glb",
+  "bytes": 5654300,
+  "seconds": 0.7,
+  "carries": {
+   "materials": [
+    {
+     "name": "mystic_snow_spirit_body",
+     "alphaMode": "OPAQUE",
+     "doubleSided": false,
+     "textures": [
+      "baseColorTexture",
+      "normalTexture"
+     ]
+    },
+    {
+     "name": "mystic_snow_spirit_flame",
+     "alphaMode": "OPAQUE",
+     "doubleSided": false,
+     "textures": []
+    }
+   ],
+   "primitives": [
+    {
+     "mesh": "mystic_snow_spirit",
+     "material": "mystic_snow_spirit_body",
+     "attributes": [
+      "COLOR_0",
+      "COLOR_1",
+      "JOINTS_0",
+      "NORMAL",
+      "POSITION",
+      "TEXCOORD_0",
+      "WEIGHTS_0",
+      "_GLOW"
+     ]
+    },
+    {
+     "mesh": "mystic_snow_spirit",
+     "material": "mystic_snow_spirit_flame",
+     "attributes": [
+      "COLOR_0",
+      "COLOR_1",
+      "JOINTS_0",
+      "NORMAL",
+      "POSITION",
+      "TEXCOORD_0",
+      "WEIGHTS_0",
+      "_GLOW"
+     ]
+    }
+   ],
+   "animations": [
+    "idle",
+    "walk"
+   ],
+   "skins": 1,
+   "joints": 20
+  },
+  "structure": "armature identity + skinned 'mystic_snow_spirit' (opaque body primitive + opaque emissive flame primitive); natural scale; report-only cell fit 0.25388"
+ },
+ "skins": {
+  "default": {
+   "file": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\rigged\\mystic_snow_spirit.blend",
+   "palette": {
+    "snow": {
+     "rgb": [
+      237,
+      238,
+      242
+     ]
+    },
+    "snow_shade": {
+     "rgb": [
+      193,
+      215,
+      237
+     ]
+    },
+    "snow_glow": {
+     "rgb": [
+      92,
+      173,
+      214
+     ],
+     "emission": [
+      92,
+      173,
+      214
+     ],
+     "emission_scale": 0.3
+    },
+    "nose": {
+     "rgb": [
+      246,
+      245,
+      247
+     ]
+    },
+    "eye_rim": {
+     "rgb": [
+      85,
+      120,
+      183
+     ]
+    },
+    "eye_iris": {
+     "rgb": [
+      204,
+      219,
+      243
+     ]
+    },
+    "pupil": {
+     "rgb": [
+      15,
+      24,
+      38
+     ]
+    },
+    "eye_hi": {
+     "rgb": [
+      248,
+      247,
+      240
+     ]
+    },
+    "mouth": {
+     "rgb": [
+      46,
+      67,
+      108
+     ]
+    },
+    "wood": {
+     "rgb": [
+      156,
+      122,
+      109
+     ]
+    },
+    "orb": {
+     "rgb": [
+      195,
+      220,
+      253
+     ]
+    },
+    "flame_outer": {
+     "rgb": [
+      139,
+      93,
+      253
+     ],
+     "emission": [
+      139,
+      93,
+      253
+     ],
+     "emission_scale": 0.85
+    },
+    "flame_mid": {
+     "rgb": [
+      92,
+      173,
+      214
+     ],
+     "emission": [
+      92,
+      173,
+      214
+     ],
+     "emission_scale": 1.0
+    },
+    "flame_core": {
+     "rgb": [
+      236,
+      248,
+      253
+     ],
+     "emission": [
+      236,
+      248,
+      253
+     ],
+     "emission_scale": 1.2
+    }
+   },
+   "glow": {
+    "skin": "default",
+    "emission_scale_tiers": {
+     "snow_glow": 0.3,
+     "flame_outer": 0.85,
+     "flame_mid": 1.0,
+     "flame_core": 1.2
+    },
+    "peak_x_strength": {
+     "snow_glow": 0.3776,
+     "flame_outer": 1.265,
+     "flame_mid": 1.2588,
+     "flame_core": 1.7859
+    },
+    "cap": 2.0,
+    "only_drawn_glow": true,
+    "grade_pass": true,
+    "faint_base_glow": true,
+    "cap_pass": true
+   }
+  },
+  "rule": "default skin only (brief)"
+ },
+ "improved_report": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\improved\\mystic_snow_spirit.json",
+ "seconds": 37.3
+}

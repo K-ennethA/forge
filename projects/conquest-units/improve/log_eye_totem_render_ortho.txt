@@ -1,0 +1,8 @@
+00:01.891  blend            | Read blend: "C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\rigged\eye_totem.blend"
+00:04.719  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\eye_totem\eye_totem_ortho_front.png'
+00:05.172  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\eye_totem\eye_totem_ortho_back.png'
+00:05.485  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\eye_totem\eye_totem_ortho_side.png'
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\eye_totem\eye_totem_ortho_front.png
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\eye_totem\eye_totem_ortho_back.png
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\eye_totem\eye_totem_ortho_side.png
+Blender 5.0.1 (hash a3db93c5b259 built 2025-12-16 01:32:30)

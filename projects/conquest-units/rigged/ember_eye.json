@@ -1,0 +1,422 @@
+{
+ "unit": "ember_eye",
+ "source": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\improved\\ember_eye.blend",
+ "fps": 24,
+ "weights": {
+  "max_influences": 2,
+  "unweighted": 0,
+  "sum_dev_max": 0.0,
+  "per_bone_dominant": {
+   "body": 3834,
+   "flame_top.001": 474,
+   "flame_top.002": 606,
+   "flame_top.003": 562,
+   "flame_L": 839,
+   "flame_R": 839,
+   "ribbon.001": 727,
+   "ribbon.002": 705,
+   "ribbon.003": 705,
+   "stem": 490
+  },
+  "rule": "shell: orb = body, stem by smoothstep(+-0.08) of (orb distance - stem distance); upper flame: rigkit.vine_weights along z from 3.45 (body -> flame_top.001 from 0.15 below); side flames rigid on flame_L / flame_R; ribbons: body at the apex -> strip bone by smoothstep(0.1, 0.4) of the distance from the apex"
+ },
+ "clips": {
+  "idle": {
+   "frames": [
+    1,
+    97
+   ],
+   "period_frames": 96,
+   "seconds": 4.0,
+   "cyclic": true,
+   "seam_main_mm": 0.0,
+   "root_offset_max": 0.0,
+   "clearance_min_z": 0.03182,
+   "body_lift": [
+    0.04,
+    0.3
+   ],
+   "pitch_deg": [
+    -1.2,
+    1.2
+   ],
+   "roll_deg": [
+    -1.5,
+    1.5
+   ],
+   "flame_tip_p2p_xyz": [
+    0.6476,
+    0.5454,
+    0.3136
+   ],
+   "stem_tip_p2p_xyz": [
+    0.1958,
+    0.2423,
+    0.2865
+   ]
+  },
+  "walk": {
+   "frames": [
+    1,
+    49
+   ],
+   "period_frames": 48,
+   "seconds": 2.0,
+   "cyclic": true,
+   "seam_main_mm": 0.0,
+   "root_offset_max": 0.0,
+   "clearance_min_z": 0.28873,
+   "body_lift": [
+    0.15,
+    0.21
+   ],
+   "pitch_deg": [
+    7.001,
+    9.002
+   ],
+   "roll_deg": [
+    -1.498,
+    1.498
+   ],
+   "flame_tip_p2p_xyz": [
+    0.4391,
+    0.2936,
+    0.07
+   ],
+   "stem_tip_p2p_xyz": [
+    0.2259,
+    0.1418,
+    0.0645
+   ]
+  }
+ },
+ "hover": {
+  "rest_height_units": 6.9589,
+  "idle_lift_units": [
+   0.04,
+   0.3
+  ],
+  "walk_lift_units": 0.18,
+  "rule": "rest pose: stem tip on the floor (contract feet_origin, z 0); idle keys body.location z = IDLE_LIFT[0] .. [1] (slow bob), walk WALK_LIFT + bob; the contract root never moves. The sheet's floor shadow sits well under the tip: the in-game hover height is the artist's open question"
+ },
+ "bones": [
+  {
+   "name": "root",
+   "parent": null,
+   "deform": false,
+   "head": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "tail": [
+    0.0,
+    0.0,
+    0.4
+   ]
+  },
+  {
+   "name": "body",
+   "parent": "root",
+   "deform": true,
+   "head": [
+    0.0,
+    -0.0414,
+    2.8489
+   ],
+   "tail": [
+    0.0,
+    -0.0414,
+    3.4489
+   ]
+  },
+  {
+   "name": "flame_top.001",
+   "parent": "body",
+   "deform": true,
+   "head": [
+    -0.0152,
+    0.0203,
+    3.4389
+   ],
+   "tail": [
+    -0.0418,
+    0.0669,
+    4.6123
+   ]
+  },
+  {
+   "name": "flame_top.002",
+   "parent": "flame_top.001",
+   "deform": true,
+   "head": [
+    -0.0418,
+    0.0669,
+    4.6123
+   ],
+   "tail": [
+    -0.1208,
+    0.0743,
+    5.7856
+   ]
+  },
+  {
+   "name": "flame_top.003",
+   "parent": "flame_top.002",
+   "deform": true,
+   "head": [
+    -0.1208,
+    0.0743,
+    5.7856
+   ],
+   "tail": [
+    -0.29,
+    0.3086,
+    6.9589
+   ]
+  },
+  {
+   "name": "flame_L",
+   "parent": "body",
+   "deform": true,
+   "head": [
+    0.8,
+    -0.0414,
+    2.3189
+   ],
+   "tail": [
+    1.43,
+    0.2295,
+    4.0389
+   ]
+  },
+  {
+   "name": "flame_R",
+   "parent": "body",
+   "deform": true,
+   "head": [
+    -0.8,
+    -0.0414,
+    2.3189
+   ],
+   "tail": [
+    -1.43,
+    0.2295,
+    4.0389
+   ]
+  },
+  {
+   "name": "ribbon.001",
+   "parent": "body",
+   "deform": true,
+   "head": [
+    0.0,
+    -0.0414,
+    2.1889
+   ],
+   "tail": [
+    0.0,
+    -0.3914,
+    1.2889
+   ]
+  },
+  {
+   "name": "ribbon.002",
+   "parent": "body",
+   "deform": true,
+   "head": [
+    0.15,
+    -0.0414,
+    2.1889
+   ],
+   "tail": [
+    1.05,
+    0.3896,
+    1.4389
+   ]
+  },
+  {
+   "name": "ribbon.003",
+   "parent": "body",
+   "deform": true,
+   "head": [
+    -0.15,
+    -0.0414,
+    2.1889
+   ],
+   "tail": [
+    -1.05,
+    0.3896,
+    1.4389
+   ]
+  },
+  {
+   "name": "stem",
+   "parent": "body",
+   "deform": true,
+   "head": [
+    0.0,
+    -0.0414,
+    2.1889
+   ],
+   "tail": [
+    0.015,
+    0.2486,
+    -0.0111
+   ]
+  }
+ ],
+ "bone_count": 11,
+ "deform_bone_count": 10,
+ "digest": {
+  "parts": {
+   "bake_normal": "38b9f7bb9711c881",
+   "bake_ao": "88358bba95016482",
+   "geometry_colour_uv": "054d0ddd6a340b5e",
+   "weights": "d7b76373e42f7290",
+   "keys": "64c116bf39f18990",
+   "clip_samples": "19df6c404a790cb2"
+  },
+  "combined": "a63464863bb70d17"
+ },
+ "glb": {
+  "path": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\rigged\\ember_eye.glb",
+  "bytes": 4892944,
+  "seconds": 0.6,
+  "carries": {
+   "materials": [
+    {
+     "name": "ember_eye_body",
+     "alphaMode": "OPAQUE",
+     "doubleSided": false,
+     "textures": [
+      "baseColorTexture",
+      "normalTexture"
+     ]
+    }
+   ],
+   "primitives": [
+    {
+     "mesh": "ember_eye",
+     "material": "ember_eye_body",
+     "attributes": [
+      "COLOR_0",
+      "COLOR_1",
+      "JOINTS_0",
+      "NORMAL",
+      "POSITION",
+      "TEXCOORD_0",
+      "WEIGHTS_0",
+      "_GLOW"
+     ]
+    }
+   ],
+   "animations": [
+    "idle",
+    "walk"
+   ],
+   "skins": 1,
+   "joints": 11
+  },
+  "structure": "armature identity + skinned 'ember_eye' (one opaque body primitive); natural scale; report-only cell fit 0.25866"
+ },
+ "skins": {
+  "default": {
+   "file": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\rigged\\ember_eye.blend",
+   "palette": {
+    "body": {
+     "rgb": [
+      117,
+      32,
+      31
+     ]
+    },
+    "rim": {
+     "rgb": [
+      85,
+      22,
+      21
+     ]
+    },
+    "back_disc": {
+     "rgb": [
+      99,
+      28,
+      27
+     ]
+    },
+    "eye_white": {
+     "rgb": [
+      245,
+      245,
+      246
+     ]
+    },
+    "pupil": {
+     "rgb": [
+      225,
+      4,
+      6
+     ]
+    },
+    "pupil_core": {
+     "rgb": [
+      245,
+      184,
+      182
+     ]
+    },
+    "stem": {
+     "rgb": [
+      115,
+      32,
+      31
+     ]
+    },
+    "flame": {
+     "rgb": [
+      250,
+      3,
+      5
+     ]
+    },
+    "flame_hi": {
+     "rgb": [
+      248,
+      77,
+      79
+     ]
+    },
+    "side_flame": {
+     "rgb": [
+      243,
+      4,
+      6
+     ]
+    },
+    "side_hi": {
+     "rgb": [
+      241,
+      185,
+      183
+     ]
+    },
+    "ribbon": {
+     "rgb": [
+      247,
+      2,
+      4
+     ]
+    }
+   },
+   "glow": {
+    "skin": "default",
+    "glowing_regions": [],
+    "rule": "NO glow: the sheet draws none beyond the bright colours ('bright red with soft highlight'); zero Glow. The artist can ask for an emissive flame tier."
+   }
+  },
+  "rule": "default skin only (brief)"
+ },
+ "improved_report": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\improved\\ember_eye.json",
+ "seconds": 15.5
+}

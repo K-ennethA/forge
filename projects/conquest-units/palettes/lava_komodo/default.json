@@ -1,0 +1,216 @@
+{
+ "unit": "lava_komodo",
+ "skin": "default",
+ "description": "Lava Komodo default look, PIXEL-SAMPLED from design/reference/lava_komodo-character-sheet.webp: the six palette chips (intake.json swatches magma orange 254,115,58 / magma yellow 255,190,69 / dark stone 67,58,57 / rock 148,84,69 / red rock 163,72,57 / accent 167,145,125) cross-checked against the drawn surfaces (service venv PIL, median of a box per surface; boxes in each note). GLOW (drawn on the sheet): the magma cracks, the molten chest panel (orange outer band, a hotter V, a yellow core) / jaw / tail underside, the melting lower body, the drips, the lava pool, the eyes and the flame crest; tiers lava < crack < drip < pool < molten < molten_mid < molten_core < eye < crest_outer < crest_inner; peak emission (max channel / 255 x emission_scale x material emission_strength) stays under the 2.0 cap.",
+ "regions": {
+  "plate_a": {
+   "rgb": [
+    148,
+    84,
+    69
+   ],
+   "note": "rock plate tone A (most plates): chip 148,84,69 (x1468 y873); drawn plates back view (420,520)-(445,545) median 129,77,63, side neck (800,420)-(825,445) 100,65,57, front leg (60,520)-(90,550) 102,65,58 -- the drawn plates are the chip under shading"
+  },
+  "plate_b": {
+   "rgb": [
+    163,
+    72,
+    57
+   ],
+   "note": "rock plate tone B (red plates): chip 163,72,57 (x1537 y873); drawn back view (470,410)-(495,430) median 157,75,54, side haunch (1000,570)-(1030,600) 122,60,45"
+  },
+  "plate_c": {
+   "rgb": [
+    67,
+    58,
+    57
+   ],
+   "note": "rock plate tone C (dark stone plates, the fewest): chip 67,58,57 (x1399 y873); drawn darkest plates front leg R (215,520)-(245,550) median 88,57,49, back plate (395,405)-(420,430) 106,60,48"
+  },
+  "brow": {
+   "rgb": [
+    167,
+    145,
+    125
+   ],
+   "note": "the heavy brow plates over the eyes: ACCENT chip 167,145,125; drawn HEAD DETAIL brow (1150,128) 182,129,105 / (1170,125) 151,107,85 (v1.1: the snout is rock plates + cracks now, the accent stone stays on the brows only)"
+  },
+  "crack": {
+   "rgb": [
+    254,
+    115,
+    58
+   ],
+   "emission": [
+    254,
+    115,
+    58
+   ],
+   "emission_scale": 0.5,
+   "note": "GLOWING magma cracks between the plates: chip 254,115,58 (x1262 y872); drawn back-view dorsal crack (446,440)-(452,460) median 232,83,30"
+  },
+  "molten": {
+   "rgb": [
+    254,
+    115,
+    58
+   ],
+   "emission": [
+    254,
+    115,
+    58
+   ],
+   "emission_scale": 0.62,
+   "note": "GLOWING molten chest panel OUTER band + the lower jaw + the tail underside: ORANGE chip 254,115,58 (x1262 y872); drawn front chest edge between the legs (110,450)-(120,520) / chest bottom (130,560)-(175,600) median 253,133,35"
+  },
+  "molten_mid": {
+   "rgb": [
+    254,
+    153,
+    33
+   ],
+   "emission": [
+    254,
+    153,
+    33
+   ],
+   "emission_scale": 0.66,
+   "note": "GLOWING molten chest panel hotter V (the gradient step between the two chips): drawn side throat (690,400)-(710,430) median 254,153,33 (not a chip; drawn)"
+  },
+  "molten_core": {
+   "rgb": [
+    255,
+    190,
+    69
+   ],
+   "emission": [
+    255,
+    190,
+    69
+   ],
+   "emission_scale": 0.7,
+   "note": "GLOWING molten chest yellow CORE V (the hottest centre): chip 255,190,69 (x1328 y872); drawn front chest centre (130,450)-(175,520) median 254,181,50"
+  },
+  "lava": {
+   "rgb": [
+    254,
+    115,
+    58
+   ],
+   "emission": [
+    254,
+    115,
+    58
+   ],
+   "emission_scale": 0.45,
+   "note": "GLOWING melting lower body (the limbs and belly merging into lava): chip 254,115,58; drawn front chest bottom (130,560)-(175,600) median 253,133,35"
+  },
+  "drip": {
+   "rgb": [
+    255,
+    190,
+    69
+   ],
+   "emission": [
+    255,
+    190,
+    69
+   ],
+   "emission_scale": 0.55,
+   "note": "GLOWING hanging lava drips: chip 255,190,69; drawn drips side throat (686,463) bright median 248,191,67, side belly (868,627) 248,198,72, front flank (41,603) 253,196,89"
+  },
+  "pool": {
+   "rgb": [
+    255,
+    190,
+    69
+   ],
+   "emission": [
+    255,
+    190,
+    69
+   ],
+   "emission_scale": 0.58,
+   "note": "GLOWING lava pool on the floor: chip 255,190,69; drawn front pool (60,650)-(100,660) median 254,197,60"
+  },
+  "eye_socket": {
+   "rgb": [
+    47,
+    32,
+    26
+   ],
+   "note": "the dark almond round each eye (HEAD DETAIL line art): drawn (1145,153) 47,32,26 -- darker than every chip (the drawn fill is used, reported)"
+  },
+  "eye": {
+   "rgb": [
+    254,
+    115,
+    58
+   ],
+   "emission": [
+    254,
+    115,
+    58
+   ],
+   "emission_scale": 0.74,
+   "note": "GLOWING orange iris: chip 254,115,58; drawn HEAD DETAIL iris (1154,148) 235,122,33 / (1167,145) 246,173,70 (yellower centre, the chip is used)"
+  },
+  "pupil": {
+   "rgb": [
+    41,
+    19,
+    12
+   ],
+   "note": "the slit pupil: drawn HEAD DETAIL (1160,143) 41,19,12 -- darker than every chip (drawn fill used)"
+  },
+  "glint": {
+   "rgb": [
+    255,
+    250,
+    234
+   ],
+   "note": "the eye highlight dot: drawn HEAD DETAIL brightest pixel in (1155-1166, 136-150) 255,250,234 (not a chip; drawn)"
+  },
+  "face_line": {
+   "rgb": [
+    47,
+    32,
+    26
+   ],
+   "note": "mouth line + nostrils (line art): the socket sample 47,32,26"
+  },
+  "crest_outer": {
+   "rgb": [
+    254,
+    115,
+    58
+   ],
+   "emission": [
+    254,
+    115,
+    58
+   ],
+   "emission_scale": 0.82,
+   "note": "GLOWING outer flame-crest tongues: chip 254,115,58; drawn front crest edge (130,280)-(140,295) median 248,106,35, FLAME CREST panel (1480,100)-(1500,130) 248,93,42"
+  },
+  "crest_inner": {
+   "rgb": [
+    255,
+    190,
+    69
+   ],
+   "emission": [
+    255,
+    190,
+    69
+   ],
+   "emission_scale": 0.95,
+   "note": "GLOWING inner flame-crest core: chip 255,190,69; drawn front crest core (150,270)-(160,290) median 253,156,36, FLAME CREST panel core (1540,130)-(1560,160) 254,176,48"
+  }
+ },
+ "material": {
+  "roughness": 0.92,
+  "emission_strength": 1.0,
+  "alpha": 1.0
+ }
+}

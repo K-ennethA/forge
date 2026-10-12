@@ -1,0 +1,18 @@
+SDF {"step": 0.025, "band": 0.22, "grid": [101, 123, 181], "ops": 25, "high_tris": 414300, "high_verts": 207140, "toe_creases": 8, "crumbs": {"pieces": 1, "dropped_verts": 0}, "seconds": 4.7}
+RETOPO {"method": "SDF marching tetrahedra (step 0.025) -> collapse decimation (deterministic)", "decimated_tris": 9000, "specks": {"pieces": 1, "dropped_verts": 0}, "doubled_faces_removed": 0, "low_to_high": {"mean": 0.00128, "p99": 0.00392, "max": 0.00706}, "high_to_low_sampled": {"p99": 0.00468, "max": 0.01466}, "bbox_high": [2.1004, 2.62, 4.2766], "bbox_low": [2.1006, 2.6203, 4.2773], "bbox_low_over_high": [1.00014, 1.0001, 1.00017], "seconds": 7.2}
+Info: Baking map saved to internal image, save it externally or pack it
+Info: Baking map saved to internal image, save it externally or pack it
+Info: Saved copy as "winged_cat.blend"
+IMPROVED_SAVED C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\improved\winged_cat.blend 24.6
+CLIP idle {"frames": [1, 97], "period_frames": 96, "seconds": 4.0, "cyclic": true, "seam_main_mm": 0.0, "root_offset_max": 0.0, "clearance_min_z": 0.0, "spine_lift": [0.0, 0.01307], "floor_guard_lift": {"frames_lifted": 88, "max": 0.01307}, "wing_tip_L_p2p_xyz": [0.5904, 0.4656, 0.2792], "wing_tip_R_p2p_xyz": [0.5904, 0.4656, 0.2792], "tail_tip_p2p_xyz": [0.9106, 0.0878, 0.0743], "head_top_p2p_xyz": [0.0148, 0.0484, 0.0126]}
+CLIP walk {"frames": [1, 49], "period_frames": 48, "seconds": 2.0, "cyclic": true, "seam_main_mm": 0.0, "root_offset_max": 0.0, "clearance_min_z": 0.0001, "spine_lift": [0.00297, 0.03141], "floor_guard_lift": {"frames_lifted": 48, "max": 0.03141}, "wing_tip_L_p2p_xyz": [0.3811, 0.2591, 0.1709], "wing_tip_R_p2p_xyz": [0.3811, 0.2591, 0.1706], "tail_tip_p2p_xyz": [0.7317, 0.0636, 0.0598], "head_top_p2p_xyz": [0.0846, 0.0399, 0.0403]}
+Info: Saved copy as "winged_cat.blend"
+INFO Draco mesh compression is available, use library at C:\Program Files\Blender Foundation\Blender 5.0\5.0\scripts\addons_core\io_scene_gltf2\extern_draco.dll
+13:49:54 | INFO: Starting glTF 2.0 export
+13:49:54 | INFO: Extracting primitive: winged_cat
+13:49:54 | INFO: Primitives created: 1
+13:49:54 | INFO: Finished glTF 2.0 export in 0.43508315086364746 s
+
+RIG_DONE {"bone_count": 15, "weights": {"max_influences": 4, "unweighted": 0, "sum_dev_max": 2.220446049250313e-16, "per_bone_dominant": {"spine": 1551, "neck": 1852, "head": 1843, "ear_L": 108, "ear_R": 179, "wing_L.001": 264, "wing_L.002": 361, "wing_R.001": 264, "wing_R.002": 361, "tail.001": 552, "tail.002": 762, "tail.003": 498, "foreleg_L": 203, "foreleg_R": 193}, "rule": "shell: soft SDF ownership (tau 0.06) between torso, haunches, neck, collar, head, ears, front legs, tail root; neck spine -> neck -> head by z bands; collar rides the neck; ears blend from the head along the ear axis; front legs blend into the spine at the shoulder; wings + tail blades: rigkit.vine_weights along their chains (parent spine); eyes, pupils, fangs rigid on the head"}, "digest": {"parts": {"bake_normal": "62f46766506c0ffd", "bake_ao": "5d5e9b64f46aadf5", "geometry_colour_uv": "12a9ad136a3bd51c", "weights": "94bb72131d6ae34c", "keys": "f0a01a7c303338e3", "clip_samples": "b00f90d9cef9209c"}, "combined": "b0304b4529c560d8"}, "seconds": 26.8}
+GLB {"materials": [{"name": "winged_cat_body", "alphaMode": "OPAQUE", "doubleSided": false, "textures": ["baseColorTexture", "normalTexture"]}], "primitives": [{"mesh": "winged_cat", "material": "winged_cat_body", "attributes": ["COLOR_0", "COLOR_1", "JOINTS_0", "NORMAL", "POSITION", "TEXCOORD_0", "WEIGHTS_0", "_GLOW"]}], "animations": ["idle", "walk"], "skins": 1, "joints": 15}
+Blender 5.0.1 (hash a3db93c5b259 built 2025-12-16 01:32:30)
