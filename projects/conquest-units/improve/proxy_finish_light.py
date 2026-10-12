@@ -119,6 +119,109 @@ def self_intersections(V, F, face_mask=None):
     return n, n_m
 
 
+def _smooth(e0, e1, x):
+    t_ = np.clip((x - e0) / max(e1 - e0, 1e-12), 0.0, 1.0)
+    return t_ * t_ * (3.0 - 2.0 * t_)
+
+
+def recolour_albedo(pc, R, me, specs):
+    """opt-in light.recolour (artist 2026-10-12, Sand Drill Worm: "mouth dark red"): per spec, the albedo texels of a
+    CUP-shaped cavity (a mouth) are repainted with a depth gradient, the proxy's own texture detail kept as a luminance
+    ratio. The mask is GEOMETRY: every low triangle is rasterised into the albedo's UV grid; a texel is in the cavity when
+    its 3D point lies `rim_band`+ below the rim plane (`plane_point`, unit `axis` out of the mouth), within `radius` of
+    the axis, above `depth` + 0.15, and its face does not face outward (normal . radial < normal_max_out). Bright texels
+    (the teeth) keep their colour: weight 1 - smoothstep(keep_bright). The UV margin texels next to a repainted texel
+    take its value (dilation, `margin_px` rings). pc: (R*R, 4) sRGB floats, edited in place -> report"""
+    uv = np.empty(len(me.loops) * 2); me.uv_layers.active.data.foreach_get("uv", uv); uv = uv.reshape(-1, 3, 2)
+    co = np.empty(len(me.vertices) * 3); me.vertices.foreach_get("co", co); co = co.reshape(-1, 3)
+    lv = np.empty(len(me.loops), dtype=np.int64); me.loops.foreach_get("vertex_index", lv); Ft = lv.reshape(-1, 3)
+    T3 = co[Ft]
+    nrm = np.cross(T3[:, 1] - T3[:, 0], T3[:, 2] - T3[:, 0])
+    nrm /= np.maximum(np.linalg.norm(nrm, axis=1, keepdims=True), 1e-12)
+    owner = np.full(R * R, -1, np.int64)            # every texel inside some triangle (for the margin dilation)
+    img = pc.reshape(R, R, 4)
+    out = []
+    for sp in specs:
+        c0 = np.asarray(sp["plane_point"], float); ax = np.asarray(sp["axis"], float); ax /= np.linalg.norm(ax)
+        rad = float(sp["radius"]); dep = float(sp["depth"]); band = float(sp.get("rim_band", 0.06))
+        nmax = float(sp.get("normal_max_out", 0.3)); kb = sp.get("keep_bright", [115, 150])
+        stops = sorted(sp["stops"], key=lambda r: r[0])
+        st_t = np.array([r[0] for r in stops], float); st_c = np.array([r[1] for r in stops], float) / 255.0
+        gam = float(sp.get("detail_gamma", 0.6))
+        rel = T3.mean(1) - c0
+        sc = rel @ ax
+        cand = np.nonzero((sc < 0.1) & (sc > -(dep + 0.4)) & (np.linalg.norm(rel - sc[:, None] * ax, axis=1) < rad + 0.3))[0]
+        tex_idx, tex_w, tex_t = [], [], []
+        for f in cand:
+            t2 = uv[f] * R
+            x0, y0 = np.floor(t2.min(0)).astype(int); x1, y1 = np.ceil(t2.max(0)).astype(int)
+            xs, ys = np.meshgrid(np.arange(max(x0, 0), min(x1, R)) + 0.5, np.arange(max(y0, 0), min(y1, R)) + 0.5)
+            Pq = np.stack([xs.ravel(), ys.ravel()], 1)
+            if not len(Pq):
+                continue
+            a_, b_, c_ = t2
+            den = (b_[1] - c_[1]) * (a_[0] - c_[0]) + (c_[0] - b_[0]) * (a_[1] - c_[1])
+            if abs(den) < 1e-12:
+                continue
+            l0 = ((b_[1] - c_[1]) * (Pq[:, 0] - c_[0]) + (c_[0] - b_[0]) * (Pq[:, 1] - c_[1])) / den
+            l1 = ((c_[1] - a_[1]) * (Pq[:, 0] - c_[0]) + (a_[0] - c_[0]) * (Pq[:, 1] - c_[1])) / den
+            l2 = 1.0 - l0 - l1
+            ins = (l0 >= -1e-6) & (l1 >= -1e-6) & (l2 >= -1e-6)
+            if not ins.any():
+                continue
+            B_ = np.stack([l0[ins], l1[ins], l2[ins]], 1)
+            X3 = B_ @ T3[f]
+            r3 = X3 - c0
+            s3 = r3 @ ax
+            q3 = r3 - s3[:, None] * ax
+            rr = np.linalg.norm(q3, axis=1)
+            ru = q3 / np.maximum(rr, 1e-9)[:, None]
+            d3 = -s3
+            ok = (rr < rad) & (d3 < dep + 0.15) & ((ru @ nrm[f]) < nmax)
+            w3 = _smooth(0.0, band, d3) * ok
+            ii = (Pq[ins, 1].astype(int)) * R + Pq[ins, 0].astype(int)
+            owner[ii] = f
+            keep = w3 > 0
+            tex_idx.append(ii[keep]); tex_w.append(w3[keep]); tex_t.append(np.clip((d3[keep] - band) / max(dep - band, 1e-9), 0, 1))
+        if not tex_idx:
+            out.append({"name": sp.get("name"), "texels": 0}); continue
+        ii = np.concatenate(tex_idx); ww = np.concatenate(tex_w); tt = np.concatenate(tex_t)
+        o_, first = np.unique(ii, return_index=True)
+        ii, ww, tt = ii[first], ww[first], tt[first]
+        src = pc[ii, :3].copy()
+        Y = src.mean(1) * 255.0
+        wb = 1.0 - _smooth(float(kb[0]), float(kb[1]), Y)          # the teeth (bright) keep their colour
+        ww = ww * wb
+        tgt = np.stack([np.interp(tt, st_t, st_c[:, k]) for k in range(3)], 1)
+        Ym = float(np.median(Y[ww > 0.5])) if (ww > 0.5).any() else float(np.median(Y))
+        detail = np.clip((np.maximum(Y, 1.0) / max(Ym, 1.0)) ** gam, 0.7, 1.3)
+        new_ = np.clip(tgt * detail[:, None], 0, 1)
+        pc[ii, :3] = src * (1 - ww[:, None]) + new_ * ww[:, None]
+        # margin: UV texels outside every triangle take the repainted neighbour (rings of 4-neighbour dilation)
+        painted = np.zeros(R * R, bool); painted[ii[ww > 0.5]] = True
+        free = owner < 0
+        nm_ = 0
+        for _ in range(int(sp.get("margin_px", 3))):
+            pm = painted.reshape(R, R)
+            nb = np.zeros((R, R), bool); acc = np.zeros((R, R, 3)); cnt = np.zeros((R, R))
+            for dy, dx in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+                sh = np.roll(pm, (dy, dx), (0, 1)); col = np.roll(img[..., :3], (dy, dx), (0, 1))
+                acc += col * sh[..., None]; cnt += sh; nb |= sh
+            grow = (nb & ~pm & free.reshape(R, R)).ravel()
+            if not grow.any():
+                break
+            g2 = np.nonzero(grow)[0]
+            pc[g2, :3] = (acc.reshape(-1, 3)[g2] / cnt.ravel()[g2][:, None])
+            painted[g2] = True; nm_ += len(g2)
+        out.append({"name": sp.get("name"), "texels_in_mask": int(len(ii)), "texels_painted_ge_half": int((ww > 0.5).sum()),
+                    "teeth_kept_texels": int(((wb < 0.5) & (np.concatenate(tex_w)[first] > 0.5)).sum()),
+                    "margin_texels": nm_, "median_src_rgb": np.round(np.median(src[ww > 0.5], 0) * 255).tolist()
+                    if (ww > 0.5).any() else None,
+                    "median_new_rgb": np.round(np.median(pc[ii[ww > 0.5], :3], 0) * 255).tolist() if (ww > 0.5).any() else None,
+                    "stops": stops, "faces_considered": int(len(cand))})
+    return out
+
+
 def run_light(unit, cfg, raw_cfg, PREVIEW, DIGEST_ONLY, SOLID, T0):
     scene = bpy.context.scene
     lc = cfg["light"]
@@ -160,6 +263,21 @@ def run_light(unit, cfg, raw_cfg, PREVIEW, DIGEST_ONLY, SOLID, T0):
     report["stage1"] = meta["report"]
     DIG["solid_grid"] = sha(F[::2, ::2, ::2])
     PV, PFc, PUV, PTI = Z["prox_V"], Z["prox_F"], Z["prox_UV"], Z["prox_texi"]
+    if lc.get("cuts"):                  # opt-in light.cuts: the removed part leaves the BAKE source too (else its texture,
+        Pc_ = PV[PFc].mean(1)           # AO shadow and the cage distance would still see the part that is gone)
+        cut_in = np.zeros(len(PFc), bool)
+        for c_ in lc["cuts"]:
+            if "capsule" in c_:
+                d_ = PF.sd_capsule(Pc_, *c_["capsule"])
+            elif "sphere" in c_:
+                d_ = np.linalg.norm(Pc_ - np.asarray(c_["sphere"][0], float), axis=1) - float(c_["sphere"][1])
+            else:
+                d_ = PF.sd_box(Pc_, *c_["box"])
+            cut_in |= d_ < 0
+        PFc, PTI = PFc[~cut_in], PTI[~cut_in]
+        report["proxy_faces_cut"] = {"faces_removed": int(cut_in.sum()), "faces_kept": int(len(PFc)),
+                                     "rule": "proxy faces whose centroid lies inside a light.cuts volume leave the bake "
+                                             "source (normal / AO / albedo) and the proxy-distance metrics"}
     print("STAGE1", round(time.time() - t, 1), "s grid", F.shape, "step", step)
 
     # ================================================================================================ 2. HIGH + LOW
@@ -214,6 +332,9 @@ def run_light(unit, cfg, raw_cfg, PREVIEW, DIGEST_ONLY, SOLID, T0):
     d_lp = np.array([bvh_p.find_nearest(Vector(p))[3] for p in LV])
     bvh_l = BVHTree.FromPolygons(LV.tolist(), LF.tolist())
     ss = np.arange(0, len(PV), max(1, len(PV) // 40000))
+    if lc.get("cuts"):                  # only the vertices of the KEPT proxy faces (a cut part is not a deviation)
+        used_ = np.unique(PFc)
+        ss = used_[np.arange(0, len(used_), max(1, len(used_) // 40000))]
     d_pl = np.array([bvh_l.find_nearest(Vector(PV[i]))[3] for i in ss])
     Hh = float(PV[:, 2].max() - PV[:, 2].min())
     report["low"] = {"method": "collapse decimation: uniform to %d, then %d with the dense boxes calibrated" % (
@@ -398,6 +519,9 @@ def run_light(unit, cfg, raw_cfg, PREVIEW, DIGEST_ONLY, SOLID, T0):
                                          "valid 3x3 neighbours ring by ring (opt-in light.ao_fill_below)"}
         mean_c = pc[cov_c, :3].mean(0) if cov_c.any() else np.full(3, 0.5)
         pc[~cov_c, :3] = mean_c; img_c.pixels.foreach_set(pc.ravel())
+        if lc.get("recolour"):              # opt-in (new units only): targeted texture recolours on a GEOMETRY mask
+            report["recolour"] = recolour_albedo(pc, RC_, me, lc["recolour"])
+            img_c.pixels.foreach_set(pc.ravel())
         # basecolor = albedo (sRGB) x AO (linear), back to sRGB: the one base-colour texture the glb carries
         ao_up = np.asarray(pa[:, 0]).reshape(RA, RA)
         if RA != RC_:

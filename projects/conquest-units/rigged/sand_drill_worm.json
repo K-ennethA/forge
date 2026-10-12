@@ -7,10 +7,10 @@
   "tris": 18000,
   "mirror": {
    "plane_x_u": 0.0,
-   "max_u": 0.36767,
-   "p99_u": 0.16528,
-   "p90_u": 0.05965,
-   "mean_u": 0.02594,
+   "max_u": 0.09816,
+   "p99_u": 0.05259,
+   "p90_u": 0.0305,
+   "mean_u": 0.01329,
    "rule": "every vertex mirrored in X about the plane -> distance to the nearest surface (0 = exactly symmetric)"
   },
   "tri_budget": [
@@ -25,24 +25,18 @@
   "unweighted": 0,
   "sum_dev_max": 3.3306690738754696e-16,
   "per_bone_dominant": {
-   "tail": 465,
-   "lower": 637,
-   "belly": 614,
-   "chest": 405,
-   "neck": 842,
-   "head": 2534,
-   "drill_fore.L.0": 234,
-   "drill_fore.L.1": 386,
-   "drill_fore.L.2": 331,
-   "drill_fore.R.0": 162,
-   "drill_fore.R.1": 337,
-   "drill_fore.R.2": 255,
-   "drill_aft.L.0": 236,
-   "drill_aft.L.1": 412,
-   "drill_aft.L.2": 275,
-   "drill_aft.R.0": 239,
-   "drill_aft.R.1": 403,
-   "drill_aft.R.2": 225
+   "tail": 556,
+   "lower": 750,
+   "belly": 737,
+   "chest": 482,
+   "neck": 1012,
+   "head": 2999,
+   "drill.L.0": 464,
+   "drill.L.1": 500,
+   "drill.L.2": 319,
+   "drill.R.0": 427,
+   "drill.R.1": 472,
+   "drill.R.2": 272
   },
   "parts": {},
   "rule": "shell: exp(-((d - d_min) / (0.06 H))^2) over bone-segment distances, side-aware, <= 4, normalised; parts rigid on their bone"
@@ -56,7 +50,7 @@
    "seconds": 3.0,
    "cyclic": true,
    "seam_mm": 0.0,
-   "clearance_min_z": -0.0002
+   "clearance_min_z": -0.0
   },
   "walk": {
    "frames": [
@@ -90,14 +84,14 @@
    "parent": "root",
    "deform": true,
    "head": [
-    -0.0014,
-    -0.2679,
-    0.0122
+    -0.0098,
+    -0.4413,
+    0.0102
    ],
    "tail": [
-    -0.0014,
-    -0.0479,
-    1.2122
+    -0.0098,
+    -0.2213,
+    1.2102
    ]
   },
   {
@@ -105,14 +99,14 @@
    "parent": "tail",
    "deform": true,
    "head": [
-    -0.0014,
-    -0.0479,
-    1.2122
+    -0.0098,
+    -0.2213,
+    1.2102
    ],
    "tail": [
-    -0.0014,
-    0.1421,
-    2.4122
+    -0.0098,
+    -0.0313,
+    2.4102
    ]
   },
   {
@@ -120,14 +114,14 @@
    "parent": "lower",
    "deform": true,
    "head": [
-    -0.0014,
-    0.1421,
-    2.4122
+    -0.0098,
+    -0.0313,
+    2.4102
    ],
    "tail": [
-    -0.0014,
-    0.2021,
-    3.6122
+    -0.0098,
+    0.0287,
+    3.6102
    ]
   },
   {
@@ -135,14 +129,14 @@
    "parent": "belly",
    "deform": true,
    "head": [
-    -0.0014,
-    0.2021,
-    3.6122
+    -0.0098,
+    0.0287,
+    3.6102
    ],
    "tail": [
-    -0.0014,
-    0.1021,
-    4.7622
+    -0.0098,
+    -0.0713,
+    4.7602
    ]
   },
   {
@@ -150,14 +144,14 @@
    "parent": "chest",
    "deform": true,
    "head": [
-    -0.0014,
-    0.1021,
-    4.7622
+    -0.0098,
+    -0.0713,
+    4.7602
    ],
    "tail": [
-    -0.0014,
-    -0.0479,
-    5.6122
+    -0.0098,
+    -0.2213,
+    5.6102
    ]
   },
   {
@@ -165,215 +159,125 @@
    "parent": "neck",
    "deform": true,
    "head": [
-    -0.0014,
-    -0.0479,
-    5.6122
+    -0.0098,
+    -0.2213,
+    5.6102
    ],
    "tail": [
-    -0.0014,
-    0.0521,
-    6.5122
+    -0.0098,
+    -0.1213,
+    6.5102
    ]
   },
   {
-   "name": "drill_fore.L.0",
+   "name": "drill.L.0",
    "parent": "neck",
    "deform": true,
    "head": [
-    0.9986,
-    -0.0479,
-    4.7622
+    0.9902,
+    -0.1213,
+    4.7602
    ],
    "tail": [
-    1.4486,
-    -0.2479,
-    3.7122
+    1.4402,
+    0.3687,
+    3.7102
    ]
   },
   {
-   "name": "drill_fore.L.1",
-   "parent": "drill_fore.L.0",
+   "name": "drill.L.1",
+   "parent": "drill.L.0",
    "deform": true,
    "head": [
-    1.4486,
-    -0.2479,
-    3.7122
+    1.4402,
+    0.3687,
+    3.7102
    ],
    "tail": [
-    1.5386,
-    -0.7179,
-    2.5122
+    1.4102,
+    0.6287,
+    2.5102
    ]
   },
   {
-   "name": "drill_fore.L.2",
-   "parent": "drill_fore.L.1",
+   "name": "drill.L.2",
+   "parent": "drill.L.1",
    "deform": true,
    "head": [
-    1.5386,
-    -0.7179,
-    2.5122
+    1.4102,
+    0.6287,
+    2.5102
    ],
    "tail": [
-    1.5886,
-    -0.9479,
-    1.6322
+    1.4302,
+    0.8687,
+    1.8002
    ]
   },
   {
-   "name": "drill_fore.R.0",
+   "name": "drill.R.0",
    "parent": "neck",
    "deform": true,
    "head": [
-    -0.9986,
-    -0.0479,
-    4.7622
+    -0.9902,
+    -0.1213,
+    4.7602
    ],
    "tail": [
-    -1.4486,
-    -0.2479,
-    3.7122
+    -1.4402,
+    0.3687,
+    3.7102
    ]
   },
   {
-   "name": "drill_fore.R.1",
-   "parent": "drill_fore.R.0",
+   "name": "drill.R.1",
+   "parent": "drill.R.0",
    "deform": true,
    "head": [
-    -1.4486,
-    -0.2479,
-    3.7122
+    -1.4402,
+    0.3687,
+    3.7102
    ],
    "tail": [
-    -1.5386,
-    -0.7179,
-    2.5122
+    -1.4102,
+    0.6287,
+    2.5102
    ]
   },
   {
-   "name": "drill_fore.R.2",
-   "parent": "drill_fore.R.1",
+   "name": "drill.R.2",
+   "parent": "drill.R.1",
    "deform": true,
    "head": [
-    -1.5386,
-    -0.7179,
-    2.5122
+    -1.4102,
+    0.6287,
+    2.5102
    ],
    "tail": [
-    -1.5886,
-    -0.9479,
-    1.6322
-   ]
-  },
-  {
-   "name": "drill_aft.L.0",
-   "parent": "neck",
-   "deform": true,
-   "head": [
-    0.9986,
-    0.0521,
-    4.7622
-   ],
-   "tail": [
-    1.4486,
-    0.5421,
-    3.7122
-   ]
-  },
-  {
-   "name": "drill_aft.L.1",
-   "parent": "drill_aft.L.0",
-   "deform": true,
-   "head": [
-    1.4486,
-    0.5421,
-    3.7122
-   ],
-   "tail": [
-    1.4186,
-    0.8021,
-    2.5122
-   ]
-  },
-  {
-   "name": "drill_aft.L.2",
-   "parent": "drill_aft.L.1",
-   "deform": true,
-   "head": [
-    1.4186,
-    0.8021,
-    2.5122
-   ],
-   "tail": [
-    1.4386,
-    1.0421,
-    1.8022
-   ]
-  },
-  {
-   "name": "drill_aft.R.0",
-   "parent": "neck",
-   "deform": true,
-   "head": [
-    -0.9986,
-    0.0521,
-    4.7622
-   ],
-   "tail": [
-    -1.4486,
-    0.5421,
-    3.7122
-   ]
-  },
-  {
-   "name": "drill_aft.R.1",
-   "parent": "drill_aft.R.0",
-   "deform": true,
-   "head": [
-    -1.4486,
-    0.5421,
-    3.7122
-   ],
-   "tail": [
-    -1.4186,
-    0.8021,
-    2.5122
-   ]
-  },
-  {
-   "name": "drill_aft.R.2",
-   "parent": "drill_aft.R.1",
-   "deform": true,
-   "head": [
-    -1.4186,
-    0.8021,
-    2.5122
-   ],
-   "tail": [
-    -1.4386,
-    1.0421,
-    1.8022
+    -1.4302,
+    0.8687,
+    1.8002
    ]
   }
  ],
- "bone_count": 19,
+ "bone_count": 13,
  "digest": {
   "parts": {
-   "solid_grid": "8daceebe8e2cb6cc",
-   "bake_normal": "c858220658658117",
-   "bake_ao": "843e499266aa4de1",
-   "bake_albedo": "247dd3ec3cbb30a9",
-   "geometry_colour_uv": "e6596e25f6c485fa",
-   "weights": "933ff35f2cde759a",
-   "keys": "ed1301b2ecc38bf2",
-   "clip_samples": "d89e0ee59b206cf4"
+   "solid_grid": "8de43358bab4bfae",
+   "bake_normal": "03d4a1440f3cf1e6",
+   "bake_ao": "6d0bf32878cc565c",
+   "bake_albedo": "69b596bd5e9c893a",
+   "geometry_colour_uv": "0b744b5707042542",
+   "weights": "490383366d4cd444",
+   "keys": "101c505e3934d767",
+   "clip_samples": "3c27b0fba9214454"
   },
-  "combined": "76a6a99081748d05"
+  "combined": "ba0f2da6926c8c6e"
  },
  "glb": {
   "path": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\rigged\\sand_drill_worm.glb",
-  "bytes": 12108808,
-  "seconds": 0.7
+  "bytes": 11684456,
+  "seconds": 0.6
  },
  "skins": {
   "default": {
@@ -389,10 +293,10 @@
    }
   },
   "repaint_proof": {
-   "default_digest_before": "e6596e25f6c485fa",
-   "after_repaint": "e6596e25f6c485fa"
+   "default_digest_before": "0b744b5707042542",
+   "after_repaint": "0b744b5707042542"
   }
  },
  "improved_report": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\improved\\sand_drill_worm.json",
- "seconds": 61.1
+ "seconds": 57.0
 }

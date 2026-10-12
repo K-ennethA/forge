@@ -867,6 +867,10 @@ def stage_light(unit, out_npz, cfg, intake, pp, report, V, Fp, UV, TEXI, images,
     report["solid"]["pieces"] = occupancy_pieces(Fg < 0)
     report["solid"]["rule"] = ("LIGHT: watertight remesh only (no smoothing / straighten / symmetrise / cuts); the surface "
                                "sits min_half_thickness x step = %.4f u outside the proxy" % (lc["min_half_thickness"] * step))
+    if lc.get("cuts"):                # opt-in: a duplicate PART Pixal3D invented (a forked tail), removed, never mirrored
+        report["solid"]["light_cuts"] = [{"shape": [k for k in ("capsule", "sphere", "box") if k in c][0],
+                                          "nodes_inside": apply_cut(Fg, lo, step, c, mirror=False), "why": c.get("why")}
+                                         for c in lc["cuts"]]
     if lc["floor_clip"]:
         z = lo[2] + step * np.arange(Fg.shape[2])
         Fg = np.maximum(Fg, (0.0 - z)[None, None, :])

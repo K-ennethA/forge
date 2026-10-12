@@ -2624,3 +2624,31 @@ SAND DRILL WORM ("sand_drill_worm", ~6.7 u).
 - Palette: 238,201,154 / 201,155,106 / 173,123,76 / 138,93,58 / 89,65,49 /
   116,62,58.
 - No glow.
+
+## 2026-10-12 — Crystal Canine (Pixal3D flow) verdict (artist verbatim)
+
+"fo the cyrstal creature seems torso should be a bit longer, and the face
+needs polishing, it has an extra nose and the eyes feel off, dont line up
+and are too low"
+Binding reading (applies to the Pixal3D-flow build, scratch):
+1. TORSO a bit longer: lengthen the body between the shoulders and hips
+   (a spine stretch via bones / a sectional scale), legs / head / mane
+   unchanged.
+2. FACE polish (an explicit artist ask, so a targeted face edit is allowed
+   here):
+   - remove the EXTRA NOSE (a second nose bump / dark spot);
+   - the EYES must be level / mirror-matched and sit HIGHER, at the
+     sheet's eye height relative to the head (front view head crop);
+   - the rest of the face (muzzle, gem, ears) is kept as generated.
+
+## 2026-10-12 — Sand Drill Worm v1 verdict (artist verbatim)
+
+"yes only 2 arms, mouth dark red. teeth are fine"
+Binding reading:
+1. Remove the proxy's extra drill-arm pair (Pixal3D read the side view's
+   offset drills as 4 arms). Keep ONE arm per side, matching the front /
+   back views; mirror-matched.
+2. Recolour the mouth INTERIOR (the throat / flesh inside the teeth ring)
+   to the sheet's dark red (sheet interior ~63,28,24; chip 116,62,58 for
+   the lighter flesh). The teeth and the sandy rim keep their colour.
+3. The teeth stay as generated.

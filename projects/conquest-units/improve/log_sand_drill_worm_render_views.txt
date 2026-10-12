@@ -1,9 +1,9 @@
-00:01.297  blend            | Read blend: "C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\rigged\sand_drill_worm.blend"
-00:03.250  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\sand_drill_worm\sand_drill_worm_front.png'
-00:03.703  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\sand_drill_worm\sand_drill_worm_threequarter.png'
-00:04.031  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\sand_drill_worm\sand_drill_worm_side.png'
-00:04.344  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\sand_drill_worm\sand_drill_worm_back.png'
-00:04.516  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\sand_drill_worm\sand_drill_worm_tactical.png'
+00:01.422  blend            | Read blend: "C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\rigged\sand_drill_worm.blend"
+00:03.516  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\sand_drill_worm\sand_drill_worm_front.png'
+00:04.047  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\sand_drill_worm\sand_drill_worm_threequarter.png'
+00:04.438  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\sand_drill_worm\sand_drill_worm_side.png'
+00:04.813  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\sand_drill_worm\sand_drill_worm_back.png'
+00:05.031  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\sand_drill_worm\sand_drill_worm_tactical.png'
 WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\sand_drill_worm\sand_drill_worm_front.png
 WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\sand_drill_worm\sand_drill_worm_threequarter.png
 WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\sand_drill_worm\sand_drill_worm_side.png
