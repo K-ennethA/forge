@@ -2763,3 +2763,12 @@ correct the mouth to match ours, teeth and purple inside"
   bone skull pendant with green-glowing sockets) APPROVED: commit and import
   into Conquest at 5 ft = 1.524 m (size-table target). Movement still open
   (N15): the idle + walk clips ship as PLACEHOLDERS.
+
+## 2026-10-12 — Sand Drill Worm height + Conquest branch push (artist verbatim)
+"I am not sure what effect the mipmaps will do, that height is fine, and whats
+on the branch? can push"
+- sand_drill_worm: target height = its measured 1.802 m (size-table row kept).
+  Not imported yet; movement still open (N14).
+- Conquest feat/forge-unit-import pushed to origin at ec87b06 (7 forge-import
+  commits, 6ba132b..ec87b06).
+- crystal_canine basecolor mipmaps: explained, pending the artist's call.

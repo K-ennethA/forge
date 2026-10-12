@@ -156,7 +156,8 @@ are asked, deviations from the sheet are reported.)
   (house family first, 1-3k tris per the world-feel research) — not started, next big lane.
 
 ## Sand Drill Worm (sheet 2026-10-12)
-- N14 Movement intent (burrows? slithers upright? hops on its drill tail?) + in-game height.
+- N14 Movement intent (burrows? slithers upright? hops on its drill tail?) still OPEN.
+  Height ANSWERED 2026-10-12: the measured 1.80 m is fine (artist).
 
 ## Vulture Creature (sheets 2026-10-12)
 - N15 Movement intent (walks? hops? flies with the cloak wings?) still OPEN (placeholder idle + walk in game).
