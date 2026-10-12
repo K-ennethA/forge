@@ -725,6 +725,12 @@ def stage_solid(unit, out_npz, quiet=False):
                                       "window_z_u": [round(z, 4) for z in zs], "x_abs_min": xmin,
                                       "rule": "sheet_proxy put the floor at the lowest point (a tail curl): the feet hung "
                                               "z0 above it; floor moved to the feet, then scaled to the sheet front height"}
+    mx = cfg.get("midline_x")
+    if mx is not None:              # the body's mirror plane to x 0 (sheet_proxy centres the BBOX; a swung tail skews it)
+        V[:, 0] -= float(mx)
+        report["proxy"]["midline_x"] = {"shift_x_u": round(-float(mx), 4),
+                                        "rule": "the body midline (paired paws / head, after refloor) moved to x 0, so the "
+                                                "repose mirror and the mirror test use the body's own plane"}
     if cfg["mode"] == "light":
         return stage_light(unit, out_npz, cfg, intake, pp, report, V, Fp, UV, TEXI, images, quiet, t0)
     H = float(V[:, 2].max() - V[:, 2].min())
@@ -867,6 +873,259 @@ def stage_solid(unit, out_npz, quiet=False):
 # ======================================================================================================================
 # stage 1, LIGHT mode: the proxy as generated, only made shippable
 # ======================================================================================================================
+
+# ======================================================================================================================
+# light mode: targeted FACE paint (an explicit artist ask, 2026-10-12: an extra nose; the eyes off / not lined up)
+# ======================================================================================================================
+def _ellipse_alpha(X, Z, c, r, feather):
+    """1 inside the ellipse (centre c, radii r), smoothstep to 0 over `feather` (units) outside"""
+    d = np.sqrt(((X - c[0]) / r[0]) ** 2 + ((Z - c[1]) / r[1]) ** 2)
+    t = np.clip((d - 1.0) * min(r) / max(feather, 1e-9), 0.0, 1.0)
+    return 1.0 - t * t * (3 - 2 * t)
+
+
+def _inpaint(img, hole):
+    """fill `hole` (bool) from its surroundings: normalised Gaussian convolution at growing radii (diffusion-like)"""
+    from scipy import ndimage
+    out = img.astype(float).copy()
+    known = ~hole
+    todo = hole.copy()
+    for sig in (2, 4, 8, 16, 32, 64):
+        if not todo.any():
+            break
+        w = ndimage.gaussian_filter(known.astype(float), sig)
+        num = np.stack([ndimage.gaussian_filter(out[..., k] * known, sig) for k in range(3)], -1)
+        ok = todo & (w > 1e-3)
+        out[ok] = num[ok] / w[ok, None]
+        known = known | ok
+        todo = todo & ~ok
+    return out
+
+
+def face_paint(V, F, UV, TEXI, tex, fp, report):
+    """Paint edits made in FRONT-VIEW space (x right, z up, stage-1 frame) back into the proxy texture: every texel of a
+    front-facing, front-visible triangle in the window takes the edited colour at its own front projection, weighted by
+    the edit mask x a facing ramp. Edits, in order: `erase` ellipses (inpainted from the surrounding fur: a duplicate
+    nose), then `eyes`: the `src` eye (an ellipse) copied to `dst` and MIRRORED about `mirror_x` to the other side (one
+    eye, so the pair is level and mirror-matched), after both old eyes (`old`) are inpainted away. Geometry is never
+    touched; the bake then carries the painted texture onto the low."""
+    from scipy import ndimage
+    x0, x1, z0, z1 = [float(v) for v in fp["window"]]
+    ppu = float(fp.get("ppu", 400.0))
+    ymax = float(fp.get("y_max", 0.0))
+    W, H = int(round((x1 - x0) * ppu)), int(round((z1 - z0) * ppu))
+    T = V[F]
+    cen = T.mean(1)
+    N = np.cross(T[:, 1] - T[:, 0], T[:, 2] - T[:, 0])
+    N /= np.maximum(np.linalg.norm(N, axis=1), 1e-12)[:, None]
+    inwin = (cen[:, 0] > x0 - 0.05) & (cen[:, 0] < x1 + 0.05) & (cen[:, 2] > z0 - 0.05) & (cen[:, 2] < z1 + 0.05) & \
+        (cen[:, 1] < ymax)
+    # 1. z-buffer + colour of the front view: dense barycentric samples (finer than a pixel, no level cap) of every
+    #    triangle in the window, two passes (depth, then the front-most colour), nearest-texel colour
+    sys.path.insert(0, REPO)
+    from meshgen.tools.mesh_metrics import _bary_grid
+    sel_w = np.nonzero(inwin)[0]
+    Tw = V[F[sel_w]]
+    span_w = np.max(np.linalg.norm(Tw - np.roll(Tw, 1, axis=1), axis=2), 1)
+    lev_w = np.clip(np.ceil(span_w * ppu * 1.6).astype(int), 1, 256)
+    zb = np.full((H, W), np.inf)
+    R = np.zeros((H, W, 3))
+
+    def _groups():
+        for L in np.unique(lev_w):
+            ss = sel_w[lev_w == L]
+            Bg = _bary_grid(int(L))
+            for ch in np.array_split(ss, max(1, len(ss) * len(Bg) // 2000000)):
+                yield ch, Bg
+    for pass_ in (0, 1):
+        for ch, Bg in _groups():
+            pos = np.einsum("kj,fjd->fkd", Bg, V[F[ch]]).reshape(-1, 3)
+            jx = np.floor((pos[:, 0] - x0) * ppu).astype(int); jz = np.floor((z1 - pos[:, 2]) * ppu).astype(int)
+            ok = (jx >= 0) & (jx < W) & (jz >= 0) & (jz < H)
+            if pass_ == 0:
+                np.minimum.at(zb, (jz[ok], jx[ok]), pos[ok, 1])
+                continue
+            fr = ok.copy()
+            fr[ok] = pos[ok, 1] <= zb[jz[ok], jx[ok]] + 1e-9
+            if not fr.any():
+                continue
+            uvs = np.einsum("kj,fjd->fkd", Bg, UV[F[ch]]).reshape(-1, 2)[fr]
+            ti_ = np.repeat(TEXI[ch], len(Bg))[fr]
+            col = np.zeros((int(fr.sum()), 3))
+            for t_, im in tex.items():
+                m_ = ti_ == t_
+                h_, w_ = im.shape[:2]
+                u = np.clip((uvs[m_, 0] % 1.0) * (w_ - 1), 0, w_ - 1).round().astype(int)
+                v = np.clip((uvs[m_, 1] % 1.0) * (h_ - 1), 0, h_ - 1).round().astype(int)
+                col[m_] = im[v, u]
+            R[jz[fr], jx[fr]] = col
+    have = np.isfinite(zb)
+    R = _inpaint(R, ~have)                      # only the background around the head
+    zb_f = ndimage.grey_closing(np.where(have, zb, 1e9), size=3)
+    X, Z = np.meshgrid(x0 + (np.arange(W) + 0.5) / ppu, z1 - (np.arange(H) + 0.5) / ppu)
+    E = R.copy()
+    M = np.zeros((H, W))
+    rep = {"window": [x0, x1, z0, z1], "ppu": ppu, "ops": []}
+    for er in fp.get("erase") or []:
+        a = _ellipse_alpha(X, Z, er["c"], er["r"], float(er.get("feather", 0.03)))
+        hole = a > 0.02
+        E = E * (1 - a[..., None]) + _inpaint(E, hole) * a[..., None]
+        M = np.maximum(M, a)
+        rep["ops"].append({"erase": er["c"], "r": er["r"], "px": int(hole.sum()), "why": er.get("why")})
+    ey = fp.get("eyes")
+    if ey:
+        r = ey["r"]
+        fe = float(ey.get("feather", 0.04))
+        hole = np.zeros((H, W), bool)
+        aold = np.zeros((H, W))
+        for c in ey["old"]:
+            a = _ellipse_alpha(X, Z, c, [r[0] * 1.12, r[1] * 1.15], fe)
+            aold = np.maximum(aold, a)
+            hole |= a > 0.02
+        clean = _inpaint(E, hole)
+        src = np.array(ey["src"], float)
+        mx = float(ey.get("mirror_x", 0.0))
+        dst = np.array(ey["dst"], float)
+        out = clean.copy()
+        apaste = np.zeros((H, W))
+        for sgn in (1, -1):                     # the copy, then its mirror about mirror_x
+            d = dst if sgn == 1 else np.array([2 * mx - dst[0], dst[1]])
+            sx = src[0] + sgn * (X - d[0])      # pull: each output pixel samples the source eye (x flipped for the mirror)
+            sz = src[1] + (Z - d[1])
+            u = (sx - x0) * ppu - 0.5
+            v = (z1 - sz) * ppu - 0.5
+            patch = np.stack([ndimage.map_coordinates(R[..., k], [v, u], order=1, mode="nearest") for k in range(3)], -1)
+            a = _ellipse_alpha(X, Z, d, r, fe)
+            out = out * (1 - a[..., None]) + patch * a[..., None]
+            apaste = np.maximum(apaste, a)
+        E = E * (1 - aold[..., None]) + clean * aold[..., None]
+        E = E * (1 - apaste[..., None]) + out * apaste[..., None]
+        M = np.maximum(M, np.maximum(aold, apaste))
+        rep["ops"].append({"eyes": {"src": ey["src"], "dst": [dst.tolist(), [2 * mx - dst[0], dst[1]]], "old": ey["old"],
+                                    "r": r, "raise_u": round(float(dst[1] - src[1]), 4)}, "why": ey.get("why")})
+    # 2. texels of the window's front-facing triangles take E where M > 0. Dense barycentric samples (finer than a
+    #    texel); each texel takes the edit at its sample NEAREST the texel centre (point sampling: the write is lossless,
+    #    an identity edit leaves the texture as it was), so no speckle of old and new and no footprint blur
+    sys.path.insert(0, REPO)
+    from meshgen.tools.mesh_metrics import _bary_grid
+    f0, f1 = [float(v) for v in fp.get("facing_ramp", [0.1, 0.3])]
+    cand = np.nonzero(inwin & (-N[:, 1] > f0))[0]
+    spacing = float(fp.get("sample_u", 0.0012))
+    written = 0
+    for t_, im in tex.items():
+        h_, w_ = im.shape[:2]
+        sel = cand[TEXI[cand] == t_]
+        if not len(sel):
+            continue
+        Tq = V[F[sel]]
+        span = np.max(np.linalg.norm(Tq - np.roll(Tq, 1, axis=1), axis=2), 1)
+        level = np.clip(np.ceil(span / spacing).astype(int), 1, 64)
+        best = np.full(h_ * w_, np.inf); bw = np.zeros(h_ * w_); bc = np.zeros((h_ * w_, 3))
+        for L in np.unique(level):
+            ss = sel[level == L]
+            Bg = _bary_grid(int(L))
+            for ch in np.array_split(ss, max(1, len(ss) * len(Bg) // 2000000)):
+                pos = np.einsum("kj,fjd->fkd", Bg, V[F[ch]]).reshape(-1, 3)
+                uvs = np.einsum("kj,fjd->fkd", Bg, UV[F[ch]]).reshape(-1, 2)
+                fw = np.clip((-N[np.repeat(ch, len(Bg)), 1] - f0) / max(f1 - f0, 1e-9), 0, 1)
+                jx = np.floor((pos[:, 0] - x0) * ppu).astype(int); jz = np.floor((z1 - pos[:, 2]) * ppu).astype(int)
+                inside = (jx >= 0) & (jx < W) & (jz >= 0) & (jz < H)
+                jx = np.clip(jx, 0, W - 1); jz = np.clip(jz, 0, H - 1)
+                vis = pos[:, 1] <= zb_f[jz, jx] + float(fp.get("depth_tol", 0.02))
+                wgt = np.where(inside & vis, M[jz, jx] * fw * fw * (3 - 2 * fw), 0.0)
+                uf = (uvs[:, 0] % 1.0) * (w_ - 1); vf = (uvs[:, 1] % 1.0) * (h_ - 1)
+                u = np.clip(uf, 0, w_ - 1).round().astype(int); v = np.clip(vf, 0, h_ - 1).round().astype(int)
+                ti = v * w_ + u
+                d2 = (uf - u) ** 2 + (vf - v) ** 2
+                o = np.lexsort((d2, ti))                     # per texel: its sample nearest the texel centre
+                first = np.ones(len(o), bool); first[1:] = ti[o][1:] != ti[o][:-1]
+                k_ = o[first]
+                better = d2[k_] < best[ti[k_]]
+                k_ = k_[better]
+                best[ti[k_]] = d2[k_]; bw[ti[k_]] = wgt[k_]; bc[ti[k_]] = E[jz[k_], jx[k_]]
+        hit = bw > 1e-3
+        flat = im.reshape(-1, 3)
+        old = flat[hit].astype(float)
+        wv = bw[hit][:, None]
+        flat[hit] = np.clip(np.rint(old * (1 - wv) + bc[hit] * wv), 0, 255).astype(np.uint8)
+        written += int(hit.sum())
+    rep["texels_written"] = written
+    rep["rule"] = ("edits in front-view space, written into the proxy texture on front-facing (-n_y > %.2f), front-visible "
+                   "texels; geometry untouched" % f0)
+    report["face_paint"] = rep
+    return rep, (R, E, M)
+
+
+def apply_pulls(V, pulls):
+    """soft-selection grabs, in place: each pull moves the vertices by `move` x w, w = smoothstep(1 - d) over the
+    ellipsoidal distance d = |(p - centre) / radius|, times an optional `y_ramp` [y0, y1] (0 at y0, 1 at y1: the stretch
+    zone - behind y0 nothing moves, so the eyes / stop stay; between, a smooth stretch; beyond y1 a full move). Pulls
+    sum; deterministic numpy. -> report"""
+    rep = []
+    D = np.zeros_like(V)
+    for pl in pulls:
+        c = np.asarray(pl["centre"], float); r = np.asarray(pl["radius"], float); mv = np.asarray(pl["move"], float)
+        d = np.linalg.norm((V - c) / r, axis=1)
+        t = np.clip(1.0 - d, 0.0, 1.0)
+        w = t * t * (3 - 2 * t)
+        if pl.get("y_ramp"):
+            y0, y1 = [float(v) for v in pl["y_ramp"]]
+            u = np.clip((V[:, 1] - y0) / (y1 - y0), 0.0, 1.0)
+            w = w * u * u * (3 - 2 * u)
+        D += w[:, None] * mv[None, :]
+        rep.append({"centre": c.tolist(), "radius": r.tolist(), "move": mv.tolist(), "y_ramp": pl.get("y_ramp"),
+                    "verts_moved": int((w > 1e-4).sum()), "max_move_u": round(float(w.max() * np.linalg.norm(mv)), 4),
+                    "why": pl.get("why")})
+    V += D
+    return rep
+
+
+def erase3d(V, F, UV, TEXI, tex, spheres, report):
+    """opt-in light.erase3d (texture only): every texel whose surface point lies inside a sphere takes the median colour
+    of the surface in the shell r..r * ring (the surrounding fur), blended by a smoothstep over the last `feather` of the
+    radius; seen from any side (no projection: for marks on side-facing faces a front-view edit cannot reach)"""
+    sys.path.insert(0, REPO)
+    from meshgen.tools.mesh_metrics import _bary_grid
+    cen = V[F].mean(1)
+    rep = []
+    for sp in spheres:
+        c = np.asarray(sp["c"], float); r = float(sp["r"]); ring = float(sp.get("ring", 1.6))
+        fe = float(sp.get("feather", 0.3)) * r
+        sel = np.nonzero(np.linalg.norm(cen - c, axis=1) < r * ring + 0.05)[0]
+        if not len(sel):
+            rep.append({"c": c.tolist(), "r": r, "texels": 0}); continue
+        for t_, im in tex.items():
+            st = sel[TEXI[sel] == t_]
+            if not len(st):
+                continue
+            h_, w_ = im.shape[:2]
+            Bg = _bary_grid(48)
+            pos = np.einsum("kj,fjd->fkd", Bg, V[F[st]]).reshape(-1, 3)
+            uvs = np.einsum("kj,fjd->fkd", Bg, UV[F[st]]).reshape(-1, 2)
+            u = np.clip((uvs[:, 0] % 1.0) * (w_ - 1), 0, w_ - 1).round().astype(int)
+            v = np.clip((uvs[:, 1] % 1.0) * (h_ - 1), 0, h_ - 1).round().astype(int)
+            dist = np.linalg.norm(pos - c, axis=1)
+            shell = (dist > r) & (dist < r * ring)
+            if shell.sum() < 10:
+                continue
+            fill = np.median(im[v[shell], u[shell]].astype(float), 0)
+            inside = dist < r
+            t = np.clip((r - dist[inside]) / max(fe, 1e-9), 0, 1)
+            wv = t * t * (3 - 2 * t)
+            ti = v[inside] * w_ + u[inside]
+            best = {}
+            for k, (tt, ww) in enumerate(zip(ti.tolist(), wv.tolist())):
+                if ww > best.get(tt, -1.0):
+                    best[tt] = ww
+            idx = np.array(list(best.keys()), np.int64); wts = np.array(list(best.values()))[:, None]
+            flat = im.reshape(-1, 3)
+            flat[idx] = np.clip(np.rint(flat[idx].astype(float) * (1 - wts) + fill * wts), 0, 255).astype(np.uint8)
+            rep.append({"c": c.tolist(), "r": r, "texels": int(len(idx)), "fill_rgb": np.round(fill).tolist(),
+                        "why": sp.get("why")})
+    report["erase3d"] = rep
+    return rep
+
+
 def stage_light(unit, out_npz, cfg, intake, pp, report, V, Fp, UV, TEXI, images, quiet, t0):
     """LIGHT finish (artist 2026-10-11: the raw proxy's look is the pick; "in trying to fix the symmetry and make changes
     we broke some things, like the mouth"). Stage 1 only makes the proxy WATERTIGHT: the same shell / flood-fill /
@@ -877,6 +1136,9 @@ def stage_light(unit, out_npz, cfg, intake, pp, report, V, Fp, UV, TEXI, images,
     sys.path.insert(0, HERE)
     import sheet_proxy as SP
     lc = cfg["light"]
+    if lc.get("pulls"):               # opt-in, an explicit artist ask: a smooth LOCAL reshape of the proxy (a muzzle drawn
+        V = V.copy()                  # longer on the sheet); geometry + texture move together (the UVs ride along)
+        report["proxy"]["pulls"] = apply_pulls(V, lc["pulls"])
     H = float(V[:, 2].max() - V[:, 2].min())
     step = float(lc.get("step") or round(H / lc["steps_per_height"], 4))
     P, FI, Cs = sample_surface(V, Fp, UV, TEXI, images, 0.5 * step)
@@ -899,6 +1161,22 @@ def stage_light(unit, out_npz, cfg, intake, pp, report, V, Fp, UV, TEXI, images,
         report["solid"]["light_adds"] = [{"shape": [k for k in ("capsule", "sphere") if k in c][0],   # kept limb's stalk)
                                           "nodes_inside": apply_add(Fg, lo, step, c), "why": c.get("why")}
                                          for c in lc["adds"]]
+    if lc.get("bake_drop_interior"):            # opt-in: proxy faces buried inside the watertight solid (inner shells the
+        thr = float(lc["bake_drop_interior"])   # flood fill sealed) never show; dropped from the bake source so the bake
+        T_ = V[Fp]                              # cage (3 x p99 proxy-to-low) stays tight and rays hit the outer skin
+        cen_ = T_.mean(1)
+        n_ = np.cross(T_[:, 1] - T_[:, 0], T_[:, 2] - T_[:, 0])
+        n_ /= np.maximum(np.linalg.norm(n_, axis=1), 1e-12)[:, None]
+
+        def _f(P_):
+            ij_ = np.clip(np.rint((P_ - lo) / step).astype(np.int64), 0, np.array(Fg.shape) - 1)
+            return Fg[ij_[:, 0], ij_[:, 1], ij_[:, 2]]
+        deep = (_f(cen_ + thr * n_) < 0) & (_f(cen_ - thr * n_) < 0)    # solid on BOTH sides: an inner shell
+        Fp, TEXI = Fp[~deep], TEXI[~deep]
+        used = np.unique(Fp)
+        remap = np.full(len(V), -1, np.int64); remap[used] = np.arange(len(used))
+        V, UV, Fp = V[used], UV[used], remap[Fp]
+        report["solid"]["bake_interior_tris_dropped"] = int(deep.sum())
     if lc["floor_clip"]:
         z = lo[2] + step * np.arange(Fg.shape[2])
         Fg = np.maximum(Fg, (0.0 - z)[None, None, :])
@@ -932,6 +1210,18 @@ def stage_light(unit, out_npz, cfg, intake, pp, report, V, Fp, UV, TEXI, images,
             fit = {"pairs": int(ok.sum()), "median_residual_rgb": round(med, 2), "applied": bool(used)}
     report["colour"] = {"mode": "light: the proxy texture as generated" + (" + drift fit" if fit and fit["applied"] else ""),
                         "drift_fit": fit, "textures": {str(k): list(v.shape) for k, v in tex.items()}}
+    if lc.get("face_paint") and tex:    # opt-in, an explicit artist ask: a targeted face repaint (texture only)
+        _fr, (R_, E_, M_) = face_paint(V, Fp, UV, TEXI, tex, lc["face_paint"], report)
+        dbg = os.environ.get("PF_FACE_DEBUG")
+        if dbg:
+            os.makedirs(dbg, exist_ok=True)
+            Image.fromarray(np.clip(R_, 0, 255).astype(np.uint8)).save(os.path.join(dbg, "face_front_before.png"))
+            Image.fromarray(np.clip(E_, 0, 255).astype(np.uint8)).save(os.path.join(dbg, "face_front_edited.png"))
+            Image.fromarray((255 * M_).astype(np.uint8)).save(os.path.join(dbg, "face_front_mask.png"))
+        if not quiet:
+            print("FACE_PAINT", json.dumps({k: _fr[k] for k in ("ops", "texels_written")}))
+    if lc.get("erase3d") and tex:       # opt-in: marks on side-facing faces, refilled from the surrounding surface
+        erase3d(V, Fp, UV, TEXI, tex, lc["erase3d"], report)
     meta = {"report": report, "regs": regs, "resolved": rcfg, "cfg": cfg, "facing": facing, "mode": "light"}
     Fg = Fg.astype(np.float32)
     report["grid_sha"] = sha_arr(Fg[::2, ::2, ::2])
@@ -1269,6 +1559,7 @@ def stage_panel(unit, hand=None, ref=None, ref_title=None, closeup=False):
         r_ = 0.36 * float(np.linalg.norm(hi_ - lo_))
         rf = imp["stage1"]["proxy"].get("refloor") or {"foot_contact_z_u": 0.0, "rescale": 1.0}
         c_proxy = c_stage / rf["rescale"] + np.array([0.0, 0.0, rf["foot_contact_z_u"]])
+        c_proxy[0] += float(cfg.get("midline_x") or 0.0) / rf["rescale"]     # the stage frame's midline shift, undone
         head_yaw = 0.0
         for tg in (imp.get("repose") or {}).get("targets") or []:
             names = [b["bone"] for b in tg["bones"]]

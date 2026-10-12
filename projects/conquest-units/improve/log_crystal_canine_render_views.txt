@@ -1,9 +1,9 @@
-00:01.500  blend            | Read blend: "C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\rigged\crystal_canine.blend"
-00:03.484  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\crystal_canine\crystal_canine_front.png'
-00:03.938  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\crystal_canine\crystal_canine_threequarter.png'
-00:04.406  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\crystal_canine\crystal_canine_side.png'
-00:04.813  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\crystal_canine\crystal_canine_back.png'
-00:05.000  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\crystal_canine\crystal_canine_tactical.png'
+00:01.219  blend            | Read blend: "C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\rigged\crystal_canine.blend"
+00:03.313  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\crystal_canine\crystal_canine_front.png'
+00:03.797  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\crystal_canine\crystal_canine_threequarter.png'
+00:04.172  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\crystal_canine\crystal_canine_side.png'
+00:04.516  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\crystal_canine\crystal_canine_back.png'
+00:04.688  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\crystal_canine\crystal_canine_tactical.png'
 WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\crystal_canine\crystal_canine_front.png
 WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\crystal_canine\crystal_canine_threequarter.png
 WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\crystal_canine\crystal_canine_side.png

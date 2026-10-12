@@ -1,0 +1,136 @@
+{
+ "unit": "crystal_canine",
+ "views_scored": [
+  "front",
+  "back",
+  "side"
+ ],
+ "facing": "left",
+ "finished": {
+  "front": {
+   "iou": 0.727,
+   "row_err_pct": 9.0,
+   "w_u": 3.8,
+   "h_u": 6.24
+  },
+  "back": {
+   "iou": 0.6809,
+   "row_err_pct": 13.4,
+   "w_u": 3.8,
+   "h_u": 6.24
+  },
+  "side": {
+   "iou": 0.7977,
+   "row_err_pct": 11.7,
+   "w_u": 4.68,
+   "h_u": 6.24
+  },
+  "_mean_iou": 0.7352
+ },
+ "proxy_raw": {
+  "front": {
+   "iou": 0.8934,
+   "row_err_pct": 6.5,
+   "w_u": 4.23,
+   "h_u": 6.2
+  },
+  "back": {
+   "iou": 0.5344,
+   "row_err_pct": 23.3,
+   "w_u": 4.23,
+   "h_u": 6.2
+  },
+  "side": {
+   "iou": 0.8859,
+   "row_err_pct": 5.5,
+   "w_u": 4.22,
+   "h_u": 6.2
+  },
+  "_mean_iou": 0.7712
+ },
+ "finished_vs_proxy": {
+  "front": {
+   "iou": 0.7418,
+   "row_err_pct": 10.5
+  },
+  "back": {
+   "iou": 0.7416,
+   "row_err_pct": 10.5
+  },
+  "side": {
+   "iou": 0.863,
+   "row_err_pct": 7.1
+  }
+ },
+ "picked_frame": "raw proxy refloored (z - 0.0000) and scaled x1.0053 like the finish",
+ "finished_vs_picked": {
+  "front": {
+   "iou": 0.744,
+   "row_err_pct": 10.2
+  },
+  "back": {
+   "iou": 0.744,
+   "row_err_pct": 10.2
+  },
+  "side": {
+   "iou": 0.8704,
+   "row_err_pct": 6.6
+  },
+  "_mean_iou": 0.7861
+ },
+ "prerepose": {
+  "front": {
+   "iou": 0.8747,
+   "row_err_pct": 8.1,
+   "w_u": 4.27,
+   "h_u": 6.25
+  },
+  "back": {
+   "iou": 0.5333,
+   "row_err_pct": 25.2,
+   "w_u": 4.27,
+   "h_u": 6.25
+  },
+  "side": {
+   "iou": 0.8732,
+   "row_err_pct": 6.9,
+   "w_u": 4.36,
+   "h_u": 6.25
+  },
+  "_mean_iou": 0.7604
+ },
+ "prerepose_vs_picked": {
+  "front": {
+   "iou": 0.9752,
+   "row_err_pct": 1.4
+  },
+  "back": {
+   "iou": 0.9753,
+   "row_err_pct": 1.4
+  },
+  "side": {
+   "iou": 0.9729,
+   "row_err_pct": 1.5
+  },
+  "_mean_iou": 0.9745
+ },
+ "mesh": {
+  "glb_tris": 20000,
+  "glb_open_edges_welded": 0,
+  "glb_nonmanifold_edges_welded": 0,
+  "build_open_edges": 0,
+  "mirror": {
+   "max_u": 0.66828,
+   "p99_u": 0.32773,
+   "mean_u": 0.086789
+  },
+  "build_mirror": {
+   "plane_x_u": 0.0,
+   "max_u": 0.66828,
+   "p99_u": 0.32752,
+   "p90_u": 0.14762,
+   "mean_u": 0.06271,
+   "rule": "every vertex mirrored in X about the plane -> distance to the nearest surface (0 = exactly symmetric)"
+  }
+ }
+}

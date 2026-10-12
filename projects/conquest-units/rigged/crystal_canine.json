@@ -2,118 +2,78 @@
  "unit": "crystal_canine",
  "source": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\improved\\crystal_canine.blend",
  "fps": 24,
+ "finish": {
+  "open_edges": 0,
+  "tris": 20000,
+  "mirror": {
+   "plane_x_u": 0.0,
+   "max_u": 0.66828,
+   "p99_u": 0.32752,
+   "p90_u": 0.14762,
+   "mean_u": 0.06271,
+   "rule": "every vertex mirrored in X about the plane -> distance to the nearest surface (0 = exactly symmetric)"
+  },
+  "tri_budget": [
+   8000,
+   22000
+  ],
+  "in_budget": true,
+  "mode": "light"
+ },
  "weights": {
   "max_influences": 4,
   "unweighted": 0,
   "sum_dev_max": 2.220446049250313e-16,
   "per_bone_dominant": {
-   "spine.001": 361,
-   "spine.002": 69,
-   "spine.003": 2530,
-   "neck": 325,
-   "head": 2279,
-   "ear_L": 315,
-   "ear_R": 315,
-   "foreleg_L.upper": 172,
-   "foreleg_L.lower": 85,
-   "foreleg_L.paw": 277,
-   "hindleg_L.upper": 307,
-   "hindleg_L.lower": 107,
-   "hindleg_L.paw": 238,
-   "foreleg_R.upper": 172,
-   "foreleg_R.lower": 85,
-   "foreleg_R.paw": 277,
-   "hindleg_R.upper": 297,
-   "hindleg_R.lower": 107,
-   "hindleg_R.paw": 238,
-   "tail.001": 97,
-   "tail.002": 159,
-   "tail.003": 196,
-   "tail.004": 220
+   "hips": 251,
+   "belly": 815,
+   "chest": 1241,
+   "neck": 2018,
+   "head": 546,
+   "arm.L.0": 361,
+   "arm.L.1": 57,
+   "arm.L.2": 59,
+   "arm.R.0": 402,
+   "arm.R.1": 67,
+   "arm.R.2": 50,
+   "leg.L.0": 414,
+   "leg.L.1": 122,
+   "leg.L.2": 79,
+   "leg.R.0": 244,
+   "leg.R.1": 58,
+   "leg.R.2": 107,
+   "tail.0": 1032,
+   "tail.1": 382,
+   "tail.2": 447,
+   "tail.3": 514,
+   "tail.4": 336,
+   "tail.5": 300
   },
-  "rule": "shell: soft SDF ownership (tau 0.06) between torso, ruff, neck, head, muzzle, cheeks, ears, haunches, four legs, tail; torso spine.001-.003 hat weights along the spine; neck spine.003 -> neck -> head by z bands; ruff spine.003 -> neck; ears blend from the head along the ear axis; legs + haunches: parent -> upper -> lower -> paw by the leg-chain arc (the paw rigid below the ankle); tail: rigkit.vine_weights along tail.001-.004 (parent spine.001); eyes, irises, pupils, nose, gem rigid on the head; the 24 mane crystals rigid on spine.003"
+  "parts": {},
+  "rule": "shell: exp(-((d - d_min) / (0.06 H))^2) over bone-segment distances, side-aware, <= 4, normalised; parts rigid on their bone"
  },
  "clips": {
   "idle": {
    "frames": [
     1,
-    97
+    49
    ],
-   "period_frames": 96,
-   "seconds": 4.0,
+   "seconds": 2.0,
    "cyclic": true,
-   "seam_main_mm": 0.0,
-   "root_offset_max": 0.0,
-   "clearance_min_z": 0.0,
-   "spine_lift": [
-    0.0,
-    0.0
-   ],
-   "floor_guard_lift": {
-    "frames_lifted": 0,
-    "max": 0.0
-   },
-   "ik_reach_shortfall_max": 0.0,
-   "sole_verts": 124,
-   "planted_sole_slide_max_vs_ground": 1e-05,
-   "sole_min_z": 0.0,
-   "tail_tip_p2p_xyz": [
-    0.1111,
-    0.0166,
-    0.0
-   ],
-   "head_top_p2p_xyz": [
-    0.0086,
-    0.032,
-    0.0266
-   ],
-   "ear_L_tip_p2p_xyz": [
-    0.0866,
-    0.2092,
-    0.0571
-   ]
+   "seam_mm": 0.0,
+   "clearance_min_z": -0.082
   },
   "walk": {
    "frames": [
     1,
-    49
+    25
    ],
-   "period_frames": 48,
-   "seconds": 2.0,
+   "seconds": 1.0,
    "cyclic": true,
-   "seam_main_mm": 0.0,
-   "root_offset_max": 0.0,
-   "clearance_min_z": -0.0,
-   "spine_lift": [
-    -0.0199,
-    0.02
-   ],
-   "floor_guard_lift": {
-    "frames_lifted": 18,
-    "max": 0.0001
-   },
-   "ik_reach_shortfall_max": 0.06051,
-   "sole_verts": 124,
-   "planted_sole_slide_max_vs_ground": 0.00208,
-   "sole_min_z": -0.0,
-   "tail_tip_p2p_xyz": [
-    0.0792,
-    0.0083,
-    0.0399
-   ],
-   "head_top_p2p_xyz": [
-    0.0,
-    0.0383,
-    0.0422
-   ],
-   "ear_L_tip_p2p_xyz": [
-    0.0,
-    0.0852,
-    0.0263
-   ]
+   "seam_mm": 0.0,
+   "clearance_min_z": -0.1626
   }
  },
- "clip_seconds": 1.1,
  "bones": [
   {
    "name": "root",
@@ -131,63 +91,63 @@
    ]
   },
   {
-   "name": "spine.001",
+   "name": "hips",
    "parent": "root",
    "deform": true,
    "head": [
-    0.0,
-    1.0895,
-    2.8
-   ],
-   "tail": [
-    0.0,
-    0.3395,
-    2.85
-   ]
-  },
-  {
-   "name": "spine.002",
-   "parent": "spine.001",
-   "deform": true,
-   "head": [
-    0.0,
-    0.3395,
-    2.85
-   ],
-   "tail": [
-    0.0,
-    -0.3605,
-    2.95
-   ]
-  },
-  {
-   "name": "spine.003",
-   "parent": "spine.002",
-   "deform": true,
-   "head": [
-    0.0,
-    -0.3605,
-    2.95
-   ],
-   "tail": [
-    0.0,
-    -0.9105,
+    0.0228,
+    0.9549,
     3.3
+   ],
+   "tail": [
+    0.0228,
+    0.1049,
+    3.15
+   ]
+  },
+  {
+   "name": "belly",
+   "parent": "hips",
+   "deform": true,
+   "head": [
+    0.0228,
+    0.1049,
+    3.15
+   ],
+   "tail": [
+    0.0228,
+    -0.8619,
+    3.2
+   ]
+  },
+  {
+   "name": "chest",
+   "parent": "belly",
+   "deform": true,
+   "head": [
+    0.0228,
+    -0.8619,
+    3.2
+   ],
+   "tail": [
+    0.0228,
+    -1.2619,
+    3.9
    ]
   },
   {
    "name": "neck",
-   "parent": "spine.003",
+   "parent": "chest",
    "deform": true,
    "head": [
-    0.0,
-    -0.9105,
-    3.3
+    0.0228,
+    -1.2619,
+    3.9
    ],
    "tail": [
-    0.0,
-    -0.9805,
-    4.45
+    -0.0224,
+    -1.4514,
+    4.6
    ]
   },
   {
@@ -195,431 +155,325 @@
    "parent": "neck",
    "deform": true,
    "head": [
-    0.0,
-    -0.9805,
-    4.45
+    -0.0224,
+    -1.4514,
+    4.6
    ],
    "tail": [
-    0.0,
-    -1.0605,
-    5.55
+    -0.0224,
+    -2.1624,
+    4.611
    ]
   },
   {
-   "name": "ear_L",
-   "parent": "head",
+   "name": "arm.L.0",
+   "parent": "chest",
    "deform": true,
    "head": [
-    0.5497,
-    -0.763,
-    5.3605
+    0.3128,
+    -0.7319,
+    2.45
    ],
    "tail": [
-    0.84,
-    -0.6605,
-    6.18
+    0.3528,
+    -0.8829,
+    1.8005
    ]
   },
   {
-   "name": "ear_R",
-   "parent": "head",
+   "name": "arm.L.1",
+   "parent": "arm.L.0",
    "deform": true,
    "head": [
-    -0.5497,
-    -0.763,
-    5.3605
+    0.3528,
+    -0.8829,
+    1.8005
    ],
    "tail": [
-    -0.84,
-    -0.6605,
-    6.18
+    0.2663,
+    -1.0519,
+    0.5009
    ]
   },
   {
-   "name": "foreleg_L.upper",
-   "parent": "spine.003",
+   "name": "arm.L.2",
+   "parent": "arm.L.1",
    "deform": true,
    "head": [
-    0.27,
-    -0.8605,
-    2.7
+    0.2663,
+    -1.0519,
+    0.5009
    ],
    "tail": [
-    0.26,
-    -1.0405,
-    1.75
+    0.3023,
+    -1.4099,
+    0.1059
    ]
   },
   {
-   "name": "foreleg_L.lower",
-   "parent": "foreleg_L.upper",
+   "name": "arm.R.0",
+   "parent": "chest",
    "deform": true,
    "head": [
-    0.26,
-    -1.0405,
-    1.75
+    -0.3128,
+    -0.7319,
+    2.45
    ],
    "tail": [
-    0.25,
-    -0.9805,
-    0.45
+    -0.3528,
+    -0.8829,
+    1.8005
    ]
   },
   {
-   "name": "foreleg_L.paw",
-   "parent": "foreleg_L.lower",
+   "name": "arm.R.1",
+   "parent": "arm.R.0",
    "deform": true,
    "head": [
-    0.25,
-    -0.9805,
-    0.45
+    -0.3528,
+    -0.8829,
+    1.8005
    ],
    "tail": [
-    0.25,
-    -1.5405,
-    0.1
+    -0.2663,
+    -1.0519,
+    0.5009
    ]
   },
   {
-   "name": "foreleg_R.upper",
-   "parent": "spine.003",
+   "name": "arm.R.2",
+   "parent": "arm.R.1",
    "deform": true,
    "head": [
-    -0.27,
-    -0.8605,
-    2.7
+    -0.2663,
+    -1.0519,
+    0.5009
    ],
    "tail": [
-    -0.26,
-    -1.0405,
-    1.75
+    -0.3023,
+    -1.4099,
+    0.1059
    ]
   },
   {
-   "name": "foreleg_R.lower",
-   "parent": "foreleg_R.upper",
+   "name": "leg.L.0",
+   "parent": "hips",
    "deform": true,
    "head": [
-    -0.26,
-    -1.0405,
-    1.75
-   ],
-   "tail": [
-    -0.25,
-    -0.9805,
-    0.45
-   ]
-  },
-  {
-   "name": "foreleg_R.paw",
-   "parent": "foreleg_R.lower",
-   "deform": true,
-   "head": [
-    -0.25,
-    -0.9805,
-    0.45
-   ],
-   "tail": [
-    -0.25,
-    -1.5405,
-    0.1
-   ]
-  },
-  {
-   "name": "hindleg_L.upper",
-   "parent": "spine.001",
-   "deform": true,
-   "head": [
-    0.3,
-    0.8595,
+    0.7728,
+    0.8449,
     2.35
    ],
    "tail": [
-    0.34,
-    1.0595,
-    1.4
+    0.6853,
+    0.6799,
+    1.8113
    ]
   },
   {
-   "name": "hindleg_L.lower",
-   "parent": "hindleg_L.upper",
+   "name": "leg.L.1",
+   "parent": "leg.L.0",
    "deform": true,
    "head": [
-    0.34,
-    1.0595,
-    1.4
+    0.6853,
+    0.6799,
+    1.8113
    ],
    "tail": [
-    0.37,
-    1.3395,
-    0.58
+    0.7768,
+    0.6374,
+    1.0226
    ]
   },
   {
-   "name": "hindleg_L.paw",
-   "parent": "hindleg_L.lower",
+   "name": "leg.L.2",
+   "parent": "leg.L.1",
    "deform": true,
    "head": [
-    0.37,
-    1.3395,
-    0.58
+    0.7768,
+    0.6374,
+    1.0226
    ],
    "tail": [
-    0.38,
-    0.9195,
-    0.1
+    0.8473,
+    0.1709,
+    0.0876
    ]
   },
   {
-   "name": "hindleg_R.upper",
-   "parent": "spine.001",
+   "name": "leg.R.0",
+   "parent": "hips",
    "deform": true,
    "head": [
-    -0.3,
-    0.8595,
+    -0.7728,
+    0.8449,
     2.35
    ],
    "tail": [
-    -0.34,
-    1.0595,
-    1.4
+    -0.6853,
+    0.6799,
+    1.8113
    ]
   },
   {
-   "name": "hindleg_R.lower",
-   "parent": "hindleg_R.upper",
+   "name": "leg.R.1",
+   "parent": "leg.R.0",
    "deform": true,
    "head": [
-    -0.34,
-    1.0595,
-    1.4
+    -0.6853,
+    0.6799,
+    1.8113
    ],
    "tail": [
-    -0.37,
-    1.3395,
-    0.58
+    -0.7768,
+    0.6374,
+    1.0226
    ]
   },
   {
-   "name": "hindleg_R.paw",
-   "parent": "hindleg_R.lower",
+   "name": "leg.R.2",
+   "parent": "leg.R.1",
    "deform": true,
    "head": [
-    -0.37,
-    1.3395,
-    0.58
+    -0.7768,
+    0.6374,
+    1.0226
    ],
    "tail": [
-    -0.38,
-    0.9195,
-    0.1
+    -0.8473,
+    0.1709,
+    0.0876
    ]
   },
   {
-   "name": "tail.001",
-   "parent": "spine.001",
+   "name": "tail.0",
+   "parent": "hips",
    "deform": true,
    "head": [
-    0.0,
-    1.1895,
-    2.98
+    0.0228,
+    1.0049,
+    3.75
    ],
    "tail": [
-    0.0,
-    1.5397,
-    2.3838
+    0.0228,
+    1.2093,
+    3.0509
    ]
   },
   {
-   "name": "tail.002",
-   "parent": "tail.001",
+   "name": "tail.1",
+   "parent": "tail.0",
    "deform": true,
    "head": [
-    0.0,
-    1.5397,
-    2.3838
+    0.0228,
+    1.2093,
+    3.0509
    ],
    "tail": [
-    0.0,
-    1.6915,
-    1.6767
+    0.0228,
+    1.521,
+    2.366
    ]
   },
   {
-   "name": "tail.003",
-   "parent": "tail.002",
+   "name": "tail.2",
+   "parent": "tail.1",
    "deform": true,
    "head": [
-    0.0,
-    1.6915,
-    1.6767
+    0.0228,
+    1.521,
+    2.366
    ],
    "tail": [
-    0.0,
-    1.7195,
-    0.9545
+    0.0228,
+    1.6199,
+    1.6869
    ]
   },
   {
-   "name": "tail.004",
-   "parent": "tail.003",
+   "name": "tail.3",
+   "parent": "tail.2",
    "deform": true,
    "head": [
-    0.0,
-    1.7195,
-    0.9545
+    0.0228,
+    1.6199,
+    1.6869
    ],
    "tail": [
-    0.0,
-    1.5795,
-    0.26
+    0.0228,
+    1.5748,
+    1.0497
+   ]
+  },
+  {
+   "name": "tail.4",
+   "parent": "tail.3",
+   "deform": true,
+   "head": [
+    0.0228,
+    1.5748,
+    1.0497
+   ],
+   "tail": [
+    0.0228,
+    1.4831,
+    0.5364
+   ]
+  },
+  {
+   "name": "tail.5",
+   "parent": "tail.4",
+   "deform": true,
+   "head": [
+    0.0228,
+    1.4831,
+    0.5364
+   ],
+   "tail": [
+    0.0228,
+    1.4199,
+    0.22
    ]
   }
  ],
  "bone_count": 24,
- "deform_bone_count": 23,
  "digest": {
   "parts": {
-   "bake_normal": "6ab4d718a11be068",
-   "bake_ao": "6cb38c236d02d4ad",
-   "geometry_colour_uv": "2642cbb2deff126d",
-   "weights": "a12296cc7371f0cd",
-   "keys": "b434cd21fede13e5",
-   "clip_samples": "b972f9544e03828b"
+   "solid_grid": "b9297407547720ef",
+   "bake_normal": "4a537027ddca35d4",
+   "bake_ao": "ab054f167b0cbc1f",
+   "bake_albedo": "4dc92bfa7ed7bc8c",
+   "repose": "a5cd899e046a15fd",
+   "geometry_colour_uv": "c5f2e0aa5dc21d60",
+   "weights": "96f07a344e356491",
+   "keys": "b216c6feba91ce07",
+   "clip_samples": "97df2c8b140b45da"
   },
-  "combined": "1bd10ac14009b411"
+  "combined": "fe4539243ee1635f"
  },
  "glb": {
   "path": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\rigged\\crystal_canine.glb",
-  "bytes": 6302000,
-  "seconds": 0.7,
-  "carries": {
-   "materials": [
-    {
-     "name": "crystal_canine_body",
-     "alphaMode": "OPAQUE",
-     "doubleSided": false,
-     "textures": [
-      "baseColorTexture",
-      "normalTexture"
-     ]
-    }
-   ],
-   "primitives": [
-    {
-     "mesh": "crystal_canine",
-     "material": "crystal_canine_body",
-     "attributes": [
-      "COLOR_0",
-      "COLOR_1",
-      "JOINTS_0",
-      "NORMAL",
-      "POSITION",
-      "TEXCOORD_0",
-      "WEIGHTS_0",
-      "_GLOW"
-     ]
-    }
-   ],
-   "animations": [
-    "idle",
-    "walk"
-   ],
-   "skins": 1,
-   "joints": 24
-  },
-  "structure": "armature identity + skinned 'crystal_canine' (one opaque body material); natural scale; report-only cell fit 0.29024"
+  "bytes": 12602996,
+  "seconds": 0.6
  },
  "skins": {
   "default": {
    "file": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\rigged\\crystal_canine.blend",
    "palette": {
-    "fur": {
+    "proxy_albedo": {
      "rgb": [
-      247,
-      234,
-      224
-     ]
-    },
-    "ear_inner": {
-     "rgb": [
-      217,
-      198,
-      198
-     ]
-    },
-    "eye_white": {
-     "rgb": [
-      252,
-      245,
-      238
-     ]
-    },
-    "iris": {
-     "rgb": [
-      109,
-      98,
-      111
-     ]
-    },
-    "pupil": {
-     "rgb": [
-      81,
-      74,
-      81
-     ]
-    },
-    "nose": {
-     "rgb": [
-      115,
-      94,
-      100
-     ]
-    },
-    "gem_lit": {
-     "rgb": [
-      217,
-      188,
-      180
-     ]
-    },
-    "gem_shade": {
-     "rgb": [
-      153,
-      137,
-      146
-     ]
-    },
-    "crystal_lit": {
-     "rgb": [
-      217,
-      198,
-      198
-     ]
-    },
-    "crystal": {
-     "rgb": [
-      217,
-      188,
-      180
-     ]
-    },
-    "crystal_shade": {
-     "rgb": [
-      153,
-      137,
-      146
+      255,
+      255,
+      255
      ]
     }
-   },
-   "glow": {
-    "skin": "default",
-    "glowing_regions": [],
-    "rule": "no glow (the sheet draws none): zero Glow"
    }
   },
-  "rule": "default skin only (brief)"
+  "repaint_proof": {
+   "default_digest_before": "c5f2e0aa5dc21d60",
+   "after_repaint": "c5f2e0aa5dc21d60"
+  }
  },
  "improved_report": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\improved\\crystal_canine.json",
- "seconds": 42.1
+ "seconds": 97.0
 }

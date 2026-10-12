@@ -1,0 +1,295 @@
+{
+ "glb": "proxy/crystal_canine_proxy.glb",
+ "sha256": "508d252ed0be0f39d7921dc8520149c61452884026bed05563ddc86b03d31410",
+ "seed": 56,
+ "model": "Pixal3D multi-view (meshgen, shared_frame)",
+ "views_sent": {
+  "front": "proxy/view_front.png",
+  "left": "proxy/view_side.png"
+ },
+ "side_facing": "left",
+ "frame": {
+  "above_floor_px": 622,
+  "below_floor_px": 0,
+  "pad_px": 20,
+  "height_px": 663,
+  "views": {
+   "front": {
+    "crop_origin_px": [
+     0,
+     134
+    ],
+    "floor_row": 642,
+    "mask_bbox_px": [
+     20,
+     154,
+     418,
+     777
+    ]
+   },
+   "side": {
+    "crop_origin_px": [
+     762,
+     130
+    ],
+    "floor_row": 642,
+    "mask_bbox_px": [
+     782,
+     152,
+     1197,
+     773
+    ]
+   }
+  }
+ },
+ "generated": {
+  "via": "reused",
+  "source": "C:/Users/kenne/AppData/Local/Temp/claude/C--Users-kenne-OneDrive-Desktop-git-forge/c52f52c2-4a47-4d0c-9098-1fc754dd670d/scratchpad/proxy_finish_cc/light/proxy_2view/crystal_canine_proxy.glb"
+ },
+ "transform": {
+  "rotation": [
+   [
+    1.0,
+    0.0,
+    0.0
+   ],
+   [
+    0.0,
+    1.0,
+    0.0
+   ],
+   [
+    0.0,
+    0.0,
+    1.0
+   ]
+  ],
+  "offset": [
+   0.012022256851196289,
+   -0.00837165117263794,
+   -0.46930694580078125
+  ],
+  "scale": 6.489583333333333,
+  "rule": "v_sheet = scale * (R @ v_zup - offset); glTF (x, y, z) -> z-up (x, -z, y)",
+  "orientation_identity_iou": 0.8321,
+  "orientation_best_iou": 0.8321
+ },
+ "clipped_below_floor_px": {},
+ "scores": {
+  "front": {
+   "iou": 0.8934,
+   "iou_shape": 0.8094,
+   "aspect_rel": 0.0636,
+   "row_err_u": 0.234,
+   "row_err_pct": 6.5,
+   "w_u": 4.23,
+   "h_u": 6.2,
+   "ref_w_u": 3.98,
+   "ref_h_u": 6.23,
+   "scored": true
+  },
+  "back": {
+   "iou": 0.5344,
+   "iou_shape": 0.5108,
+   "aspect_rel": 0.259,
+   "row_err_u": 0.72,
+   "row_err_pct": 23.3,
+   "w_u": 4.23,
+   "h_u": 6.2,
+   "ref_w_u": 3.19,
+   "ref_h_u": 6.31,
+   "scored": false
+  },
+  "side": {
+   "iou": 0.8859,
+   "iou_shape": 0.8661,
+   "aspect_rel": 0.0182,
+   "row_err_u": 0.189,
+   "row_err_pct": 5.5,
+   "w_u": 4.22,
+   "h_u": 6.2,
+   "ref_w_u": 4.15,
+   "ref_h_u": 6.21,
+   "scored": true
+  }
+ },
+ "mean_iou": 0.8897,
+ "side_len_over_front_h": {
+  "mesh": 0.681,
+  "sheet": 0.666,
+  "rel_err": 0.0218
+ },
+ "front_w_over_h": {
+  "mesh": 0.682,
+  "sheet": 0.639
+ },
+ "gate": {
+  "pass": true,
+  "verdict": "reliable",
+  "rule": "mean IoU >= 0.75 and side length within 5%"
+ },
+ "sections": [
+  {
+   "z_frac": 0.06,
+   "z_u": 0.372,
+   "x_min_u": -1.151,
+   "x_max_u": 2.086,
+   "width_x_u": 3.237,
+   "y_front_u": -1.091,
+   "y_back_u": 1.871,
+   "depth_y_u": 2.962,
+   "y_centre_u": 0.39,
+   "points": 2072
+  },
+  {
+   "z_frac": 0.18,
+   "z_u": 1.116,
+   "x_min_u": -1.062,
+   "x_max_u": 1.925,
+   "width_x_u": 2.987,
+   "y_front_u": -1.05,
+   "y_back_u": 2.037,
+   "depth_y_u": 3.087,
+   "y_centre_u": 0.493,
+   "points": 2368
+  },
+  {
+   "z_frac": 0.3,
+   "z_u": 1.859,
+   "x_min_u": -1.0,
+   "x_max_u": 1.813,
+   "width_x_u": 2.812,
+   "y_front_u": -1.185,
+   "y_back_u": 2.038,
+   "depth_y_u": 3.223,
+   "y_centre_u": 0.426,
+   "points": 2552
+  },
+  {
+   "z_frac": 0.42,
+   "z_u": 2.603,
+   "x_min_u": -1.111,
+   "x_max_u": 1.269,
+   "width_x_u": 2.381,
+   "y_front_u": -1.715,
+   "y_back_u": 1.595,
+   "depth_y_u": 3.311,
+   "y_centre_u": -0.06,
+   "points": 3014
+  },
+  {
+   "z_frac": 0.54,
+   "z_u": 3.347,
+   "x_min_u": -1.8,
+   "x_max_u": 1.374,
+   "width_x_u": 3.174,
+   "y_front_u": -1.864,
+   "y_back_u": 1.335,
+   "depth_y_u": 3.199,
+   "y_centre_u": -0.264,
+   "points": 4034
+  },
+  {
+   "z_frac": 0.66,
+   "z_u": 4.09,
+   "x_min_u": -1.936,
+   "x_max_u": 1.569,
+   "width_x_u": 3.505,
+   "y_front_u": -1.627,
+   "y_back_u": 0.589,
+   "depth_y_u": 2.217,
+   "y_centre_u": -0.519,
+   "points": 4686
+  },
+  {
+   "z_frac": 0.78,
+   "z_u": 4.834,
+   "x_min_u": -1.862,
+   "x_max_u": 1.148,
+   "width_x_u": 3.01,
+   "y_front_u": -1.811,
+   "y_back_u": 0.594,
+   "depth_y_u": 2.405,
+   "y_centre_u": -0.608,
+   "points": 2056
+  },
+  {
+   "z_frac": 0.9,
+   "z_u": 5.578,
+   "x_min_u": -1.076,
+   "x_max_u": 0.696,
+   "width_x_u": 1.772,
+   "y_front_u": -1.384,
+   "y_back_u": -0.429,
+   "depth_y_u": 0.955,
+   "y_centre_u": -0.907,
+   "points": 700
+  }
+ ],
+ "landmarks": {
+  "height_u": 6.197,
+  "top": {
+   "z_u": 6.197,
+   "x_u": -1.033,
+   "y_u": -0.539
+  },
+  "front_most": {
+   "y_u": -2.107,
+   "z_u": 3.95,
+   "note": "the most -Y point (snout / chest / beak tip)"
+  },
+  "rear_most": {
+   "y_u": 2.107,
+   "z_u": 1.574,
+   "note": "the most +Y point (tail)"
+  },
+  "length_y_u": 4.213,
+  "width_x_u": 4.227,
+  "widest_band": {
+   "z_u": 4.09,
+   "width_x_u": 3.505
+  },
+  "depth_at_intake_rows": {
+   "0.00": {
+    "z_u": 0.124,
+    "depth_y_u": 2.722,
+    "half_w_x_u": 1.964,
+    "sheet_half_w_u": 0.41
+   },
+   "0.10": {
+    "z_u": 0.62,
+    "depth_y_u": 3.023,
+    "half_w_x_u": 2.059,
+    "sheet_half_w_u": 2.12
+   },
+   "0.25": {
+    "z_u": 1.549,
+    "depth_y_u": 3.176,
+    "half_w_x_u": 1.929,
+    "sheet_half_w_u": 1.98
+   },
+   "0.50": {
+    "z_u": 3.099,
+    "depth_y_u": 3.162,
+    "half_w_x_u": 1.338,
+    "sheet_half_w_u": 1.12
+   },
+   "0.75": {
+    "z_u": 4.648,
+    "depth_y_u": 2.77,
+    "half_w_x_u": 1.76,
+    "sheet_half_w_u": 1.63
+   },
+   "0.90": {
+    "z_u": 5.578,
+    "depth_y_u": 0.955,
+    "half_w_x_u": 1.076,
+    "sheet_half_w_u": 0.9
+   }
+  }
+ },
+ "render": "proxy/crystal_canine_proxy_vs_sheet.png",
+ "notes": [],
+ "use": "3D REFERENCE ONLY: cite sections / landmark depths in the build's constants; the sheet is the spec and the rest pose stays symmetric (the proxy copies the sheet's pose)",
+ "units": "sheet units (1 u = 100 sheet px); z up from the floor, x = the creature's left/right (bbox centred), y = depth, front = -y"
+}

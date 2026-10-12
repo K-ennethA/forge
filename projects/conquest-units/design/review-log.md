@@ -2663,3 +2663,36 @@ Binding reading: clean up the cut. No leftover sliver, ridge or texture
 seam of the removed arm along the kept arm's stalk. The kept arm reads as
 one smooth continuous stalk from the shoulder socket down to the drill
 bulb.
+
+## 2026-10-12 — Crystal Canine v3 (Pixal3D flow) verdict (artist verbatim + 2 images)
+
+"seems we have an extra black part here / the snout needs to extend
+further out on the side view it looks bad and not like the ref"
+Images:
+- design/reference/crystal_canine-v3-dark-marks-annotation.png: red marks
+  on two dark / black streaks above and outside each eye (at the
+  brow / temple, between the eye and the ear base). Extra painted marks the
+  sheet does not draw.
+- crystal_canine-v3-snout-side-reference.png: the v3 side view. The muzzle
+  is short and blunt; the sheet's side view has a longer, pointed fox
+  snout.
+Binding reading:
+1. Remove the two extra dark marks at the brows / temples (repaint them as
+   the surrounding fur).
+2. Lengthen the snout forward in the side view to match the sheet's side
+   profile: a longer, tapered fox muzzle with the nose at the tip. Nose,
+   mouth line and eyes stay; the muzzle geometry is extended (an explicit
+   artist ask, so this targeted face reshape is allowed).
+
+## 2026-10-12 — Crystal Canine swapped + Eclipse Wolf held (artist verbatim)
+
+"for cyrstalline canine lets swap, eclipse wolf ours looks cleaner, there
+is too many smears and tears on the other, we can try to fix those and see
+how it turns out"
+- crystal_canine: REPLACED by the Pixal3D light-flow v4 (2-view proxy,
+  light finish, symmetric leg repose, torso +7%, tail to the sheet side
+  curve, face paint: extra nose removed + eyes levelled + brow marks
+  erased, muzzle pulled to the sheet's side length). Digest
+  fe4539243ee1635f.
+- eclipse_wolf: the HAND BUILD stays in the game. The Pixal3D version goes
+  back for a smear / tear cleanup and a side-by-side re-judge.

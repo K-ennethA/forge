@@ -1,7 +1,7 @@
-00:01.484  blend            | Read blend: "C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\rigged\crystal_canine.blend"
-00:03.484  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\crystal_canine\crystal_canine_ortho_front.png'
-00:03.875  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\crystal_canine\crystal_canine_ortho_back.png'
-00:04.266  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\crystal_canine\crystal_canine_ortho_side.png'
+00:01.219  blend            | Read blend: "C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\rigged\crystal_canine.blend"
+00:03.204  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\crystal_canine\crystal_canine_ortho_front.png'
+00:03.454  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\crystal_canine\crystal_canine_ortho_back.png'
+00:03.766  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\crystal_canine\crystal_canine_ortho_side.png'
 WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\crystal_canine\crystal_canine_ortho_front.png
 WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\crystal_canine\crystal_canine_ortho_back.png
 WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\crystal_canine\crystal_canine_ortho_side.png

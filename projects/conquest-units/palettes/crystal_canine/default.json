@@ -1,19 +1,20 @@
 {
  "unit": "crystal_canine",
  "skin": "default",
- "description": "Crystal Canine default look, PIXEL-SAMPLED from design/reference/crystal_canine-character-sheet.png (intake.json swatch chips 247,234,224 / 217,198,198 / 217,188,180 / 153,137,146 / 81,74,81 + direct samples of the drawn surfaces, px cited per region). A slim cream-white fox-like canine with blush inner ears, grey eyes with dark pupils, a small dark nose, a faceted mauve-taupe forehead gem and a crystal mane of faceted prisms toned by the light. Matte. The ink outline and the painted lilac shading are drawing style, not regions. No glow (the sheet draws none): every region writes zero Glow.",
+ "description": "crystal_canine default look: one region per sheet palette chip (proxy_finish.py init; chips from intake.json swatches)",
  "regions": {
-  "fur":           {"rgb": [247, 234, 224], "note": "cream-white fur: chip 247,234,224; drawn medians front chest (205,420) 247,234,224 / side leg (895,680) 246,233,223 / side tail (1180,650) 246,232,222"},
-  "ear_inner":     {"rgb": [217, 198, 198], "note": "blush inner ear: chip 217,198,198 (the sheet's blush shading tone); drawn front R ear (270,205) 215,193,189 / side near ear (918,215) 200,173,171"},
-  "eye_white":     {"rgb": [252, 245, 238], "note": "the sclera crescent beside the iris: front L eye (166,298) 252,245,238 / (165,294) 248,237,226"},
-  "iris":          {"rgb": [109, 98, 111],  "note": "grey iris, the DRAWN tone (v1 gate: the chip 153,137,146 read pale): mean of the medians front L (175,293) 107,95,109 / front R (238,293) 104,95,107 / face panel (1300,135) 117,105,116"},
-  "pupil":         {"rgb": [81, 74, 81],    "note": "dark pupil: chip 81,74,81; drawn face panel (1310,138) 80,72,80 / front (180,293) 76,69,76"},
-  "nose":          {"rgb": [115, 94, 100],  "note": "small dark nose: drawn front (207,330) 116,92,97 / face panel (1373,180) 115,96,102 (mean)"},
-  "gem_lit":       {"rgb": [217, 188, 180], "note": "forehead gem, lit facets: chip 217,188,180 (brief); drawn front gem (215,240) 243,216,205 lit / (200,250) 199,167,163 mid"},
-  "gem_shade":     {"rgb": [153, 137, 146], "note": "forehead gem, shaded facets: chip 153,137,146 (brief); drawn front gem dark facet p10 (200,250) 176,147,149"},
-  "crystal_lit":   {"rgb": [217, 198, 198], "note": "mane crystal facets toward the light: chip 217,198,198 (brief: lit 217,188,180 / 217,198,198); drawn side prism (1080,400) 236,207,197"},
-  "crystal":       {"rgb": [217, 188, 180], "note": "mane crystal mid facets: chip 217,188,180; drawn side prism shade (1040,345) 209,175,167"},
-  "crystal_shade": {"rgb": [153, 137, 146], "note": "mane crystal facets away from the light: chip 153,137,146 (brief)"}
+  "proxy_albedo": {
+   "rgb": [
+    255,
+    255,
+    255
+   ],
+   "note": "tint over the baked proxy albedo (light mode; white = as generated)"
+  }
  },
- "material": {"roughness": 0.85, "emission_strength": 1.0, "alpha": 1.0}
+ "material": {
+  "roughness": 0.85,
+  "emission_strength": 1.0,
+  "alpha": 1.0
+ }
 }

@@ -1,2 +1,6 @@
 ﻿WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\crystal_canine\crystal_canine_sheet_vs_model.png
+GATE view=front iou=0.728 in_frame=0.718 row_err=8.9% | proxy iou=0.893  FLAG: more than 0.05 below the proxy
+GATE view=side  iou=0.794 in_frame=0.792 row_err=11.3% | proxy iou=0.886  FLAG: more than 0.05 below the proxy
+GATE mean_iou=0.761 flagged=front,side proxy=reliable
+GATE bake_reference=none (no object.bake call found)
 WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\crystal_canine\crystal_canine_contact.png

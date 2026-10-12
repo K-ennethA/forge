@@ -130,7 +130,10 @@ def bones_of(rig):
     for ch in rig.get("chains") or []:
         pts = [np.asarray(p, float) for p in ch["points"]]
         for s in (("L", "R") if ch.get("mirror", True) else ("M",)):
-            P_ = [p * np.array([-1.0, 1.0, 1.0]) if s == "R" else p for p in pts]
+            if s == "R" and ch.get("points_R"):     # the proxy's OWN right-side joints (a posed / staggered pair)
+                P_ = [np.asarray(p, float) for p in ch["points_R"]]
+            else:
+                P_ = [p * np.array([-1.0, 1.0, 1.0]) if s == "R" else p for p in pts]
             base = ch["name"] + ("" if s == "M" else "." + s)
             for k in range(len(P_) - 1):
                 par = ch.get("parent", sn[0]) if k == 0 else "%s.%d" % (base, k - 1)
@@ -164,9 +167,14 @@ def weights(P, B, H, falloff=0.06, rigid=None, bone_falloff=None, bone_radius=No
     dmin = D.min(1, keepdims=True)
     sig = np.array([(bone_falloff or {}).get(j, falloff) for j in range(len(B))]) * H
     W = np.exp(-((D - dmin) / sig[None, :]) ** 2)
+    W0 = W.copy() if taper else None
     for j, tp in taper.items():                   # ... and fade out before it (no tear at the reach)
         W[:, j] *= tp * tp * (3 - 2 * tp)
     W = np.where(W > 1e-3, W, 0.0)
+    if taper:                                     # a vertex whose every weight tapered away keeps its untapered ones
+        lost = W.sum(1) <= 0                      # (else it would be pinned to the first rigid bone below)
+        if lost.any():
+            W[lost] = np.where(W0[lost] > 1e-3, W0[lost], 0.0)
     if (W > 0).sum(1).max() > 4:
         idx = np.argsort(-W, 1, kind="stable")[:, 4:]
         np.put_along_axis(W, idx, 0.0, 1)
@@ -208,11 +216,139 @@ def _wrap(a):
 
 def target_bones(B, tgt):
     names = [b[0] for b in B]
+    if "stretch" in tgt:                        # a sectional stretch: the one spine bone that lengthens
+        return [names.index(tgt["stretch"])]
+    if "symmetric" in tgt:                      # mirrored chains: both sides' bones, in chain order (L then R)
+        want = set(tgt["symmetric"])
+        return [j for j, b in enumerate(B) if b[5] in ("L", "R") and b[0].rsplit(".", 2)[0] in want]
     if "chain" in tgt:
         ids = [j for j, b in enumerate(B) if b[0].rsplit(".", 1)[0] == tgt["chain"] and b[5] == "M"]
     else:
         ids = [names.index(n) for n in tgt["bones"]]
     return ids
+
+
+def rot_between(a, b):
+    """the minimal rotation taking direction a onto direction b (Rodrigues)"""
+    a, b = _unit(a), _unit(b)
+    v = np.cross(a, b)
+    s, c = float(np.linalg.norm(v)), float(a @ b)
+    if s < 1e-12:
+        if c > 0:
+            return np.eye(3)
+        p = _unit(np.cross(a, [1.0, 0.0, 0.0] if abs(a[0]) < 0.9 else [0.0, 1.0, 0.0]))
+        return 2.0 * np.outer(p, p) - np.eye(3)
+    k = v / s
+    K = np.array([[0.0, -k[2], k[1]], [k[2], 0.0, -k[0]], [-k[1], k[0], 0.0]])
+    ang = math.atan2(s, c)
+    return np.eye(3) + math.sin(ang) * K + (1.0 - math.cos(ang)) * (K @ K)
+
+
+def bone_affine(p0, p1, q0, q1):
+    """the bone p0 -> p1 carried onto q0 -> q1: a rotation (minimal) times a stretch ALONG the bone (|q| / |p|), so both
+    joints land exactly; the cross-section is never scaled"""
+    d = np.asarray(p1, float) - np.asarray(p0, float)
+    t = np.asarray(q1, float) - np.asarray(q0, float)
+    dh = _unit(d)
+    S = np.eye(3) + (float(np.linalg.norm(t)) / max(float(np.linalg.norm(d)), 1e-12) - 1.0) * np.outer(dh, dh)
+    A = rot_between(d, t) @ S
+    return A, np.asarray(q0, float) - A @ np.asarray(p0, float)
+
+
+MX = np.array([-1.0, 1.0, 1.0])
+
+
+def pose_symmetric(B, tgt, M, Vlow, W, floor_z):
+    """a mirrored LIMB pair posed onto ONE mirror-symmetric stance (artist 2026-10-10, Crystal Canine: "our model should
+    have symmetry and then we can pose"): per chain, target joints T.L = (P.L + mirror(P.R)) / 2 (`match`: "mean", or
+    "L" / "R" to copy one side), T.R = mirror(T.L); each bone is carried onto its target by a rotation x a stretch along
+    the bone (bone_affine). `plant`: each side's foot (the vertices the LAST bone dominates) is brought to the floor by
+    moving the chain's joints down by delta x min(1, k / (n - 1)) (the root stays, the foot bone translates), iterated;
+    the residual is reported. -> {bone: affine} (updates M), report"""
+    names = [b[0] for b in B]
+    rows = []
+    for ch in tgt["symmetric"]:
+        ids = {s: [j for j, b in enumerate(B) if b[5] == s and b[0].rsplit(".", 2)[0] == ch] for s in ("L", "R")}
+        if not ids["L"] or len(ids["L"]) != len(ids["R"]):
+            raise ValueError("symmetric repose: chain %r needs mirrored L / R bones" % ch)
+        P = {s: [np.asarray(B[ids[s][0]][1], float)] + [np.asarray(B[j][2], float) for j in ids[s]] for s in ("L", "R")}
+        n = len(ids["L"])
+        match = tgt.get("match", "mean")
+        if match == "mean":
+            TL = [0.5 * (a + b * MX) for a, b in zip(P["L"], P["R"])]
+        elif match == "L":
+            TL = [a.copy() for a in P["L"]]
+        else:
+            TL = [b * MX for b in P["R"]]
+        T = {"L": TL, "R": [p * MX for p in TL]}
+        err_before = [round(float(np.linalg.norm(a - b * MX)), 4) for a, b in zip(P["L"], P["R"])]
+
+        def set_aff():
+            for s in ("L", "R"):
+                for k, j in enumerate(ids[s]):
+                    M[j] = bone_affine(P[s][k], P[s][k + 1], T[s][k], T[s][k + 1])
+        set_aff()
+        feet = {}
+        pr = float(tgt.get("plant_radius", 0.3))
+        for s in ("L", "R"):          # the foot: what the last bone dominates AND lies within plant_radius of it
+            j_ = ids[s][-1]
+            feet[s] = (W[:, j_] >= 0.5) & (seg_d(Vlow, B[j_][1], B[j_][2]) <= pr)
+        zmin0 = {s: round(float(Vlow[feet[s], 2].min()), 4) if feet[s].any() else None for s in ("L", "R")}
+        plant = []
+        if tgt.get("plant") and Vlow is not None:
+            wk = [min(1.0, k / max(n - 1, 1)) for k in range(n + 1)]
+            for it in range(int(tgt.get("plant_iters", 4))):
+                dz = {}
+                for s in ("L", "R"):
+                    if not feet[s].any():
+                        continue
+                    z_ = float(skin(Vlow[feet[s]], W[feet[s]], B, M)[:, 2].min())
+                    dz[s] = float(floor_z) - z_
+                plant.append({s: round(v, 5) for s, v in dz.items()})
+                if all(abs(v) < 1e-5 for v in dz.values()):
+                    break
+                for s, v in dz.items():
+                    T[s] = [p + np.array([0.0, 0.0, v * wk[k]]) for k, p in enumerate(T[s])]
+                set_aff()
+        zmin1 = {s: round(float(skin(Vlow[feet[s]], W[feet[s]], B, M)[:, 2].min()), 4) if feet[s].any() else None
+                 for s in ("L", "R")}
+        err_after = [round(float(np.linalg.norm(a - b * MX)), 4) for a, b in zip(T["L"], T["R"])]
+        bones_ = []
+        for s in ("L", "R"):
+            for k, j in enumerate(ids[s]):
+                d = P[s][k + 1] - P[s][k]; t_ = T[s][k + 1] - T[s][k]
+                ang = math.degrees(math.acos(max(-1.0, min(1.0, float(_unit(d) @ _unit(t_))))))
+                bones_.append({"bone": names[j], "turn_deg": round(ang, 3),
+                               "length_scale": round(float(np.linalg.norm(t_) / max(np.linalg.norm(d), 1e-12)), 4),
+                               "root_move_u": round(float(np.linalg.norm(T[s][k] - P[s][k])), 4) if k == 0 else None})
+        rows.append({"chain": ch, "match": match, "joints_before": {s: np.round(np.array(P[s]), 4).tolist() for s in P},
+                     "joints_after": {s: np.round(np.array(T[s]), 4).tolist() for s in T},
+                     "mirror_joint_err_before_u": err_before, "mirror_joint_err_after_u": err_after,
+                     "foot_min_z_before_u": zmin0, "foot_min_z_after_u": zmin1, "plant_iters": plant, "bones": bones_})
+    return rows
+
+
+def pose_to_points(B, ids, tgt, M):
+    """opt-in chain target {"chain": c, "to_points": [[x, y, z], ...]}: joint 0 stays, the rest are placed on the given
+    polyline (the drawn curve) at the chain's OWN arc-length fractions (`length_scale` x the polyline length, default the
+    polyline's length): every bone keeps its share of the chain and the chain takes the curve's shape and length. Each
+    bone is carried by bone_affine (rotation x stretch along the bone; the cross-section is never scaled)."""
+    names = [b[0] for b in B]
+    P = [np.asarray(B[ids[0]][1], float)] + [np.asarray(B[j][2], float) for j in ids]
+    curve = np.vstack([P[0]] + [np.asarray(q, float) for q in tgt["to_points"]])
+    seg = np.linalg.norm(np.diff(curve, axis=0), axis=1); s_c = np.concatenate([[0.0], np.cumsum(seg)])
+    segp = np.linalg.norm(np.diff(np.array(P), axis=0), axis=1); s_p = np.concatenate([[0.0], np.cumsum(segp)])
+    total = float(tgt.get("length_scale", 1.0)) * s_c[-1]
+    tq = np.clip(s_p / s_p[-1] * total, 0.0, s_c[-1])
+    Q = [np.array([np.interp(t, s_c, curve[:, k]) for k in range(3)]) for t in tq]
+    Q[0] = P[0]
+    rows = []
+    for k, j in enumerate(ids):
+        M[j] = compose(bone_affine(P[k], P[k + 1], Q[k], Q[k + 1]), M[j])
+        d = P[k + 1] - P[k]; t_ = Q[k + 1] - Q[k]
+        rows.append({"bone": names[j], "turn_deg": round(math.degrees(math.acos(max(-1.0, min(1.0, float(_unit(d) @ _unit(t_)))))), 2),
+                     "length_scale": round(float(np.linalg.norm(t_) / max(np.linalg.norm(d), 1e-12)), 4)})
+    return rows, P, Q
 
 
 def pose_matrices(B, targets, Vlow=None, W=None, floor_z=0.0):
@@ -225,6 +361,20 @@ def pose_matrices(B, targets, Vlow=None, W=None, floor_z=0.0):
         ids = target_bones(B, tgt)
         if not ids:
             raise ValueError("repose target %r names no bones" % (tgt,))
+        if "stretch" in tgt:                   # applied after every other target (below)
+            continue
+        if "to_points" in tgt:                 # a chain carried onto a drawn curve (the sheet's side-view tail)
+            rows_, P_, Q_ = pose_to_points(B, ids, tgt, M)
+            moved.update(ids)
+            rep.append({"target": tgt.get("chain"), "heading": "to_points", "bones": rows_, "lift": None,
+                        "joints_before": np.round(np.array(P_), 4).tolist(), "joints_after": np.round(np.array(Q_), 4).tolist()})
+            continue
+        if "symmetric" in tgt:
+            legs = pose_symmetric(B, tgt, M, Vlow, W, floor_z)
+            moved.update(ids)
+            rep.append({"target": tgt["symmetric"], "heading": "mirror-symmetric", "bones": [r for g in legs for r in g["bones"]],
+                        "lift": None, "legs": legs})
+            continue
         amount = float(tgt.get("amount", 1.0))
         min_h = float(tgt.get("min_horizontal", 0.35))
         at = _heading(tgt.get("heading", "+y"))
@@ -289,6 +439,32 @@ def pose_matrices(B, targets, Vlow=None, W=None, floor_z=0.0):
         if j not in moved and b[3] in names and names.index(b[3]) in moved:
             M[j] = M[names.index(b[3])]
             moved.add(j)
+    for tgt in targets:                        # SECTIONAL STRETCH (artist 2026-10-12, Crystal Canine: "torso should be a
+        if "stretch" not in tgt:               # bit longer"): one spine bone lengthens along itself, its own front
+            continue                           # subtree (chest, neck, head, front legs) stays, and everything else (the
+        j = names.index(tgt["stretch"])        # hips, hind legs, tail) translates by the same vector: the legs keep
+        b = B[j]                               # their shape and the paws stay planted (the move is horizontal)
+        hd, tl = np.asarray(b[1], float), np.asarray(b[2], float)
+        L0 = float(np.linalg.norm(hd - tl))
+        by = float(tgt["by_u"]) if "by_u" in tgt else (float(tgt.get("scale", 1.0)) - 1.0) * L0
+        delta = (hd - tl) / max(L0, 1e-12) * by
+        if tgt.get("horizontal", True):
+            delta[2] = 0.0
+        front = {j}
+        for k, bk in enumerate(B):            # parents come first: the subtree in one pass
+            if bk[3] in names and names.index(bk[3]) in front:
+                front.add(k)
+        M[j] = compose(bone_affine(hd, tl, hd + delta, tl), M[j])
+        Tm = (np.eye(3), delta)
+        rear = [k for k in range(len(B)) if k not in front]
+        for k in rear:
+            M[k] = compose(Tm, M[k])
+        rep.append({"target": tgt["stretch"], "heading": "stretch", "lift": None,
+                    "bones": [{"bone": names[j], "length_before_u": round(L0, 4), "length_after_u": round(L0 + by, 4),
+                               "scale": round((L0 + by) / max(L0, 1e-12), 4)}],
+                    "stretch": {"by_u": round(by, 4), "delta_u": np.round(delta, 4).tolist(),
+                                "front_subtree": sorted(names[k] for k in front if k != j),
+                                "translated": [names[k] for k in rear]}})
     return M, rep
 
 
@@ -323,6 +499,7 @@ def repose_rig(rig, B, M):
             pts.append(apply_aff(M[j], q[None])[0].round(5).tolist())
         ch["points"] = pts
         ch.pop("auto", None)
+        ch.pop("points_R", None)          # the posed L joints ARE the symmetric chain now (R = their mirror)
         chains.append(ch)
     rig["chains"] = chains
     return rig
@@ -369,10 +546,14 @@ def run_repose(Vlow, Flow, rig, cfg_repose, H, falloff=0.06, floor_z=0.0):
     rigid = cfg_repose.get("rigid") or []
     bf, br = {}, {}
     for tgt in cfg_repose.get("targets") or []:
-        for j in target_bones(B, tgt):
+        rad = tgt.get("radius")
+        per_bone = isinstance(rad, (list, tuple)) and len(rad) > 0 and isinstance(rad[0], (list, tuple))
+        for k, j in enumerate(target_bones(B, tgt)):
             if "falloff" in tgt:
                 bf[j] = float(tgt["falloff"])
-            if "radius" in tgt:
+            if per_bone:                        # one [reach, taper] per bone, in chain order (the last repeats)
+                br[j] = rad[min(k, len(rad) - 1)]
+            elif "radius" in tgt:
                 br[j] = tgt["radius"] if isinstance(tgt["radius"], (list, tuple)) else float(tgt["radius"])
     W, rig_rep = weights(Vlow, B, H, float(cfg_repose.get("falloff", falloff)), rigid, bf, br)
     M, prep = pose_matrices(B, cfg_repose.get("targets") or [], Vlow, W, floor_z)
@@ -387,6 +568,6 @@ def run_repose(Vlow, Flow, rig, cfg_repose, H, falloff=0.06, floor_z=0.0):
     for tgt in cfg_repose.get("targets") or []:
         ids = target_bones(B, tgt)
         mv = W[:, ids].sum(1) > 0
-        rep["stretch_" + str(tgt.get("chain") or "_".join(tgt.get("bones")))] = edge_stretch(Vlow, V1, Flow, mv)
+        rep["stretch_" + str(tgt.get("chain") or tgt.get("stretch") or "_".join(tgt.get("bones") or tgt.get("symmetric")))] =             edge_stretch(Vlow, V1, Flow, mv)
     rig_new = repose_rig(rig, B, M)
     return V1, rig_new, rep, {"W": W, "B": B, "M": M, "dom_moved": dom}

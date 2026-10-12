@@ -535,13 +535,31 @@ def run_light(unit, cfg, raw_cfg, PREVIEW, DIGEST_ONLY, SOLID, T0):
             o.select_set(o is HIGH or o is low)
         bpy.context.view_layer.objects.active = low
         bstats = {"reference": "flat", "source": "the proxy mesh itself (not the remesh)"}
-        for typ, node, samples in (("NORMAL", tn, 1), ("AO", ta, 16), ("EMIT", tc, 1)):
+        ao_low = bool(lc.get("ao_from_low"))   # opt-in (new units only): AO from the clean watertight LOW itself
+        for typ, node, samples in (("NORMAL", tn, 1), ("AO", ta, int(lc.get("ao_samples", 16))), ("EMIT", tc, 1)):
             nt.nodes.active = node
             scene.cycles.samples = samples
             t = time.time()
-            r_ = bpy.ops.object.bake(type=typ, use_selected_to_active=True, cage_extrusion=BAKE_CAGE,
-                                     max_ray_distance=BAKE_CAGE * 2.0, margin=16, use_clear=False)
+            if typ == "AO" and ao_low:
+                # the proxy soup's inner shells / inward faces occlude every AO ray at some bake origins (black texels,
+                # ~15 % of a crystal-mane unit's AO map); the low is watertight and outward, so its own AO is clean
+                vis0 = (low.visible_camera, low.visible_diffuse, low.visible_glossy, low.visible_shadow,
+                        low.visible_transmission, low.visible_volume_scatter)
+                low.visible_camera = low.visible_diffuse = low.visible_glossy = low.visible_shadow = True
+                low.visible_transmission = low.visible_volume_scatter = True
+                HIGH.hide_render = True
+                HIGH.select_set(False)
+                r_ = bpy.ops.object.bake(type=typ, use_selected_to_active=False, margin=16, use_clear=False)
+                HIGH.hide_render = False
+                HIGH.select_set(True)
+                (low.visible_camera, low.visible_diffuse, low.visible_glossy, low.visible_shadow,
+                 low.visible_transmission, low.visible_volume_scatter) = vis0
+            else:
+                r_ = bpy.ops.object.bake(type=typ, use_selected_to_active=True, cage_extrusion=BAKE_CAGE,
+                                         max_ray_distance=BAKE_CAGE * 2.0, margin=16, use_clear=False)
             bstats[typ] = {"result": sorted(r_), "seconds": round(time.time() - t, 1)}
+        if ao_low:
+            bstats["ao_source"] = "the low itself (opt-in light.ao_from_low), %d samples" % int(lc.get("ao_samples", 16))
         px = np.empty(RN * RN * 4, dtype=np.float32); img_n.pixels.foreach_get(px); px = px.reshape(-1, 4)
         pa = np.empty(RA * RA * 4, dtype=np.float32); img_ao.pixels.foreach_get(pa); pa = pa.reshape(-1, 4)
         pc = np.empty(RC_ * RC_ * 4, dtype=np.float32); img_c.pixels.foreach_get(pc); pc = pc.reshape(-1, 4)

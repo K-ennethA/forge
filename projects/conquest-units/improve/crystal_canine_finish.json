@@ -1,0 +1,588 @@
+{
+ "unit": "crystal_canine",
+ "char_id": "crystal_canine",
+ "tier": "regular",
+ "tri_budget": [
+  8000,
+  22000
+ ],
+ "body_tris": 20000,
+ "mode": "light",
+ "refloor": {
+  "y_windows": [
+   [
+    -1.6,
+    -0.7
+   ],
+   [
+    -0.4,
+    0.6
+   ]
+  ],
+  "x_abs_min": 0.0,
+  "pct": 0.0,
+  "rescale_to_front_height": true,
+  "why": "the floor at the lowest PAW contact (front pair y -1.07, hind pair y 0.15), not the tail lying on the ground"
+ },
+ "midline_x": -0.2,
+ "light": {
+  "steps_per_height": 300,
+  "dense": [
+   {
+    "box": [
+     [
+      -0.95,
+      -2.6,
+      4.05
+     ],
+     [
+      0.95,
+      -0.95,
+      6.3
+     ]
+    ],
+    "density": 2.5,
+    "why": "head / face: eyes, nose, mouth, gem, ears"
+   }
+  ],
+  "face_paint": {
+   "window": [
+    -0.95,
+    0.95,
+    4.05,
+    5.45
+   ],
+   "ppu": 600,
+   "y_max": -1.2,
+   "facing_ramp": [
+    0.0,
+    0.08
+   ],
+   "erase": [
+    {
+     "c": [
+      0.009,
+      4.614
+     ],
+     "r": [
+      0.085,
+      0.055
+     ],
+     "feather": 0.03,
+     "why": "the EXTRA nose (artist 2026-10-12): a dark dot painted on the muzzle-tip between the eyes; the real nose + mouth sit below it where the sheet draws them"
+    },
+    {
+     "c": [
+      -0.535,
+      5.04
+     ],
+     "r": [
+      0.1,
+      0.1
+     ],
+     "feather": 0.03,
+     "why": "artist 2026-10-12 (v3): 'an extra black part' - the dark brow / temple streak above and outside the creature's right eye; the sheet draws none"
+    },
+    {
+     "c": [
+      0.555,
+      5.045
+     ],
+     "r": [
+      0.1,
+      0.1
+     ],
+     "feather": 0.03,
+     "why": "the same streak above the creature's left eye"
+    }
+   ],
+   "eyes": {
+    "src": [
+     -0.323,
+     4.7
+    ],
+    "dst": [
+     -0.323,
+     4.73
+    ],
+    "old": [
+     [
+      -0.323,
+      4.7
+     ],
+     [
+      0.361,
+      4.7
+     ]
+    ],
+    "mirror_x": 0.0,
+    "r": [
+     0.2,
+     0.15
+    ],
+    "feather": 0.04,
+    "why": "artist 2026-10-12: the eyes must line up: the creature's right eye (the cleaner one) copied and mirrored to the left, both level on the midline, raised 0.03 u to the sheet's ear-tip-to-eye distance"
+   },
+   "sample_u": 0.0008,
+   "depth_tol": 0.02
+  },
+  "cuts": [
+   {
+    "box": [
+     [
+      0.97,
+      -1.2,
+      -0.1
+     ],
+     [
+      2.35,
+      -0.3,
+      2.8
+     ]
+    ],
+    "k": 0.02,
+    "why": "a second, FRONT tail flap: the sheet's front view draws the tail hanging beside the front legs, and Pixal3D modelled it there as a separate sheet (x 1.0-2.1, y -1.05..-0.36, z 0-2.9) on top of the real tail behind. Removed; delete this entry to keep it."
+   },
+   {
+    "sphere": [
+     [
+      0.97,
+      0.6,
+      2.2
+     ],
+     0.08
+    ],
+    "k": 0.015,
+    "why": "a GAP between the tail and the outer +x thigh where they touch (z 2.1-2.3): the tail swings away in the repose and the fused seam tore into a smudge"
+   },
+   {
+    "capsule": [
+     [
+      0.38,
+      0.86,
+      2.12
+     ],
+     [
+      0.58,
+      0.97,
+      2.1
+     ],
+     0.07
+    ],
+    "k": 0.015,
+    "why": "the same gap behind the +x thigh"
+   }
+  ],
+  "bake_drop_interior": 0.08,
+  "bake_drop_interior_why": "proxy faces with solid on both sides (inner shells) are left out of the bake source: the cage drops from 0.86 to 0.20 u",
+  "ao_from_low": true,
+  "ao_samples": 64,
+  "ao_why": "AO baked on the watertight low itself (the proxy soup black-holed 15 % of the AO map), 64 samples at 1024 (was 16 at 512: 4x4 blocks + noise in the basecolor)",
+  "pulls": [
+   {
+    "centre": [
+     0.0,
+     -1.95,
+     4.38
+    ],
+    "radius": [
+     0.5,
+     0.6,
+     0.38
+    ],
+    "move": [
+     0.0,
+     -0.26,
+     0.0
+    ],
+    "y_ramp": [
+     -1.6,
+     -1.8
+    ],
+    "why": "artist 2026-10-12 (v3): 'the snout needs to extend further out on the side view'. Sheet side view: nose tip 0.595 u ahead of the eye centre (px 783 vs 842.5); proxy: 0.35 (nose y -1.94 vs eye -1.59). The muzzle (nose, mouth line, chin) is pulled 0.26 u forward; the stretch zone is y -1.60..-1.80 (the bridge / cheeks between the eyes and the nose, so the nose itself moves rigidly and is not smeared), the ellipsoid falls off toward the cheeks, brow and jaw"
+   }
+  ],
+  "erase3d": [
+   {
+    "c": [
+     -0.53,
+     -1.4,
+     5.04
+    ],
+    "r": 0.14,
+    "why": "the brow / temple streak above the creature's right eye (artist v3: 'an extra black part'), on its side-facing faces too"
+   },
+   {
+    "c": [
+     0.56,
+     -1.34,
+     5.05
+    ],
+    "r": 0.14,
+    "why": "the same streak above the creature's left eye"
+   },
+   {
+    "c": [
+     0.01,
+     -2.13,
+     4.6
+    ],
+    "r": 0.08,
+    "why": "the rest of the EXTRA nose dot on the muzzle top's upward-facing faces (the front-view erase cannot reach them)"
+   }
+  ]
+ },
+ "_doc": "LIGHT finish of the raw Pixal3D proxy (seed 56, 2-VIEW front + side) + bone repose + face paint. Points: stage-1 frame (refloored, x1.0053, midline moved to x 0).",
+ "rig": {
+  "spine_names": [
+   "hips",
+   "belly",
+   "chest",
+   "neck",
+   "head"
+  ],
+  "spine": [
+   [
+    0.0,
+    0.95,
+    3.3
+   ],
+   [
+    0.0,
+    0.1,
+    3.15
+   ],
+   [
+    0.0,
+    -0.75,
+    3.2
+   ],
+   [
+    0.0,
+    -1.15,
+    3.9
+   ],
+   [
+    -0.038,
+    -1.341,
+    4.6
+   ],
+   [
+    0.016,
+    -2.05,
+    4.611
+   ]
+  ],
+  "chains": [
+   {
+    "name": "arm",
+    "kind": "leg",
+    "parent": "chest",
+    "phase": {
+     "L": 0.0,
+     "R": 0.5
+    },
+    "points": [
+     [
+      0.29,
+      -0.62,
+      2.45
+     ],
+     [
+      0.322,
+      -0.773,
+      1.8
+     ],
+     [
+      0.24,
+      -0.94,
+      0.5
+     ],
+     [
+      0.286,
+      -1.3,
+      0.1
+     ]
+    ],
+    "points_R": [
+     [
+      -0.29,
+      -0.62,
+      2.45
+     ],
+     [
+      -0.338,
+      -0.769,
+      1.8
+     ],
+     [
+      -0.247,
+      -0.94,
+      0.5
+     ],
+     [
+      -0.273,
+      -1.296,
+      0.11
+     ]
+    ],
+    "why": "front legs: points = the proxy's +x leg, points_R = its -x leg (shoulders set symmetric inside the body)"
+   },
+   {
+    "name": "leg",
+    "kind": "leg",
+    "parent": "hips",
+    "phase": {
+     "L": 0.5,
+     "R": 0.0
+    },
+    "points": [
+     [
+      0.75,
+      0.84,
+      2.35
+     ],
+     [
+      0.709,
+      0.689,
+      1.85
+     ],
+     [
+      0.775,
+      0.6,
+      1.1
+     ],
+     [
+      0.825,
+      0.127,
+      0.18
+     ]
+    ],
+    "points_R": [
+     [
+      -0.75,
+      0.84,
+      2.35
+     ],
+     [
+      -0.616,
+      0.661,
+      1.85
+     ],
+     [
+      -0.733,
+      0.665,
+      1.1
+     ],
+     [
+      -0.824,
+      0.205,
+      0.15
+     ]
+    ],
+    "why": "hind legs (hip, stifle, hock, paw centre); the +x paw stands 0.106 u above the floor in the proxy"
+   },
+   {
+    "name": "tail",
+    "kind": "tail",
+    "mirror": false,
+    "parent": "hips",
+    "points": [
+     [
+      0.0,
+      1.0,
+      3.75
+     ],
+     [
+      0.36,
+      1.16,
+      3.0
+     ],
+     [
+      0.85,
+      1.3,
+      2.3
+     ],
+     [
+      1.2,
+      1.4,
+      1.6
+     ],
+     [
+      1.4,
+      1.45,
+      0.9
+     ],
+     [
+      1.6,
+      1.35,
+      0.35
+     ],
+     [
+      1.75,
+      1.2,
+      0.05
+     ]
+    ],
+    "why": "the tail: from the rump it swings ~70 deg to the creature's left and hangs to the floor"
+   }
+  ]
+ },
+ "repose": {
+  "targets": [
+   {
+    "symmetric": [
+     "arm",
+     "leg"
+    ],
+    "match": "mean",
+    "plant": true,
+    "plant_radius": 0.45,
+    "radius": [
+     [
+      0.28,
+      0.06
+     ],
+     [
+      0.45,
+      0.15
+     ],
+     [
+      0.45,
+      0.1
+     ],
+     [
+      0.28,
+      0.06
+     ],
+     [
+      0.45,
+      0.15
+     ],
+     [
+      0.45,
+      0.1
+     ],
+     [
+      0.28,
+      0.06
+     ],
+     [
+      0.45,
+      0.15
+     ],
+     [
+      0.45,
+      0.1
+     ],
+     [
+      0.28,
+      0.06
+     ],
+     [
+      0.45,
+      0.15
+     ],
+     [
+      0.45,
+      0.1
+     ]
+    ],
+    "why": "artist 2026-10-10: a symmetric rest pose, four legs mirror-symmetric, no stagger; every paw on the floor",
+    "falloff": 0.03
+   },
+   {
+    "chain": "tail",
+    "falloff": 0.03,
+    "radius": [
+     [
+      0.5,
+      0.2
+     ],
+     [
+      0.8,
+      0.25
+     ],
+     [
+      1.2,
+      0.3
+     ],
+     [
+      1.4,
+      0.3
+     ]
+    ],
+    "why": "the tail on the midline with the SHEET's side-view droop and length (artist 2026-10-10 + orchestrator 2026-10-12): the side-view centreline traced at sheet px (1105,445) (1140,500) (1160,570) (1160,640) (1150,700) (1140,750), y = (u - 1005.5) / 100 + 0.07 (the proxy's hind legs sit 0.07 u behind the sheet's), z = (772 - v) / 100; the chain keeps its bone shares, 0.88 x its length",
+    "to_points": [
+     [
+      0,
+      1.065,
+      3.27
+     ],
+     [
+      0,
+      1.415,
+      2.72
+     ],
+     [
+      0,
+      1.615,
+      2.02
+     ],
+     [
+      0,
+      1.615,
+      1.32
+     ],
+     [
+      0,
+      1.515,
+      0.72
+     ],
+     [
+      0,
+      1.415,
+      0.22
+     ]
+    ]
+   },
+   {
+    "bones": [
+     "neck",
+     "head"
+    ],
+    "heading": "-y",
+    "distribute": true,
+    "why": "the head turned ~4 deg to the creature's left: the neck twists half, the head the rest"
+   },
+   {
+    "stretch": "belly",
+    "by_u": 0.117,
+    "why": "artist 2026-10-12: 'torso should be a bit longer'. Sheet side view: front-to-hind leg spacing (leg column centres at z 1.2) = 1.65 u = 0.266 x the 6.21 u height; the proxy: 1.54 u = 0.247 x 6.23 u. Lengthened by 0.117 u (+7.6 % of the spacing) to the sheet ratio; chest / head / front legs stay, hips / hind legs / tail translate"
+   }
+  ],
+  "rigid": [
+   {
+    "box": [
+     [
+      -0.95,
+      -2.6,
+      4.1
+     ],
+     [
+      0.95,
+      -0.95,
+      6.3
+     ]
+    ],
+    "bone": "head",
+    "margin": 0.3,
+    "why": "the face moves as a rigid body: never deformed"
+   }
+  ]
+ },
+ "bake_res": [
+  1024,
+  1024
+ ]
+}

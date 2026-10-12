@@ -1,0 +1,42 @@
+{
+ "unit": "crystal_canine",
+ "views": {
+  "front": {
+   "iou": 0.7278,
+   "iou_shape": 0.6817,
+   "aspect_rel": 0.0468,
+   "row_err_u": 0.317,
+   "row_err_pct": 8.9,
+   "w_u": 3.8,
+   "h_u": 6.24,
+   "ref_w_u": 3.98,
+   "ref_h_u": 6.23,
+   "iou_in_frame": 0.7181,
+   "row_err_pct_in_frame": 8.8,
+   "proxy_iou": 0.8934,
+   "flag": true
+  },
+  "side": {
+   "iou": 0.7943,
+   "iou_shape": 0.7974,
+   "aspect_rel": 0.109,
+   "row_err_u": 0.386,
+   "row_err_pct": 11.3,
+   "w_u": 4.68,
+   "h_u": 6.24,
+   "ref_w_u": 4.15,
+   "ref_h_u": 6.21,
+   "iou_in_frame": 0.7921,
+   "row_err_pct_in_frame": 11.3,
+   "proxy_iou": 0.8859,
+   "flag": true
+  }
+ },
+ "proxy_sha256": "508d252ed0be0f39d7921dc8520149c61452884026bed05563ddc86b03d31410",
+ "proxy_gate": "reliable",
+ "flagged": [
+  "front",
+  "side"
+ ],
+ "mean_iou": 0.7611
+}
