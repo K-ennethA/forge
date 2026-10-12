@@ -2554,3 +2554,8 @@ creature = crystal_canine; mystic snowman = mystic_snow_spirit).
 Still unsized: petal_cobra, shield_rodent, spectormn (asked).
 Leaf Bird: re-orient (the rest pose reads as a top view from the front),
 then size it at 1 ft.
+Follow-ups (artist verbatim): "leaf bird should be half a foot in height and
+a foot long" and "if i did not give height then those heights ae fine".
+Applied: leaf_bird target 0.1524 m (6 in) with a 1 ft (0.3048 m) length, so
+the model must be re-proportioned to L/H ~2 (v3 is 4.45). petal_cobra,
+shield_rodent and spectormn keep their lineup placeholder heights.
