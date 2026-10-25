@@ -1,0 +1,42 @@
+{
+ "unit": "drakescale_beast",
+ "views": {
+  "front": {
+   "iou": 0.8561,
+   "iou_shape": 0.8577,
+   "aspect_rel": 0.0255,
+   "row_err_u": 0.3,
+   "row_err_pct": 9.5,
+   "w_u": 3.39,
+   "h_u": 6.6,
+   "ref_w_u": 3.31,
+   "ref_h_u": 6.28,
+   "iou_in_frame": 0.8543,
+   "row_err_pct_in_frame": 10.0,
+   "proxy_iou": 0.9164,
+   "flag": true
+  },
+  "side": {
+   "iou": 0.7509,
+   "iou_shape": 0.7504,
+   "aspect_rel": 0.0884,
+   "row_err_u": 0.638,
+   "row_err_pct": 13.5,
+   "w_u": 6.64,
+   "h_u": 6.6,
+   "ref_w_u": 6.09,
+   "ref_h_u": 6.64,
+   "iou_in_frame": 0.75,
+   "row_err_pct_in_frame": 13.4,
+   "proxy_iou": 0.858,
+   "flag": true
+  }
+ },
+ "proxy_sha256": "197465d17cad8664307978be73d1a2453ce44f1d3e779c7ff62f23fce04f3361",
+ "proxy_gate": "reliable",
+ "flagged": [
+  "front",
+  "side"
+ ],
+ "mean_iou": 0.8035
+}

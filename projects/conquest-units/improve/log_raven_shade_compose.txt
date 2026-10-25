@@ -1,0 +1,6 @@
+﻿WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\raven_shade\raven_shade_sheet_vs_model.png
+GATE view=front iou=0.745 in_frame=0.708 row_err=11.3% | proxy iou=0.741
+GATE view=side  iou=0.881 in_frame=0.877 row_err=5.5% | proxy iou=0.846
+GATE mean_iou=0.813 flagged=none proxy=proxy unreliable, work from the sheet (side length off by +6.9%)
+GATE bake_reference=none (no object.bake call found)
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\raven_shade\raven_shade_contact.png

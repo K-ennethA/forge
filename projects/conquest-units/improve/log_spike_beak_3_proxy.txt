@@ -1,0 +1,2 @@
+PROXY {"sha256": "70178a422d65cc04", "mean_iou": 0.893, "iou": {"front": 0.9142, "back": 0.8936, "side": 0.8711}, "row_err_pct": {"front": 3.6, "back": 7.4, "side": 7.5}, "side_len": {"mesh": 0.706, "sheet": 0.702, "rel_err": 0.0051}, "gate": "reliable"}
+NOTE clipped below the floor line (perspective tails / curls; --keep-below-floor to keep): front 6 px, back 2013 px

@@ -1,0 +1,9 @@
+{
+ "unit": "drakescale_beast",
+ "skin": "default",
+ "description": "drakescale_beast default look, LIGHT proxy finish: the colour is the Pixal3D proxy's own texture (olive / khaki re-toned to the sheet's warm brown scales, copper tips and cream belly; the rebuilt tail painted as dark-to-copper scale rows) baked onto the low (improved/textures/drakescale_beast_basecolor.png); proxy_albedo (white) tints it. No glow (the eye is painted)",
+ "regions": {
+  "proxy_albedo": {"rgb": [255, 255, 255], "note": "tint over the baked proxy albedo (light mode); white keeps the scales as baked. Sheet chips for reference: 43,36,36 / 72,57,48 / 124,87,65 / copper 188,146,115 / cream 220,187,156 / grey 103,95,98"}
+ },
+ "material": {"roughness": 0.85, "emission_strength": 1.0, "alpha": 1.0}
+}

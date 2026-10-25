@@ -1,0 +1,2 @@
+PROXY {"sha256": "2387a65c9aeeaeab", "mean_iou": 0.8315, "iou": {"front": 0.8131, "back": 0.6063, "side": 0.8499}, "row_err_pct": {"front": 12.2, "back": 14.5, "side": 5.6}, "side_len": {"mesh": 0.637, "sheet": 0.605, "rel_err": 0.0526}, "gate": "proxy unreliable, work from the sheet (side length off by +5.3%)"}
+NOTE back left out: the intake flags it 3/4 (mirror IoU 0.25, tone asymmetry 0.47)

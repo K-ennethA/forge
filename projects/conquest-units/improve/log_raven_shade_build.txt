@@ -1,0 +1,19 @@
+STAGE1 195.8 s grid (183, 206, 317) step 0.0208
+HIGH {"tris": 4423604, "verts": 2210900, "specks_dropped": {"pieces": 7, "kept": 1, "dropped_verts": 132}, "open_edges": 0, "nonmanifold_edges": 0, "rule": "marching tets of the whole remesh grid (no mirror)", "seconds": 18.9}
+LOW {"method": "collapse decimation: uniform to 300000, then 18000 with the dense boxes calibrated", "pre_tris": 300000, "tris": 18000, "verts": 8098, "specks": {"pieces": 1, "kept": 1, "dropped_verts": 0}, "open_edges": 0, "nonmanifold_edges": 0, "dense": {"density": 2.5, "box_area_frac": 0.1697, "target_tri_share": 0.3382, "got_tri_share": 0.3386, "factor_log10": -0.516, "trials": [[-7.0, 0.3124], [-3.0, 0.3133], [-1.0, 0.3218], [0.0, 0.3984], [-0.5, 0.3397], [-0.75, 0.3278], [-0.625, 0.3331], [-0.562, 0.3358], [-0.531, 0.3366], [-0.516, 0.3386]], "rule": "dense boxes weighted 0.02 (vs 1) in the collapse decimation; the factor bisected until the boxes hold density x the rest's triangles per area"}, "low_to_proxy": {"mean": 0.01415, "p99": 0.03342, "max": 0.0465}, "proxy_to_low_sampled": {"mean": 0.01902, "p99": 0.05929, "max": 0.09996}, "p99_over_height": 0.00951, "seconds": 81.2}
+Info: Baking map saved to internal image, save it externally or pack it
+Info: Baking map saved to internal image, save it externally or pack it
+Info: Baking map saved to internal image, save it externally or pack it
+BAKE {"cage_extrusion": 0.1779, "normal_coverage_pct": 93.66, "albedo_coverage_pct": 92.78, "pixel_sha": {"normal": "1929fa3ca2b6db07", "ao": "d3d30aacc5c51488", "albedo": "ca83198b5c973957"}, "seconds": 12.7}
+FINISH {"open_edges": 0, "tris": 18000, "mirror": {"plane_x_u": 0.0, "max_u": 0.53975, "p99_u": 0.05875, "p90_u": 0.02956, "mean_u": 0.01657, "rule": "every vertex mirrored in X about the plane -> distance to the nearest surface (0 = exactly symmetric)"}, "tri_budget": [8000, 22000], "in_budget": true, "mode": "light"}
+Info: Saved copy as "raven_shade.blend"
+IMPROVED_SAVED C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\improved\raven_shade.blend 311.9
+Info: Saved copy as "raven_shade.blend"
+INFO Draco mesh compression is available, use library at C:\Program Files\Blender Foundation\Blender 5.0\5.0\scripts\addons_core\io_scene_gltf2\extern_draco.dll
+11:37:50 | INFO: Starting glTF 2.0 export
+11:37:50 | INFO: Extracting primitive: raven_shade
+11:37:50 | INFO: Primitives created: 1
+11:37:50 | INFO: Finished glTF 2.0 export in 0.46786046028137207 s
+
+RIG_DONE {"bone_count": 21, "weights": {"max_influences": 4, "unweighted": 0, "sum_dev_max": 3.3306690738754696e-16, "per_bone_dominant": {"hips": 163, "spine": 326, "chest": 601, "neck": 468, "head": 868, "wing.L.0": 761, "wing.L.1": 512, "wing.L.2": 150, "wing.R.0": 703, "wing.R.1": 503, "wing.R.2": 139, "leg.L.0": 478, "leg.L.1": 158, "leg.L.2": 224, "leg.R.0": 476, "leg.R.1": 237, "leg.R.2": 649, "tail.0": 393, "tail.1": 217, "tail.2": 72}, "parts": {}, "rule": "shell: exp(-((d - d_min) / (0.06 H))^2) over bone-segment distances, side-aware, <= 4, normalised; parts rigid on their bone"}, "digest": {"parts": {"solid_grid": "0463301d9d170b17", "bake_normal": "1929fa3ca2b6db07", "bake_ao": "d3d30aacc5c51488", "bake_albedo": "ca83198b5c973957", "geometry_colour_uv": "1bbfe5960fd5e237", "weights": "278b7b96541dafe6", "keys": "e36163a02a5826ac", "clip_samples": "54e7c2df29ec3c90"}, "combined": "914c2a4aa6c671a7"}, "seconds": 313.1, "clips": {"idle": {"frames": [1, 73], "seconds": 3.0, "cyclic": true, "seam_mm": 0.0, "clearance_min_z": -0.0324}, "walk": {"frames": [1, 33], "seconds": 1.333, "cyclic": true, "seam_mm": 0.0, "clearance_min_z": -0.1925}}}
+Blender 5.0.1 (hash a3db93c5b259 built 2025-12-16 01:32:30)

@@ -1,0 +1,2 @@
+PROXY {"sha256": "6345a898e4f2207b", "mean_iou": 0.7173, "iou": {"front": 0.8125, "back": 0.5527, "side": 0.7868}, "row_err_pct": {"front": 6.9, "back": 14.6, "side": 8.4}, "side_len": {"mesh": 0.745, "sheet": 0.729, "rel_err": 0.0214}, "gate": "proxy unreliable, work from the sheet (mean IoU 0.72 < 0.75)"}
+NOTE clipped below the floor line (perspective tails / curls; --keep-below-floor to keep): back 397 px, side 425 px

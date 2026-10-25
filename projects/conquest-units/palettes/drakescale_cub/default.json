@@ -1,0 +1,9 @@
+{
+ "unit": "drakescale_cub",
+ "skin": "default",
+ "description": "drakescale_cub default look, LIGHT proxy finish: the colour is the Pixal3D proxy's own texture (warm brown scales, copper tips, cream belly) baked onto the low (improved/textures/drakescale_cub_basecolor.png); proxy_albedo (white) tints it. No glow (the eye is painted)",
+ "regions": {
+  "proxy_albedo": {"rgb": [255, 255, 255], "note": "tint over the baked proxy albedo (light mode); white keeps the scales as baked. Sheet chips for reference: 41,35,34 / 71,54,47 / 126,84,63 / copper 191,145,112 / cream 224,189,157 / grey 105,97,99"}
+ },
+ "material": {"roughness": 0.85, "emission_strength": 1.0, "alpha": 1.0}
+}

@@ -1,0 +1,9 @@
+{
+ "unit": "shadowscale",
+ "skin": "default",
+ "description": "shadowscale default look, LIGHT proxy finish: the colour is the Pixal3D proxy's own texture (blade plates lifted from near-black toward the sheet's dark warm gunmetal with pale steel edges; crimson cloth kept crimson; the red eye painted, no glow) baked onto the low (improved/textures/shadowscale_basecolor.png); proxy_albedo (white) tints it. No glow region: the sheet's red eye is painted, not emissive",
+ "regions": {
+  "proxy_albedo": {"rgb": [255, 255, 255], "note": "tint over the baked proxy albedo (light mode); white keeps the texture as baked. Sheet chips for reference: 21,21,21 / 56,49,51 / 97,88,91 plates, 83,65,60 leather, 111,35,40 crimson cloth, 241,227,215 pale edges"}
+ },
+ "material": {"roughness": 0.85, "emission_strength": 1.0, "alpha": 1.0}
+}

@@ -1,0 +1,9 @@
+{
+ "unit": "raven_shade",
+ "skin": "default",
+ "description": "raven_shade default look, LIGHT proxy finish: the colour is the Pixal3D proxy's own texture (black / charcoal feathers with steel-blue blade tips, the red eye and the scar as generated, the diamond pendant frame repainted tan) baked onto the low (improved/textures/raven_shade_basecolor.png); proxy_albedo (white) tints it. No glow (the sheet draws the red eye as a painted eye)",
+ "regions": {
+  "proxy_albedo": {"rgb": [255, 255, 255], "note": "tint over the baked proxy albedo (light mode); white keeps the texture as baked. Sheet chips for reference: 29,29,31 / 75,73,81 / 64,59,77 (feathers) ; 97,102,127 (blade tips) ; 191,168,153 (pendant) ; 141,55,65 (eye)"}
+ },
+ "material": {"roughness": 0.85, "emission_strength": 1.0, "alpha": 1.0}
+}

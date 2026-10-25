@@ -1,0 +1,321 @@
+{
+ "glb": "proxy/spike_beak_3_proxy.glb",
+ "sha256": "70178a422d65cc0447f4a05a97749904df6f1e182d79f877923dc2fd29e9d5a6",
+ "seed": 56,
+ "model": "Pixal3D multi-view (meshgen, shared_frame)",
+ "views_sent": {
+  "front": "proxy/view_front.png",
+  "back": "proxy/view_back.png",
+  "left": "proxy/view_side.png"
+ },
+ "side_facing": "left",
+ "frame": {
+  "above_floor_px": 713,
+  "below_floor_px": 13,
+  "pad_px": 20,
+  "height_px": 767,
+  "views": {
+   "front": {
+    "crop_origin_px": [
+     -20,
+     49
+    ],
+    "floor_row": 733,
+    "mask_bbox_px": [
+     0,
+     124,
+     396,
+     796
+    ]
+   },
+   "back": {
+    "crop_origin_px": [
+     380,
+     29
+    ],
+    "floor_row": 733,
+    "mask_bbox_px": [
+     400,
+     116,
+     768,
+     775
+    ]
+   },
+   "side": {
+    "crop_origin_px": [
+     708,
+     74
+    ],
+    "floor_row": 733,
+    "mask_bbox_px": [
+     728,
+     94,
+     1200,
+     818
+    ]
+   }
+  }
+ },
+ "generated": {
+  "via": "service",
+  "seed": null,
+  "duration_ms": null,
+  "wall_s": 192.6,
+  "vram": null,
+  "stats": null,
+  "framing": null,
+  "warnings": null,
+  "free_vram_gb_before": 9.46
+ },
+ "transform": {
+  "rotation": [
+   [
+    1.0,
+    0.0,
+    0.0
+   ],
+   [
+    0.0,
+    1.0,
+    0.0
+   ],
+   [
+    0.0,
+    0.0,
+    1.0
+   ]
+  ],
+  "offset": [
+   -0.0015984773635864258,
+   -0.0028129220008850098,
+   -0.47589993476867676
+  ],
+  "scale": 7.466666666666667,
+  "rule": "v_sheet = scale * (R @ v_zup - offset); glTF (x, y, z) -> z-up (x, -z, y)",
+  "orientation_identity_iou": 0.8148,
+  "orientation_best_iou": 0.8148
+ },
+ "clipped_below_floor_px": {
+  "front": 6,
+  "back": 2013
+ },
+ "scores": {
+  "front": {
+   "iou": 0.9142,
+   "iou_shape": 0.8937,
+   "aspect_rel": 0.0021,
+   "row_err_u": 0.141,
+   "row_err_pct": 3.6,
+   "w_u": 3.94,
+   "h_u": 6.7,
+   "ref_w_u": 3.96,
+   "ref_h_u": 6.72,
+   "scored": true
+  },
+  "back": {
+   "iou": 0.8936,
+   "iou_shape": 0.9017,
+   "aspect_rel": 0.0504,
+   "row_err_u": 0.266,
+   "row_err_pct": 7.4,
+   "w_u": 3.94,
+   "h_u": 6.7,
+   "ref_w_u": 3.68,
+   "ref_h_u": 6.59,
+   "scored": true
+  },
+  "side": {
+   "iou": 0.8711,
+   "iou_shape": 0.7446,
+   "aspect_rel": 0.0765,
+   "row_err_u": 0.262,
+   "row_err_pct": 7.5,
+   "w_u": 4.73,
+   "h_u": 6.7,
+   "ref_w_u": 4.72,
+   "ref_h_u": 7.24,
+   "scored": true
+  }
+ },
+ "mean_iou": 0.893,
+ "side_len_over_front_h": {
+  "mesh": 0.706,
+  "sheet": 0.702,
+  "rel_err": 0.0051
+ },
+ "front_w_over_h": {
+  "mesh": 0.588,
+  "sheet": 0.589
+ },
+ "gate": {
+  "pass": true,
+  "verdict": "reliable",
+  "rule": "mean IoU >= 0.75 and side length within 5%"
+ },
+ "sections": [
+  {
+   "z_frac": 0.06,
+   "z_u": 0.402,
+   "x_min_u": -1.751,
+   "x_max_u": 1.747,
+   "width_x_u": 3.498,
+   "y_front_u": -1.378,
+   "y_back_u": 2.267,
+   "depth_y_u": 3.645,
+   "y_centre_u": 0.445,
+   "points": 3882
+  },
+  {
+   "z_frac": 0.18,
+   "z_u": 1.205,
+   "x_min_u": -1.617,
+   "x_max_u": 1.614,
+   "width_x_u": 3.231,
+   "y_front_u": -0.331,
+   "y_back_u": 2.13,
+   "depth_y_u": 2.461,
+   "y_centre_u": 0.9,
+   "points": 3492
+  },
+  {
+   "z_frac": 0.3,
+   "z_u": 2.008,
+   "x_min_u": -1.745,
+   "x_max_u": 1.75,
+   "width_x_u": 3.494,
+   "y_front_u": -0.957,
+   "y_back_u": 2.081,
+   "depth_y_u": 3.038,
+   "y_centre_u": 0.562,
+   "points": 5614
+  },
+  {
+   "z_frac": 0.42,
+   "z_u": 2.811,
+   "x_min_u": -1.855,
+   "x_max_u": 1.871,
+   "width_x_u": 3.727,
+   "y_front_u": -1.217,
+   "y_back_u": 2.113,
+   "depth_y_u": 3.33,
+   "y_centre_u": 0.448,
+   "points": 6206
+  },
+  {
+   "z_frac": 0.54,
+   "z_u": 3.614,
+   "x_min_u": -1.745,
+   "x_max_u": 1.788,
+   "width_x_u": 3.533,
+   "y_front_u": -1.496,
+   "y_back_u": 1.941,
+   "depth_y_u": 3.437,
+   "y_centre_u": 0.222,
+   "points": 4508
+  },
+  {
+   "z_frac": 0.66,
+   "z_u": 4.418,
+   "x_min_u": -1.344,
+   "x_max_u": 1.408,
+   "width_x_u": 2.752,
+   "y_front_u": -1.185,
+   "y_back_u": 1.81,
+   "depth_y_u": 2.995,
+   "y_centre_u": 0.312,
+   "points": 2974
+  },
+  {
+   "z_frac": 0.78,
+   "z_u": 5.221,
+   "x_min_u": -0.802,
+   "x_max_u": 0.835,
+   "width_x_u": 1.637,
+   "y_front_u": -2.137,
+   "y_back_u": 1.635,
+   "depth_y_u": 3.772,
+   "y_centre_u": -0.251,
+   "points": 1304
+  },
+  {
+   "z_frac": 0.9,
+   "z_u": 6.024,
+   "x_min_u": -0.458,
+   "x_max_u": 0.582,
+   "width_x_u": 1.04,
+   "y_front_u": -1.108,
+   "y_back_u": 1.378,
+   "depth_y_u": 2.486,
+   "y_centre_u": 0.135,
+   "points": 912
+  }
+ ],
+ "landmarks": {
+  "height_u": 6.693,
+  "top": {
+   "z_u": 6.693,
+   "x_u": 0.024,
+   "y_u": 0.169
+  },
+  "front_most": {
+   "y_u": -2.365,
+   "z_u": 4.837,
+   "note": "the most -Y point (snout / chest / beak tip)"
+  },
+  "rear_most": {
+   "y_u": 2.365,
+   "z_u": 1.471,
+   "note": "the most +Y point (tail)"
+  },
+  "length_y_u": 4.729,
+  "width_x_u": 3.94,
+  "widest_band": {
+   "z_u": 2.811,
+   "width_x_u": 3.727
+  },
+  "depth_at_intake_rows": {
+   "0.00": {
+    "z_u": 0.134,
+    "depth_y_u": 3.905,
+    "half_w_x_u": 1.965,
+    "sheet_half_w_u": 1.18
+   },
+   "0.10": {
+    "z_u": 0.669,
+    "depth_y_u": 2.574,
+    "half_w_x_u": 1.663,
+    "sheet_half_w_u": 1.86
+   },
+   "0.25": {
+    "z_u": 1.673,
+    "depth_y_u": 2.882,
+    "half_w_x_u": 1.719,
+    "sheet_half_w_u": 1.88
+   },
+   "0.50": {
+    "z_u": 3.347,
+    "depth_y_u": 3.5,
+    "half_w_x_u": 1.778,
+    "sheet_half_w_u": 1.82
+   },
+   "0.75": {
+    "z_u": 5.02,
+    "depth_y_u": 3.684,
+    "half_w_x_u": 1.016,
+    "sheet_half_w_u": 1.04
+   },
+   "0.90": {
+    "z_u": 6.024,
+    "depth_y_u": 2.486,
+    "half_w_x_u": 0.582,
+    "sheet_half_w_u": 0.67
+   }
+  }
+ },
+ "render": "proxy/spike_beak_3_proxy_vs_sheet.png",
+ "notes": [
+  "clipped below the floor line (perspective tails / curls; --keep-below-floor to keep): front 6 px, back 2013 px"
+ ],
+ "use": "3D REFERENCE ONLY: cite sections / landmark depths in the build's constants; the sheet is the spec and the rest pose stays symmetric (the proxy copies the sheet's pose)",
+ "units": "sheet units (1 u = 100 sheet px); z up from the floor, x = the creature's left/right (bbox centred), y = depth, front = -y"
+}

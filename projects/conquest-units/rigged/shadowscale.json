@@ -1,0 +1,432 @@
+{
+ "unit": "shadowscale",
+ "source": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\improved\\shadowscale.blend",
+ "fps": 24,
+ "finish": {
+  "open_edges": 0,
+  "tris": 18000,
+  "mirror": {
+   "plane_x_u": 0.0,
+   "max_u": 0.88604,
+   "p99_u": 0.63559,
+   "p90_u": 0.41857,
+   "mean_u": 0.15259,
+   "rule": "every vertex mirrored in X about the plane -> distance to the nearest surface (0 = exactly symmetric)"
+  },
+  "tri_budget": [
+   8000,
+   22000
+  ],
+  "in_budget": true,
+  "mode": "light"
+ },
+ "weights": {
+  "max_influences": 4,
+  "unweighted": 0,
+  "sum_dev_max": 3.3306690738754696e-16,
+  "per_bone_dominant": {
+   "hips": 403,
+   "spine": 569,
+   "chest": 512,
+   "neck": 1439,
+   "head": 1336,
+   "arm.L.0": 692,
+   "arm.L.1": 301,
+   "arm.L.2": 225,
+   "arm.R.0": 272,
+   "arm.R.1": 235,
+   "arm.R.2": 114,
+   "leg.L.0": 162,
+   "leg.L.1": 78,
+   "leg.L.2": 72,
+   "leg.R.0": 657,
+   "leg.R.1": 196,
+   "leg.R.2": 74,
+   "tail.0": 633,
+   "tail.1": 313,
+   "tail.2": 219
+  },
+  "parts": {},
+  "rule": "shell: exp(-((d - d_min) / (0.06 H))^2) over bone-segment distances, side-aware, <= 4, normalised; parts rigid on their bone"
+ },
+ "clips": {
+  "idle": {
+   "frames": [
+    1,
+    73
+   ],
+   "seconds": 3.0,
+   "cyclic": true,
+   "seam_mm": 0.0,
+   "clearance_min_z": -0.0057
+  },
+  "walk": {
+   "frames": [
+    1,
+    37
+   ],
+   "seconds": 1.5,
+   "cyclic": true,
+   "seam_mm": 0.0,
+   "clearance_min_z": -0.2199
+  }
+ },
+ "bones": [
+  {
+   "name": "root",
+   "parent": null,
+   "deform": false,
+   "head": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "tail": [
+    0.0,
+    0.0,
+    0.4
+   ]
+  },
+  {
+   "name": "hips",
+   "parent": "root",
+   "deform": true,
+   "head": [
+    0.134,
+    -0.0661,
+    2.2239
+   ],
+   "tail": [
+    0.134,
+    -0.3161,
+    3.2239
+   ]
+  },
+  {
+   "name": "spine",
+   "parent": "hips",
+   "deform": true,
+   "head": [
+    0.134,
+    -0.3161,
+    3.2239
+   ],
+   "tail": [
+    0.134,
+    -0.5661,
+    4.1239
+   ]
+  },
+  {
+   "name": "chest",
+   "parent": "spine",
+   "deform": true,
+   "head": [
+    0.134,
+    -0.5661,
+    4.1239
+   ],
+   "tail": [
+    0.174,
+    -0.6661,
+    4.9239
+   ]
+  },
+  {
+   "name": "neck",
+   "parent": "chest",
+   "deform": true,
+   "head": [
+    0.174,
+    -0.6661,
+    4.9239
+   ],
+   "tail": [
+    0.274,
+    -1.0661,
+    5.6239
+   ]
+  },
+  {
+   "name": "head",
+   "parent": "neck",
+   "deform": true,
+   "head": [
+    0.274,
+    -1.0661,
+    5.6239
+   ],
+   "tail": [
+    0.274,
+    -2.1661,
+    5.4739
+   ]
+  },
+  {
+   "name": "arm.L.0",
+   "parent": "chest",
+   "deform": true,
+   "head": [
+    0.884,
+    -0.6161,
+    4.4239
+   ],
+   "tail": [
+    0.949,
+    -1.0661,
+    3.5239
+   ]
+  },
+  {
+   "name": "arm.L.1",
+   "parent": "arm.L.0",
+   "deform": true,
+   "head": [
+    0.949,
+    -1.0661,
+    3.5239
+   ],
+   "tail": [
+    0.934,
+    -1.2411,
+    2.6239
+   ]
+  },
+  {
+   "name": "arm.L.2",
+   "parent": "arm.L.1",
+   "deform": true,
+   "head": [
+    0.934,
+    -1.2411,
+    2.6239
+   ],
+   "tail": [
+    0.909,
+    -1.3661,
+    1.8739
+   ]
+  },
+  {
+   "name": "arm.R.0",
+   "parent": "chest",
+   "deform": true,
+   "head": [
+    -0.884,
+    -0.6161,
+    4.4239
+   ],
+   "tail": [
+    -0.949,
+    -1.0661,
+    3.5239
+   ]
+  },
+  {
+   "name": "arm.R.1",
+   "parent": "arm.R.0",
+   "deform": true,
+   "head": [
+    -0.949,
+    -1.0661,
+    3.5239
+   ],
+   "tail": [
+    -0.934,
+    -1.2411,
+    2.6239
+   ]
+  },
+  {
+   "name": "arm.R.2",
+   "parent": "arm.R.1",
+   "deform": true,
+   "head": [
+    -0.934,
+    -1.2411,
+    2.6239
+   ],
+   "tail": [
+    -0.909,
+    -1.3661,
+    1.8739
+   ]
+  },
+  {
+   "name": "leg.L.0",
+   "parent": "hips",
+   "deform": true,
+   "head": [
+    0.414,
+    -0.1661,
+    2.2239
+   ],
+   "tail": [
+    0.604,
+    -0.0861,
+    1.2176
+   ]
+  },
+  {
+   "name": "leg.L.1",
+   "parent": "leg.L.0",
+   "deform": true,
+   "head": [
+    0.604,
+    -0.0861,
+    1.2176
+   ],
+   "tail": [
+    0.634,
+    -0.0661,
+    0.4113
+   ]
+  },
+  {
+   "name": "leg.L.2",
+   "parent": "leg.L.1",
+   "deform": true,
+   "head": [
+    0.634,
+    -0.0661,
+    0.4113
+   ],
+   "tail": [
+    0.684,
+    -0.7661,
+    0.0613
+   ]
+  },
+  {
+   "name": "leg.R.0",
+   "parent": "hips",
+   "deform": true,
+   "head": [
+    -0.414,
+    -0.1661,
+    2.2239
+   ],
+   "tail": [
+    -0.604,
+    -0.0861,
+    1.2176
+   ]
+  },
+  {
+   "name": "leg.R.1",
+   "parent": "leg.R.0",
+   "deform": true,
+   "head": [
+    -0.604,
+    -0.0861,
+    1.2176
+   ],
+   "tail": [
+    -0.634,
+    -0.0661,
+    0.4113
+   ]
+  },
+  {
+   "name": "leg.R.2",
+   "parent": "leg.R.1",
+   "deform": true,
+   "head": [
+    -0.634,
+    -0.0661,
+    0.4113
+   ],
+   "tail": [
+    -0.684,
+    -0.7661,
+    0.0613
+   ]
+  },
+  {
+   "name": "tail.0",
+   "parent": "hips",
+   "deform": true,
+   "head": [
+    0.134,
+    0.7839,
+    2.3239
+   ],
+   "tail": [
+    0.134,
+    1.156,
+    1.4239
+   ]
+  },
+  {
+   "name": "tail.1",
+   "parent": "tail.0",
+   "deform": true,
+   "head": [
+    0.134,
+    1.156,
+    1.4239
+   ],
+   "tail": [
+    0.134,
+    1.6244,
+    0.7239
+   ]
+  },
+  {
+   "name": "tail.2",
+   "parent": "tail.1",
+   "deform": true,
+   "head": [
+    0.134,
+    1.6244,
+    0.7239
+   ],
+   "tail": [
+    0.134,
+    2.2326,
+    0.1739
+   ]
+  }
+ ],
+ "bone_count": 21,
+ "digest": {
+  "parts": {
+   "solid_grid": "82949c79b2c5191f",
+   "bake_normal": "e6cbc26a4cb72526",
+   "bake_ao": "c361948f6e264056",
+   "bake_albedo": "f45303f3624c8ddb",
+   "yaw": "4092717b0c794526",
+   "repose": "786a1bf85cc92c14",
+   "geometry_colour_uv": "8bdb26986a7b1db9",
+   "weights": "97c584df09253178",
+   "keys": "9914a6c1812bb210",
+   "clip_samples": "5a040397de8b4e67"
+  },
+  "combined": "edc3303bd388f1a0"
+ },
+ "glb": {
+  "path": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\rigged\\shadowscale.glb",
+  "bytes": 14020452,
+  "seconds": 0.8
+ },
+ "skins": {
+  "default": {
+   "file": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\rigged\\shadowscale.blend",
+   "palette": {
+    "proxy_albedo": {
+     "rgb": [
+      255,
+      255,
+      255
+     ]
+    }
+   }
+  },
+  "repaint_proof": {
+   "default_digest_before": "8bdb26986a7b1db9",
+   "after_repaint": "8bdb26986a7b1db9"
+  }
+ },
+ "improved_report": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\improved\\shadowscale.json",
+ "seconds": 125.3
+}

@@ -1,0 +1,39 @@
+{
+ "unit": "spring_pig",
+ "views": {
+  "front": {
+   "iou": 0.8797,
+   "iou_shape": 0.8707,
+   "aspect_rel": 0.0314,
+   "row_err_u": 0.24,
+   "row_err_pct": 6.8,
+   "w_u": 3.64,
+   "h_u": 6.08,
+   "ref_w_u": 3.52,
+   "ref_h_u": 6.07,
+   "iou_in_frame": 0.8751,
+   "row_err_pct_in_frame": 7.1,
+   "proxy_iou": 0.8927,
+   "flag": false
+  },
+  "side": {
+   "iou": 0.892,
+   "iou_shape": 0.863,
+   "aspect_rel": 0.0428,
+   "row_err_u": 0.144,
+   "row_err_pct": 4.8,
+   "w_u": 3.9,
+   "h_u": 6.09,
+   "ref_w_u": 3.88,
+   "ref_h_u": 6.33,
+   "iou_in_frame": 0.8492,
+   "row_err_pct_in_frame": 7.3,
+   "proxy_iou": 0.9224,
+   "flag": false
+  }
+ },
+ "proxy_sha256": "cae2eed932a643989ab85c3fb136f39db217f5b956fc36382438787ad2cac6bf",
+ "proxy_gate": "reliable",
+ "flagged": [],
+ "mean_iou": 0.8859
+}

@@ -1,0 +1,309 @@
+{
+ "glb": "../../../../../../../../../AppData/Local/Temp/claude/C--Users-kenne-OneDrive-Desktop-git-forge/5eaeb76f-be56-497f-8b1e-0a29f5e6168b/scratchpad/isk_regen/norm/iron_scale_knight_proxy.glb",
+ "sha256": "e5092e7d35612b57beb8bb5802c9d1aba6f4b258aa5b87e2af817c35e956d3ee",
+ "seed": 56,
+ "model": "Pixal3D multi-view (meshgen, shared_frame)",
+ "views_sent": {
+  "front": "../../../../../../../../../AppData/Local/Temp/claude/C--Users-kenne-OneDrive-Desktop-git-forge/5eaeb76f-be56-497f-8b1e-0a29f5e6168b/scratchpad/isk_regen/norm/view_front.png",
+  "back": "../../../../../../../../../AppData/Local/Temp/claude/C--Users-kenne-OneDrive-Desktop-git-forge/5eaeb76f-be56-497f-8b1e-0a29f5e6168b/scratchpad/isk_regen/norm/view_back.png",
+  "left": "../../../../../../../../../AppData/Local/Temp/claude/C--Users-kenne-OneDrive-Desktop-git-forge/5eaeb76f-be56-497f-8b1e-0a29f5e6168b/scratchpad/isk_regen/norm/view_side.png"
+ },
+ "side_facing": "left",
+ "frame": {
+  "above_floor_px": 684,
+  "below_floor_px": 5,
+  "pad_px": 20,
+  "height_px": 730,
+  "views": {
+   "front": {
+    "crop_origin_px": [
+     2,
+     109
+    ],
+    "floor_row": 704,
+    "mask_bbox_px": [
+     22,
+     132,
+     448,
+     819
+    ]
+   },
+   "back": {
+    "crop_origin_px": [
+     372,
+     112
+    ],
+    "floor_row": 704,
+    "mask_bbox_px": [
+     392,
+     132,
+     842,
+     819
+    ]
+   },
+   "side": {
+    "crop_origin_px": [
+     772,
+     106
+    ],
+    "floor_row": 704,
+    "mask_bbox_px": [
+     792,
+     128,
+     1204,
+     815
+    ]
+   }
+  }
+ },
+ "generated": {
+  "via": "reused",
+  "source": "C:\\Users\\kenne\\AppData\\Local\\Temp\\claude\\C--Users-kenne-OneDrive-Desktop-git-forge\\5eaeb76f-be56-497f-8b1e-0a29f5e6168b\\scratchpad\\isk_regen\\isk_sym.glb"
+ },
+ "transform": {
+  "rotation": [
+   [
+    1.0,
+    0.0,
+    0.0
+   ],
+   [
+    0.0,
+    1.0,
+    0.0
+   ],
+   [
+    0.0,
+    0.0,
+    1.0
+   ]
+  ],
+  "offset": [
+   0.0002486705780029297,
+   -0.0030810534954071045,
+   -0.470641165971756
+  ],
+  "scale": 7.467391304347826,
+  "rule": "v_sheet = scale * (R @ v_zup - offset); glTF (x, y, z) -> z-up (x, -z, y)",
+  "orientation_identity_iou": 0.7266,
+  "orientation_best_iou": 0.7266
+ },
+ "clipped_below_floor_px": {},
+ "scores": {
+  "front": {
+   "iou": 0.7187,
+   "iou_shape": 0.6429,
+   "aspect_rel": 0.262,
+   "row_err_u": 0.679,
+   "row_err_pct": 19.5,
+   "w_u": 5.73,
+   "h_u": 6.82,
+   "ref_w_u": 4.26,
+   "ref_h_u": 6.87,
+   "scored": true
+  },
+  "back": {
+   "iou": 0.7807,
+   "iou_shape": 0.6362,
+   "aspect_rel": 0.2204,
+   "row_err_u": 0.622,
+   "row_err_pct": 17.9,
+   "w_u": 5.73,
+   "h_u": 6.82,
+   "ref_w_u": 4.5,
+   "ref_h_u": 6.87,
+   "scored": true
+  },
+  "side": {
+   "iou": 0.8562,
+   "iou_shape": 0.8225,
+   "aspect_rel": 0.0683,
+   "row_err_u": 0.263,
+   "row_err_pct": 7.6,
+   "w_u": 4.39,
+   "h_u": 6.82,
+   "ref_w_u": 4.12,
+   "ref_h_u": 6.87,
+   "scored": true
+  }
+ },
+ "mean_iou": 0.7852,
+ "side_len_over_front_h": {
+  "mesh": 0.644,
+  "sheet": 0.6,
+  "rel_err": 0.0733
+ },
+ "front_w_over_h": {
+  "mesh": 0.84,
+  "sheet": 0.62
+ },
+ "gate": {
+  "pass": false,
+  "verdict": "proxy unreliable, work from the sheet (side length off by +7.3%)",
+  "rule": "mean IoU >= 0.75 and side length within 5%"
+ },
+ "sections": [
+  {
+   "z_frac": 0.06,
+   "z_u": 0.409,
+   "x_min_u": -2.407,
+   "x_max_u": 2.405,
+   "width_x_u": 4.812,
+   "y_front_u": -0.818,
+   "y_back_u": 2.165,
+   "depth_y_u": 2.983,
+   "y_centre_u": 0.674,
+   "points": 2330
+  },
+  {
+   "z_frac": 0.18,
+   "z_u": 1.227,
+   "x_min_u": -1.837,
+   "x_max_u": 1.84,
+   "width_x_u": 3.676,
+   "y_front_u": -0.863,
+   "y_back_u": 1.771,
+   "depth_y_u": 2.634,
+   "y_centre_u": 0.454,
+   "points": 3884
+  },
+  {
+   "z_frac": 0.3,
+   "z_u": 2.044,
+   "x_min_u": -1.501,
+   "x_max_u": 1.498,
+   "width_x_u": 2.999,
+   "y_front_u": -2.077,
+   "y_back_u": 1.563,
+   "depth_y_u": 3.64,
+   "y_centre_u": -0.257,
+   "points": 5868
+  },
+  {
+   "z_frac": 0.42,
+   "z_u": 2.862,
+   "x_min_u": -1.795,
+   "x_max_u": 1.801,
+   "width_x_u": 3.597,
+   "y_front_u": -1.677,
+   "y_back_u": 1.462,
+   "depth_y_u": 3.139,
+   "y_centre_u": -0.107,
+   "points": 6068
+  },
+  {
+   "z_frac": 0.54,
+   "z_u": 3.68,
+   "x_min_u": -1.727,
+   "x_max_u": 1.717,
+   "width_x_u": 3.444,
+   "y_front_u": -1.904,
+   "y_back_u": 1.21,
+   "depth_y_u": 3.114,
+   "y_centre_u": -0.347,
+   "points": 4842
+  },
+  {
+   "z_frac": 0.66,
+   "z_u": 4.498,
+   "x_min_u": -1.545,
+   "x_max_u": 1.541,
+   "width_x_u": 3.086,
+   "y_front_u": -1.677,
+   "y_back_u": 0.899,
+   "depth_y_u": 2.576,
+   "y_centre_u": -0.389,
+   "points": 4244
+  },
+  {
+   "z_frac": 0.78,
+   "z_u": 5.316,
+   "x_min_u": -1.026,
+   "x_max_u": 1.019,
+   "width_x_u": 2.046,
+   "y_front_u": -1.978,
+   "y_back_u": 0.602,
+   "depth_y_u": 2.58,
+   "y_centre_u": -0.688,
+   "points": 2864
+  },
+  {
+   "z_frac": 0.9,
+   "z_u": 6.133,
+   "x_min_u": -0.575,
+   "x_max_u": 0.577,
+   "width_x_u": 1.152,
+   "y_front_u": -2.0,
+   "y_back_u": 0.154,
+   "depth_y_u": 2.153,
+   "y_centre_u": -0.923,
+   "points": 1348
+  }
+ ],
+ "landmarks": {
+  "height_u": 6.815,
+  "top": {
+   "z_u": 6.815,
+   "x_u": -0.001,
+   "y_u": -0.441
+  },
+  "front_most": {
+   "y_u": -2.192,
+   "z_u": 5.269,
+   "note": "the most -Y point (snout / chest / beak tip)"
+  },
+  "rear_most": {
+   "y_u": 2.192,
+   "z_u": 0.409,
+   "note": "the most +Y point (tail)"
+  },
+  "length_y_u": 4.385,
+  "width_x_u": 5.73,
+  "widest_band": {
+   "z_u": 0.409,
+   "width_x_u": 4.812
+  },
+  "depth_at_intake_rows": {
+   "0.00": {
+    "z_u": 0.136,
+    "depth_y_u": 2.046,
+    "half_w_x_u": 2.631,
+    "sheet_half_w_u": 0.955
+   },
+   "0.10": {
+    "z_u": 0.681,
+    "depth_y_u": 2.734,
+    "half_w_x_u": 2.164,
+    "sheet_half_w_u": 2.155
+   },
+   "0.25": {
+    "z_u": 1.704,
+    "depth_y_u": 3.68,
+    "half_w_x_u": 1.664,
+    "sheet_half_w_u": 1.775
+   },
+   "0.50": {
+    "z_u": 3.407,
+    "depth_y_u": 2.726,
+    "half_w_x_u": 1.745,
+    "sheet_half_w_u": 1.565
+   },
+   "0.75": {
+    "z_u": 5.111,
+    "depth_y_u": 2.09,
+    "half_w_x_u": 1.147,
+    "sheet_half_w_u": 1.375
+   },
+   "0.90": {
+    "z_u": 6.133,
+    "depth_y_u": 2.153,
+    "half_w_x_u": 0.577,
+    "sheet_half_w_u": 0.915
+   }
+  }
+ },
+ "render": "../../../../../../../../../AppData/Local/Temp/claude/C--Users-kenne-OneDrive-Desktop-git-forge/5eaeb76f-be56-497f-8b1e-0a29f5e6168b/scratchpad/isk_regen/norm/iron_scale_knight_proxy_vs_sheet.png",
+ "notes": [],
+ "use": "3D REFERENCE ONLY: cite sections / landmark depths in the build's constants; the sheet is the spec and the rest pose stays symmetric (the proxy copies the sheet's pose)",
+ "units": "sheet units (1 u = 100 sheet px); z up from the floor, x = the creature's left/right (bbox centred), y = depth, front = -y"
+}

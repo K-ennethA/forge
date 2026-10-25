@@ -1,0 +1,2261 @@
+{
+ "unit": "ember_rex_2",
+ "char_id": "ember_rex_2",
+ "tier": "regular",
+ "tri_budget": [
+  8000,
+  22000
+ ],
+ "body_tris": 18000,
+ "mode": "light",
+ "fit_side_length": false,
+ "fit_side_length_why": "v2b proxy (sha c36d9494): side length / front height 0.823 vs the sheet's 0.845 (-2.5 %, inside the 5 % gate): no fit, kept as generated",
+ "refloor_why": "v2b: no refloor, no rescale (brief V2b: no forced rescale to the 3/4 front height). sheet_proxy's floor (the lowest vertex) is the TALONS: -x talon (-0.51, -0.46, 0.000), +x talon (0.57, -0.44, 0.000): both feet on z 0; the tail lies on the floor behind (never below z 0). Height 6.78 u (sheet front 6.69 / back 6.49 / side 7.21)",
+ "midline_x_why": "v2b: none. The regenerated proxy is centred: body mid-x per 0.4 u z band -0.002..+0.009; the vertex mirror p99 is lowest at plane x 0 (0.040 u) vs +-0.02 (0.052)",
+ "light": {
+  "steps_per_height": 300,
+  "ao_from_low": true,
+  "ao_samples": 64,
+  "ao_why": "AO baked on the watertight low itself: the layered-feather soup has inner shells that black-hole AO rays (ember_rex / vulture_creature lesson)",
+  "ao_distance": 0.2,
+  "ao_distance_why": "about one feather-blade width: real crevices darken, the broad feather mass does not (batch lesson: AO darkens the basecolor below the sheet)",
+  "ao_fill_below": 0.04,
+  "ao_fill_below_why": "AO texels < 0.04 (bake origins between fused feather blades) refilled from their valid neighbours",
+  "bake_drop_interior": 0.08,
+  "bake_drop_interior_why": "proxy faces with solid on both sides (inner shells under the layered feathers) left out of the bake source so the cage stays tight",
+  "uv_island_margin": 0.001,
+  "uv_island_margin_why": "the feather low unwraps into thousands of islands; margin 0.001 keeps the atlas texel coverage up (vulture_creature lesson)",
+  "dense": [
+   {
+    "box": [
+     [
+      -0.72,
+      -2.86,
+      4.8
+     ],
+     [
+      0.72,
+      -0.5,
+      6.8
+     ]
+    ],
+    "density": 2.5,
+    "vg_weight": 0.3,
+    "why": "the head: flame crest (top z 6.78, spike x +-0.02), hooked beak (front y -2.79), both eyes (proxy sha c36d9494; stage-1 frame = the proxy frame); vg_weight 0.3 so the face / eye boxes below sit denser"
+   },
+   {
+    "box": [
+     [
+      -0.36,
+      -2.86,
+      4.88
+     ],
+     [
+      0.36,
+      -1.95,
+      5.6
+     ]
+    ],
+    "density": 2.5,
+    "vg_weight": 0.1,
+    "why": "the face: beak (y -2.79..-2.44, z 4.93..5.5), gape and the eye band held denser"
+   },
+   {
+    "box": [
+     [
+      -0.32,
+      -2.46,
+      5.28
+     ],
+     [
+      -0.06,
+      -2.17,
+      5.52
+     ]
+    ],
+    "density": 2.5,
+    "vg_weight": 0.0,
+    "why": "the -x eye (painted almond, centre (-0.185, -2.32, 5.39), +-0.072 u): held dense so rim / iris / pupil land on separate faces"
+   },
+   {
+    "box": [
+     [
+      0.06,
+      -2.46,
+      5.28
+     ],
+     [
+      0.32,
+      -2.17,
+      5.52
+     ]
+    ],
+    "density": 2.5,
+    "vg_weight": 0.0,
+    "why": "the +x eye (the mirror of the -x box)"
+   }
+  ],
+  "dense_why": "v2b: boxes re-measured on the regenerated proxy (sha c36d9494)",
+  "recolour3d": [
+   {
+    "name": "neck_cream",
+    "spheres": [
+     [
+      [
+       0.0,
+       -2.12,
+       5.0
+      ],
+      0.2
+     ],
+     [
+      [
+       0.0,
+       -2.17,
+       4.75
+      ],
+      0.22
+     ],
+     [
+      [
+       0.0,
+       -2.25,
+       4.45
+      ],
+      0.24
+     ],
+     [
+      [
+       0.0,
+       -2.36,
+       4.15
+      ],
+      0.24
+     ],
+     [
+      [
+       0.0,
+       -2.38,
+       3.85
+      ],
+      0.2
+     ],
+     [
+      [
+       0.0,
+       -2.37,
+       3.6
+      ],
+      0.15
+     ]
+    ],
+    "feather": 0.07,
+    "select": {
+     "L": [
+      14,
+      42
+     ],
+     "a": [
+      18,
+      56
+     ],
+     "b": [
+      4,
+      30
+     ],
+     "soft": 3
+    },
+    "target_rgb": [
+     232,
+     176,
+     134
+    ],
+    "detail_gamma": 0.8,
+    "detail_clip": [
+     0.6,
+     1.15
+    ],
+    "why": "the sheet's cream neck (chip 246,214,182; v1 target 232,176,134 kept): on the v2b proxy (sha c36d9494) the front of the neck reads MAUVE (throat texels L* 26..31, a* 33..39, b* 14..22), not cream. Region = spheres along the FRONT of the neck on the midline (the midline slab's front edge y -2.09 at z 4.6, -2.23 at 4.3, -2.42 at 4.0, -2.37 at 3.7), radius 0.24..0.15 tapering into the sheet's chest V at z ~3.5 (sheet front view: the cream runs from the throat down to the chest V, px y 450 -> z 3.36); select = the non-fire, non-outline texels (L* 14..42, a* 18..56, b* 4..30) -> 232,176,134, shading kept (gamma 0.8, clip 0.6..1.15). v2b run 0 (a neck BOX z 3.3..5.12, mauve-only select) left a blotchy throat and a square cream band on the chest plate. Run first: the fire / body specs never see it (cream b* 29 < the fire b* floors 38..40; L* 76 > the body L* ceiling 46)"
+   },
+   {
+    "name": "fire_core",
+    "boxes": [
+     [
+      [
+       -1.4,
+       -3.0,
+       -0.1
+      ],
+      [
+       1.4,
+       3.0,
+       6.9
+      ]
+     ]
+    ],
+    "exclude": [
+     [
+      [
+       -0.3,
+       -2.86,
+       4.88
+      ],
+      [
+       0.3,
+       -2.44,
+       5.52
+      ]
+     ],
+     [
+      [
+       -0.32,
+       -2.46,
+       5.28
+      ],
+      [
+       -0.06,
+       -2.17,
+       5.52
+      ]
+     ],
+     [
+      [
+       0.06,
+       -2.46,
+       5.28
+      ],
+      [
+       0.32,
+       -2.17,
+       5.52
+      ]
+     ]
+    ],
+    "feather": 0.06,
+    "select": {
+     "L": [
+      74,
+      101
+     ],
+     "b": [
+      40,
+      100
+     ],
+     "soft": 3
+    },
+    "target_rgb": [
+     255,
+     236,
+     165
+    ],
+    "detail_gamma": 0.3,
+    "detail_clip": [
+     0.9,
+     1.1
+    ],
+    "why": "UNIT V2 NOTE 2 (artist: the flames do not contrast enough with the body): the HOT CORES = the brightest proxy flame texels (L* >= 74: median 244,166,57 / 248,199,84, 1.3 % of the surface, at the flame tips) to PALE YELLOW 255,236,165 (L* 93), near flat (gamma 0.3). Hottest first so no fire texel is recoloured twice"
+   },
+   {
+    "name": "fire_hot",
+    "boxes": [
+     [
+      [
+       -1.4,
+       -3.0,
+       -0.1
+      ],
+      [
+       1.4,
+       3.0,
+       6.9
+      ]
+     ]
+    ],
+    "exclude": [
+     [
+      [
+       -0.3,
+       -2.86,
+       4.88
+      ],
+      [
+       0.3,
+       -2.44,
+       5.52
+      ]
+     ],
+     [
+      [
+       -0.32,
+       -2.46,
+       5.28
+      ],
+      [
+       -0.06,
+       -2.17,
+       5.52
+      ]
+     ],
+     [
+      [
+       0.06,
+       -2.46,
+       5.28
+      ],
+      [
+       0.32,
+       -2.17,
+       5.52
+      ]
+     ]
+    ],
+    "feather": 0.06,
+    "select": {
+     "L": [
+      61,
+      74
+     ],
+     "b": [
+      38,
+      100
+     ],
+     "soft": 3
+    },
+    "target_rgb": [
+     255,
+     198,
+     85
+    ],
+    "detail_gamma": 0.5,
+    "detail_clip": [
+     0.85,
+     1.12
+    ],
+    "why": "the yellow band (proxy L* 61..74: median 236,128,38, 2.5 %) to the sheet's YELLOW 255,198,85 (chip 253,201,100, a touch more saturated), gamma 0.5"
+   },
+   {
+    "name": "fire_base",
+    "boxes": [
+     [
+      [
+       -1.4,
+       -3.0,
+       -0.1
+      ],
+      [
+       1.4,
+       3.0,
+       6.9
+      ]
+     ]
+    ],
+    "exclude": [
+     [
+      [
+       -0.3,
+       -2.86,
+       4.88
+      ],
+      [
+       0.3,
+       -2.44,
+       5.52
+      ]
+     ],
+     [
+      [
+       -0.32,
+       -2.46,
+       5.28
+      ],
+      [
+       -0.06,
+       -2.17,
+       5.52
+      ]
+     ],
+     [
+      [
+       0.06,
+       -2.46,
+       5.28
+      ],
+      [
+       0.32,
+       -2.17,
+       5.52
+      ]
+     ]
+    ],
+    "feather": 0.06,
+    "select": {
+     "L": [
+      44,
+      61
+     ],
+     "b": [
+      38,
+      100
+     ],
+     "soft": 3
+    },
+    "target_rgb": [
+     255,
+     128,
+     42
+    ],
+    "detail_gamma": 0.7,
+    "detail_clip": [
+     0.8,
+     1.3
+    ],
+    "why": "the orange flame base (proxy L* 44..61 with b* >= 38: median 221,88,22 / 193,50,18, ~10 %) to the sheet's ORANGE pushed brighter + more saturated 255,128,42 (chip 253,124,67: C* 70 -> 78), gamma 0.7 / clip 0.8..1.3 so its bright end runs on toward the yellow band (255,166,55) and its dark end stays deep orange (204,102,34): the proxy's own tip-ward gradient kept"
+   },
+   {
+    "name": "collar_crest_fire",
+    "boxes": [
+     [
+      [
+       -1.15,
+       -2.5,
+       3.8
+      ],
+      [
+       1.15,
+       -1.8,
+       4.45
+      ]
+     ],
+     [
+      [
+       -1.15,
+       -1.8,
+       3.95
+      ],
+      [
+       1.15,
+       -1.1,
+       4.65
+      ]
+     ],
+     [
+      [
+       -1.15,
+       -1.1,
+       4.1
+      ],
+      [
+       1.15,
+       -0.3,
+       4.9
+      ]
+     ],
+     [
+      [
+       -0.8,
+       -2.44,
+       5.6
+      ],
+      [
+       0.8,
+       -0.5,
+       6.85
+      ]
+     ],
+     [
+      [
+       -0.8,
+       -1.7,
+       5.15
+      ],
+      [
+       0.8,
+       -0.5,
+       5.6
+      ]
+     ]
+    ],
+    "exclude": [
+     [
+      [
+       -0.3,
+       -2.86,
+       4.88
+      ],
+      [
+       0.3,
+       -2.44,
+       5.52
+      ]
+     ],
+     [
+      [
+       -0.32,
+       -2.46,
+       5.28
+      ],
+      [
+       -0.06,
+       -2.17,
+       5.52
+      ]
+     ],
+     [
+      [
+       0.06,
+       -2.46,
+       5.28
+      ],
+      [
+       0.32,
+       -2.17,
+       5.52
+      ]
+     ],
+     [
+      [
+       -0.42,
+       -2.45,
+       3.3
+      ],
+      [
+       0.42,
+       -1.7,
+       5.12
+      ]
+     ]
+    ],
+    "feather": 0.08,
+    "select": {
+     "L": [
+      32,
+      44
+     ],
+     "b": [
+      28,
+      100
+     ],
+     "soft": 3
+    },
+    "target_rgb": [
+     240,
+     96,
+     36
+    ],
+    "detail_gamma": 0.7,
+    "detail_clip": [
+     0.8,
+     1.2
+    ],
+    "why": "artist image ember_rex_2-v1-flame-collar-annotation.png (the flame COLLAR band across the neck base / shoulders) + the flame CREST: inside those regions the red-orange texels just below the fire floor (L* 32..44, b* >= 28) become flame too (deep flame orange 240,96,36), so the collar / crest read as one fire band. Collar = 3 boxes rising from the front of the neck base (y -2.5, z 3.8..4.45) to the back of the neck (y -0.3, z 4.1..4.9) (proxy side render: the orange collar patch y -1.4..-2.45, z 3.95..4.4 and the neck-back flame panels y -0.4..-1.4, z 4.3..4.85); crest = z >= 5.6 behind the beak (+ the back-crest panels z 5.15..5.6, y -1.7..-0.5)"
+   },
+   {
+    "name": "body_muted",
+    "boxes": [
+     [
+      [
+       -1.4,
+       -3.0,
+       -0.1
+      ],
+      [
+       1.4,
+       3.0,
+       6.9
+      ]
+     ]
+    ],
+    "feather": 0.06,
+    "select": {
+     "L": [
+      6,
+      46
+     ],
+     "soft": 3
+    },
+    "target_rgb": [
+     84,
+     28,
+     30
+    ],
+    "detail_gamma": 0.6,
+    "detail_clip": [
+     0.62,
+     1.4
+    ],
+    "why": "UNIT V2 NOTE 2: the BODY (every non-fire texel L* 6..46: proxy median 95,9,6, a pure saturated red with no green / blue; bright crimson 157,28,17) to a DARKER, MUTED red: target 84,28,30 at the median (between the sheet chips 68,38,42 and 120,35,40; run 1 at 100,34,38 rendered a light dusty mauve under the survey light), gamma 0.6 / clip 0.62..1.4 so the darkest land near 52,17,19 and the brightest near 118,39,42 (well below v1's 235,66,52 bright red). The black feather outlines (L* < 6) stay as generated; fire texels (now L* >= 54) are outside the select; no exclude (the beak's red base and the face around the eyes go muted too; the beak's yellow is above the select)"
+   },
+   {
+    "name": "eye_mx_rim",
+    "spheres": [
+     [
+      [
+       -0.1522,
+       -2.3865,
+       5.3759
+      ],
+      0.0048
+     ],
+     [
+      [
+       -0.1522,
+       -2.3826,
+       5.3767
+      ],
+      0.0092
+     ],
+     [
+      [
+       -0.1565,
+       -2.3787,
+       5.3775
+      ],
+      0.0134
+     ],
+     [
+      [
+       -0.1586,
+       -2.3748,
+       5.3784
+      ],
+      0.0174
+     ],
+     [
+      [
+       -0.1586,
+       -2.3709,
+       5.3792
+      ],
+      0.021
+     ],
+     [
+      [
+       -0.1586,
+       -2.367,
+       5.38
+      ],
+      0.0244
+     ],
+     [
+      [
+       -0.1629,
+       -2.363,
+       5.3809
+      ],
+      0.0276
+     ],
+     [
+      [
+       -0.1629,
+       -2.3591,
+       5.3817
+      ],
+      0.0304
+     ],
+     [
+      [
+       -0.1658,
+       -2.3552,
+       5.3825
+      ],
+      0.033
+     ],
+     [
+      [
+       -0.1658,
+       -2.3513,
+       5.3833
+      ],
+      0.0353
+     ],
+     [
+      [
+       -0.1691,
+       -2.3474,
+       5.3842
+      ],
+      0.0373
+     ],
+     [
+      [
+       -0.1691,
+       -2.3435,
+       5.385
+      ],
+      0.0391
+     ],
+     [
+      [
+       -0.1724,
+       -2.3396,
+       5.3858
+      ],
+      0.0406
+     ],
+     [
+      [
+       -0.1757,
+       -2.3357,
+       5.3867
+      ],
+      0.0418
+     ],
+     [
+      [
+       -0.1757,
+       -2.3317,
+       5.3875
+      ],
+      0.0428
+     ],
+     [
+      [
+       -0.1757,
+       -2.3278,
+       5.3883
+      ],
+      0.0435
+     ],
+     [
+      [
+       -0.1809,
+       -2.3239,
+       5.3892
+      ],
+      0.0439
+     ],
+     [
+      [
+       -0.1843,
+       -2.32,
+       5.39
+      ],
+      0.044
+     ],
+     [
+      [
+       -0.1843,
+       -2.3161,
+       5.3908
+      ],
+      0.0439
+     ],
+     [
+      [
+       -0.1843,
+       -2.3122,
+       5.3917
+      ],
+      0.0435
+     ],
+     [
+      [
+       -0.1887,
+       -2.3083,
+       5.3925
+      ],
+      0.0428
+     ],
+     [
+      [
+       -0.1887,
+       -2.3043,
+       5.3933
+      ],
+      0.0418
+     ],
+     [
+      [
+       -0.193,
+       -2.3004,
+       5.3942
+      ],
+      0.0406
+     ],
+     [
+      [
+       -0.193,
+       -2.2965,
+       5.395
+      ],
+      0.0391
+     ],
+     [
+      [
+       -0.1971,
+       -2.2926,
+       5.3958
+      ],
+      0.0373
+     ],
+     [
+      [
+       -0.199,
+       -2.2887,
+       5.3967
+      ],
+      0.0353
+     ],
+     [
+      [
+       -0.199,
+       -2.2848,
+       5.3975
+      ],
+      0.033
+     ],
+     [
+      [
+       -0.2029,
+       -2.2809,
+       5.3983
+      ],
+      0.0304
+     ],
+     [
+      [
+       -0.2053,
+       -2.277,
+       5.3991
+      ],
+      0.0276
+     ],
+     [
+      [
+       -0.2093,
+       -2.273,
+       5.4
+      ],
+      0.0244
+     ],
+     [
+      [
+       -0.2093,
+       -2.2691,
+       5.4008
+      ],
+      0.021
+     ],
+     [
+      [
+       -0.2134,
+       -2.2652,
+       5.4016
+      ],
+      0.0174
+     ],
+     [
+      [
+       -0.2134,
+       -2.2613,
+       5.4025
+      ],
+      0.0134
+     ],
+     [
+      [
+       -0.2174,
+       -2.2574,
+       5.4033
+      ],
+      0.0092
+     ],
+     [
+      [
+       -0.2174,
+       -2.2535,
+       5.4041
+      ],
+      0.0048
+     ]
+    ],
+    "feather": 0.003,
+    "target_rgb": [
+     34,
+     16,
+     14
+    ],
+    "detail_gamma": 0.2,
+    "detail_clip": [
+     0.9,
+     1.1
+    ],
+    "why": "UNIT V2 NOTE 2 (1) (artist: cant see the eye): a crisp eye on each side of the head at the sheet's position (sheet side view eye px (652, 219): 0.35 u behind and 0.47 u above the beak tip, just above + behind the gape corner (641, 238); on the proxy: beak tip y -2.68 z 4.95, gape y -2.43 z 5.17 -> eye centre y -2.32, z 5.39, under the yellow brow streak as on the sheet). ONE design for both eyes (mirrored: the same (y, z) design, each sphere centre projected onto that side's outermost head surface; head mirror p99 0.037 u): a tilted almond (axis rising 12 deg toward the back, as the sheet's head panel), dark rim 34,16,14: half-length 0.072, half-height 0.044 (the sheet side-view eye with its dark surround ~0.09 x 0.06 u; held ~1.2x so it reads at game scale); spheres along the axis, radius b(1 - (s/a)^2), feather 0.003 (mx eye)"
+   },
+   {
+    "name": "eye_mx_iris",
+    "spheres": [
+     [
+      [
+       -0.1586,
+       -2.3709,
+       5.3792
+      ],
+      0.0043
+     ],
+     [
+      [
+       -0.1586,
+       -2.367,
+       5.38
+      ],
+      0.0082
+     ],
+     [
+      [
+       -0.1629,
+       -2.363,
+       5.3809
+      ],
+      0.0119
+     ],
+     [
+      [
+       -0.1629,
+       -2.3591,
+       5.3817
+      ],
+      0.0152
+     ],
+     [
+      [
+       -0.1658,
+       -2.3552,
+       5.3825
+      ],
+      0.0182
+     ],
+     [
+      [
+       -0.1658,
+       -2.3513,
+       5.3833
+      ],
+      0.0209
+     ],
+     [
+      [
+       -0.1691,
+       -2.3474,
+       5.3842
+      ],
+      0.0232
+     ],
+     [
+      [
+       -0.1691,
+       -2.3435,
+       5.385
+      ],
+      0.0253
+     ],
+     [
+      [
+       -0.1724,
+       -2.3396,
+       5.3858
+      ],
+      0.027
+     ],
+     [
+      [
+       -0.1757,
+       -2.3357,
+       5.3867
+      ],
+      0.0285
+     ],
+     [
+      [
+       -0.1757,
+       -2.3317,
+       5.3875
+      ],
+      0.0296
+     ],
+     [
+      [
+       -0.1757,
+       -2.3278,
+       5.3883
+      ],
+      0.0304
+     ],
+     [
+      [
+       -0.1809,
+       -2.3239,
+       5.3892
+      ],
+      0.0308
+     ],
+     [
+      [
+       -0.1843,
+       -2.32,
+       5.39
+      ],
+      0.031
+     ],
+     [
+      [
+       -0.1843,
+       -2.3161,
+       5.3908
+      ],
+      0.0308
+     ],
+     [
+      [
+       -0.1843,
+       -2.3122,
+       5.3917
+      ],
+      0.0304
+     ],
+     [
+      [
+       -0.1887,
+       -2.3083,
+       5.3925
+      ],
+      0.0296
+     ],
+     [
+      [
+       -0.1887,
+       -2.3043,
+       5.3933
+      ],
+      0.0285
+     ],
+     [
+      [
+       -0.193,
+       -2.3004,
+       5.3942
+      ],
+      0.027
+     ],
+     [
+      [
+       -0.193,
+       -2.2965,
+       5.395
+      ],
+      0.0253
+     ],
+     [
+      [
+       -0.1971,
+       -2.2926,
+       5.3958
+      ],
+      0.0233
+     ],
+     [
+      [
+       -0.199,
+       -2.2887,
+       5.3967
+      ],
+      0.0209
+     ],
+     [
+      [
+       -0.199,
+       -2.2848,
+       5.3975
+      ],
+      0.0182
+     ],
+     [
+      [
+       -0.2029,
+       -2.2809,
+       5.3983
+      ],
+      0.0152
+     ],
+     [
+      [
+       -0.2053,
+       -2.277,
+       5.3991
+      ],
+      0.0119
+     ],
+     [
+      [
+       -0.2093,
+       -2.273,
+       5.4
+      ],
+      0.0082
+     ],
+     [
+      [
+       -0.2093,
+       -2.2691,
+       5.4008
+      ],
+      0.0043
+     ]
+    ],
+    "feather": 0.003,
+    "target_rgb": [
+     255,
+     186,
+     58
+    ],
+    "detail_gamma": 0.2,
+    "detail_clip": [
+     0.9,
+     1.1
+    ],
+    "why": "the iris almond (half-length 0.056, half-height 0.031 inside the 0.013..0.016 rim): intense yellow-orange 255,186,58 (brief ~255,190,60; sheet side-view eye px mean 252,191,103), flat (mx eye)"
+   },
+   {
+    "name": "eye_mx_core",
+    "spheres": [
+     [
+      [
+       -0.1843,
+       -2.32,
+       5.39
+      ],
+      0.022
+     ]
+    ],
+    "feather": 0.003,
+    "target_rgb": [
+     255,
+     214,
+     104
+    ],
+    "detail_gamma": 0.2,
+    "detail_clip": [
+     0.9,
+     1.1
+    ],
+    "why": "the iris' hot centre around the pupil (r 0.022): 255,214,104, so the iris reads bright yellow inside a deeper orange edge (sheet head panel) (mx eye)"
+   },
+   {
+    "name": "eye_mx_pupil",
+    "spheres": [
+     [
+      [
+       -0.1843,
+       -2.32,
+       5.39
+      ],
+      0.015
+     ]
+    ],
+    "feather": 0.002,
+    "target_rgb": [
+     26,
+     10,
+     8
+    ],
+    "detail_gamma": 0.2,
+    "detail_clip": [
+     0.9,
+     1.1
+    ],
+    "why": "the dark round pupil (r 0.015, the sheet head panel's round pupil): 26,10,8 (mx eye)"
+   },
+   {
+    "name": "eye_px_rim",
+    "spheres": [
+     [
+      [
+       0.1534,
+       -2.3865,
+       5.3759
+      ],
+      0.0048
+     ],
+     [
+      [
+       0.1559,
+       -2.3826,
+       5.3767
+      ],
+      0.0092
+     ],
+     [
+      [
+       0.1579,
+       -2.3787,
+       5.3775
+      ],
+      0.0134
+     ],
+     [
+      [
+       0.1579,
+       -2.3748,
+       5.3784
+      ],
+      0.0174
+     ],
+     [
+      [
+       0.1591,
+       -2.3709,
+       5.3792
+      ],
+      0.021
+     ],
+     [
+      [
+       0.1617,
+       -2.367,
+       5.38
+      ],
+      0.0244
+     ],
+     [
+      [
+       0.1643,
+       -2.363,
+       5.3809
+      ],
+      0.0276
+     ],
+     [
+      [
+       0.1643,
+       -2.3591,
+       5.3817
+      ],
+      0.0304
+     ],
+     [
+      [
+       0.1662,
+       -2.3552,
+       5.3825
+      ],
+      0.033
+     ],
+     [
+      [
+       0.1678,
+       -2.3513,
+       5.3833
+      ],
+      0.0353
+     ],
+     [
+      [
+       0.1705,
+       -2.3474,
+       5.3842
+      ],
+      0.0373
+     ],
+     [
+      [
+       0.1705,
+       -2.3435,
+       5.385
+      ],
+      0.0391
+     ],
+     [
+      [
+       0.1734,
+       -2.3396,
+       5.3858
+      ],
+      0.0406
+     ],
+     [
+      [
+       0.1734,
+       -2.3357,
+       5.3867
+      ],
+      0.0418
+     ],
+     [
+      [
+       0.1774,
+       -2.3317,
+       5.3875
+      ],
+      0.0428
+     ],
+     [
+      [
+       0.1774,
+       -2.3278,
+       5.3883
+      ],
+      0.0435
+     ],
+     [
+      [
+       0.1811,
+       -2.3239,
+       5.3892
+      ],
+      0.0439
+     ],
+     [
+      [
+       0.1841,
+       -2.32,
+       5.39
+      ],
+      0.044
+     ],
+     [
+      [
+       0.1848,
+       -2.3161,
+       5.3908
+      ],
+      0.0439
+     ],
+     [
+      [
+       0.1878,
+       -2.3122,
+       5.3917
+      ],
+      0.0435
+     ],
+     [
+      [
+       0.1878,
+       -2.3083,
+       5.3925
+      ],
+      0.0428
+     ],
+     [
+      [
+       0.1915,
+       -2.3043,
+       5.3933
+      ],
+      0.0418
+     ],
+     [
+      [
+       0.1945,
+       -2.3004,
+       5.3942
+      ],
+      0.0406
+     ],
+     [
+      [
+       0.1952,
+       -2.2965,
+       5.395
+      ],
+      0.0391
+     ],
+     [
+      [
+       0.1952,
+       -2.2926,
+       5.3958
+      ],
+      0.0373
+     ],
+     [
+      [
+       0.1997,
+       -2.2887,
+       5.3967
+      ],
+      0.0353
+     ],
+     [
+      [
+       0.2034,
+       -2.2848,
+       5.3975
+      ],
+      0.033
+     ],
+     [
+      [
+       0.2034,
+       -2.2809,
+       5.3983
+      ],
+      0.0304
+     ],
+     [
+      [
+       0.2057,
+       -2.277,
+       5.3991
+      ],
+      0.0276
+     ],
+     [
+      [
+       0.2053,
+       -2.273,
+       5.4
+      ],
+      0.0244
+     ],
+     [
+      [
+       0.2089,
+       -2.2691,
+       5.4008
+      ],
+      0.021
+     ],
+     [
+      [
+       0.2121,
+       -2.2652,
+       5.4016
+      ],
+      0.0174
+     ],
+     [
+      [
+       0.2121,
+       -2.2613,
+       5.4025
+      ],
+      0.0134
+     ],
+     [
+      [
+       0.2121,
+       -2.2574,
+       5.4033
+      ],
+      0.0092
+     ],
+     [
+      [
+       0.216,
+       -2.2535,
+       5.4041
+      ],
+      0.0048
+     ]
+    ],
+    "feather": 0.003,
+    "target_rgb": [
+     34,
+     16,
+     14
+    ],
+    "detail_gamma": 0.2,
+    "detail_clip": [
+     0.9,
+     1.1
+    ],
+    "why": "UNIT V2 NOTE 2 (1) (artist: cant see the eye): a crisp eye on each side of the head at the sheet's position (sheet side view eye px (652, 219): 0.35 u behind and 0.47 u above the beak tip, just above + behind the gape corner (641, 238); on the proxy: beak tip y -2.68 z 4.95, gape y -2.43 z 5.17 -> eye centre y -2.32, z 5.39, under the yellow brow streak as on the sheet). ONE design for both eyes (mirrored: the same (y, z) design, each sphere centre projected onto that side's outermost head surface; head mirror p99 0.037 u): a tilted almond (axis rising 12 deg toward the back, as the sheet's head panel), dark rim 34,16,14: half-length 0.072, half-height 0.044 (the sheet side-view eye with its dark surround ~0.09 x 0.06 u; held ~1.2x so it reads at game scale); spheres along the axis, radius b(1 - (s/a)^2), feather 0.003 (px eye)"
+   },
+   {
+    "name": "eye_px_iris",
+    "spheres": [
+     [
+      [
+       0.1591,
+       -2.3709,
+       5.3792
+      ],
+      0.0043
+     ],
+     [
+      [
+       0.1617,
+       -2.367,
+       5.38
+      ],
+      0.0082
+     ],
+     [
+      [
+       0.1643,
+       -2.363,
+       5.3809
+      ],
+      0.0119
+     ],
+     [
+      [
+       0.1643,
+       -2.3591,
+       5.3817
+      ],
+      0.0152
+     ],
+     [
+      [
+       0.1662,
+       -2.3552,
+       5.3825
+      ],
+      0.0182
+     ],
+     [
+      [
+       0.1678,
+       -2.3513,
+       5.3833
+      ],
+      0.0209
+     ],
+     [
+      [
+       0.1705,
+       -2.3474,
+       5.3842
+      ],
+      0.0232
+     ],
+     [
+      [
+       0.1705,
+       -2.3435,
+       5.385
+      ],
+      0.0253
+     ],
+     [
+      [
+       0.1734,
+       -2.3396,
+       5.3858
+      ],
+      0.027
+     ],
+     [
+      [
+       0.1734,
+       -2.3357,
+       5.3867
+      ],
+      0.0285
+     ],
+     [
+      [
+       0.1774,
+       -2.3317,
+       5.3875
+      ],
+      0.0296
+     ],
+     [
+      [
+       0.1774,
+       -2.3278,
+       5.3883
+      ],
+      0.0304
+     ],
+     [
+      [
+       0.1811,
+       -2.3239,
+       5.3892
+      ],
+      0.0308
+     ],
+     [
+      [
+       0.1841,
+       -2.32,
+       5.39
+      ],
+      0.031
+     ],
+     [
+      [
+       0.1848,
+       -2.3161,
+       5.3908
+      ],
+      0.0308
+     ],
+     [
+      [
+       0.1878,
+       -2.3122,
+       5.3917
+      ],
+      0.0304
+     ],
+     [
+      [
+       0.1878,
+       -2.3083,
+       5.3925
+      ],
+      0.0296
+     ],
+     [
+      [
+       0.1915,
+       -2.3043,
+       5.3933
+      ],
+      0.0285
+     ],
+     [
+      [
+       0.1945,
+       -2.3004,
+       5.3942
+      ],
+      0.027
+     ],
+     [
+      [
+       0.1952,
+       -2.2965,
+       5.395
+      ],
+      0.0253
+     ],
+     [
+      [
+       0.1952,
+       -2.2926,
+       5.3958
+      ],
+      0.0233
+     ],
+     [
+      [
+       0.1997,
+       -2.2887,
+       5.3967
+      ],
+      0.0209
+     ],
+     [
+      [
+       0.2034,
+       -2.2848,
+       5.3975
+      ],
+      0.0182
+     ],
+     [
+      [
+       0.2034,
+       -2.2809,
+       5.3983
+      ],
+      0.0152
+     ],
+     [
+      [
+       0.2057,
+       -2.277,
+       5.3991
+      ],
+      0.0119
+     ],
+     [
+      [
+       0.2053,
+       -2.273,
+       5.4
+      ],
+      0.0082
+     ],
+     [
+      [
+       0.2089,
+       -2.2691,
+       5.4008
+      ],
+      0.0043
+     ]
+    ],
+    "feather": 0.003,
+    "target_rgb": [
+     255,
+     186,
+     58
+    ],
+    "detail_gamma": 0.2,
+    "detail_clip": [
+     0.9,
+     1.1
+    ],
+    "why": "the iris almond (half-length 0.056, half-height 0.031 inside the 0.013..0.016 rim): intense yellow-orange 255,186,58 (brief ~255,190,60; sheet side-view eye px mean 252,191,103), flat (px eye)"
+   },
+   {
+    "name": "eye_px_core",
+    "spheres": [
+     [
+      [
+       0.1841,
+       -2.32,
+       5.39
+      ],
+      0.022
+     ]
+    ],
+    "feather": 0.003,
+    "target_rgb": [
+     255,
+     214,
+     104
+    ],
+    "detail_gamma": 0.2,
+    "detail_clip": [
+     0.9,
+     1.1
+    ],
+    "why": "the iris' hot centre around the pupil (r 0.022): 255,214,104, so the iris reads bright yellow inside a deeper orange edge (sheet head panel) (px eye)"
+   },
+   {
+    "name": "eye_px_pupil",
+    "spheres": [
+     [
+      [
+       0.1841,
+       -2.32,
+       5.39
+      ],
+      0.015
+     ]
+    ],
+    "feather": 0.002,
+    "target_rgb": [
+     26,
+     10,
+     8
+    ],
+    "detail_gamma": 0.2,
+    "detail_clip": [
+     0.9,
+     1.1
+    ],
+    "why": "the dark round pupil (r 0.015, the sheet head panel's round pupil): 26,10,8 (px eye)"
+   }
+  ],
+  "recolour3d_why": "v2b (UNIT V2 NOTE 2): texture-only, geometry untouched; order = neck cream -> fire (hottest first) -> collar / crest flame -> muted body -> the two eyes (last, so nothing repaints them)",
+  "glow3d": [
+   {
+    "name": "leg_cracks",
+    "boxes": [
+     [
+      [
+       -0.9,
+       -1.2,
+       -0.05
+      ],
+      [
+       0.9,
+       0.3,
+       0.55
+      ]
+     ],
+     [
+      [
+       -0.7,
+       -0.65,
+       0.55
+      ],
+      [
+       0.7,
+       0.15,
+       1.55
+      ]
+     ]
+    ],
+    "feather": 0.04,
+    "select": {
+     "L": [
+      58,
+      101
+     ],
+     "b": [
+      40,
+      100
+     ],
+     "soft": 3
+    },
+    "levels": [
+     [
+      0.5,
+      "leg_cracks"
+     ]
+    ],
+    "why": "the sheet's glowing leg cracks ('glowing, flame-lit texture'): feet + tarsus faces whose baked albedo is the crack orange / yellow (L* >= 58, b* >= 40) -> leg_cracks"
+   },
+   {
+    "name": "flame_core",
+    "boxes": [
+     [
+      [
+       -1.4,
+       -3.0,
+       -0.1
+      ],
+      [
+       1.4,
+       3.0,
+       6.9
+      ]
+     ]
+    ],
+    "exclude": [
+     [
+      [
+       -0.3,
+       -2.86,
+       4.88
+      ],
+      [
+       0.3,
+       -2.44,
+       5.52
+      ]
+     ],
+     [
+      [
+       -0.32,
+       -2.46,
+       5.28
+      ],
+      [
+       -0.06,
+       -2.17,
+       5.52
+      ]
+     ],
+     [
+      [
+       0.06,
+       -2.46,
+       5.28
+      ],
+      [
+       0.32,
+       -2.17,
+       5.52
+      ]
+     ]
+    ],
+    "feather": 0.04,
+    "select": {
+     "L": [
+      87,
+      101
+     ],
+     "soft": 2
+    },
+    "levels": [
+     [
+      0.5,
+      "flame_core"
+     ]
+    ],
+    "why": "UNIT V2 NOTE 2 (2) hot cores: faces whose baked albedo is the pale-yellow core (L* >= 87) -> flame_core (emission 255,232,160 x 0.85, the brightest)"
+   },
+   {
+    "name": "flame_tips",
+    "boxes": [
+     [
+      [
+       -1.4,
+       -3.0,
+       -0.1
+      ],
+      [
+       1.4,
+       3.0,
+       6.9
+      ]
+     ]
+    ],
+    "exclude": [
+     [
+      [
+       -0.3,
+       -2.86,
+       4.88
+      ],
+      [
+       0.3,
+       -2.44,
+       5.52
+      ]
+     ],
+     [
+      [
+       -0.32,
+       -2.46,
+       5.28
+      ],
+      [
+       -0.06,
+       -2.17,
+       5.52
+      ]
+     ],
+     [
+      [
+       0.06,
+       -2.46,
+       5.28
+      ],
+      [
+       0.32,
+       -2.17,
+       5.52
+      ]
+     ]
+    ],
+    "feather": 0.04,
+    "select": {
+     "L": [
+      76,
+      101
+     ],
+     "b": [
+      45,
+      100
+     ],
+     "soft": 3
+    },
+    "levels": [
+     [
+      0.5,
+      "flame_tips"
+     ]
+    ],
+    "why": "the yellow flame tips (baked L* >= 76, b* >= 45) -> flame_tips (emission 255,190,80 x 0.55; v1 0.35)"
+   },
+   {
+    "name": "flame_base",
+    "boxes": [
+     [
+      [
+       -1.4,
+       -3.0,
+       -0.1
+      ],
+      [
+       1.4,
+       3.0,
+       6.9
+      ]
+     ]
+    ],
+    "exclude": [
+     [
+      [
+       -0.3,
+       -2.86,
+       4.88
+      ],
+      [
+       0.3,
+       -2.44,
+       5.52
+      ]
+     ],
+     [
+      [
+       -0.32,
+       -2.46,
+       5.28
+      ],
+      [
+       -0.06,
+       -2.17,
+       5.52
+      ]
+     ],
+     [
+      [
+       0.06,
+       -2.46,
+       5.28
+      ],
+      [
+       0.32,
+       -2.17,
+       5.52
+      ]
+     ]
+    ],
+    "feather": 0.04,
+    "select": {
+     "L": [
+      56,
+      101
+     ],
+     "b": [
+      45,
+      100
+     ],
+     "soft": 3
+    },
+    "levels": [
+     [
+      0.5,
+      "flame_base"
+     ]
+    ],
+    "why": "the orange flame body (baked L* >= 56, b* >= 45: the recoloured orange 255,128,42 and the collar / crest flame 240,96,36) -> flame_base (emission 253,124,50 x 0.3); the muted body (L* <= ~36) and the cream neck (b* ~29) stay UNLIT. Run 1 at base 0.6 / tips 0.9 / cores 1.0 (+ an eye glow x 0.45) flattened the glow faces into uniform emissive shards (the glow is per face, one emission colour each) and lit a triangle across the eye: lowered to 0.3 / 0.55 / 0.85 so the baked orange -> yellow gradient reads through, eye glow dropped (optional in the brief)"
+   }
+  ]
+ },
+ "rig": {
+  "spine_names": [
+   "hips",
+   "spine",
+   "chest",
+   "neck",
+   "head"
+  ],
+  "spine": [
+   [
+    0.0,
+    0.3,
+    2.2
+   ],
+   [
+    0.0,
+    0.0,
+    2.85
+   ],
+   [
+    0.0,
+    -0.7,
+    3.5
+   ],
+   [
+    0.0,
+    -1.4,
+    4.15
+   ],
+   [
+    0.0,
+    -1.95,
+    5.2
+   ],
+   [
+    0.0,
+    -2.55,
+    5.45
+   ]
+  ],
+  "spine_why": "v2b proxy frame, on the midline x 0 (body mid-x per z band within +-0.01): hips inside the feather mass above the thighs (z 2.2), chest under the collar, neck root at the neck base (midline slab y -2.42..-0.44 at z 4.0), head joint at the skull (y -1.95, z 5.2: midline slab mid y -1.96 at z 4.9..5.5), tip toward the beak (y -2.55, z 5.45)",
+  "chains": [
+   {
+    "name": "wing",
+    "kind": "wing",
+    "parent": "chest",
+    "phase": {
+     "L": 0.0,
+     "R": 0.0
+    },
+    "points": [
+     [
+      0.6,
+      -1.0,
+      3.8
+     ],
+     [
+      1.0,
+      -0.6,
+      3.0
+     ],
+     [
+      1.1,
+      0.2,
+      2.0
+     ],
+     [
+      1.0,
+      0.9,
+      1.1
+     ]
+    ],
+    "why": "the hanging feather wings: shoulder (x 0.6, z 3.8) down the outer feather mass (|x| > 0.8: y median -1.32 at z 3.6, -0.38 at z 2.8, +0.48 at z 2.0, +0.73 at z 1.6) to the tips; 3 bones per side, mirrored"
+   },
+   {
+    "name": "leg",
+    "kind": "leg",
+    "parent": "hips",
+    "phase": {
+     "L": 0.0,
+     "R": 0.5
+    },
+    "points": [
+     [
+      0.3,
+      -0.2,
+      2.2
+     ],
+     [
+      0.36,
+      -0.3,
+      1.55
+     ],
+     [
+      0.42,
+      -0.28,
+      0.45
+     ],
+     [
+      0.45,
+      -0.85,
+      0.1
+     ]
+    ],
+    "why": "hip (inside the thigh feathers), knee (tarsus top, x 0.36 y -0.3 at z 1.4..1.6), ankle (x 0.42, z 0.45), foot to the front talons (lowest +x talon 0.57, -0.44, 0.0; toes to y -0.9); +x chain mirrored to -x (the proxy legs are a mirror pair)"
+   },
+   {
+    "name": "tail",
+    "kind": "tail",
+    "mirror": false,
+    "parent": "hips",
+    "points": [
+     [
+      0.0,
+      0.8,
+      2.05
+     ],
+     [
+      0.0,
+      1.3,
+      1.8
+     ],
+     [
+      0.0,
+      1.8,
+      1.45
+     ],
+     [
+      0.0,
+      2.3,
+      1.05
+     ],
+     [
+      0.0,
+      2.75,
+      0.7
+     ]
+    ],
+    "why": "brief V2b: a 4-bone TAIL CHAIN (tail.0..tail.3) resting CENTRED on the midline x 0 (the regenerated tail is centred: x -1.06..1.05 at y 2.1), along the trailing feather mass (median z 2.15 at y 0.9, 1.8 at y 1.5, 1.31 at y 2.1, 1.0 at y 2.4); poses to either side later"
+   }
+  ]
+ },
+ "repose_why": "v2b: NO repose. The regenerated proxy is already mirror-symmetric (vertex mirror p99 about x 0: head z > 4.8 0.037 u, body 0.040 u, whole 0.040 u; v1 1.02 u): head straight, crest centred, legs paired, tail centred behind. Nothing to undo with bones; the tail chain rests centred",
+ "clips": {
+  "idle_frames": 72,
+  "breathe_deg": 1.5,
+  "walk_frames": 32,
+  "walk_bob": 0.015,
+  "walk_roll": 3.0,
+  "leg_swing": 8.0,
+  "why": "PLACEHOLDER (movement + height are the open artist questions): idle = breathe 1.5 deg + the kit's wing / tail sway; walk = a short raptor stalk-step (leg_swing 8: the kit's foot bend dips the toes below the floor at larger swings; ember_rex values)"
+ },
+ "focus": {
+  "head_front": [
+   [
+    -0.75,
+    -2.86,
+    4.75
+   ],
+   [
+    0.75,
+    -1.4,
+    6.8
+   ]
+  ],
+  "head_side": [
+   [
+    -0.3,
+    -2.86,
+    4.85
+   ],
+   [
+    0.3,
+    -1.75,
+    5.9
+   ]
+  ],
+  "collar": [
+   [
+    -1.15,
+    -2.55,
+    3.55
+   ],
+   [
+    1.15,
+    -0.3,
+    5.0
+   ]
+  ],
+  "wing": [
+   [
+    0.55,
+    -1.9,
+    0.2
+   ],
+   [
+    1.25,
+    1.3,
+    4.0
+   ]
+  ],
+  "tail": [
+   [
+    -1.1,
+    0.4,
+    -0.05
+   ],
+   [
+    1.1,
+    2.85,
+    3.0
+   ]
+  ]
+ },
+ "focus_closeup_views": {
+  "head_front": [
+   0.0,
+   5.0
+  ],
+  "head_side": [
+   90.0,
+   3.0
+  ],
+  "collar": [
+   25.0,
+   12.0
+  ],
+  "wing": [
+   90.0,
+   5.0
+  ],
+  "tail": [
+   145.0,
+   18.0
+  ]
+ },
+ "focus_why": "brief V2b close-ups: head front + side (eyes), collar, a wing, tail. The camera angles live in focus_closeup_views (not focus.views): the light build's focus shift reads every focus entry as a box (proxy_finish_light.py run_light line 1367, KeyError on a views dict; kit gap reported); the angled close-ups are rendered after the run with the render script's own focus views",
+ "bake_res": [
+  1024,
+  1024
+ ],
+ "_doc": "v2b LIGHT finish of the REGENERATED Pixal3D proxy (symmetric views, seed 56, sha c36d9494): no side-length fit, no refloor / rescale / midline shift, no cuts, no repose (mirror p99 0.037 head / 0.040 body). UNIT V2 NOTE 2: fire brighter + more saturated (orange -> yellow -> pale-yellow cores) with stronger glow (3 flame regions), body darker muted red and unlit, crisp yellow-orange eyes on both sides; the cream neck kept from v1. Points: the proxy frame (= the stage-1 frame), sheet units."
+}

@@ -1,0 +1,41 @@
+{
+ "unit": "azure_scale_mage",
+ "views": {
+  "back": {
+   "iou": 0.7055,
+   "iou_shape": 0.5364,
+   "aspect_rel": 0.1161,
+   "row_err_u": 0.347,
+   "row_err_pct": 11.3,
+   "w_u": 4.35,
+   "h_u": 7.3,
+   "ref_w_u": 4.78,
+   "ref_h_u": 7.09,
+   "iou_in_frame": 0.4828,
+   "row_err_pct_in_frame": 11.2,
+   "proxy_iou": 0.6063,
+   "flag": false
+  },
+  "side": {
+   "iou": 0.722,
+   "iou_shape": 0.702,
+   "aspect_rel": 0.1878,
+   "row_err_u": 0.425,
+   "row_err_pct": 13.9,
+   "w_u": 5.41,
+   "h_u": 7.3,
+   "ref_w_u": 4.34,
+   "ref_h_u": 7.21,
+   "iou_in_frame": 0.6598,
+   "row_err_pct_in_frame": 15.1,
+   "proxy_iou": 0.8499,
+   "flag": true
+  }
+ },
+ "proxy_sha256": "2387a65c9aeeaeaba1483e9b98400af08dbf954b57a7408a0fd6feba59e6dbf8",
+ "proxy_gate": "proxy unreliable, work from the sheet (side length off by +5.3%)",
+ "flagged": [
+  "side"
+ ],
+ "mean_iou": 0.7137
+}

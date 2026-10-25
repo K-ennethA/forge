@@ -1,0 +1,448 @@
+{
+ "unit": "spring_pig",
+ "source": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\improved\\spring_pig.blend",
+ "fps": 24,
+ "finish": {
+  "open_edges": 0,
+  "tris": 20000,
+  "mirror": {
+   "plane_x_u": 0.0,
+   "max_u": 0.20294,
+   "p99_u": 0.10945,
+   "p90_u": 0.03118,
+   "mean_u": 0.01275,
+   "rule": "every vertex mirrored in X about the plane -> distance to the nearest surface (0 = exactly symmetric)"
+  },
+  "tri_budget": [
+   8000,
+   22000
+  ],
+  "in_budget": true,
+  "mode": "light"
+ },
+ "weights": {
+  "max_influences": 4,
+  "unweighted": 0,
+  "sum_dev_max": 2.220446049250313e-16,
+  "per_bone_dominant": {
+   "hips": 190,
+   "belly": 86,
+   "chest": 187,
+   "neck": 371,
+   "head": 4319,
+   "arm.L.0": 735,
+   "arm.L.1": 106,
+   "arm.L.2": 134,
+   "arm.R.0": 685,
+   "arm.R.1": 87,
+   "arm.R.2": 148,
+   "leg.L.0": 272,
+   "leg.L.1": 111,
+   "leg.L.2": 114,
+   "leg.R.0": 308,
+   "leg.R.1": 109,
+   "leg.R.2": 111,
+   "tail.0": 906,
+   "tail.1": 469,
+   "tail.2": 311,
+   "tail.3": 233
+  },
+  "parts": {},
+  "rule": "shell: exp(-((d - d_min) / (0.06 H))^2) over bone-segment distances, side-aware, <= 4, normalised; parts rigid on their bone"
+ },
+ "clips": {
+  "idle": {
+   "frames": [
+    1,
+    73
+   ],
+   "seconds": 3.0,
+   "cyclic": true,
+   "seam_mm": 0.0,
+   "clearance_min_z": -0.0161
+  },
+  "walk": {
+   "frames": [
+    1,
+    33
+   ],
+   "seconds": 1.333,
+   "cyclic": true,
+   "seam_mm": 0.0,
+   "clearance_min_z": -0.1369
+  }
+ },
+ "bones": [
+  {
+   "name": "root",
+   "parent": null,
+   "deform": false,
+   "head": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "tail": [
+    0.0,
+    0.0,
+    0.4
+   ]
+  },
+  {
+   "name": "hips",
+   "parent": "root",
+   "deform": true,
+   "head": [
+    -0.0013,
+    0.0594,
+    1.3545
+   ],
+   "tail": [
+    -0.0013,
+    -0.0406,
+    2.0045
+   ]
+  },
+  {
+   "name": "belly",
+   "parent": "hips",
+   "deform": true,
+   "head": [
+    -0.0013,
+    -0.0406,
+    2.0045
+   ],
+   "tail": [
+    -0.0013,
+    -0.0106,
+    2.7045
+   ]
+  },
+  {
+   "name": "chest",
+   "parent": "belly",
+   "deform": true,
+   "head": [
+    -0.0013,
+    -0.0106,
+    2.7045
+   ],
+   "tail": [
+    -0.0013,
+    -0.1406,
+    3.1545
+   ]
+  },
+  {
+   "name": "neck",
+   "parent": "chest",
+   "deform": true,
+   "head": [
+    -0.0013,
+    -0.1406,
+    3.1545
+   ],
+   "tail": [
+    -0.0013,
+    -0.2406,
+    3.6045
+   ]
+  },
+  {
+   "name": "head",
+   "parent": "neck",
+   "deform": true,
+   "head": [
+    -0.0013,
+    -0.2406,
+    3.6045
+   ],
+   "tail": [
+    -0.0013,
+    -0.2406,
+    5.2045
+   ]
+  },
+  {
+   "name": "arm.L.0",
+   "parent": "chest",
+   "deform": true,
+   "head": [
+    0.9987,
+    0.0894,
+    2.8545
+   ],
+   "tail": [
+    1.3787,
+    0.0494,
+    2.4545
+   ]
+  },
+  {
+   "name": "arm.L.1",
+   "parent": "arm.L.0",
+   "deform": true,
+   "head": [
+    1.3787,
+    0.0494,
+    2.4545
+   ],
+   "tail": [
+    1.6287,
+    0.0094,
+    2.0045
+   ]
+  },
+  {
+   "name": "arm.L.2",
+   "parent": "arm.L.1",
+   "deform": true,
+   "head": [
+    1.6287,
+    0.0094,
+    2.0045
+   ],
+   "tail": [
+    1.4387,
+    -0.0506,
+    1.7545
+   ]
+  },
+  {
+   "name": "arm.R.0",
+   "parent": "chest",
+   "deform": true,
+   "head": [
+    -0.9987,
+    0.0894,
+    2.8545
+   ],
+   "tail": [
+    -1.3787,
+    0.0494,
+    2.4545
+   ]
+  },
+  {
+   "name": "arm.R.1",
+   "parent": "arm.R.0",
+   "deform": true,
+   "head": [
+    -1.3787,
+    0.0494,
+    2.4545
+   ],
+   "tail": [
+    -1.6287,
+    0.0094,
+    2.0045
+   ]
+  },
+  {
+   "name": "arm.R.2",
+   "parent": "arm.R.1",
+   "deform": true,
+   "head": [
+    -1.6287,
+    0.0094,
+    2.0045
+   ],
+   "tail": [
+    -1.4387,
+    -0.0506,
+    1.7545
+   ]
+  },
+  {
+   "name": "leg.L.0",
+   "parent": "hips",
+   "deform": true,
+   "head": [
+    0.6187,
+    0.0094,
+    1.3045
+   ],
+   "tail": [
+    0.8417,
+    -0.0106,
+    0.6545
+   ]
+  },
+  {
+   "name": "leg.L.1",
+   "parent": "leg.L.0",
+   "deform": true,
+   "head": [
+    0.8417,
+    -0.0106,
+    0.6545
+   ],
+   "tail": [
+    0.9337,
+    -0.0656,
+    0.3045
+   ]
+  },
+  {
+   "name": "leg.L.2",
+   "parent": "leg.L.1",
+   "deform": true,
+   "head": [
+    0.9337,
+    -0.0656,
+    0.3045
+   ],
+   "tail": [
+    0.9887,
+    -0.4406,
+    0.0545
+   ]
+  },
+  {
+   "name": "leg.R.0",
+   "parent": "hips",
+   "deform": true,
+   "head": [
+    -0.6187,
+    0.0094,
+    1.3045
+   ],
+   "tail": [
+    -0.8417,
+    -0.0106,
+    0.6545
+   ]
+  },
+  {
+   "name": "leg.R.1",
+   "parent": "leg.R.0",
+   "deform": true,
+   "head": [
+    -0.8417,
+    -0.0106,
+    0.6545
+   ],
+   "tail": [
+    -0.9337,
+    -0.0656,
+    0.3045
+   ]
+  },
+  {
+   "name": "leg.R.2",
+   "parent": "leg.R.1",
+   "deform": true,
+   "head": [
+    -0.9337,
+    -0.0656,
+    0.3045
+   ],
+   "tail": [
+    -0.9887,
+    -0.4406,
+    0.0545
+   ]
+  },
+  {
+   "name": "tail.0",
+   "parent": "hips",
+   "deform": true,
+   "head": [
+    -0.0013,
+    0.8594,
+    1.9545
+   ],
+   "tail": [
+    -0.0013,
+    1.2294,
+    1.4045
+   ]
+  },
+  {
+   "name": "tail.1",
+   "parent": "tail.0",
+   "deform": true,
+   "head": [
+    -0.0013,
+    1.2294,
+    1.4045
+   ],
+   "tail": [
+    -0.0013,
+    1.4094,
+    0.8045
+   ]
+  },
+  {
+   "name": "tail.2",
+   "parent": "tail.1",
+   "deform": true,
+   "head": [
+    -0.0013,
+    1.4094,
+    0.8045
+   ],
+   "tail": [
+    -0.0013,
+    1.3594,
+    0.2545
+   ]
+  },
+  {
+   "name": "tail.3",
+   "parent": "tail.2",
+   "deform": true,
+   "head": [
+    -0.0013,
+    1.3594,
+    0.2545
+   ],
+   "tail": [
+    -0.0013,
+    1.5869,
+    0.1045
+   ]
+  }
+ ],
+ "bone_count": 22,
+ "digest": {
+  "parts": {
+   "solid_grid": "3f1ee10eb581a8c9",
+   "move_region_grid": "500bf34c94730317",
+   "cylinders_grid": "a6d741226bfcd2b4",
+   "bake_normal": "c3e09fc1366f35b7",
+   "bake_ao": "7f5704c3a86a5757",
+   "bake_albedo": "010ebaf8a322930b",
+   "geometry_colour_uv": "898e37d411490bd5",
+   "weights": "758dde77f2ff3029",
+   "keys": "460f3c29da819a21",
+   "clip_samples": "15ddf9aff3833c46"
+  },
+  "combined": "e91be944ce0d1fb2"
+ },
+ "glb": {
+  "path": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\rigged\\spring_pig.glb",
+  "bytes": 11970440,
+  "seconds": 1.7
+ },
+ "skins": {
+  "default": {
+   "file": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\rigged\\spring_pig.blend",
+   "palette": {
+    "proxy_albedo": {
+     "rgb": [
+      255,
+      255,
+      255
+     ]
+    }
+   }
+  },
+  "repaint_proof": {
+   "default_digest_before": "898e37d411490bd5",
+   "after_repaint": "898e37d411490bd5"
+  }
+ },
+ "improved_report": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\improved\\spring_pig.json",
+ "seconds": 267.8
+}

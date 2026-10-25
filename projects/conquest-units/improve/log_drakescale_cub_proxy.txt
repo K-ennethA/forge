@@ -1,0 +1,3 @@
+PROXY {"sha256": "57ad4b2d42a9a999", "mean_iou": 0.8617, "iou": {"front": 0.8983, "back": 0.7581, "side": 0.825}, "row_err_pct": {"front": 6.7, "back": 22.1, "side": 8.1}, "side_len": {"mesh": 1.063, "sheet": 0.981, "rel_err": 0.0836}, "gate": "proxy unreliable, work from the sheet (side length off by +8.4%)"}
+NOTE clipped below the floor line (perspective tails / curls; --keep-below-floor to keep): back 12856 px, side 7865 px
+NOTE back left out: the intake flags it 3/4 (mirror IoU 0.73, tone asymmetry 0.37)

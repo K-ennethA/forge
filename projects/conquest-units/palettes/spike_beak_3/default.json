@@ -1,0 +1,9 @@
+{
+ "unit": "spike_beak_3",
+ "skin": "default",
+ "description": "spike_beak_3 default look, LIGHT proxy finish: the colour is the Pixal3D proxy's own texture baked onto the low (improved/textures/spike_beak_3_basecolor.png) with the finish's recolours (mask / beak / legs to the beak chip, the white stomach wrapped further back, white tail tips, the orange head blobs to blue / mask yellow); proxy_albedo (white) tints it. No glow (the sheet draws none)",
+ "regions": {
+  "proxy_albedo": {"rgb": [255, 255, 255], "note": "tint over the baked proxy albedo (light mode); white keeps it as baked. Sheet chips for reference: 210,218,236 / 127,165,227 / 71,123,224 / 30,76,170 / 31,54,118 / beak 224,173,91"}
+ },
+ "material": {"roughness": 0.85, "emission_strength": 1.0, "alpha": 1.0}
+}

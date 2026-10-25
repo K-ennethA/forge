@@ -1,0 +1,6 @@
+﻿WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\azure_scale_mage\azure_scale_mage_sheet_vs_model.png
+GATE view=back  iou=0.706 in_frame=0.483 row_err=11.3% | proxy iou=0.606
+GATE view=side  iou=0.722 in_frame=0.660 row_err=13.9% | proxy iou=0.850  FLAG: more than 0.05 below the proxy
+GATE mean_iou=0.714 flagged=side proxy=proxy unreliable, work from the sheet (side length off by +5.3%)
+GATE bake_reference=none (no object.bake call found)
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\azure_scale_mage\azure_scale_mage_contact.png

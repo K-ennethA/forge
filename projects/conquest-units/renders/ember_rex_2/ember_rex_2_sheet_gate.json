@@ -1,0 +1,39 @@
+{
+ "unit": "ember_rex_2",
+ "views": {
+  "back": {
+   "iou": 0.7283,
+   "iou_shape": 0.6845,
+   "aspect_rel": 0.1467,
+   "row_err_u": 0.336,
+   "row_err_pct": 12.3,
+   "w_u": 2.4,
+   "h_u": 6.81,
+   "ref_w_u": 2.73,
+   "ref_h_u": 6.61,
+   "iou_in_frame": 0.2939,
+   "row_err_pct_in_frame": 12.3,
+   "proxy_iou": 0.7262,
+   "flag": false
+  },
+  "side": {
+   "iou": 0.7114,
+   "iou_shape": 0.7461,
+   "aspect_rel": 0.047,
+   "row_err_u": 0.693,
+   "row_err_pct": 15.3,
+   "w_u": 5.6,
+   "h_u": 6.81,
+   "ref_w_u": 5.76,
+   "ref_h_u": 7.35,
+   "iou_in_frame": 0.6954,
+   "row_err_pct_in_frame": 16.0,
+   "proxy_iou": 0.7423,
+   "flag": false
+  }
+ },
+ "proxy_sha256": "c36d9494955e31713916d6e541d05c9f24d1e22769f20d1368763b7bd1627d9d",
+ "proxy_gate": "proxy unreliable, work from the sheet (mean IoU 0.69 < 0.75)",
+ "flagged": [],
+ "mean_iou": 0.7198
+}

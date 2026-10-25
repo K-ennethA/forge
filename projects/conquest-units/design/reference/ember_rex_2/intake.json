@@ -1,0 +1,780 @@
+{
+ "unit": "ember_rex_2",
+ "sheet": "design/reference/ember_rex_2-character-sheet-split.png",
+ "size_px": [
+  1672,
+  941
+ ],
+ "background_rgb": [
+  33,
+  33,
+  33
+ ],
+ "bg_tol": 26.0,
+ "views": {
+  "front": {
+   "bbox_px": [
+    14,
+    118,
+    339,
+    787
+   ],
+   "axis_x_px": 156.5,
+   "floor_y_px": 786,
+   "height_px": 669,
+   "height_units": 6.69,
+   "width_units": 3.25,
+   "half_width_profile": {
+    "0.00": {
+     "y_px": 786,
+     "half_w_units": 1.815
+    },
+    "0.10": {
+     "y_px": 719,
+     "half_w_units": 1.795
+    },
+    "0.25": {
+     "y_px": 619,
+     "half_w_units": 1.815
+    },
+    "0.50": {
+     "y_px": 452,
+     "half_w_units": 1.355
+    },
+    "0.75": {
+     "y_px": 285,
+     "half_w_units": 0.485
+    },
+    "0.90": {
+     "y_px": 185,
+     "half_w_units": 0.725
+    }
+   },
+   "transform": "z = (786 - y_px) / 100 ; x = (x_px - 156.5) / 100"
+  },
+  "back": {
+   "bbox_px": [
+    339,
+    138,
+    612,
+    787
+   ],
+   "axis_x_px": 578.0,
+   "floor_y_px": 786,
+   "height_px": 649,
+   "height_units": 6.49,
+   "width_units": 2.73,
+   "half_width_profile": {
+    "0.00": {
+     "y_px": 786,
+     "half_w_units": 2.39
+    },
+    "0.10": {
+     "y_px": 721,
+     "half_w_units": 2.06
+    },
+    "0.25": {
+     "y_px": 624,
+     "half_w_units": 2.39
+    },
+    "0.50": {
+     "y_px": 462,
+     "half_w_units": 2.28
+    },
+    "0.75": {
+     "y_px": 300,
+     "half_w_units": 1.78
+    },
+    "0.90": {
+     "y_px": 203,
+     "half_w_units": 1.78
+    }
+   },
+   "transform": "z = (786 - y_px) / 100 ; x = (x_px - 578.0) / 100"
+  },
+  "side": {
+   "bbox_px": [
+    612,
+    68,
+    1188,
+    789
+   ],
+   "axis_x_px": 987.5,
+   "floor_y_px": 788,
+   "height_px": 721,
+   "height_units": 7.21,
+   "width_units": 5.76,
+   "half_width_profile": {
+    "0.00": {
+     "y_px": 788,
+     "half_w_units": 2.015
+    },
+    "0.10": {
+     "y_px": 716,
+     "half_w_units": 2.155
+    },
+    "0.25": {
+     "y_px": 608,
+     "half_w_units": 2.015
+    },
+    "0.50": {
+     "y_px": 428,
+     "half_w_units": 3.335
+    },
+    "0.75": {
+     "y_px": 248,
+     "half_w_units": 3.735
+    },
+    "0.90": {
+     "y_px": 140,
+     "half_w_units": 3.235
+    }
+   },
+   "transform": "z = (788 - y_px) / 100 ; x = (x_px - 987.5) / 100"
+  }
+ },
+ "ortho_frame": {
+  "views": [
+   "back",
+   "side"
+  ],
+  "width_px": 800,
+  "height_px": 790,
+  "below_floor_px": 20,
+  "crops": {
+   "front": [
+    -244,
+    16,
+    556,
+    806
+   ],
+   "back": [
+    178,
+    16,
+    978,
+    806
+   ],
+   "side": [
+    588,
+    18,
+    1388,
+    808
+   ]
+  }
+ },
+ "unnamed_extra_segments_px": [],
+ "swatches": [
+  {
+   "centre_px": [
+    1256.0,
+    883.0
+   ],
+   "rgb": [
+    68,
+    38,
+    42
+   ],
+   "diameter_px": 58
+  },
+  {
+   "centre_px": [
+    1327.1,
+    882.0
+   ],
+   "rgb": [
+    161,
+    42,
+    48
+   ],
+   "diameter_px": 60
+  },
+  {
+   "centre_px": [
+    1398.9,
+    882.0
+   ],
+   "rgb": [
+    225,
+    76,
+    58
+   ],
+   "diameter_px": 60
+  },
+  {
+   "centre_px": [
+    1471.0,
+    881.2
+   ],
+   "rgb": [
+    253,
+    124,
+    67
+   ],
+   "diameter_px": 60
+  },
+  {
+   "centre_px": [
+    1543.0,
+    881.2
+   ],
+   "rgb": [
+    253,
+    201,
+    100
+   ],
+   "diameter_px": 60
+  },
+  {
+   "centre_px": [
+    1613.0,
+    881.3
+   ],
+   "rgb": [
+    246,
+    214,
+    182
+   ],
+   "diameter_px": 60
+  }
+ ],
+ "swatch_rejects_off_column": [
+  {
+   "centre_px": [
+    1634.5,
+    747.5
+   ],
+   "rgb": [
+    27,
+    29,
+    28
+   ],
+   "diameter_px": 14
+  }
+ ],
+ "base_frac": 0.06,
+ "axis_overrides": {
+  "back": 578.0
+ },
+ "units_rule": "1 sheet unit = 100 px; per view z = (floor_y - y) / 100, x = (x - axis_x) / 100",
+ "caveat": "automatic split: VERIFY intake_overlay.png before dispatch (overlapping views or a floor shadow fuse / extend a view; rerun with --views or --bg-tol). A DARK subject on a dark sheet (shadowbun) loses its outline into the background: the floor line can sit high by ~15 px - check the soles",
+ "smart": true,
+ "auto_flags": {
+  "axis": {
+   "front": 156.5,
+   "side": 987.5
+  },
+  "ortho_views": [
+   "back",
+   "side"
+  ]
+ },
+ "auto_flags_cli": "--axis front=156.5,side=987.5 --ortho-views back,side",
+ "side_facing": {
+  "facing": "left",
+  "source": "flag",
+  "guess": "left",
+  "score": -0.102,
+  "confidence": 0.34,
+  "cue": "colour",
+  "front_back_separation": 0.152,
+  "rule": "score > 0 = face toward image-right; 'right' needs >= 0.14, else the house default (left)",
+  "meshgen_camera": "left"
+ },
+ "view_checks": {
+  "front": {
+   "floating_parts": [
+    {
+     "bbox_px": [
+      302,
+      786,
+      339,
+      807
+     ],
+     "area_px": 517,
+     "below_body": false
+    }
+   ],
+   "mass_centroid_px": 169.1,
+   "core_width_px": 284,
+   "mass_axis_px": 156.5,
+   "mirror_iou": 0.601,
+   "mirror_iou_core": 0.551,
+   "tone_asym": 0.558,
+   "half_area_ratio": 0.819,
+   "contact_x_px": [
+    210,
+    301
+   ],
+   "floor_candidates": {
+    "raw_lowest_px": 806,
+    "body_lowest_px": 806,
+    "contact_px": 786,
+    "shadow_px": 0,
+    "support_run_min_px": 68,
+    "skipped": []
+   },
+   "floor_px": 786,
+   "feet_axis_px": 183.0,
+   "threshold_holes_frac": 0.081,
+   "near_bg_frac": 0.118,
+   "dark_subject": false,
+   "three_quarter_suspect": true,
+   "three_quarter_why": [
+    "mirror IoU 0.60",
+    "tone asymmetry 0.56"
+   ]
+  },
+  "back": {
+   "floating_parts": [
+    {
+     "bbox_px": [
+      339,
+      612,
+      347,
+      705
+     ],
+     "area_px": 289,
+     "below_body": false
+    }
+   ],
+   "mass_centroid_px": 482.6,
+   "core_width_px": 232,
+   "mass_axis_px": 463.5,
+   "mirror_iou": 0.638,
+   "mirror_iou_core": 0.459,
+   "tone_asym": 0.529,
+   "half_area_ratio": 0.777,
+   "contact_x_px": [
+    400,
+    611
+   ],
+   "floor_candidates": {
+    "raw_lowest_px": 830,
+    "body_lowest_px": 830,
+    "contact_px": 830,
+    "shadow_px": 0,
+    "support_run_min_px": 69,
+    "skipped": []
+   },
+   "floor_px": 830,
+   "feet_axis_px": 475.0,
+   "threshold_holes_frac": 0.079,
+   "near_bg_frac": 0.131,
+   "dark_subject": false,
+   "three_quarter_suspect": true,
+   "three_quarter_why": [
+    "mirror IoU 0.64",
+    "tone asymmetry 0.53"
+   ]
+  },
+  "side": {
+   "floating_parts": [
+    {
+     "bbox_px": [
+      612,
+      504,
+      678,
+      598
+     ],
+     "area_px": 1571,
+     "below_body": false
+    }
+   ],
+   "mass_centroid_px": 876.4,
+   "core_width_px": 491,
+   "mass_axis_px": 987.5,
+   "contact_x_px": [
+    845,
+    1130
+   ],
+   "floor_candidates": {
+    "raw_lowest_px": 830,
+    "body_lowest_px": 830,
+    "contact_px": 830,
+    "shadow_px": 0,
+    "support_run_min_px": 76,
+    "skipped": []
+   },
+   "floor_px": 830,
+   "feet_axis_px": 970.5,
+   "threshold_holes_frac": 0.099,
+   "near_bg_frac": 0.129,
+   "dark_subject": false
+  }
+ },
+ "front_back_width_ratio": 0.817,
+ "height_check": {
+  "heights_units": {
+   "front": 6.69,
+   "back": 6.49,
+   "side": 7.21
+  },
+  "pairs": [
+   {
+    "views": [
+     "front",
+     "back"
+    ],
+    "diff_pct": 3.0
+   },
+   {
+    "views": [
+     "front",
+     "side"
+    ],
+    "diff_pct": 7.2
+   },
+   {
+    "views": [
+     "back",
+     "side"
+    ],
+    "diff_pct": 10.0
+   }
+  ],
+  "worst": {
+   "views": [
+    "back",
+    "side"
+   ],
+   "diff_pct": 10.0
+  }
+ },
+ "clutter_removed": null,
+ "matte_strips_px": [],
+ "dark_strips": [],
+ "palette_fallback": null,
+ "view_masks": {
+  "path": "view_masks.png",
+  "labels": {
+   "front": 1,
+   "back": 2,
+   "side": 3
+  },
+  "rule": "label image at sheet px: the silhouette each view was measured on"
+ },
+ "intake_notes": [
+  "front axis 156.5 px (mirror-symmetry of the body mass); the feet-base rule says 183.0",
+  "side axis 987.5 px (centre of the floor contact span); the feet-base rule says 970.5",
+  "front and back body widths disagree (0.82, eroded silhouettes): one of them may be drawn 3/4 or in perspective",
+  "probable 3/4 / perspective view(s): front (mirror IoU 0.60, tone asymmetry 0.56); back (mirror IoU 0.64, tone asymmetry 0.53) -> ortho_views back,side - BOTH look 3/4, the overlay is indicative only (a 3/4 SIDE is not auto-detected: check it)",
+  "side view faces image-left (flag, colour score -0.10) -> meshgen view 'left'",
+  "front-vs-side height: front 6.69 u, side 7.21 u (+7.8%) - over 3 %: reconcile them and say how"
+ ],
+ "proxy": {
+  "glb": "proxy/ember_rex_2_proxy.glb",
+  "sha256": "c36d9494955e31713916d6e541d05c9f24d1e22769f20d1368763b7bd1627d9d",
+  "seed": 56,
+  "model": "Pixal3D multi-view (meshgen, shared_frame)",
+  "views_sent": {
+   "front": "../../../../../../../../../AppData/Local/Temp/claude/C--Users-kenne-OneDrive-Desktop-git-forge/5eaeb76f-be56-497f-8b1e-0a29f5e6168b/scratchpad/er2_regen/norm/view_front.png",
+   "left": "../../../../../../../../../AppData/Local/Temp/claude/C--Users-kenne-OneDrive-Desktop-git-forge/5eaeb76f-be56-497f-8b1e-0a29f5e6168b/scratchpad/er2_regen/norm/view_side.png"
+  },
+  "side_facing": "left",
+  "frame": {
+   "above_floor_px": 720,
+   "below_floor_px": 14,
+   "pad_px": 20,
+   "height_px": 775,
+   "views": {
+    "front": {
+     "crop_origin_px": [
+      -6,
+      46
+     ],
+     "floor_row": 740,
+     "mask_bbox_px": [
+      14,
+      118,
+      339,
+      800
+     ]
+    },
+    "back": {
+     "crop_origin_px": [
+      319,
+      46
+     ],
+     "floor_row": 740,
+     "mask_bbox_px": [
+      339,
+      138,
+      612,
+      799
+     ]
+    },
+    "side": {
+     "crop_origin_px": [
+      592,
+      48
+     ],
+     "floor_row": 740,
+     "mask_bbox_px": [
+      612,
+      68,
+      1188,
+      803
+     ]
+    }
+   }
+  },
+  "generated": {
+   "via": "reused",
+   "source": "C:\\Users\\kenne\\AppData\\Local\\Temp\\claude\\C--Users-kenne-OneDrive-Desktop-git-forge\\5eaeb76f-be56-497f-8b1e-0a29f5e6168b\\scratchpad\\er2_regen\\er2_sym.glb"
+  },
+  "transform": {
+   "rotation": [
+    [
+     1.0,
+     0.0,
+     0.0
+    ],
+    [
+     0.0,
+     1.0,
+     0.0
+    ],
+    [
+     0.0,
+     0.0,
+     1.0
+    ]
+   ],
+   "offset": [
+    -9.591877460479736e-05,
+    0.004160299897193909,
+    -0.4861581027507782
+   ],
+   "scale": 7.030927835051546,
+   "rule": "v_sheet = scale * (R @ v_zup - offset); glTF (x, y, z) -> z-up (x, -z, y)",
+   "orientation_identity_iou": 0.7015,
+   "orientation_best_iou": 0.7015
+  },
+  "clipped_below_floor_px": {
+   "front": 159,
+   "back": 6750,
+   "side": 6846
+  },
+  "scores": {
+   "front": {
+    "iou": 0.6292,
+    "iou_shape": 0.5691,
+    "aspect_rel": 0.2572,
+    "row_err_u": 0.443,
+    "row_err_pct": 14.0,
+    "w_u": 2.4,
+    "h_u": 6.78,
+    "ref_w_u": 3.25,
+    "ref_h_u": 6.82,
+    "scored": true
+   },
+   "back": {
+    "iou": 0.7262,
+    "iou_shape": 0.6987,
+    "aspect_rel": 0.1429,
+    "row_err_u": 0.294,
+    "row_err_pct": 10.8,
+    "w_u": 2.4,
+    "h_u": 6.78,
+    "ref_w_u": 2.73,
+    "ref_h_u": 6.61,
+    "scored": false
+   },
+   "side": {
+    "iou": 0.7423,
+    "iou_shape": 0.7983,
+    "aspect_rel": 0.0478,
+    "row_err_u": 0.466,
+    "row_err_pct": 10.3,
+    "w_u": 5.58,
+    "h_u": 6.78,
+    "ref_w_u": 5.76,
+    "ref_h_u": 7.35,
+    "scored": true
+   }
+  },
+  "mean_iou": 0.6857,
+  "side_len_over_front_h": {
+   "mesh": 0.823,
+   "sheet": 0.845,
+   "rel_err": -0.0255
+  },
+  "front_w_over_h": {
+   "mesh": 0.354,
+   "sheet": 0.477
+  },
+  "gate": {
+   "pass": false,
+   "verdict": "proxy unreliable, work from the sheet (mean IoU 0.69 < 0.75)",
+   "rule": "mean IoU >= 0.75 and side length within 5%"
+  },
+  "sections": [
+   {
+    "z_frac": 0.06,
+    "z_u": 0.407,
+    "x_min_u": -1.004,
+    "x_max_u": 0.999,
+    "width_x_u": 2.003,
+    "y_front_u": -0.382,
+    "y_back_u": 2.624,
+    "depth_y_u": 3.006,
+    "y_centre_u": 1.121,
+    "points": 650
+   },
+   {
+    "z_frac": 0.18,
+    "z_u": 1.22,
+    "x_min_u": -0.813,
+    "x_max_u": 0.813,
+    "width_x_u": 1.626,
+    "y_front_u": -0.384,
+    "y_back_u": 2.682,
+    "depth_y_u": 3.066,
+    "y_centre_u": 1.149,
+    "points": 1270
+   },
+   {
+    "z_frac": 0.3,
+    "z_u": 2.034,
+    "x_min_u": -1.116,
+    "x_max_u": 1.113,
+    "width_x_u": 2.229,
+    "y_front_u": -1.503,
+    "y_back_u": 2.459,
+    "depth_y_u": 3.962,
+    "y_centre_u": 0.478,
+    "points": 3618
+   },
+   {
+    "z_frac": 0.42,
+    "z_u": 2.847,
+    "x_min_u": -1.113,
+    "x_max_u": 1.111,
+    "width_x_u": 2.225,
+    "y_front_u": -1.919,
+    "y_back_u": 1.936,
+    "depth_y_u": 3.855,
+    "y_centre_u": 0.009,
+    "points": 4478
+   },
+   {
+    "z_frac": 0.54,
+    "z_u": 3.661,
+    "x_min_u": -0.884,
+    "x_max_u": 0.882,
+    "width_x_u": 1.766,
+    "y_front_u": -2.259,
+    "y_back_u": 0.316,
+    "depth_y_u": 2.575,
+    "y_centre_u": -0.972,
+    "points": 3742
+   },
+   {
+    "z_frac": 0.66,
+    "z_u": 4.475,
+    "x_min_u": -0.733,
+    "x_max_u": 0.729,
+    "width_x_u": 1.463,
+    "y_front_u": -2.119,
+    "y_back_u": -0.389,
+    "depth_y_u": 1.73,
+    "y_centre_u": -1.254,
+    "points": 1572
+   },
+   {
+    "z_frac": 0.78,
+    "z_u": 5.288,
+    "x_min_u": -0.507,
+    "x_max_u": 0.444,
+    "width_x_u": 0.951,
+    "y_front_u": -2.735,
+    "y_back_u": -1.168,
+    "depth_y_u": 1.567,
+    "y_centre_u": -1.952,
+    "points": 1004
+   },
+   {
+    "z_frac": 0.9,
+    "z_u": 6.102,
+    "x_min_u": -0.217,
+    "x_max_u": 0.229,
+    "width_x_u": 0.446,
+    "y_front_u": -2.415,
+    "y_back_u": -0.594,
+    "depth_y_u": 1.822,
+    "y_centre_u": -1.504,
+    "points": 458
+   }
+  ],
+  "landmarks": {
+   "height_u": 6.78,
+   "top": {
+    "z_u": 6.78,
+    "x_u": -0.001,
+    "y_u": -0.956
+   },
+   "front_most": {
+    "y_u": -2.789,
+    "z_u": 5.176,
+    "note": "the most -Y point (snout / chest / beak tip)"
+   },
+   "rear_most": {
+    "y_u": 2.789,
+    "z_u": 0.833,
+    "note": "the most +Y point (tail)"
+   },
+   "length_y_u": 5.577,
+   "width_x_u": 2.395,
+   "widest_band": {
+    "z_u": 2.034,
+    "width_x_u": 2.229
+   },
+   "depth_at_intake_rows": {
+    "0.00": {
+     "z_u": 0.136,
+     "depth_y_u": 3.257,
+     "half_w_x_u": 0.909,
+     "sheet_half_w_u": 1.815
+    },
+    "0.10": {
+     "z_u": 0.678,
+     "depth_y_u": 3.764,
+     "half_w_x_u": 0.868,
+     "sheet_half_w_u": 1.795
+    },
+    "0.25": {
+     "z_u": 1.695,
+     "depth_y_u": 3.3,
+     "half_w_x_u": 0.878,
+     "sheet_half_w_u": 1.815
+    },
+    "0.50": {
+     "z_u": 3.39,
+     "depth_y_u": 2.978,
+     "half_w_x_u": 1.017,
+     "sheet_half_w_u": 1.355
+    },
+    "0.75": {
+     "z_u": 5.085,
+     "depth_y_u": 1.583,
+     "half_w_x_u": 0.506,
+     "sheet_half_w_u": 0.485
+    },
+    "0.90": {
+     "z_u": 6.102,
+     "depth_y_u": 1.822,
+     "half_w_x_u": 0.229,
+     "sheet_half_w_u": 0.725
+    }
+   }
+  },
+  "render": "../../../../../../../../../AppData/Local/Temp/claude/C--Users-kenne-OneDrive-Desktop-git-forge/5eaeb76f-be56-497f-8b1e-0a29f5e6168b/scratchpad/er2_regen/norm/ember_rex_2_proxy_vs_sheet.png",
+  "notes": [
+   "clipped below the floor line (perspective tails / curls; --keep-below-floor to keep): front 159 px, back 6750 px, side 6846 px",
+   "back left out: the intake flags it 3/4 (mirror IoU 0.64, tone asymmetry 0.53)",
+   "v2 (2026-10-17, artist: symmetric rest pose; 'cant see the eye'): regenerated from SYMMETRIC views: front = the sheet back (largest blob, image-left half mirrored) flipped, plain; back = that symmetric back; left = the sheet side (largest blob); right = the side mirrored; seed 56, shared_frame. Mean IoU 0.69 (was 0.82) - the sheet front is 3/4 and the sheet draws the tail swung; the model is straight-on with the tail centred. Previous proxy in proxy_v1_3q/."
+  ],
+  "use": "3D REFERENCE ONLY: cite sections / landmark depths in the build's constants; the sheet is the spec and the rest pose stays symmetric (the proxy copies the sheet's pose)",
+  "units": "sheet units (1 u = 100 sheet px); z up from the floor, x = the creature's left/right (bbox centred), y = depth, front = -y"
+ }
+}

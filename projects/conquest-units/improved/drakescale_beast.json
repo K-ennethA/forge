@@ -1,0 +1,2201 @@
+{
+ "unit": "drakescale_beast",
+ "conquest_character_id": "drakescale_beast",
+ "tier": "regular",
+ "tri_budget": [
+  8000,
+  22000
+ ],
+ "pattern": "proxy finish LIGHT (proxy_finish.py stage_light + proxy_finish_light.py): the frozen Pixal3D sheet proxy kept as generated (geometry + texture), made watertight, decimated, baked, optionally reposed with bones",
+ "config": {
+  "unit": "drakescale_beast",
+  "char_id": "drakescale_beast",
+  "tier": "regular",
+  "tri_budget": [
+   8000,
+   22000
+  ],
+  "body_tris": 18000,
+  "mode": "light",
+  "refloor": {
+   "y_windows": [
+    [
+     -3.1,
+     -0.5
+    ]
+   ],
+   "x_abs_min": 0.3,
+   "pct": 0.0,
+   "rescale_to_front_height": true,
+   "why": "sheet_proxy floored the TAIL (a flat curl lying on the ground under / behind the hind legs, z 0.00..0.55 at y 0.55..2.9, |x| up to 1.8); the four paws hang above it (front -x paw z 0.632, front +x 0.608, hind -x 0.771, hind +x 0.855). The floor goes to the lowest FRONT paw contact (window y -3.1..-0.5, |x| >= 0.3, the lowest claw tip z 0.608), then x1.1146 to the sheet front height 6.28. The hind paws then hover 0.18 / 0.27 u (proxy as generated: the whole body pitched ~4.6 deg nose-down; light flow, no repose)"
+  },
+  "midline_x": 0.22,
+  "midline_x_why": "the body's mirror plane to x 0: eye texel centres x -0.011 / 0.450 (mid 0.219), front paws -0.67 / 1.11 (mid 0.22), hind paws -0.67 / 1.06 (mid 0.20) after refloor; sheet_proxy centred the BBOX, which the lateral tail curl skews",
+  "light": {
+   "steps_per_height": 300,
+   "dense": [
+    {
+     "box": [
+      [
+       -0.8,
+       -3.5,
+       4.55
+      ],
+      [
+       0.8,
+       -1.2,
+       6.7
+      ]
+     ],
+     "density": 2.5,
+     "vg_weight": 0.3,
+     "why": "v2: the GRAFTED head (light.head_graft body bbox x -0.71..0.71, y -3.36..-1.26, z 4.75..6.55): snout, horn-scale crest, jaw; vg_weight 0.3 so the face box below can sit denser"
+    },
+    {
+     "box": [
+      [
+       -0.5,
+       -3.45,
+       4.85
+      ],
+      [
+       0.5,
+       -2.3,
+       5.9
+      ]
+     ],
+     "density": 2.5,
+     "vg_weight": 0.1,
+     "why": "v2: the grafted FACE: snout tip (0, -3.36, 5.42), eyes (+-0.28, -2.73, 5.61), chin (0, -3.10, 5.04), mouth line held densest so the eye / jaw paint stays crisp"
+    },
+    {
+     "box": [
+      [
+       -0.8,
+       0.7,
+       -0.05
+      ],
+      [
+       0.8,
+       3.4,
+       1.3
+      ]
+     ],
+     "density": 2.5,
+     "vg_weight": 0.3,
+     "why": "the rebuilt tail tube: held denser so the r 0.04..0.46 tube stays round under the collapse decimation (spring_pig lesson: at the base density a tube decimates to a faceted ribbon)"
+    }
+   ],
+   "cuts": [
+    {
+     "box": [
+      [
+       -2.5,
+       1.7,
+       -1.0
+      ],
+      [
+       2.5,
+       4.0,
+       1.15
+      ]
+     ],
+     "k": 0.01,
+     "why": "the proxy's lower tail (the descending sweep and the floor curl below the cut line z 1.15) behind the hind legs: the +x hind heel / hock reaches y 1.65 (x 0.2..0.8, z 0.4..1.2), the -x one y 1.4"
+    },
+    {
+     "box": [
+      [
+       0.85,
+       1.3,
+       -1.0
+      ],
+      [
+       2.5,
+       1.7,
+       0.75
+      ]
+     ],
+     "k": 0.01,
+     "why": "the +x arm of the proxy's floor curl (x 0.77..1.6, y 1.4..2.0, z <= 0.7) beside the +x hind heel (heel x <= 0.8 here)"
+    },
+    {
+     "box": [
+      [
+       -2.5,
+       -4.0,
+       -1.0
+      ],
+      [
+       2.5,
+       4.0,
+       -0.03
+      ]
+     ],
+     "k": 0.01,
+     "why": "everything below the floor after refloor = the proxy's tail mat (proxy z 0..0.55 -> -0.68..-0.06; one voxel margin under the lowest claw tip z 0.000)"
+    },
+    {
+     "box": [
+      [
+       -2.5,
+       -4.0,
+       4.75
+      ],
+      [
+       2.5,
+       -2.45,
+       7.5
+      ]
+     ],
+     "k": 0.01,
+     "why": "v2 head graft: the proxy's own crushed head IN FRONT of the throat (the beak y -3.38..-2.45, z >= 4.75); the cream throat front below z 4.75 (sheet side view: the neck front at y ~-2.55) is kept"
+    },
+    {
+     "box": [
+      [
+       -2.5,
+       -2.45,
+       4.9
+      ],
+      [
+       2.5,
+       -1.75,
+       7.5
+      ]
+     ],
+     "k": 0.01,
+     "why": "v2 head graft: the proxy's crushed face / head top above the neck (y -2.45..-1.75, z >= 4.9: its yellow eyes at z 4.75..5.11 and the crest above them); below z 4.9 the neck stays and the graft's flat block bottom (z 4.77..4.88) sinks into it; behind y -1.75 the proxy's own swept-back crest / dorsal spines are kept so they wrap the graft's rear (its clip cap at y -1.26..-1.36)"
+    },
+    {
+     "box": [
+      [
+       -0.3,
+       -2.8,
+       4.2
+      ],
+      [
+       0.3,
+       -2.2,
+       4.95
+      ]
+     ],
+     "k": 0.05,
+     "why": "v2 head graft: the proxy's old muzzle tip under the graft's jaw (a rounded knob x -0.15..0.15, z 4.4..4.8, front y ~-2.45 that read as a second nose); the graft's stump (q1 -0.32 -> -0.62, body z 4.95 -> 4.2) fills the throat in its place, so the cut stops at the stump's bottom z 4.2 (run 2 stopped at z 4.3 in front of a shallower stump: a notch)"
+    }
+   ],
+   "cuts_why": "UNIT NOTE (orchestrator): the sheet draws a LONG powerful scaled tail sweeping down and back to the floor; the proxy's tail is a thick flat mat lying 0.6 u BELOW the paws (Pixal3D read the sheet's perspective floor literally: the sheet side-view tail tip sits at v 822, the claws at v ~760). The tail below z 1.15 and everything below the floor is removed (also from the bake source); the upper tail root (z >= 1.15, with its dorsal spines and scale texture) is kept as generated",
+   "segment_array": {
+    "box": [
+     [
+      -0.95,
+      1.75,
+      1.15
+     ],
+     [
+      0.95,
+      3.45,
+      1.95
+     ]
+    ],
+    "axis": [
+     [
+      0.0,
+      2.4,
+      1.95
+     ],
+     [
+      0.0,
+      2.68,
+      1.15
+     ]
+    ],
+    "count": 7,
+    "taper": 0.85,
+    "overlap": 0.2,
+    "tip_frac": 0.02,
+    "tip_length": 2.0,
+    "k": 0.03,
+    "floor_z": 0.0,
+    "curve": [
+     [
+      0.0,
+      2.68,
+      1.3
+     ],
+     [
+      0.0,
+      2.7,
+      0.95
+     ],
+     [
+      0.0,
+      2.58,
+      0.66
+     ],
+     [
+      0.0,
+      2.28,
+      0.48
+     ],
+     [
+      0.0,
+      1.85,
+      0.36
+     ],
+     [
+      0.0,
+      1.3,
+      0.26
+     ],
+     [
+      0.0,
+      0.8,
+      0.18
+     ],
+     [
+      0.0,
+      0.3,
+      0.1
+     ]
+    ],
+    "why": "v2.1 (artist 2026-10-17 'Drakescale Beast v2 tail note': \"lets just extend and duplicate exisiting tails and end in a point\"): the v1/v2 capsule tube (light.adds + the recolour paint bands) is gone; the tail is the proxy's OWN scaled tail-root segment duplicated. Source = the generated root below the rump (box x +-0.95, y 1.75..3.45, z 1.15..1.95, a ring of pangolin plates x -0.86..0.63 / y 1.75..3.31 clear of the hind legs, dorsal spines on its +y side), axis from the ring centre at z 1.95 (y 2.40) to z 1.15 (y 2.68), 0.85 u. Its hollow skin cavity is filled so the copies are solid plugs. 7 copies along the sheet's side-view tail: centreline traced on the sheet side view through the stage-1 side registration (u = 882.26 + 100 y, v = 803.96 - 100 z): (1137,700) -> (2.55, 1.04), (1140,740) -> (2.58, 0.64), (1105,785) -> (2.23, 0.19), (1060,806) -> (1.78, -0.02), (1000,812) -> (1.18, -0.08), tip (955,821) -> (0.73, -0.17); the drop below the floor (the sheet's perspective) is lifted so each copy rests ON the floor (centre z ~ its half thickness, floor_z 0 flattens the contact). Scale 0.85^i per copy, 20% overlap (each copy's plates shingle over the next), the last copy 2x long with its cross-section ramped to 0.02 = the point"
+   },
+   "recolour3d": [
+    {
+     "name": "tone_curve",
+     "boxes": [
+      [
+       [
+        -3.0,
+        -4.5,
+        -1.0
+       ],
+       [
+        3.0,
+        4.5,
+        7.0
+       ]
+      ]
+     ],
+     "feather": 0.04,
+     "target_rgb": [
+      104,
+      82,
+      71
+     ],
+     "detail_gamma": 1.24,
+     "detail_clip": [
+      0.2,
+      2.8
+     ],
+     "why": "UNIT NOTE (tone): the proxy texture reads dark olive / khaki: proxy texels L* p10/50/90 18.4 / 28.3 / 52.0, a* 2.4..5.1, b* 6.7..22.1 (dark band L* < 25 median 58,48,38 = L* 20.7 a* 2.8 b* 8.0) vs the sheet front + side masks L* 16.1 / 33.6 / 62.0 (dark band 54,41,36 = L* 18.0 a* 4.9 b* 3.9; median-luma pixels 95,75,66). ONE tone curve over every texel (storm_bear idiom, no posterised borders): new = target x (luma / median)^1.24 (run 1 target 97,76,66 gave basecolor L* p10/50/90 12.2 / 29.2 / 61.9 vs the sheet 16.1 / 33.6 / 62.0 (AO x~0.88): lifted to 104,82,71; the sheet median-luma colour 95,75,66; exponent = the log-quantile fit q10..q90 proxy -> sheet luma); simulated on the proxy texels: L* 19.4 / 32.6 / 67.8, dark band a* 5.3 b* 6.8, mid 7.4 / 9.3. v2: no eye exclusion (the proxy's old eyes are cut / erased; the grafted head's texture is toned separately, light.head_graft.tone)"
+    },
+    {
+     "name": "tone_copper_cream",
+     "boxes": [
+      [
+       [
+        -3.0,
+        -4.5,
+        -1.0
+       ],
+       [
+        3.0,
+        4.5,
+        7.0
+       ]
+      ]
+     ],
+     "feather": 0.04,
+     "select": {
+      "L": [
+       40,
+       101
+      ],
+      "soft": 6
+     },
+     "target_rgb": [
+      158,
+      125,
+      96
+     ],
+     "detail_gamma": 1.0,
+     "detail_clip": [
+      0.5,
+      1.6
+     ],
+     "why": "the mid / bright texels (L* >= 40: copper scale tips, belly) re-hued to the sheet's copper hue (sheet L* >= 50 median 181,141,114; chips 188,146,115 / 220,187,156) with their luminance kept (target = the hue 178,140,108 scaled to the selected texels' median luma = 158,125,96, gamma 1). Run 1 (L* >= 52 to 190,154,133) left basecolor b* 12.1 / 15.3 in the L* 40-55 / 55-70 bands vs the sheet 17.9 / 20.1 (the renders read mauve-grey); simulated now (x0.88 AO): L* p10/50/90 16.7 / 32.3 / 67.3, b* 17.7 / 22.9"
+    },
+    {
+     "name": "tone_dark_scale",
+     "boxes": [
+      [
+       [
+        -3.0,
+        -4.5,
+        -1.0
+       ],
+       [
+        3.0,
+        4.5,
+        7.0
+       ]
+      ]
+     ],
+     "feather": 0.04,
+     "select": {
+      "L": [
+       0,
+       24
+      ],
+      "soft": 4
+     },
+     "target_rgb": [
+      58,
+      45,
+      41
+     ],
+     "detail_gamma": 1.0,
+     "detail_clip": [
+      0.3,
+      1.6
+     ],
+     "why": "the darkest scale texels (L* <= 24) still read yellow after the curve (b* 6.8 vs the sheet 3.9): re-hued to the sheet's dark scale (L* < 25 median 54,41,36; chip 72,57,48), luminance kept (target lifted with the curve); simulated a* 4.7 b* 4.9"
+    }
+   ],
+   "bake_drop_interior": 0.08,
+   "bake_drop_interior_why": "proxy faces with solid on both sides (inner shells under the overlapping scale plates) left out of the bake source so the cage stays tight",
+   "ao_from_low": true,
+   "ao_samples": 64,
+   "ao_distance": 0.2,
+   "ao_fill_below": 0.04,
+   "ao_why": "AO baked on the watertight low (the scale-plate soup's inner shells black-hole AO rays); 0.2 u keeps the crevices between the scale plates without the broad darkening (lesson: AO darkens the basecolor)",
+   "uv_island_margin": 0.001,
+   "uv_island_margin_why": "denser atlas (vulture_creature / storm_bear idiom)",
+   "head_graft": {
+    "glb": "design/reference/drakescale_beast/head_graft/head_pixal3d.glb",
+    "sha256_prefix": "1d769ddc8e44",
+    "yaw_deg": 37.0,
+    "roll_deg": 6.0,
+    "mid_z": 0.006,
+    "frame_why": "the head glb (as stored, glTF axes) is a full 3D head built TURNED: its snout points along (-cos 37, 0, sin 37) and it rolls 6 deg. Mirror search (scratch head_fine.py): the face (within 0.45 of the snout tip) mirrored about the plane through the tip, yaw 35..44 x roll -4..10 x offset -0.03..0.03 -> best yaw 37 roll 6 (mean mirror distance 0.0059 glb units, i.e. 0.014 u); in that frame both eyes sit at q2 +0.115 / -0.094 and the snout tip at +0.011, so mid_z 0.006 (between the geometric 0.0007 and the landmark 0.011). The good half = q2 >= 0, the side facing the generation camera (the sheet panel's side)",
+    "scale": 2.4379,
+    "pitch_deg": -3.559,
+    "place": [
+     -2.1288,
+     5.7045
+    ],
+    "place_why": "one similarity (head q0, q1) -> (body y, z) least-squares on three landmarks: head snout tip (-0.494, -0.145), eye centre (-0.245, -0.056), chin (-0.375, -0.295) [glb units, the head frame] onto the SHEET SIDE VIEW snout tip px (577, 278), eye (634, 260), chin (600, 313) through v1's body-only side registration y = (u - 888) / 93, z = (782 - v) / 93 (the one the v1 tail used; head / legs window IoU 0.795) = (-3.344, 5.419), (-2.731, 5.613), (-3.097, 5.043); residuals 0.011 / 0.008 / 0.011 u. The proxy's own (crushed) eye sat at (+-0.23, -2.0, 4.93): 0.7 u lower and 0.7 u further back than the sheet's",
+    "landmarks_q": {
+     "snout_tip": [
+      -0.494,
+      -0.145,
+      0.0
+     ],
+     "eye": [
+      -0.245,
+      -0.056,
+      0.115
+     ],
+     "chin": [
+      -0.375,
+      -0.295,
+      0.0
+     ]
+    },
+    "clip_q0": 0.34,
+    "clip_k": 0.03,
+    "clip_why": "the head block ends in a flat wall where the head panel's frame cut it (q0 0.40..0.43); the graft stops at q0 0.34 (body y -1.26 top .. -1.36 bottom) inside the proxy neck, whose dorsal spines continue behind it",
+    "k": 0.05,
+    "occ_step": 0.004,
+    "drop_interior_u": 0.06,
+    "tone": {
+     "L_map": [
+      [
+       0,
+       0
+      ],
+      [
+       18.7,
+       17.5
+      ],
+      [
+       29.8,
+       32.0
+      ],
+      [
+       56.4,
+       66.0
+      ],
+      [
+       80,
+       88
+      ],
+      [
+       100,
+       100
+      ]
+     ],
+     "ab_shift_by_L": [
+      [
+       12.5,
+       2.5,
+       -3.8
+      ],
+      [
+       32.5,
+       0.4,
+       -7.3
+      ],
+      [
+       47.5,
+       3.3,
+       -0.8
+      ],
+      [
+       62.5,
+       8.1,
+       5.8
+      ],
+      [
+       85,
+       5.8,
+       2.2
+      ]
+     ],
+     "keep": {
+      "a": [
+       15,
+       200
+      ],
+      "b": [
+       40,
+       200
+      ],
+      "soft": 5
+     },
+     "why": "the head glb texture reads charcoal / olive next to the toned body: its face-half texels (q2 > 0, q0 < 0.3; scratch tone_stats.py) L* p10/50/90 18.7 / 29.8 / 56.4, per L* band median a*/b* (1.6, 6.8) (5.3, 13.8) (8.7, 20.8) (2.0, 15.2) (1.9, 17.8) vs the sheet HEAD panel 11.8 / 35.3 / 68.9 with (4.1, 3.0) (5.7, 5.1) (12.7, 19.3) (11.1, 21.2) (7.7, 20.0), the sheet side-view head 22.3 / 40.6 / 74.0 and the v1 toned neck 17.8 / 31.9 / 70.5. L* mapped onto the neck / sheet quantiles (p90 66: the cream jaw lifted from grey to cream), a*/b* shifted per band to the sheet panel (the mid band toward the neck: b* 6.5). The orange eye (a* >= 15 and b* >= 40) is kept as generated"
+    },
+    "why": "UNIT V2 NOTE (a), artist 2026-10-17 'Drakescale Beast v1 head note': the proxy's head is crushed (three re-seeds gave the same snout). The orchestrator's head-only Pixal3D mesh from the sheet's HEAD DETAIL panel (seed 56) replaces it: its good half mirrored (a symmetric head, the generated face), scaled / placed on the sheet's side-view head, unioned at the neck",
+    "stump": {
+     "q1": -0.32,
+     "to_q1": -0.62
+    },
+    "taper": {
+     "from_q0": 0.2,
+     "to_q0": 0.34,
+     "shrink_u": 0.45
+    },
+    "stump_taper_why": "stump: the head block ends in a flat bottom (q1 -0.36..-0.40, body z 4.77..4.88) where the panel cut the throat; its cross-section at q1 -0.32 (the throat just behind the jaw, front at body y ~-2.59: the sheet side view draws the throat front at y -2.6..-2.5 from the jaw down to z 4.3) is continued straight down to q1 -0.62 (body z ~4.2, inside the chest), so the throat meets the neck and buries the proxy's old muzzle knob (x -0.15..0.15, z 4.4..4.8, front y -2.45; run 2 cut it instead and left a notch). taper: the block's back (q0 0.20..0.34, body y -1.64..-1.30) shrinks smoothly by up to 0.45 u into the proxy neck, so no flat cap shows behind the head (run 1: a flat dark cap face at y -1.26..-1.36 above the neck)",
+    "drop_outside_u": 0.03,
+    "drop_why": "bake source: graft faces buried > 0.06 u inside the new grid or floating > 0.03 u outside it (the taper's shrunk-away block back; with them in, proxy-to-low p99 0.236 -> bake cage 0.71 u) leave the bake source"
+   },
+   "erase3d": [
+    {
+     "c": [
+      -0.225,
+      -1.955,
+      4.85
+     ],
+     "r": 0.2,
+     "ring": 1.6,
+     "feather": 0.3,
+     "why": "v2: the remnant of the proxy's old -x eye (yellow texels, box x -0.36..-0.09, y -2.14..-1.77, z 4.75..5.11) below the head-graft cut line z 4.9, refilled from the surrounding neck"
+    },
+    {
+     "c": [
+      0.25,
+      -1.995,
+      4.85
+     ],
+     "r": 0.2,
+     "ring": 1.6,
+     "feather": 0.3,
+     "why": "v2: the remnant of the proxy's old +x eye (box x 0.07..0.43, y -2.27..-1.72, z 4.75..5.11), refilled"
+    }
+   ]
+  },
+  "rig": {
+   "spine_names": [
+    "hips",
+    "belly",
+    "chest",
+    "neck",
+    "head"
+   ],
+   "spine": [
+    [
+     0.0,
+     1.9,
+     3.0
+    ],
+    [
+     0.0,
+     0.6,
+     3.1
+    ],
+    [
+     0.0,
+     -0.7,
+     3.3
+    ],
+    [
+     0.0,
+     -1.5,
+     4.1
+    ],
+    [
+     0.0,
+     -1.9,
+     5.3
+    ],
+    [
+     0.0,
+     -3.35,
+     5.43
+    ]
+   ],
+   "chains": [
+    {
+     "name": "arm",
+     "kind": "leg",
+     "parent": "chest",
+     "phase": {
+      "L": 0.0,
+      "R": 0.5
+     },
+     "points": [
+      [
+       1.0,
+       -1.05,
+       2.9
+      ],
+      [
+       1.16,
+       -0.8,
+       1.4
+      ],
+      [
+       0.92,
+       -1.0,
+       0.5
+      ],
+      [
+       1.0,
+       -1.6,
+       0.1
+      ]
+     ],
+     "why": "v2 (measured on the v2 pre-repose low, |x| > 0.2 side views + z-slab centroids, scratch legview.py): points = the +x front leg, points_R = the -x front leg as generated: shoulder (set symmetric inside the chest, y -1.05, z 2.9), elbow (z 1.4: +x (1.16, -0.80) / -x (-1.15, -1.95)), wrist (z 0.5: 0.92, -1.00 / -0.95, -2.30), toes (z 0.1: front claw tips y -1.6 / -2.85): the -x front leg reaches 1.25 u further forward (a stride); the repose makes the pair symmetric at the mean",
+     "points_R": [
+      [
+       -1.0,
+       -1.05,
+       2.9
+      ],
+      [
+       -1.15,
+       -1.95,
+       1.4
+      ],
+      [
+       -0.95,
+       -2.3,
+       0.5
+      ],
+      [
+       -1.0,
+       -2.85,
+       0.1
+      ]
+     ]
+    },
+    {
+     "name": "leg",
+     "kind": "leg",
+     "parent": "hips",
+     "phase": {
+      "L": 0.5,
+      "R": 0.0
+     },
+     "points": [
+      [
+       0.85,
+       0.75,
+       2.8
+      ],
+      [
+       0.7,
+       1.05,
+       1.4
+      ],
+      [
+       0.68,
+       1.1,
+       0.65
+      ],
+      [
+       0.6,
+       0.3,
+       0.35
+      ]
+     ],
+     "why": "v2: points = the +x hind leg, points_R = the -x hind leg as generated: hip (inside the haunch, symmetric), knee (z 1.4: +x (0.70, 1.05) / -x (-0.78, 1.00)), heel (+x (0.68, 1.10, 0.65) raised / -x (-0.80, 0.85, 0.35)), toes (+x (0.60, 0.30, 0.35) hovering 0.27 u / -x (-0.80, 0.10, 0.08) on the floor); plantigrade paws, toes forward",
+     "points_R": [
+      [
+       -0.85,
+       0.75,
+       2.8
+      ],
+      [
+       -0.78,
+       1.0,
+       1.4
+      ],
+      [
+       -0.8,
+       0.85,
+       0.35
+      ],
+      [
+       -0.8,
+       0.1,
+       0.08
+      ]
+     ]
+    },
+    {
+     "name": "tail",
+     "kind": "tail",
+     "mirror": false,
+     "parent": "hips",
+     "points": [
+      [
+       0.0,
+       1.9,
+       2.9
+      ],
+      [
+       0.0,
+       2.55,
+       2.2
+      ],
+      [
+       0.0,
+       2.68,
+       1.3
+      ],
+      [
+       0.0,
+       2.63,
+       0.74
+      ],
+      [
+       0.0,
+       2.24,
+       0.46
+      ],
+      [
+       0.0,
+       1.84,
+       0.36
+      ],
+      [
+       0.0,
+       1.19,
+       0.24
+      ],
+      [
+       0.0,
+       0.45,
+       0.12
+      ]
+     ],
+     "why": "v2.1: the kept proxy tail root (z >= 1.15, centre (0, 2.55, 2.2)) then the segment_array copies' starts (light.segment_array report) to the tip: a 7-bone CENTRED tail chain on x = 0 (mirror false), so the duplicated tail rests on the midline and can be posed to either side"
+    }
+   ],
+   "spine_why": "v2: hips / belly / chest as v1; neck root (0, -1.5, 4.1) up the neck to the head pivot (0, -1.9, 5.3; behind the grafted eyes y -2.73, inside the head-neck junction, the graft's clip cap y -1.26..-1.36); the head bone runs to the grafted snout tip (0, -3.35, 5.43): the graft is symmetric and on x = 0, so the head heading is straight -y"
+  },
+  "clips": {
+   "idle_frames": 72,
+   "breathe_deg": 1.2,
+   "walk_frames": 32,
+   "walk_bob": 0.012,
+   "walk_roll": 2.0,
+   "leg_swing": 8.0,
+   "arm_swing": 6.0,
+   "why": "PLACEHOLDER (movement + in-game height are the open artist questions): idle = breathe + the kit's tail sway; walk = a four-leg step; leg_swing 8 (lesson: the kit walk dips the feet below the floor)"
+  },
+  "focus": {
+   "head": [
+    [
+     -0.85,
+     -3.5,
+     4.6
+    ],
+    [
+     0.85,
+     -1.2,
+     6.7
+    ]
+   ],
+   "tail": [
+    [
+     -1.0,
+     0.2,
+     -0.05
+    ],
+    [
+     1.0,
+     3.5,
+     2.4
+    ]
+   ]
+  },
+  "bake_res": [
+   1024,
+   1024
+  ],
+  "_doc": "LIGHT finish of the raw Pixal3D proxy (seed 56, front + side views, sha 197465d1). Points: stage-1 frame (front paws on the floor, x1.1146 to the sheet front height 6.28, body midline x 0.22 -> 0), sheet units. The tail below z 1.15 is the one rebuilt region (light.cuts + light.adds + light.recolour), generated by a Catmull-Rom script (parameters in adds_why); tone = light.recolour3d (texture only).",
+  "repose": {
+   "targets": [
+    {
+     "symmetric": [
+      "arm"
+     ],
+     "match": "mean",
+     "plant": true,
+     "plant_radius": 0.8,
+     "falloff": 0.06,
+     "radius": [
+      [
+       1.4,
+       0.7
+      ],
+      [
+       1.0,
+       0.45
+      ],
+      [
+       1.1,
+       0.45
+      ]
+     ],
+     "why": "artist 2026-10-17: a symmetric rest pose. The two front legs mirror-symmetric at the mean (the -x leg strode 1.25 u forward), both paws planted on the floor",
+     "radius_why": "[reach, taper] per bone, wide and soft: offline sweep on the v2 pre-repose low (scratch rep_sweep.py) - reach 0.55..0.75 / taper 0.12..0.2 at falloff 0.03 left the paw claws OUTSIDE every limb bone (the nearest bone was then the tail tip on the floor, which does not move): edge stretch p99 3.35, max 11.3; reach 1.4 / 1.0 / 1.1 with taper 0.7 / 0.45 / 0.45 at falloff 0.06: p99 1.34, max 2.65 (mirror p99 the same 0.31)",
+     "plant_why": "plant_radius 0.8: at 0.5 the claw-tip / heel vertices outside the planted set dipped to z -0.111 after the repose (6 verts; the centring then lifted the paws 0.11 u off the floor); at 0.8 the lowest vertex is z -0.007 (offline, scratch)"
+    },
+    {
+     "symmetric": [
+      "leg"
+     ],
+     "match": "mean",
+     "plant": true,
+     "plant_radius": 0.8,
+     "falloff": 0.06,
+     "radius": [
+      [
+       1.1,
+       0.5
+      ],
+      [
+       0.9,
+       0.4
+      ],
+      [
+       1.0,
+       0.35
+      ]
+     ],
+     "why": "the two hind legs mirror-symmetric at the mean (the +x paw hovered 0.27 u and sat 0.2 u back), both paws planted",
+     "radius_why": "[reach, taper] per bone (same sweep): the hind feet's last bone reaches the whole paw; the side-aware rule keeps each side's bones off the other side and off the centred tail tube",
+     "plant_why": "plant_radius 0.8: at 0.5 the claw-tip / heel vertices outside the planted set dipped to z -0.111 after the repose (6 verts; the centring then lifted the paws 0.11 u off the floor); at 0.8 the lowest vertex is z -0.007 (offline, scratch)"
+    },
+    {
+     "bones": [
+      "neck",
+      "head"
+     ],
+     "heading": "-y",
+     "distribute": true,
+     "why": "the face straight ahead (-y): the grafted head is mirror-symmetric on x = 0 (snout tip x 0.000), so the neck / head yaw is 0 (an identity, stated); the head is RIGID (below)"
+    }
+   ],
+   "rigid": [
+    {
+     "box": [
+      [
+       -0.8,
+       -3.5,
+       4.7
+      ],
+      [
+       0.8,
+       -1.8,
+       6.65
+      ]
+     ],
+     "bone": "head",
+     "margin": 0.3,
+     "why": "the grafted head / face (snout, both eyes, jaw, horn-scale crest; the v2 dense head box) moves as ONE rigid body with the head bone: never deformed or re-sculpted"
+    }
+   ],
+   "why": "v2 (artist 2026-10-17, 'our characters should be symmetrical head turns are done through posing so our models remain flexible'): the proxy's staggered legs are undone with BONES (proxy_finish_repose), never by mirror-averaging geometry; the grafted head is symmetric by construction; the rebuilt tail is centred by construction"
+  }
+ },
+ "units": "sheet units: 1 unit = 100 px of the reference sheet; floor z = 0",
+ "stage1_stdout": [
+  "RECOLOUR3D [{\"name\": \"tone_curve\", \"target_rgb\": [104.0, 82.0, 71.0], \"why\": \"UNIT NOTE (tone): the proxy texture reads dark olive / khaki: proxy texels L* p10/50/90 18.4 / 28.3 / 52.0, a* 2.4..5.1, b* 6.7..22.1 (dark band L* < 25 median 58,48,38 = L* 20.7 a* 2.8 b* 8.0) vs the sheet front + side masks L* 16.1 / 33.6 / 62.0 (dark band 54,41,36 = L* 18.0 a* 4.9 b* 3.9; median-luma pixels 95,75,66). ONE tone curve over every texel (storm_bear idiom, no posterised borders): new = target x (luma / median)^1.24 (run 1 target 97,76,66 gave basecolor L* p10/50/90 12.2 / 29.2 / 61.9 vs the sheet 16.1 / 33.6 / 62.0 (AO x~0.88): lifted to 104,82,71; the sheet median-luma colour 95,75,66; exponent = the log-quantile fit q10..q90 proxy -> sheet luma); simulated on the proxy texels: L* 19.4 / 32.6 / 67.8, dark band a* 5.3 b* 6.8, mid 7.4 / 9.3. v2: no eye exclusion (the proxy's old eyes are cut / erased; the grafted head's texture is toned separately, light.head_graft.tone)\", \"texels_touched\": 2545248, \"texels_ge_half\": 2545248, \"median_src_rgb\": [79.0, 64.0, 48.0], \"median_new_rgb\": [104.0, 82.0, 71.0]}, {\"name\": \"tone_copper_cream\", \"target_rgb\": [158.0, 125.0, 96.0], \"why\": \"the mid / bright texels (L* >= 40: copper scale tips, belly) re-hued to the sheet's copper hue (sheet L* >= 50 median 181,141,114; chips 188,146,115 / 220,187,156) with their luminance kept (target = the hue 178,140,108 scaled to the selected texels' median luma = 158,125,96, gamma 1). Run 1 (L* >= 52 to 190,154,133) left basecolor b* 12.1 / 15.3 in the L* 40-55 / 55-70 bands vs the sheet 17.9 / 20.1 (the renders read mauve-grey); simulated now (x0.88 AO): L* p10/50/90 16.7 / 32.3 / 67.3, b* 17.7 / 22.9\", \"texels_touched\": 1415253, \"texels_ge_half\": 1263488, \"median_src_rgb\": [158.0, 124.0, 108.0], \"median_new_rgb\": [158.0, 125.0, 96.0]}, {\"name\": \"tone_dark_scale\", \"target_rgb\": [58.0, 45.0, 41.0], \"why\": \"the darkest scale texels (L* <= 24) still read yellow after the curve (b* 6.8 vs the sheet 3.9): re-hued to the sheet's dark scale (L* < 25 median 54,41,36; chip 72,57,48), luminance kept (target lifted with the curve); simulated a* 4.7 b* 4.9\", \"texels_touched\": 686707, \"texels_ge_half\": 539220, \"median_src_rgb\": [65.0, 51.0, 44.0], \"median_new_rgb\": [58.0, 45.0, 41.0]}]"
+ ],
+ "stage1": {
+  "unit": "drakescale_beast",
+  "proxy": {
+   "glb": "proxy/drakescale_beast_proxy.glb",
+   "sha256": "197465d17cad8664307978be73d1a2453ce44f1d3e779c7ff62f23fce04f3361",
+   "gate": "reliable",
+   "mean_iou": 0.8872,
+   "refloor": {
+    "foot_contact_z_u": 0.6079,
+    "rescale": 1.1146,
+    "y_windows": [
+     [
+      -3.1,
+      -0.5
+     ]
+    ],
+    "window_z_u": [
+     0.6079
+    ],
+    "x_abs_min": 0.3,
+    "rule": "sheet_proxy put the floor at the lowest point (a tail curl): the feet hung z0 above it; floor moved to the feet, then scaled to the sheet front height"
+   },
+   "midline_x": {
+    "shift_x_u": -0.22,
+    "rule": "the body midline (paired paws / head, after refloor) moved to x 0, so the repose mirror and the mirror test use the body's own plane"
+   },
+   "tris": 197831,
+   "verts": 153755,
+   "height_u": 6.9576,
+   "samples": 7797644,
+   "textured": true,
+   "z_range_u": [
+    -0.6776,
+    6.28
+   ]
+  },
+  "solid": {
+   "step": 0.0232,
+   "grid": [
+    209,
+    308,
+    317
+   ],
+   "shell_nodes": 627675,
+   "close_voxels": 1,
+   "sealed_cavities": 226,
+   "min_half_thickness_u": 0.0116,
+   "shell_nodes_signed_outside_frac": 0.79,
+   "smooth_sigma_vox": 0.0,
+   "pieces": [
+    1,
+    [
+     604217
+    ]
+   ],
+   "rule": "LIGHT: watertight remesh only (no smoothing / straighten / symmetrise / cuts); the surface sits min_half_thickness x step = 0.0116 u outside the proxy",
+   "light_cuts": [
+    {
+     "shape": "box",
+     "nodes_inside": 1472823,
+     "why": "the proxy's lower tail (the descending sweep and the floor curl below the cut line z 1.15) behind the hind legs: the +x hind heel / hock reaches y 1.65 (x 0.2..0.8, z 0.4..1.2), the -x one y 1.4"
+    },
+    {
+     "shape": "box",
+     "nodes_inside": 80920,
+     "why": "the +x arm of the proxy's floor curl (x 0.77..1.6, y 1.4..2.0, z <= 0.7) beside the +x hind heel (heel x <= 0.8 here)"
+    },
+    {
+     "shape": "box",
+     "nodes_inside": 2317392,
+     "why": "everything below the floor after refloor = the proxy's tail mat (proxy z 0..0.55 -> -0.68..-0.06; one voxel margin under the lowest claw tip z 0.000)"
+    },
+    {
+     "shape": "box",
+     "nodes_inside": 752400,
+     "why": "v2 head graft: the proxy's own crushed head IN FRONT of the throat (the beak y -3.38..-2.45, z >= 4.75); the cream throat front below z 4.75 (sheet side view: the neck front at y ~-2.55) is kept"
+    },
+    {
+     "shape": "box",
+     "nodes_inside": 440572,
+     "why": "v2 head graft: the proxy's crushed face / head top above the neck (y -2.45..-1.75, z >= 4.9: its yellow eyes at z 4.75..5.11 and the crest above them); below z 4.9 the neck stays and the graft's flat block bottom (z 4.77..4.88) sinks into it; behind y -1.75 the proxy's own swept-back crest / dorsal spines are kept so they wrap the graft's rear (its clip cap at y -1.26..-1.36)"
+    },
+    {
+     "shape": "box",
+     "nodes_inside": 20800,
+     "why": "v2 head graft: the proxy's old muzzle tip under the graft's jaw (a rounded knob x -0.15..0.15, z 4.4..4.8, front y ~-2.45 that read as a second nose); the graft's stump (q1 -0.32 -> -0.62, body z 4.95 -> 4.2) fills the throat in its place, so the cut stops at the stump's bottom z 4.2 (run 2 stopped at z 4.3 in front of a shallower stump: a notch)"
+    }
+   ],
+   "bake_interior_tris_dropped": 6386
+  },
+  "colour": {
+   "mode": "light: the proxy texture as generated",
+   "drift_fit": null,
+   "textures": {
+    "0": [
+     2048,
+     2048,
+     3
+    ]
+   }
+  },
+  "erase3d": [
+   {
+    "c": [
+     -0.225,
+     -1.955,
+     4.85
+    ],
+    "r": 0.2,
+    "texels": 4049,
+    "fill_rgb": [
+     131.0,
+     104.0,
+     70.0
+    ],
+    "why": "v2: the remnant of the proxy's old -x eye (yellow texels, box x -0.36..-0.09, y -2.14..-1.77, z 4.75..5.11) below the head-graft cut line z 4.9, refilled from the surrounding neck"
+   },
+   {
+    "c": [
+     0.25,
+     -1.995,
+     4.85
+    ],
+    "r": 0.2,
+    "texels": 4203,
+    "fill_rgb": [
+     137.0,
+     108.0,
+     73.0
+    ],
+    "why": "v2: the remnant of the proxy's old +x eye (box x 0.07..0.43, y -2.27..-1.72, z 4.75..5.11), refilled"
+   }
+  ],
+  "recolour3d": [
+   {
+    "name": "tone_curve",
+    "target_rgb": [
+     104.0,
+     82.0,
+     71.0
+    ],
+    "why": "UNIT NOTE (tone): the proxy texture reads dark olive / khaki: proxy texels L* p10/50/90 18.4 / 28.3 / 52.0, a* 2.4..5.1, b* 6.7..22.1 (dark band L* < 25 median 58,48,38 = L* 20.7 a* 2.8 b* 8.0) vs the sheet front + side masks L* 16.1 / 33.6 / 62.0 (dark band 54,41,36 = L* 18.0 a* 4.9 b* 3.9; median-luma pixels 95,75,66). ONE tone curve over every texel (storm_bear idiom, no posterised borders): new = target x (luma / median)^1.24 (run 1 target 97,76,66 gave basecolor L* p10/50/90 12.2 / 29.2 / 61.9 vs the sheet 16.1 / 33.6 / 62.0 (AO x~0.88): lifted to 104,82,71; the sheet median-luma colour 95,75,66; exponent = the log-quantile fit q10..q90 proxy -> sheet luma); simulated on the proxy texels: L* 19.4 / 32.6 / 67.8, dark band a* 5.3 b* 6.8, mid 7.4 / 9.3. v2: no eye exclusion (the proxy's old eyes are cut / erased; the grafted head's texture is toned separately, light.head_graft.tone)",
+    "texels_touched": 2545248,
+    "texels_ge_half": 2545248,
+    "median_src_rgb": [
+     79.0,
+     64.0,
+     48.0
+    ],
+    "median_new_rgb": [
+     104.0,
+     82.0,
+     71.0
+    ]
+   },
+   {
+    "name": "tone_copper_cream",
+    "target_rgb": [
+     158.0,
+     125.0,
+     96.0
+    ],
+    "why": "the mid / bright texels (L* >= 40: copper scale tips, belly) re-hued to the sheet's copper hue (sheet L* >= 50 median 181,141,114; chips 188,146,115 / 220,187,156) with their luminance kept (target = the hue 178,140,108 scaled to the selected texels' median luma = 158,125,96, gamma 1). Run 1 (L* >= 52 to 190,154,133) left basecolor b* 12.1 / 15.3 in the L* 40-55 / 55-70 bands vs the sheet 17.9 / 20.1 (the renders read mauve-grey); simulated now (x0.88 AO): L* p10/50/90 16.7 / 32.3 / 67.3, b* 17.7 / 22.9",
+    "texels_touched": 1415253,
+    "texels_ge_half": 1263488,
+    "median_src_rgb": [
+     158.0,
+     124.0,
+     108.0
+    ],
+    "median_new_rgb": [
+     158.0,
+     125.0,
+     96.0
+    ]
+   },
+   {
+    "name": "tone_dark_scale",
+    "target_rgb": [
+     58.0,
+     45.0,
+     41.0
+    ],
+    "why": "the darkest scale texels (L* <= 24) still read yellow after the curve (b* 6.8 vs the sheet 3.9): re-hued to the sheet's dark scale (L* < 25 median 54,41,36; chip 72,57,48), luminance kept (target lifted with the curve); simulated a* 4.7 b* 4.9",
+    "texels_touched": 686707,
+    "texels_ge_half": 539220,
+    "median_src_rgb": [
+     65.0,
+     51.0,
+     44.0
+    ],
+    "median_new_rgb": [
+     58.0,
+     45.0,
+     41.0
+    ]
+   }
+  ],
+  "grid_sha": "9e7dcf9250725faa",
+  "proxy_sha": "6628e443ce446c83"
+ },
+ "proxy_faces_cut": {
+  "faces_removed": 48628,
+  "faces_kept": 142817,
+  "rule": "proxy faces whose centroid lies inside a light.cuts volume leave the bake source (normal / AO / albedo) and the proxy-distance metrics"
+ },
+ "head_graft": {
+  "glb": "design/reference/drakescale_beast/head_graft/head_pixal3d.glb",
+  "glb_sha256": "1d769ddc8e4491d8",
+  "glb_tris": 198770,
+  "glb_verts_welded": 98518,
+  "frame": {
+   "yaw_deg": 37.0,
+   "roll_deg": 6.0,
+   "mid_z": 0.006
+  },
+  "scale": 2.4379,
+  "pitch_deg": -3.559,
+  "place_yz": [
+   -2.1288,
+   5.7045
+  ],
+  "clip_q0": 0.34,
+  "clip_k": 0.03,
+  "k": 0.05,
+  "inflate_u": 0.0116,
+  "body_bbox": [
+   [
+    -0.712,
+    -3.364,
+    4.745
+   ],
+   [
+    0.712,
+    -1.2591,
+    6.5432
+   ]
+  ],
+  "good_half_bbox_x": [
+   0.0,
+   0.712
+  ],
+  "landmarks_body": {
+   "snout_tip": [
+    0.0,
+    -3.3527,
+    5.4264
+   ],
+   "eye": [
+    0.2804,
+    -2.7334,
+    5.6053
+   ],
+   "chin": [
+    0.0,
+    -3.0859,
+    5.0435
+   ]
+  },
+  "occupancy": {
+   "cell": 0.004,
+   "grid": [
+    227,
+    194,
+    207
+   ],
+   "rays": 593597,
+   "inside_cells": 157804,
+   "vote_disagree_cells": 196
+  },
+  "grid_pad": {
+   "lo": [
+    0,
+    1,
+    0
+   ],
+   "hi": [
+    0,
+    0,
+    13
+   ]
+  },
+  "nodes_evaluated": 881118,
+  "grid_nodes_added_inside": 24132,
+  "faces_appended": 160912,
+  "bake_faces_dropped_buried": {
+   "graft": 0,
+   "proxy": 0,
+   "thr_u": 0.06
+  },
+  "bake_faces_dropped_outside": {
+   "graft": 20786,
+   "thr_u": 0.03
+  },
+  "atlas": [
+   2048,
+   4096
+  ],
+  "tone": {
+   "texels": 4194304,
+   "texels_kept_as_generated": 2840,
+   "L_p10_50_90_before": [
+    16.49,
+    25.94,
+    55.57
+   ],
+   "L_p10_50_90_after": [
+    15.4,
+    26.96,
+    65.05
+   ]
+  },
+  "seconds": 9.1,
+  "why": "UNIT V2 NOTE (a), artist 2026-10-17 'Drakescale Beast v1 head note': the proxy's head is crushed (three re-seeds gave the same snout). The orchestrator's head-only Pixal3D mesh from the sheet's HEAD DETAIL panel (seed 56) replaces it: its good half mirrored (a symmetric head, the generated face), scaled / placed on the sheet's side-view head, unioned at the neck",
+  "rule": "head glb -> its own mirror frame -> the good half folded (|q2|) = an exactly symmetric head; one similarity to the sheet side view; SDF smooth-unioned into the grid before the remesh; the good half's triangles + mirror into the bake source with the head texture in an atlas"
+ },
+ "segment_array": {
+  "box": [
+   [
+    -0.95,
+    1.75,
+    1.15
+   ],
+   [
+    0.95,
+    3.45,
+    1.95
+   ]
+  ],
+  "axis": [
+   [
+    0.0,
+    2.4,
+    1.95
+   ],
+   [
+    0.0,
+    2.68,
+    1.15
+   ]
+  ],
+  "segment_length_u": 0.8476,
+  "count": 7,
+  "taper": 0.85,
+  "first_scale": 0.85,
+  "overlap": 0.2,
+  "tip_frac": 0.02,
+  "tip_length": 2.0,
+  "k": 0.03,
+  "cavity_nodes_filled": 17110,
+  "floor_z": 0.0,
+  "curve_length_u": 3.0412,
+  "array_length_u": 2.9367,
+  "tip_point": [
+   0.0,
+   0.4033,
+   0.1165
+  ],
+  "copies": [
+   {
+    "i": 1,
+    "scale": 0.85,
+    "arc_u": 0.0,
+    "start": [
+     0.0,
+     2.68,
+     1.3
+    ],
+    "squashed_to_point": false,
+    "clipped_by_grid": false
+   },
+   {
+    "i": 2,
+    "scale": 0.7225,
+    "arc_u": 0.5764,
+    "start": [
+     0.0,
+     2.6333,
+     0.7364
+    ],
+    "squashed_to_point": false,
+    "clipped_by_grid": false
+   },
+   {
+    "i": 3,
+    "scale": 0.6141,
+    "arc_u": 1.0663,
+    "start": [
+     0.0,
+     2.2392,
+     0.4642
+    ],
+    "squashed_to_point": false,
+    "clipped_by_grid": false
+   },
+   {
+    "i": 4,
+    "scale": 0.522,
+    "arc_u": 1.4827,
+    "start": [
+     0.0,
+     1.8371,
+     0.3571
+    ],
+    "squashed_to_point": false,
+    "clipped_by_grid": false
+   },
+   {
+    "i": 5,
+    "scale": 0.4437,
+    "arc_u": 1.8366,
+    "start": [
+     0.0,
+     1.4892,
+     0.292
+    ],
+    "squashed_to_point": false,
+    "clipped_by_grid": false
+   },
+   {
+    "i": 6,
+    "scale": 0.3771,
+    "arc_u": 2.1375,
+    "start": [
+     0.0,
+     1.1925,
+     0.242
+    ],
+    "squashed_to_point": false,
+    "clipped_by_grid": false
+   },
+   {
+    "i": 7,
+    "scale": 0.3206,
+    "arc_u": 2.3932,
+    "start": [
+     0.0,
+     0.9399,
+     0.202
+    ],
+    "squashed_to_point": true,
+    "clipped_by_grid": false
+   }
+  ],
+  "faces_per_copy": 5686,
+  "faces_appended": 39802,
+  "grid_nodes_added_inside": 43060,
+  "bake_faces_dropped_buried": {
+   "copies": 3565,
+   "proxy": 1573,
+   "thr_u": 0.06
+  },
+  "seconds": 0.9,
+  "why": "v2.1 (artist 2026-10-17 'Drakescale Beast v2 tail note': \"lets just extend and duplicate exisiting tails and end in a point\"): the v1/v2 capsule tube (light.adds + the recolour paint bands) is gone; the tail is the proxy's OWN scaled tail-root segment duplicated. Source = the generated root below the rump (box x +-0.95, y 1.75..3.45, z 1.15..1.95, a ring of pangolin plates x -0.86..0.63 / y 1.75..3.31 clear of the hind legs, dorsal spines on its +y side), axis from the ring centre at z 1.95 (y 2.40) to z 1.15 (y 2.68), 0.85 u. Its hollow skin cavity is filled so the copies are solid plugs. 7 copies along the sheet's side-view tail: centreline traced on the sheet side view through the stage-1 side registration (u = 882.26 + 100 y, v = 803.96 - 100 z): (1137,700) -> (2.55, 1.04), (1140,740) -> (2.58, 0.64), (1105,785) -> (2.23, 0.19), (1060,806) -> (1.78, -0.02), (1000,812) -> (1.18, -0.08), tip (955,821) -> (0.73, -0.17); the drop below the floor (the sheet's perspective) is lifted so each copy rests ON the floor (centre z ~ its half thickness, floor_z 0 flattens the contact). Scale 0.85^i per copy, 20% overlap (each copy's plates shingle over the next), the last copy 2x long with its cross-section ramped to 0.02 = the point",
+  "rule": "the proxy segment in `box` copied N times along `curve` (shortest-arc turn onto each chord, uniform scale taper^i, the last copy's cross-section ramped to tip_frac = a point); each copy's pulled-back SDF smooth-unioned into the grid before the remesh; its faces + UVs appended to the bake source; bake faces buried on both sides dropped; originals untouched"
+ },
+ "high": {
+  "tris": 3638464,
+  "verts": 1818326,
+  "specks_dropped": {
+   "pieces": 32,
+   "kept": 1,
+   "dropped_verts": 1676
+  },
+  "open_edges": 0,
+  "nonmanifold_edges": 0,
+  "rule": "marching tets of the whole remesh grid (no mirror)",
+  "seconds": 18.2
+ },
+ "low": {
+  "method": "collapse decimation: uniform to 300000, then 18000 with the dense boxes calibrated",
+  "pre_tris": 300000,
+  "tris": 18000,
+  "verts": 8094,
+  "specks": {
+   "pieces": 1,
+   "kept": 1,
+   "dropped_verts": 0
+  },
+  "open_edges": 0,
+  "nonmanifold_edges": 0,
+  "dense": {
+   "density": 2.5,
+   "box_area_frac": 0.2081,
+   "target_tri_share": 0.3966,
+   "got_tri_share": 0.3969,
+   "factor_log10": -0.406,
+   "trials": [
+    [
+     -7.0,
+     0.3572
+    ],
+    [
+     -3.0,
+     0.3563
+    ],
+    [
+     -1.0,
+     0.3646
+    ],
+    [
+     0.0,
+     0.4544
+    ],
+    [
+     -0.5,
+     0.3877
+    ],
+    [
+     -0.25,
+     0.4157
+    ],
+    [
+     -0.375,
+     0.3987
+    ],
+    [
+     -0.438,
+     0.3938
+    ],
+    [
+     -0.406,
+     0.3969
+    ],
+    [
+     -0.422,
+     0.3954
+    ]
+   ],
+   "rule": "dense boxes weighted 0.02 (vs 1) in the collapse decimation; the factor bisected until the boxes hold density x the rest's triangles per area"
+  },
+  "low_to_proxy": {
+   "mean": 0.01676,
+   "p99": 0.03895,
+   "max": 0.09212
+  },
+  "proxy_to_low_sampled": {
+   "mean": 0.01663,
+   "p99": 0.05836,
+   "max": 0.59317
+  },
+  "p99_over_height": 0.00807,
+  "seconds": 85.6
+ },
+ "regions_faces": {
+  "proxy_albedo": 18000
+ },
+ "albedo_source": {
+  "texture": "tex_0",
+  "size": [
+   4096,
+   2048
+  ],
+  "faces_textured": 317607,
+  "faces": 317607
+ },
+ "ao_fill": {
+  "below": 0.04,
+  "texels_filled": 14789,
+  "of_covered": 1026290,
+  "rings": 7,
+  "left_to_mean": 0,
+  "rule": "AO < below = a bake origin inside the proxy soup: refilled from the covered valid 3x3 neighbours ring by ring (opt-in light.ao_fill_below)"
+ },
+ "bake": {
+  "reference": "flat",
+  "source": "the proxy mesh itself (not the remesh)",
+  "NORMAL": {
+   "result": [
+    "FINISHED"
+   ],
+   "seconds": 0.8
+  },
+  "ao_distance": {
+   "u": 0.2,
+   "world_default": 10.0
+  },
+  "AO": {
+   "result": [
+    "FINISHED"
+   ],
+   "seconds": 5.5
+  },
+  "EMIT": {
+   "result": [
+    "FINISHED"
+   ],
+   "seconds": 4.6
+  },
+  "ao_source": "the low itself (opt-in light.ao_from_low), 64 samples",
+  "cage_extrusion": 0.1751,
+  "resolution": {
+   "normal": 1024,
+   "ao": 1024,
+   "albedo": 2048
+  },
+  "high_tris": 317607,
+  "normal_coverage_pct": 95.41,
+  "albedo_coverage_pct": 93.43,
+  "normal_detail_fraction_dev_gt_0.05": 0.8765,
+  "ao_mean": 0.7356,
+  "pixel_sha": {
+   "normal": "e50819aa3d48dcda",
+   "ao": "a46ec73f5389868e",
+   "albedo": "86d5434a6b3aad5b"
+  },
+  "seconds": 13.2
+ },
+ "repose": {
+  "auto_chains": {},
+  "bones": [
+   "hips",
+   "belly",
+   "chest",
+   "neck",
+   "head",
+   "arm.L.0",
+   "arm.L.1",
+   "arm.L.2",
+   "arm.R.0",
+   "arm.R.1",
+   "arm.R.2",
+   "leg.L.0",
+   "leg.L.1",
+   "leg.L.2",
+   "leg.R.0",
+   "leg.R.1",
+   "leg.R.2",
+   "tail.0",
+   "tail.1",
+   "tail.2",
+   "tail.3",
+   "tail.4",
+   "tail.5",
+   "tail.6"
+  ],
+  "rigid": [
+   {
+    "bone": "head",
+    "verts_rigid": 1136,
+    "verts_ramped": 304,
+    "margin_u": 0.3
+   }
+  ],
+  "targets": [
+   {
+    "target": [
+     "arm"
+    ],
+    "heading": "mirror-symmetric",
+    "bones": [
+     {
+      "bone": "arm.L.0",
+      "turn_deg": 21.463,
+      "length_scale": 1.018,
+      "root_move_u": 0.0
+     },
+     {
+      "bone": "arm.L.1",
+      "turn_deg": 4.396,
+      "length_scale": 1.0285,
+      "root_move_u": null
+     },
+     {
+      "bone": "arm.L.2",
+      "turn_deg": 1.527,
+      "length_scale": 0.9696,
+      "root_move_u": null
+     },
+     {
+      "bone": "arm.R.0",
+      "turn_deg": 18.698,
+      "length_scale": 0.8802,
+      "root_move_u": 0.0
+     },
+     {
+      "bone": "arm.R.1",
+      "turn_deg": 4.442,
+      "length_scale": 0.9827,
+      "root_move_u": null
+     },
+     {
+      "bone": "arm.R.2",
+      "turn_deg": 1.625,
+      "length_scale": 1.0316,
+      "root_move_u": null
+     }
+    ],
+    "lift": null,
+    "legs": [
+     {
+      "chain": "arm",
+      "match": "mean",
+      "joints_before": {
+       "L": [
+        [
+         1.0,
+         -1.05,
+         2.9
+        ],
+        [
+         1.16,
+         -0.8,
+         1.4
+        ],
+        [
+         0.92,
+         -1.0,
+         0.5
+        ],
+        [
+         1.0,
+         -1.6,
+         0.1
+        ]
+       ],
+       "R": [
+        [
+         -1.0,
+         -1.05,
+         2.9
+        ],
+        [
+         -1.15,
+         -1.95,
+         1.4
+        ],
+        [
+         -0.95,
+         -2.3,
+         0.5
+        ],
+        [
+         -1.0,
+         -2.85,
+         0.1
+        ]
+       ]
+      },
+      "joints_after": {
+       "L": [
+        [
+         1.0,
+         -1.05,
+         2.9
+        ],
+        [
+         1.155,
+         -1.375,
+         1.3856
+        ],
+        [
+         0.935,
+         -1.65,
+         0.4712
+        ],
+        [
+         1.0,
+         -2.225,
+         0.0712
+        ]
+       ],
+       "R": [
+        [
+         -1.0,
+         -1.05,
+         2.9
+        ],
+        [
+         -1.155,
+         -1.375,
+         1.3972
+        ],
+        [
+         -0.935,
+         -1.65,
+         0.4944
+        ],
+        [
+         -1.0,
+         -2.225,
+         0.0944
+        ]
+       ]
+      },
+      "mirror_joint_err_before_u": [
+       0.0,
+       1.15,
+       1.3003,
+       1.25
+      ],
+      "mirror_joint_err_after_u": [
+       0.0,
+       0.0116,
+       0.0232,
+       0.0232
+      ],
+      "foot_min_z_before_u": {
+       "L": 0.0215,
+       "R": 0.0059
+      },
+      "foot_min_z_after_u": {
+       "L": -0.0,
+       "R": -0.0
+      },
+      "plant_iters": [
+       {
+        "L": -0.02971,
+        "R": -0.0057
+       },
+       {
+        "L": 0.00096,
+        "R": 0.00011
+       },
+       {
+        "L": -3e-05,
+        "R": -0.0
+       },
+       {
+        "L": 0.0,
+        "R": 0.0
+       }
+      ],
+      "bones": [
+       {
+        "bone": "arm.L.0",
+        "turn_deg": 21.463,
+        "length_scale": 1.018,
+        "root_move_u": 0.0
+       },
+       {
+        "bone": "arm.L.1",
+        "turn_deg": 4.396,
+        "length_scale": 1.0285,
+        "root_move_u": null
+       },
+       {
+        "bone": "arm.L.2",
+        "turn_deg": 1.527,
+        "length_scale": 0.9696,
+        "root_move_u": null
+       },
+       {
+        "bone": "arm.R.0",
+        "turn_deg": 18.698,
+        "length_scale": 0.8802,
+        "root_move_u": 0.0
+       },
+       {
+        "bone": "arm.R.1",
+        "turn_deg": 4.442,
+        "length_scale": 0.9827,
+        "root_move_u": null
+       },
+       {
+        "bone": "arm.R.2",
+        "turn_deg": 1.625,
+        "length_scale": 1.0316,
+        "root_move_u": null
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "target": [
+     "leg"
+    ],
+    "heading": "mirror-symmetric",
+    "bones": [
+     {
+      "bone": "leg.L.0",
+      "turn_deg": 2.403,
+      "length_scale": 1.0504,
+      "root_move_u": 0.0
+     },
+     {
+      "bone": "leg.L.1",
+      "turn_deg": 6.896,
+      "length_scale": 1.3088,
+      "root_move_u": null
+     },
+     {
+      "bone": "leg.L.2",
+      "turn_deg": 2.602,
+      "length_scale": 0.9634,
+      "root_move_u": null
+     },
+     {
+      "bone": "leg.R.0",
+      "turn_deg": 1.215,
+      "length_scale": 1.0986,
+      "root_move_u": 0.0
+     },
+     {
+      "bone": "leg.R.1",
+      "turn_deg": 5.474,
+      "length_scale": 0.9776,
+      "root_move_u": null
+     },
+     {
+      "bone": "leg.R.2",
+      "turn_deg": 2.801,
+      "length_scale": 1.0371,
+      "root_move_u": null
+     }
+    ],
+    "lift": null,
+    "legs": [
+     {
+      "chain": "leg",
+      "match": "mean",
+      "joints_before": {
+       "L": [
+        [
+         0.85,
+         0.75,
+         2.8
+        ],
+        [
+         0.7,
+         1.05,
+         1.4
+        ],
+        [
+         0.68,
+         1.1,
+         0.65
+        ],
+        [
+         0.6,
+         0.3,
+         0.35
+        ]
+       ],
+       "R": [
+        [
+         -0.85,
+         0.75,
+         2.8
+        ],
+        [
+         -0.78,
+         1.0,
+         1.4
+        ],
+        [
+         -0.8,
+         0.85,
+         0.35
+        ],
+        [
+         -0.8,
+         0.1,
+         0.08
+        ]
+       ]
+      },
+      "joints_after": {
+       "L": [
+        [
+         0.85,
+         0.75,
+         2.8
+        ],
+        [
+         0.74,
+         1.025,
+         1.3171
+        ],
+        [
+         0.74,
+         0.975,
+         0.3343
+        ],
+        [
+         0.7,
+         0.2,
+         0.0493
+        ]
+       ],
+       "R": [
+        [
+         -0.85,
+         0.75,
+         2.8
+        ],
+        [
+         -0.74,
+         1.025,
+         1.2641
+        ],
+        [
+         -0.74,
+         0.975,
+         0.2282
+        ],
+        [
+         -0.7,
+         0.2,
+         -0.0568
+        ]
+       ]
+      },
+      "mirror_joint_err_before_u": [
+       0.0,
+       0.0943,
+       0.4085,
+       0.391
+      ],
+      "mirror_joint_err_after_u": [
+       0.0,
+       0.053,
+       0.1061,
+       0.1061
+      ],
+      "foot_min_z_before_u": {
+       "L": 0.2525,
+       "R": 0.1486
+      },
+      "foot_min_z_after_u": {
+       "L": 0.0001,
+       "R": 0.0
+      },
+      "plant_iters": [
+       {
+        "L": -0.14152,
+        "R": -0.27675
+       },
+       {
+        "L": -0.02072,
+        "R": 0.00501
+       },
+       {
+        "L": -0.00304,
+        "R": -9e-05
+       },
+       {
+        "L": -0.00044,
+        "R": 0.0
+       }
+      ],
+      "bones": [
+       {
+        "bone": "leg.L.0",
+        "turn_deg": 2.403,
+        "length_scale": 1.0504,
+        "root_move_u": 0.0
+       },
+       {
+        "bone": "leg.L.1",
+        "turn_deg": 6.896,
+        "length_scale": 1.3088,
+        "root_move_u": null
+       },
+       {
+        "bone": "leg.L.2",
+        "turn_deg": 2.602,
+        "length_scale": 0.9634,
+        "root_move_u": null
+       },
+       {
+        "bone": "leg.R.0",
+        "turn_deg": 1.215,
+        "length_scale": 1.0986,
+        "root_move_u": 0.0
+       },
+       {
+        "bone": "leg.R.1",
+        "turn_deg": 5.474,
+        "length_scale": 0.9776,
+        "root_move_u": null
+       },
+       {
+        "bone": "leg.R.2",
+        "turn_deg": 2.801,
+        "length_scale": 1.0371,
+        "root_move_u": null
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "target": [
+     "neck",
+     "head"
+    ],
+    "heading": "-y",
+    "amount": 1.0,
+    "bones": [
+     {
+      "bone": "neck",
+      "yaw_deg": 0.0,
+      "heading_before_deg": -90.0,
+      "horizontal_frac": 0.316
+     },
+     {
+      "bone": "head",
+      "yaw_deg": 0.0,
+      "heading_before_deg": -90.0,
+      "horizontal_frac": 0.996
+     }
+    ],
+    "lift": null,
+    "joints_before": [
+     [
+      0.0,
+      -1.5,
+      4.1
+     ],
+     [
+      0.0,
+      -1.9,
+      5.3
+     ],
+     [
+      0.0,
+      -3.35,
+      5.43
+     ]
+    ],
+    "joints_after": [
+     [
+      0.0,
+      -1.5,
+      4.1
+     ],
+     [
+      0.0,
+      -1.9,
+      5.3
+     ],
+     [
+      0.0,
+      -3.35,
+      5.43
+     ]
+    ]
+   }
+  ],
+  "moved_bones": [
+   "arm.L.0",
+   "arm.L.1",
+   "arm.L.2",
+   "arm.R.0",
+   "arm.R.1",
+   "arm.R.2",
+   "leg.L.0",
+   "leg.L.1",
+   "leg.L.2",
+   "leg.R.0",
+   "leg.R.1",
+   "leg.R.2"
+  ],
+  "verts_moved": 3610,
+  "max_displacement_u": 0.7027,
+  "stretch_all": {
+   "edges_moved": 12319,
+   "max": 2.3292,
+   "p99": 1.3695,
+   "p999": 1.8626,
+   "min": 0.2956,
+   "over_1.25": 242,
+   "under_0.8": 100,
+   "max_at_u": [
+    0.084,
+    -0.475,
+    1.422
+   ],
+   "rule": "edge length after / before the repose, edges with a moved vertex"
+  },
+  "rigid_check": [
+   {
+    "bone": "head",
+    "verts": 1136,
+    "max_dev_from_rigid_u": 0.0
+   }
+  ],
+  "rule": "LBS with the contract rig's weights (+ rigid pins), yaw-only straightening (+ lift), applied as rest",
+  "stretch_arm": {
+   "edges_moved": 6094,
+   "max": 2.3292,
+   "p99": 1.4624,
+   "p999": 1.9186,
+   "min": 0.7104,
+   "over_1.25": 173,
+   "under_0.8": 29,
+   "max_at_u": [
+    0.084,
+    -0.475,
+    1.422
+   ],
+   "rule": "edge length after / before the repose, edges with a moved vertex"
+  },
+  "stretch_leg": {
+   "edges_moved": 6543,
+   "max": 1.9851,
+   "p99": 1.3707,
+   "p999": 1.8563,
+   "min": 0.2956,
+   "over_1.25": 135,
+   "under_0.8": 72,
+   "max_at_u": [
+    0.829,
+    -0.478,
+    1.557
+   ],
+   "rule": "edge length after / before the repose, edges with a moved vertex"
+  },
+  "stretch_neck_head": {
+   "edges_moved": 1325,
+   "max": 1.405,
+   "p99": 1.2846,
+   "p999": 1.3892,
+   "min": 0.7611,
+   "over_1.25": 26,
+   "under_0.8": 3,
+   "max_at_u": [
+    -1.145,
+    -1.746,
+    3.322
+   ],
+   "rule": "edge length after / before the repose, edges with a moved vertex"
+  },
+  "self_intersections": {
+   "before": {
+    "all": 370,
+    "moved_region": 146
+   },
+   "after": {
+    "all": 399,
+    "moved_region": 148
+   },
+   "rule": "intersecting triangle pairs sharing no vertex (BVH overlap)"
+  },
+  "mirror_before": {
+   "plane_x_u": 0.0,
+   "max_u": 1.31238,
+   "p99_u": 0.95642,
+   "p90_u": 0.32513,
+   "mean_u": 0.11298,
+   "rule": "every vertex mirrored in X about the plane -> distance to the nearest surface (0 = exactly symmetric)"
+  },
+  "mirror_after": {
+   "plane_x_u": 0.0,
+   "max_u": 0.4702,
+   "p99_u": 0.29211,
+   "p90_u": 0.13387,
+   "mean_u": 0.05019,
+   "rule": "every vertex mirrored in X about the plane -> distance to the nearest surface (0 = exactly symmetric)"
+  },
+  "seconds": 0.3
+ },
+ "centre_shift": [
+  -0.016208,
+  -0.01607,
+  -0.033608
+ ],
+ "floor": {
+  "min_z_after_repose_u": -0.03361,
+  "rule": "stage 1 floored the FEET at z 0; the centring puts the lowest point at 0"
+ },
+ "regions_area_share": {
+  "proxy_albedo": 1.0
+ },
+ "facing": {
+  "rule": "shell centroid -> the front-most midline point of the shell (proxy finish default)",
+  "anchor": [
+   0.0,
+   -0.0392,
+   2.704
+  ],
+  "landmark": [
+   0.0068,
+   -3.3586,
+   5.4949
+  ],
+  "angle_from_minusY_deg": 0.118
+ },
+ "tris": {
+  "total": 18000,
+  "shell": 18000
+ },
+ "open_edges": {
+  "per_island": {
+   "shell": 0
+  },
+  "total": 0,
+  "nonmanifold_edges": 0,
+  "rule": "the watertight remesh, decimated (closed)"
+ },
+ "measure": {
+  "bbox": [
+   [
+    -1.6928,
+    -3.3586,
+    0.0
+   ],
+   [
+    1.6928,
+    3.3586,
+    6.5976
+   ]
+  ],
+  "height": 6.5976,
+  "width_x": 3.3855,
+  "depth_y": 6.7173,
+  "export_cell_fit_report_only": {
+   "scale": 0.27283
+  }
+ },
+ "finish": {
+  "open_edges": 0,
+  "tris": 18000,
+  "mirror": {
+   "plane_x_u": 0.0,
+   "max_u": 0.46195,
+   "p99_u": 0.28536,
+   "p90_u": 0.12094,
+   "mean_u": 0.04758,
+   "rule": "every vertex mirrored in X about the plane -> distance to the nearest surface (0 = exactly symmetric)"
+  },
+  "tri_budget": [
+   8000,
+   22000
+  ],
+  "in_budget": true,
+  "mode": "light"
+ },
+ "focus_face_centre": [
+  0.0282,
+  -2.5715,
+  5.6703
+ ],
+ "digest_geometry_colour_uv": "0458fc472a146269",
+ "palette": {
+  "default": {
+   "proxy_albedo": {
+    "rgb": [
+     255,
+     255,
+     255
+    ]
+   }
+  },
+  "files": [
+   "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\palettes\\drakescale_beast\\default.json"
+  ]
+ }
+}

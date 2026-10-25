@@ -1,0 +1,21 @@
+# ember_rex_2 STATE (v2b, 2026-10-17)
+
+- Version: v2b = the REGENERATED Pixal3D proxy (symmetric views, seed 56, sha c36d9494; the v1 3/4 proxy is in design/reference/ember_rex_2/proxy_v1_3q/, unused), LIGHT finish (proxy_finish.py; config improve/ember_rex_2_finish.json). DIGEST 3bbe725bb09fd04e (twin identical, bake diffs 0 texels). v1 (sha 5f069737, DIGEST 5c93bfd09f119422) superseded.
+- Spec: design/review-log.md "2026-10-16 — NEW UNITS x14" (EMBER REX 2), "2026-10-17 — Batch x15 v1 verdict" (symmetric rest pose) and "2026-10-17 — Ember Rex 2 v1 notes" (eye; fire contrast); lane brief sections V2 / V2b.
+- Symmetry: none needed. Raw proxy vertex mirror p99 about x 0: head (z > 4.8) 0.037 u, body 0.040 u (v1 1.02 u). Final low: head 0.028 u, body 0.037 u, build mirror p99 0.036 u. No repose, no yaw, no geometry symmetrise.
+- What the finish changed (geometry untouched apart from the light remesh / decimation):
+  - frame: kept as generated. No side-length fit (-2.5 %, inside the 5 % gate), no refloor (both talons on z 0), no rescale (6.81 u; sheet front 6.69 / side 7.21), no midline shift. v1's cuts / floor_lift dropped (they were for the old proxy; the new one has no stand-off paper panels outside the head / neck flames).
+  - tone (texture only, recolour3d, in order): neck cream (the proxy's mauve throat -> 232,176,134, spheres along the neck front); fire hottest-first: cores L* >= 74 -> 255,236,165, yellow L* 61..74 -> 255,198,85, orange L* 44..61 -> 255,128,42; collar band + crest: red-orange L* 32..44 -> 240,96,36 (flame); body L* 6..46 -> muted 84,28,30 (gamma 0.6). Black proxy outlines (L* < 6) as generated.
+  - eyes: one tilted-almond design (dark rim 34,16,14 / iris 255,186,58 / hot centre 255,214,104 / pupil 26,10,8; 0.144 x 0.088 u) at the sheet position (y -2.32, z 5.39), projected onto each side's head surface (x -0.184 / +0.184). Eye dense boxes.
+  - glow: flame_core 255,232,160 x 0.85, flame_tips 255,190,80 x 0.55, flame_base 253,124,50 x 0.3, leg_cracks 255,130,50 x 0.7; body unlit. Faces 210 / 473 / 1937 / 60 = 2680 of 18000 (14.9 %), area 15.9 %.
+  - rig: spine + mirrored wing / leg chains on x 0; a 4-bone tail chain resting centred (x 0).
+- Tone numbers (baked basecolor = albedo x AO): fire L* p50 67.8, C* 70.2 (243,137,45); body L* p50 16.8, C* 27.2 (75,24,25). v1: fire 69.4 / 59.9, body 28.2 / 47.3.
+- LOCKED: nothing yet (awaiting the artist).
+- Knobs: palettes/ember_rex_2/default.json flame_* emission_scale; recolour3d body_muted target (84,28,30) and the fire tier targets; eye spec sizes (gen in the config, eye_*_rim / iris / core / pupil spheres); collar / crest boxes; neck_cream on/off.
+- Open for the artist:
+  - movement + height (clips PLACEHOLDER).
+  - per-face glow on a flat-shaded low reads as faceted shards up close (the glow is one emission colour per face; kit behaviour). Scales lowered after run 1 (0.6 / 0.9 / 1.0) for that reason.
+  - the proxy's black feather outlines (crest, wings) kept as generated; the tail feathers are mostly dark in the proxy texture (only their bright tips became fire).
+  - cream neck is a recolour of the proxy's mauve throat (sheet: cream neck), drawn from the proxy, not the sheet outline.
+  - kit gap: `focus.views` (render-script close-up angles) crashes the light build (proxy_finish_light.py run_light: every focus entry is treated as a box); the angles are kept in focus_closeup_views and the close-ups rendered after the run.
+- Unit gates: digest twins, bake gate, contract checks (cell_fit report-only), compose GATE lines, proxy_finish.py gate + panel (renders/ember_rex_2/ember_rex_2_finish_panel.png), close-ups renders/ember_rex_2/ember_rex_2_v2b_{head_front,head_side,collar,wing,tail}.png + v1 vs v2b sheet ember_rex_2_v2b_closeups.png.

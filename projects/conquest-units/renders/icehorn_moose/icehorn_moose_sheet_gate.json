@@ -1,0 +1,42 @@
+{
+ "unit": "icehorn_moose",
+ "views": {
+  "front": {
+   "iou": 0.7706,
+   "iou_shape": 0.7002,
+   "aspect_rel": 0.0052,
+   "row_err_u": 0.203,
+   "row_err_pct": 8.7,
+   "w_u": 3.1,
+   "h_u": 6.69,
+   "ref_w_u": 3.13,
+   "ref_h_u": 6.79,
+   "iou_in_frame": 0.7702,
+   "row_err_pct_in_frame": 8.7,
+   "proxy_iou": 0.8331,
+   "flag": true
+  },
+  "side": {
+   "iou": 0.7993,
+   "iou_shape": 0.7923,
+   "aspect_rel": 0.0217,
+   "row_err_u": 0.386,
+   "row_err_pct": 10.4,
+   "w_u": 4.67,
+   "h_u": 6.69,
+   "ref_w_u": 4.63,
+   "ref_h_u": 6.78,
+   "iou_in_frame": 0.7983,
+   "row_err_pct_in_frame": 10.4,
+   "proxy_iou": 0.8662,
+   "flag": true
+  }
+ },
+ "proxy_sha256": "c254679c863dc92d9fa9b472291040778990e7779e8b2e93016de670ab457a2e",
+ "proxy_gate": "reliable",
+ "flagged": [
+  "front",
+  "side"
+ ],
+ "mean_iou": 0.785
+}

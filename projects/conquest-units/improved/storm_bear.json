@@ -1,0 +1,2004 @@
+{
+ "unit": "storm_bear",
+ "conquest_character_id": "storm_bear",
+ "tier": "regular",
+ "tri_budget": [
+  8000,
+  22000
+ ],
+ "pattern": "proxy finish LIGHT (proxy_finish.py stage_light + proxy_finish_light.py): the frozen Pixal3D sheet proxy kept as generated (geometry + texture), made watertight, decimated, baked, optionally reposed with bones",
+ "config": {
+  "unit": "storm_bear",
+  "char_id": "storm_bear",
+  "tier": "regular",
+  "tri_budget": [
+   8000,
+   22000
+  ],
+  "body_tris": 18000,
+  "mode": "light",
+  "refloor": {
+   "y_windows": [
+    [
+     -1.1,
+     1.3
+    ]
+   ],
+   "x_abs_min": 0.3,
+   "pct": 0.0,
+   "rescale_to_front_height": true,
+   "why": "sheet_proxy already floored the FEET (the crystal toe claws: z 0.00..0.05 at |x| 0.3..1.85, y -1.04..0.82; no tail / hem below them): the window only confirms the foot contact (z0 0.0) and rescales x(6.74 / 6.676) = 1.0096 to the sheet front height"
+  },
+  "light": {
+   "steps_per_height": 300,
+   "dense": [
+    {
+     "box": [
+      [
+       -0.95,
+       -1.85,
+       5.15
+      ],
+      [
+       1.15,
+       0.35,
+       6.8
+      ]
+     ],
+     "density": 2.5,
+     "vg_weight": 0.3,
+     "why": "the head / face: ears, brow, glowing eyes, nose, muzzle, mouth line (proxy slabs z 5.2..6.7 after the refloor: head x -0.95..1.10 above the fur ring, y -1.77 (snout, landmark front_most z 5.47 x1.0096) ..0.35; sha 4b3d3ed2); vg_weight 0.3 so the eye boxes below can sit denser"
+    },
+    {
+     "box": [
+      [
+       -0.2,
+       -1.65,
+       5.75
+      ],
+      [
+       0.06,
+       -1.3,
+       6.12
+      ]
+     ],
+     "density": 2.5,
+     "vg_weight": 0.0,
+     "why": "the -x eye (proxy cyan texels x -0.127..-0.004, y -1.525..-1.443, z 5.82..6.05, centre -0.068, -1.497, 5.925) held denser so the glow lands on the eye faces, not the brow fur (vulture_creature lesson)"
+    },
+    {
+     "box": [
+      [
+       0.17,
+       -1.62,
+       5.75
+      ],
+      [
+       0.44,
+       -1.27,
+       6.12
+      ]
+     ],
+     "density": 2.5,
+     "vg_weight": 0.0,
+     "why": "the +x eye (cyan texels x 0.242..0.363, y -1.496..-1.413, z 5.83..6.04, centre 0.306, -1.469, 5.919), as the -x one"
+    }
+   ],
+   "ao_from_low": true,
+   "ao_samples": 64,
+   "ao_why": "AO baked on the watertight low itself: the proxy's fur shards / crystal plates are inner shells that black-hole AO rays (crystal_canine / vulture_creature / frost_calf lesson)",
+   "ao_distance": 0.2,
+   "ao_distance_why": "run 1 at 0.45 u (frost_calf value): the fur ring's shard soup took AO to median 0.62 (charcoal fur 0.40, white 0.72; p10 0.07): basecolor charcoal L* 23 / white 70 vs the sheet 33 / 81. 0.2 u (about one fur-shard length) keeps the real crevices (arm pits, between the legs, under the ring) and drops the broad darkening",
+   "bake_drop_interior": 0.08,
+   "bake_drop_interior_why": "proxy faces with solid on both sides (inner fur / crystal shells) left out of the bake source so the cage stays tight and rays hit the outer skin",
+   "recolour3d": [
+    {
+     "name": "crystals",
+     "boxes": [
+      [
+       [
+        -2.3,
+        -2.0,
+        -0.1
+       ],
+       [
+        2.3,
+        2.0,
+        7.0
+       ]
+      ]
+     ],
+     "exclude": [
+      [
+       [
+        -2.3,
+        -2.0,
+        5.25
+       ],
+       [
+        2.3,
+        2.0,
+        7.0
+       ]
+      ]
+     ],
+     "feather": 0.05,
+     "select": {
+      "b": [
+       -100,
+       -20
+      ],
+      "soft": 3
+     },
+     "target_rgb": [
+      116,
+      146,
+      222
+     ],
+     "detail_gamma": 0.9,
+     "detail_clip": [
+      0.45,
+      1.6
+     ],
+     "why": "unit note: the crystals read dull. Proxy crystal texels (b* < -20, 6.1 % of the surface: chest, arms, legs, hand + toe claws) median 85,109,159 (L* 46, b* -27) vs the sheet crystals (front / side view b* < -20: median 112,141,213, L* 59, a* 7.5, b* -34; p10..p90 L* 39..78). Blue texels (b* <= -20, soft to -17; run 1 at -17 also turned the faintly blue-shaded flank fur (b* -14..-20, only 50 % of it within 0.06 u of a real crystal) into vivid crystal, scattering blue facets over the side view) to the sheet crystal hue with the facets kept (gamma 0.9; highlights may go to 1.6x so the lightning cores read pale cyan-white like the sheet's p90 166,199,250). Sim on the proxy samples: L* p10/50/90 40/61/81. The head (z >= 5.25) is excluded: no crystals there on the sheet, and the eyes / pale brow streaks stay as generated (face as generated)"
+    },
+    {
+     "name": "fur",
+     "boxes": [
+      [
+       [
+        -2.3,
+        -2.0,
+        -0.1
+       ],
+       [
+        2.3,
+        2.0,
+        7.0
+       ]
+      ]
+     ],
+     "feather": 0.05,
+     "select": {
+      "b": [
+       -16,
+       100
+      ],
+      "soft": 3
+     },
+     "target_rgb": [
+      134,
+      136,
+      145
+     ],
+     "detail_gamma": 0.743,
+     "detail_clip": [
+      0.3,
+      1.65
+     ],
+     "why": "unit note: the proxy reads darker than the sheet, and it is the TEXTURE, not the panel lighting: proxy white fur (L* > 55) median 175,177,183 (L* 72) vs the sheet 194..199,200..202,203..204 (L* 78..81, p25..p75 70..83); proxy charcoal fur (L* < 40) 51,48,50 (L* 20) vs the sheet 76..77,74..76,85..88 (L* 32..33). Both furs share one cool-neutral hue on the sheet, so ONE tone curve (no white / charcoal split, so no posterised border): luma' = target x (luma / median)^0.743, the exponent fitted so proxy charcoal luma 49 -> 77 and white 177 -> 200 (+~7 % for the AO multiply; run 1 target 130,132,141 left the baked albedo white fur at L* p75 82 but basecolor median 70); highlights capped at 1.65x. Sim on the proxy samples: white L* p25/50/75 76/83/87, charcoal L* 31/34/39 (sheet 70/81/83, 33). Selects b* >= -16 (soft to -19), meeting the crystal pass; the crystal texels (now b* < -30) are not selected; the cyan eyes (b* -29..-39) keep their colour"
+    }
+   ],
+   "glow3d": [
+    {
+     "name": "eyes",
+     "boxes": [
+      [
+       [
+        -0.15,
+        -1.56,
+        5.8
+       ],
+       [
+        0.02,
+        -1.41,
+        6.07
+       ]
+      ],
+      [
+       [
+        0.22,
+        -1.53,
+        5.81
+       ],
+       [
+        0.39,
+        -1.38,
+        6.06
+       ]
+      ]
+     ],
+     "feather": 0.02,
+     "select": {
+      "b": [
+       -100,
+       -15
+      ],
+      "soft": 3
+     },
+     "levels": [
+      [
+       0.5,
+       "eye_glow"
+      ]
+     ],
+     "why": "sheet: GLOWING BLUE EYES: faces of the proxy's cyan eye texels (boxes = the texel extents + 0.02 u, after the x1.0096 rescale) whose baked albedo is blue (b* < -15; the white brow fur is b* -6) -> region eye_glow (emission = the sheet eye core, brightest quarter 119..144,163..188,231..240)"
+    },
+    {
+     "name": "crystal_core",
+     "boxes": [
+      [
+       [
+        -2.3,
+        -2.0,
+        -0.1
+       ],
+       [
+        2.3,
+        2.0,
+        7.0
+       ]
+      ]
+     ],
+     "exclude": [
+      [
+       [
+        -2.3,
+        -2.0,
+        5.25
+       ],
+       [
+        2.3,
+        2.0,
+        7.0
+       ]
+      ]
+     ],
+     "feather": 0.05,
+     "select": {
+      "L": [
+       70,
+       101
+      ],
+      "b": [
+       -100,
+       -24
+      ],
+      "soft": 3
+     },
+     "levels": [
+      [
+       0.5,
+       "crystal_core"
+      ]
+     ],
+     "why": "sheet: 'lightning contained within crystals', the internal glow, no external arcs: the brightest crystal faces (baked L* >= 70 and b* <= -24, the top quarter of the recoloured crystals: the lightning cores) -> crystal_core (emission = the sheet's 6th chip, the bright cyan 46,193,253, not auto-found by intake; sampled at chip px 1611,868)"
+    },
+    {
+     "name": "crystal_body",
+     "boxes": [
+      [
+       [
+        -2.3,
+        -2.0,
+        -0.1
+       ],
+       [
+        2.3,
+        2.0,
+        7.0
+       ]
+      ]
+     ],
+     "exclude": [
+      [
+       [
+        -2.3,
+        -2.0,
+        5.25
+       ],
+       [
+        2.3,
+        2.0,
+        7.0
+       ]
+      ]
+     ],
+     "feather": 0.05,
+     "select": {
+      "b": [
+       -100,
+       -24
+      ],
+      "soft": 3
+     },
+     "levels": [
+      [
+       0.5,
+       "crystal_glow"
+      ]
+     ],
+     "why": "the rest of the crystal faces (chest, arms, legs, hand + toe claws: baked b* <= -24, so only clearly blue crystal faces emit, not the blended crystal / fur border faces) -> crystal_glow (emission = the sheet's deep crystal chip 61,106,244, low scale: a translucent inner glow, the faceted albedo still reads)"
+    }
+   ],
+   "ao_fill_below": 0.04,
+   "ao_fill_why": "run 1: 10 % of the AO texels under 0.07 (bake origins inside the fur soup, the dark blotches on the face in the head close-up): texels under 0.04 refilled from valid neighbours (vulture_creature / sand_drill_worm idiom)",
+   "uv_island_margin": 0.001,
+   "uv_island_margin_why": "run 2: the fur-shard low unwraps into ~3970 islands; at the default margin the atlas held 10.2 % texels (check uv_health coverage 0.102), the albedo blurred into blotches: margin 0.001 (vulture_creature idiom)",
+   "belly": {
+    "centre": [
+     0.0,
+     0.55,
+     2.8
+    ],
+    "z_radius": [
+     0.75,
+     0.8
+    ],
+    "push_front": 0.38,
+    "y_full": 1.0,
+    "front_x_radius": 1.6,
+    "push_side": 0.17,
+    "x_full": 0.9,
+    "side_back_ramp": [
+     0.6,
+     1.2
+    ],
+    "exclude": [
+     "leg"
+    ],
+    "swing": [
+     "arm"
+    ],
+    "swing_gain": 1.0,
+    "measure_z": [
+     2.55,
+     2.8,
+     3.05
+    ],
+    "why": "artist 2026-10-17: 'can we make storm bear fatter, bigger belly' (orchestrator: ~15-20 % more belly depth in the side view and width in the front view, most at the navel). Navel cz 2.8 = the middle of the belly dip on the low (belly front y -0.61 at z 2.5..3.1 vs -0.80 at the chest z 3.3 and the crotch z 2.3); cy 0.55 = the spine line. At cz: torso width 2.00 u (front view, arms / legs excluded) and depth 2.24 u (side view, belly front to the back of the coat, |x| < 0.6): push_front 0.38 = +17 % depth, push_side 0.17 per side = +17 % width; z_radius 0.75 below / 0.80 above so the push fades out by the crotch (2.05) and under the chest V tip (3.6); front_x_radius 1.6 rounds the belly; the coat behind y 1.2 is not widened. The legs keep their shape (exclude); the arms swing out rigidly about the shoulder by atan(0.17 / 1.65) = 5.9 deg so the gap to the fuller belly stays. light.pulls does not fit: it runs on the proxy BEFORE the watertight remesh, so a belly pushed toward the arms (0.1..0.2 u gap) would fuse with them, and its constant grab vector cannot carry the arms rigidly"
+   }
+  },
+  "rig": {
+   "spine_names": [
+    "hips",
+    "spine",
+    "chest",
+    "neck",
+    "head"
+   ],
+   "spine": [
+    [
+     0.0,
+     0.5,
+     2.35
+    ],
+    [
+     0.0,
+     0.6,
+     3.35
+    ],
+    [
+     0.0,
+     0.45,
+     4.35
+    ],
+    [
+     0.0,
+     0.1,
+     5.05
+    ],
+    [
+     0.01,
+     -0.4,
+     5.6
+    ],
+    [
+     0.125,
+     -1.7,
+     5.65
+    ]
+   ],
+   "chains": [
+    {
+     "name": "arm",
+     "kind": "arm",
+     "parent": "chest",
+     "phase": {
+      "L": 0.5,
+      "R": 0.0
+     },
+     "points": [
+      [
+       1.0,
+       0.1,
+       4.45
+      ],
+      [
+       1.62,
+       0.1,
+       3.4
+      ],
+      [
+       1.62,
+       -0.52,
+       2.5
+      ],
+      [
+       1.56,
+       -0.84,
+       1.76
+      ]
+     ],
+     "why": "v2 (measured on the v1 low, arm slabs |x| > 1.15): points = the +x arm, points_R = the -x arm as generated: shoulder (inside the fur ring, z 4.45; the -x shoulder sits 0.2 u forward), elbow (z 3.4: +x 1.62, 0.10 / -x -1.67, -0.36), wrist (z 2.5: 1.62, -0.52 / -1.61, -0.92), claw centre (z 1.76: 1.56, -0.84 / -1.57, -1.14): the -x arm hangs 0.30..0.46 u further forward; the repose makes the pair symmetric",
+     "points_R": [
+      [
+       -1.0,
+       -0.1,
+       4.45
+      ],
+      [
+       -1.67,
+       -0.36,
+       3.4
+      ],
+      [
+       -1.61,
+       -0.92,
+       2.48
+      ],
+      [
+       -1.57,
+       -1.14,
+       1.77
+      ]
+     ]
+    },
+    {
+     "name": "leg",
+     "kind": "leg",
+     "parent": "hips",
+     "phase": {
+      "L": 0.0,
+      "R": 0.5
+     },
+     "points": [
+      [
+       0.55,
+       0.45,
+       2.3
+      ],
+      [
+       0.95,
+       0.5,
+       1.05
+      ],
+      [
+       1.1,
+       0.38,
+       0.42
+      ],
+      [
+       0.95,
+       -0.55,
+       0.08
+      ]
+     ],
+     "why": "v2 (leg slabs 0.2 < |x| < 1.6): points = the +x leg, points_R = the -x leg: hip (inside the pelvis), knee (z 1.05: 0.95, 0.50 / -0.99, 0.29), ankle (z 0.42: 1.10, 0.38 / -1.20, 0.22), toe (front claws, z 0.08: foot front y -0.85 / -1.06): the -x leg is staggered 0.19..0.23 u forward",
+     "points_R": [
+      [
+       -0.55,
+       0.35,
+       2.3
+      ],
+      [
+       -0.99,
+       0.29,
+       1.05
+      ],
+      [
+       -1.2,
+       0.22,
+       0.42
+      ],
+      [
+       -1.0,
+       -0.77,
+       0.08
+      ]
+     ]
+    },
+    {
+     "name": "mantle",
+     "kind": "chain",
+     "mirror": false,
+     "parent": "chest",
+     "points": [
+      [
+       0.0,
+       1.15,
+       4.6
+      ],
+      [
+       -0.05,
+       1.3,
+       3.8
+      ],
+      [
+       -0.12,
+       1.4,
+       3.0
+      ],
+      [
+       -0.25,
+       1.45,
+       2.2
+      ],
+      [
+       -0.3,
+       1.45,
+       1.4
+      ]
+     ],
+     "why": "v2: the dark fur COAT down the back (sheet: 'extends down back'; the back view draws it on the midline). As generated its lower half hangs to -x: the deep-back centroid (y in the back 30 %) is x -0.25..-0.32 at z 1.5..2.4, -0.16 at 3.0, ~0 at 4.2. A chain so it rests centred (repose to_points) and can be posed; kind 'chain' (a small sway in the clips)"
+    }
+   ],
+   "spine_why": "v2: the spine on the body midline x 0 (low slab mid-x z 2.0..5.0: -0.08..+0.06); neck root (0, 0.1, 5.05); the head bone runs from the pivot (0.01, -0.4, 5.6; between the ears, ear centroids x +0.424 / -0.390 at y -0.49) to the snout (0.125, -1.7, 5.65; snout mid-x +0.117 at y < -1.3, z 5.5..5.8), so its heading IS the face's turn (5.1 deg to +x)"
+  },
+  "clips": {
+   "idle_frames": 72,
+   "breathe_deg": 1.2,
+   "walk_frames": 36,
+   "walk_bob": 0.012,
+   "walk_roll": 2.0,
+   "leg_swing": 8.0,
+   "arm_swing": 6.0,
+   "why": "PLACEHOLDER (movement + height are the open artist questions, OPEN-QUESTIONS storm_bear): idle = breathe + the kit's arm sway; walk = a heavy upright bear stride with a small arm swing (frost_giant values); leg_swing 8 (run 2 at 12: the kit's foot bend dipped the toes 0.43 u below the floor in walk, clip_loops min_z -0.433)"
+  },
+  "focus": {
+   "head": [
+    [
+     -0.95,
+     -1.85,
+     5.1
+    ],
+    [
+     1.15,
+     0.4,
+     6.8
+    ]
+   ],
+   "hands": [
+    [
+     1.0,
+     -1.6,
+     1.3
+    ],
+    [
+     2.45,
+     0.6,
+     3.0
+    ]
+   ]
+  },
+  "bake_res": [
+   1024,
+   1024
+  ],
+  "_doc": "v2 (2026-10-17): LIGHT finish of the raw Pixal3D proxy (seed 56, sha 4b3d3ed2) + bone repose to a symmetric rest pose (arms, legs, head, coat) + light.belly. Points: stage-1 frame (feet already on the floor, x1.0096 to the sheet front height), sheet units.",
+  "repose": {
+   "targets": [
+    {
+     "symmetric": [
+      "arm"
+     ],
+     "match": "mean",
+     "falloff": 0.03,
+     "radius": [
+      [
+       0.6,
+       0.15
+      ],
+      [
+       0.55,
+       0.12
+      ],
+      [
+       0.55,
+       0.12
+      ]
+     ],
+     "why": "artist 2026-10-17: a symmetric rest pose; the two arms mirror-symmetric at the mean (the -x arm hung 0.30..0.46 u forward). No plant: the hands hang free",
+     "radius_why": "[reach, taper] per bone: arm / leg bones never grab the torso sides (the arm inner edge is only 0.1..0.2 u from the belly)"
+    },
+    {
+     "symmetric": [
+      "leg"
+     ],
+     "match": "mean",
+     "plant": true,
+     "plant_radius": 0.5,
+     "falloff": 0.03,
+     "radius": [
+      [
+       0.6,
+       0.12
+      ],
+      [
+       0.75,
+       0.15
+      ],
+      [
+       0.6,
+       0.12
+      ]
+     ],
+     "why": "the two legs mirror-symmetric at the mean (the -x leg staggered ~0.2 u forward), both feet planted on the floor",
+     "radius_why": "[reach, taper] per bone: arm / leg bones never grab the torso sides (the arm inner edge is only 0.1..0.2 u from the belly)"
+    },
+    {
+     "bones": [
+      "neck",
+      "head"
+     ],
+     "heading": "-y",
+     "distribute": true,
+     "why": "the head turned ~5 deg to +x (snout mid-x +0.117): the face straight ahead (-y); the neck twists half, the head the rest"
+    },
+    {
+     "chain": "mantle",
+     "falloff": 0.03,
+     "radius": [
+      [
+       0.6,
+       0.15
+      ]
+     ],
+     "to_points": [
+      [
+       0,
+       1.3,
+       3.8
+      ],
+      [
+       0,
+       1.4,
+       3.0
+      ],
+      [
+       0,
+       1.45,
+       2.2
+      ],
+      [
+       0,
+       1.45,
+       1.4
+      ]
+     ],
+     "why": "the coat on the midline: its chain carried onto x = 0 at the same heights / depths (the coat keeps its drape and length)"
+    }
+   ],
+   "rigid": [
+    {
+     "box": [
+      [
+       -0.95,
+       -1.85,
+       5.2
+      ],
+      [
+       1.1,
+       0.35,
+       6.8
+      ]
+     ],
+     "bone": "head",
+     "margin": 0.3,
+     "why": "the head / face moves as ONE rigid body with the head bone: never deformed or re-sculpted (face as generated)"
+    }
+   ]
+  }
+ },
+ "units": "sheet units: 1 unit = 100 px of the reference sheet; floor z = 0",
+ "stage1_stdout": [
+  "RECOLOUR3D [{\"name\": \"crystals\", \"target_rgb\": [116.0, 146.0, 222.0], \"why\": \"unit note: the crystals read dull. Proxy crystal texels (b* < -20, 6.1 % of the surface: chest, arms, legs, hand + toe claws) median 85,109,159 (L* 46, b* -27) vs the sheet crystals (front / side view b* < -20: median 112,141,213, L* 59, a* 7.5, b* -34; p10..p90 L* 39..78). Blue texels (b* <= -20, soft to -17; run 1 at -17 also turned the faintly blue-shaded flank fur (b* -14..-20, only 50 % of it within 0.06 u of a real crystal) into vivid crystal, scattering blue facets over the side view) to the sheet crystal hue with the facets kept (gamma 0.9; highlights may go to 1.6x so the lightning cores read pale cyan-white like the sheet's p90 166,199,250). Sim on the proxy samples: L* p10/50/90 40/61/81. The head (z >= 5.25) is excluded: no crystals there on the sheet, and the eyes / pale brow streaks stay as generated (face as generated)\", \"texels_touched\": 204998, \"texels_ge_half\": 180761, \"median_src_rgb\": [87.0, 110.0, 158.0], \"median_new_rgb\": [116.0, 145.0, 220.0]}, {\"name\": \"fur\", \"target_rgb\": [134.0, 136.0, 145.0], \"why\": \"unit note: the proxy reads darker than the sheet, and it is the TEXTURE, not the panel lighting: proxy white fur (L* > 55) median 175,177,183 (L* 72) vs the sheet 194..199,200..202,203..204 (L* 78..81, p25..p75 70..83); proxy charcoal fur (L* < 40) 51,48,50 (L* 20) vs the sheet 76..77,74..76,85..88 (L* 32..33). Both furs share one cool-neutral hue on the sheet, so ONE tone curve (no white / charcoal split, so no posterised border): luma' = target x (luma / median)^0.743, the exponent fitted so proxy charcoal luma 49 -> 77 and white 177 -> 200 (+~7 % for the AO multiply; run 1 target 130,132,141 left the baked albedo white fur at L* p75 82 but basecolor median 70); highlights capped at 1.65x. Sim on the proxy samples: white L* p25/50/75 76/83/87, charcoal L* 31/34/39 (sheet 70/81/83, 33). Selects b* >= -16 (soft to -19), meeting the crystal pass; the crystal texels (now b* < -30) are not selected; the cyan eyes (b* -29..-39) keep their colour\", \"texels_touched\": 2409929, \"texels_ge_half\": 2403215, \"median_src_rgb\": [100.0, 101.0, 111.0], \"median_new_rgb\": [134.0, 136.0, 145.0]}]"
+ ],
+ "stage1": {
+  "unit": "storm_bear",
+  "proxy": {
+   "glb": "proxy/storm_bear_proxy.glb",
+   "sha256": "4b3d3ed2944fd74ec995669d9999097d230e9c111ff8deaeee38b0ee7e602f12",
+   "gate": "reliable",
+   "mean_iou": 0.8995,
+   "refloor": {
+    "foot_contact_z_u": 0.0,
+    "rescale": 1.0095,
+    "y_windows": [
+     [
+      -1.1,
+      1.3
+     ]
+    ],
+    "window_z_u": [
+     0.0
+    ],
+    "x_abs_min": 0.3,
+    "rule": "sheet_proxy put the floor at the lowest point (a tail curl): the feet hung z0 above it; floor moved to the feet, then scaled to the sheet front height"
+   },
+   "tris": 198544,
+   "verts": 160700,
+   "height_u": 6.74,
+   "samples": 7660124,
+   "textured": true,
+   "z_range_u": [
+    0.0,
+    6.74
+   ]
+  },
+  "solid": {
+   "step": 0.0225,
+   "grid": [
+    199,
+    175,
+    317
+   ],
+   "shell_nodes": 609220,
+   "close_voxels": 1,
+   "sealed_cavities": 833,
+   "min_half_thickness_u": 0.0112,
+   "shell_nodes_signed_outside_frac": 0.789,
+   "smooth_sigma_vox": 0.0,
+   "pieces": [
+    22,
+    [
+     612785,
+     5,
+     1,
+     1,
+     1,
+     1
+    ]
+   ],
+   "rule": "LIGHT: watertight remesh only (no smoothing / straighten / symmetrise / cuts); the surface sits min_half_thickness x step = 0.0112 u outside the proxy",
+   "bake_interior_tris_dropped": 20802
+  },
+  "colour": {
+   "mode": "light: the proxy texture as generated",
+   "drift_fit": null,
+   "textures": {
+    "0": [
+     2048,
+     2048,
+     3
+    ]
+   }
+  },
+  "recolour3d": [
+   {
+    "name": "crystals",
+    "target_rgb": [
+     116.0,
+     146.0,
+     222.0
+    ],
+    "why": "unit note: the crystals read dull. Proxy crystal texels (b* < -20, 6.1 % of the surface: chest, arms, legs, hand + toe claws) median 85,109,159 (L* 46, b* -27) vs the sheet crystals (front / side view b* < -20: median 112,141,213, L* 59, a* 7.5, b* -34; p10..p90 L* 39..78). Blue texels (b* <= -20, soft to -17; run 1 at -17 also turned the faintly blue-shaded flank fur (b* -14..-20, only 50 % of it within 0.06 u of a real crystal) into vivid crystal, scattering blue facets over the side view) to the sheet crystal hue with the facets kept (gamma 0.9; highlights may go to 1.6x so the lightning cores read pale cyan-white like the sheet's p90 166,199,250). Sim on the proxy samples: L* p10/50/90 40/61/81. The head (z >= 5.25) is excluded: no crystals there on the sheet, and the eyes / pale brow streaks stay as generated (face as generated)",
+    "texels_touched": 204998,
+    "texels_ge_half": 180761,
+    "median_src_rgb": [
+     87.0,
+     110.0,
+     158.0
+    ],
+    "median_new_rgb": [
+     116.0,
+     145.0,
+     220.0
+    ]
+   },
+   {
+    "name": "fur",
+    "target_rgb": [
+     134.0,
+     136.0,
+     145.0
+    ],
+    "why": "unit note: the proxy reads darker than the sheet, and it is the TEXTURE, not the panel lighting: proxy white fur (L* > 55) median 175,177,183 (L* 72) vs the sheet 194..199,200..202,203..204 (L* 78..81, p25..p75 70..83); proxy charcoal fur (L* < 40) 51,48,50 (L* 20) vs the sheet 76..77,74..76,85..88 (L* 32..33). Both furs share one cool-neutral hue on the sheet, so ONE tone curve (no white / charcoal split, so no posterised border): luma' = target x (luma / median)^0.743, the exponent fitted so proxy charcoal luma 49 -> 77 and white 177 -> 200 (+~7 % for the AO multiply; run 1 target 130,132,141 left the baked albedo white fur at L* p75 82 but basecolor median 70); highlights capped at 1.65x. Sim on the proxy samples: white L* p25/50/75 76/83/87, charcoal L* 31/34/39 (sheet 70/81/83, 33). Selects b* >= -16 (soft to -19), meeting the crystal pass; the crystal texels (now b* < -30) are not selected; the cyan eyes (b* -29..-39) keep their colour",
+    "texels_touched": 2409929,
+    "texels_ge_half": 2403215,
+    "median_src_rgb": [
+     100.0,
+     101.0,
+     111.0
+    ],
+    "median_new_rgb": [
+     134.0,
+     136.0,
+     145.0
+    ]
+   }
+  ],
+  "grid_sha": "844f71fb14a5dfc4",
+  "proxy_sha": "e023a07f78d393b2"
+ },
+ "high": {
+  "tris": 3628056,
+  "verts": 1813712,
+  "specks_dropped": {
+   "pieces": 5,
+   "kept": 1,
+   "dropped_verts": 56
+  },
+  "open_edges": 0,
+  "nonmanifold_edges": 0,
+  "rule": "marching tets of the whole remesh grid (no mirror)",
+  "seconds": 18.5
+ },
+ "low": {
+  "method": "collapse decimation: uniform to 300000, then 18000 with the dense boxes calibrated",
+  "pre_tris": 300000,
+  "tris": 18000,
+  "verts": 8684,
+  "specks": {
+   "pieces": 1,
+   "kept": 1,
+   "dropped_verts": 0
+  },
+  "open_edges": 0,
+  "nonmanifold_edges": 0,
+  "dense": {
+   "density": 2.5,
+   "box_area_frac": 0.157,
+   "target_tri_share": 0.3177,
+   "got_tri_share": 0.3178,
+   "factor_log10": -0.266,
+   "trials": [
+    [
+     -7.0,
+     0.2267
+    ],
+    [
+     -3.0,
+     0.2253
+    ],
+    [
+     -1.0,
+     0.2368
+    ],
+    [
+     0.0,
+     0.3901
+    ],
+    [
+     -0.5,
+     0.2733
+    ],
+    [
+     -0.25,
+     0.3212
+    ],
+    [
+     -0.375,
+     0.2944
+    ],
+    [
+     -0.312,
+     0.3076
+    ],
+    [
+     -0.281,
+     0.3142
+    ],
+    [
+     -0.266,
+     0.3178
+    ]
+   ],
+   "rule": "dense boxes weighted 0.02 (vs 1) in the collapse decimation; the factor bisected until the boxes hold density x the rest's triangles per area"
+  },
+  "low_to_proxy": {
+   "mean": 0.01523,
+   "p99": 0.03512,
+   "max": 0.05109
+  },
+  "proxy_to_low_sampled": {
+   "mean": 0.02262,
+   "p99": 0.06186,
+   "max": 0.09662
+  },
+  "p99_over_height": 0.00918,
+  "seconds": 82.3
+ },
+ "regions_faces": {
+  "proxy_albedo": 17093,
+  "eye_glow": 67,
+  "crystal_core": 191,
+  "crystal_glow": 649
+ },
+ "albedo_source": {
+  "texture": "tex_0",
+  "size": [
+   2048,
+   2048
+  ],
+  "faces_textured": 177742,
+  "faces": 177742
+ },
+ "ao_fill": {
+  "below": 0.04,
+  "texels_filled": 16739,
+  "of_covered": 1019583,
+  "rings": 7,
+  "left_to_mean": 0,
+  "rule": "AO < below = a bake origin inside the proxy soup: refilled from the covered valid 3x3 neighbours ring by ring (opt-in light.ao_fill_below)"
+ },
+ "bake": {
+  "reference": "flat",
+  "source": "the proxy mesh itself (not the remesh)",
+  "NORMAL": {
+   "result": [
+    "FINISHED"
+   ],
+   "seconds": 2.6
+  },
+  "ao_distance": {
+   "u": 0.2,
+   "world_default": 10.0
+  },
+  "AO": {
+   "result": [
+    "FINISHED"
+   ],
+   "seconds": 6.4
+  },
+  "EMIT": {
+   "result": [
+    "FINISHED"
+   ],
+   "seconds": 2.6
+  },
+  "ao_source": "the low itself (opt-in light.ao_from_low), 64 samples",
+  "cage_extrusion": 0.1856,
+  "resolution": {
+   "normal": 1024,
+   "ao": 1024,
+   "albedo": 2048
+  },
+  "high_tris": 177742,
+  "normal_coverage_pct": 94.52,
+  "albedo_coverage_pct": 91.01,
+  "normal_detail_fraction_dev_gt_0.05": 0.8196,
+  "ao_mean": 0.6948,
+  "pixel_sha": {
+   "normal": "7984d31002ac5f39",
+   "ao": "671dcfb8f173e777",
+   "albedo": "2a02f512040b36af"
+  },
+  "seconds": 14.0
+ },
+ "glow3d": {
+  "faces": {
+   "proxy_albedo": 17093,
+   "eye_glow": 67,
+   "crystal_core": 191,
+   "crystal_glow": 649
+  },
+  "area_share": {
+   "proxy_albedo": 0.9374,
+   "eye_glow": 0.0002,
+   "crystal_core": 0.01532,
+   "crystal_glow": 0.04708
+  },
+  "rows": [
+   {
+    "spec": "eyes",
+    "region": "eye_glow",
+    "min_weight": 0.5,
+    "faces": 67,
+    "albedo_select": true,
+    "why": "sheet: GLOWING BLUE EYES: faces of the proxy's cyan eye texels (boxes = the texel extents + 0.02 u, after the x1.0096 rescale) whose baked albedo is blue (b* < -15; the white brow fur is b* -6) -> region eye_glow (emission = the sheet eye core, brightest quarter 119..144,163..188,231..240)"
+   },
+   {
+    "spec": "crystal_core",
+    "region": "crystal_core",
+    "min_weight": 0.5,
+    "faces": 191,
+    "albedo_select": true,
+    "why": "sheet: 'lightning contained within crystals', the internal glow, no external arcs: the brightest crystal faces (baked L* >= 70 and b* <= -24, the top quarter of the recoloured crystals: the lightning cores) -> crystal_core (emission = the sheet's 6th chip, the bright cyan 46,193,253, not auto-found by intake; sampled at chip px 1611,868)"
+   },
+   {
+    "spec": "crystal_body",
+    "region": "crystal_glow",
+    "min_weight": 0.5,
+    "faces": 649,
+    "albedo_select": true,
+    "why": "the rest of the crystal faces (chest, arms, legs, hand + toe claws: baked b* <= -24, so only clearly blue crystal faces emit, not the blended crystal / fur border faces) -> crystal_glow (emission = the sheet's deep crystal chip 61,106,244, low scale: a translucent inner glow, the faceted albedo still reads)"
+   }
+  ],
+  "paint": {
+   "proxy_albedo": 17093,
+   "eye_glow": 67,
+   "crystal_core": 191,
+   "crystal_glow": 649
+  },
+  "face_region_sha": "6fbb64019f75a150",
+  "rule": "faces -> glow palette regions (emission -> Glow -> Emission Color); rgb white keeps the baked albedo"
+ },
+ "repose": {
+  "auto_chains": {},
+  "bones": [
+   "hips",
+   "spine",
+   "chest",
+   "neck",
+   "head",
+   "arm.L.0",
+   "arm.L.1",
+   "arm.L.2",
+   "arm.R.0",
+   "arm.R.1",
+   "arm.R.2",
+   "leg.L.0",
+   "leg.L.1",
+   "leg.L.2",
+   "leg.R.0",
+   "leg.R.1",
+   "leg.R.2",
+   "mantle.0",
+   "mantle.1",
+   "mantle.2",
+   "mantle.3"
+  ],
+  "rigid": [
+   {
+    "bone": "head",
+    "verts_rigid": 2762,
+    "verts_ramped": 771,
+    "margin_u": 0.3
+   }
+  ],
+  "targets": [
+   {
+    "target": [
+     "arm"
+    ],
+    "heading": "mirror-symmetric",
+    "bones": [
+     {
+      "bone": "arm.L.0",
+      "turn_deg": 6.104,
+      "length_scale": 1.0162,
+      "root_move_u": 0.1
+     },
+     {
+      "bone": "arm.L.1",
+      "turn_deg": 2.255,
+      "length_scale": 0.9927,
+      "root_move_u": null
+     },
+     {
+      "bone": "arm.L.2",
+      "turn_deg": 3.004,
+      "length_scale": 0.9589,
+      "root_move_u": null
+     },
+     {
+      "bone": "arm.R.0",
+      "turn_deg": 5.849,
+      "length_scale": 0.9738,
+      "root_move_u": 0.1
+     },
+     {
+      "bone": "arm.R.1",
+      "turn_deg": 2.285,
+      "length_scale": 1.0058,
+      "root_move_u": null
+     },
+     {
+      "bone": "arm.R.2",
+      "turn_deg": 3.263,
+      "length_scale": 1.0415,
+      "root_move_u": null
+     }
+    ],
+    "lift": null,
+    "legs": [
+     {
+      "chain": "arm",
+      "match": "mean",
+      "joints_before": {
+       "L": [
+        [
+         1.0,
+         0.1,
+         4.45
+        ],
+        [
+         1.62,
+         0.1,
+         3.4
+        ],
+        [
+         1.62,
+         -0.52,
+         2.5
+        ],
+        [
+         1.56,
+         -0.84,
+         1.76
+        ]
+       ],
+       "R": [
+        [
+         -1.0,
+         -0.1,
+         4.45
+        ],
+        [
+         -1.67,
+         -0.36,
+         3.4
+        ],
+        [
+         -1.61,
+         -0.92,
+         2.48
+        ],
+        [
+         -1.57,
+         -1.14,
+         1.77
+        ]
+       ]
+      },
+      "joints_after": {
+       "L": [
+        [
+         1.0,
+         0.0,
+         4.45
+        ],
+        [
+         1.645,
+         -0.13,
+         3.4
+        ],
+        [
+         1.615,
+         -0.72,
+         2.49
+        ],
+        [
+         1.565,
+         -0.99,
+         1.765
+        ]
+       ],
+       "R": [
+        [
+         -1.0,
+         0.0,
+         4.45
+        ],
+        [
+         -1.645,
+         -0.13,
+         3.4
+        ],
+        [
+         -1.615,
+         -0.72,
+         2.49
+        ],
+        [
+         -1.565,
+         -0.99,
+         1.765
+        ]
+       ]
+      },
+      "mirror_joint_err_before_u": [
+       0.2,
+       0.4627,
+       0.4006,
+       0.3003
+      ],
+      "mirror_joint_err_after_u": [
+       0.0,
+       0.0,
+       0.0,
+       0.0
+      ],
+      "foot_min_z_before_u": {
+       "L": 1.613,
+       "R": 1.501
+      },
+      "foot_min_z_after_u": {
+       "L": 1.6268,
+       "R": 1.486
+      },
+      "plant_iters": [],
+      "bones": [
+       {
+        "bone": "arm.L.0",
+        "turn_deg": 6.104,
+        "length_scale": 1.0162,
+        "root_move_u": 0.1
+       },
+       {
+        "bone": "arm.L.1",
+        "turn_deg": 2.255,
+        "length_scale": 0.9927,
+        "root_move_u": null
+       },
+       {
+        "bone": "arm.L.2",
+        "turn_deg": 3.004,
+        "length_scale": 0.9589,
+        "root_move_u": null
+       },
+       {
+        "bone": "arm.R.0",
+        "turn_deg": 5.849,
+        "length_scale": 0.9738,
+        "root_move_u": 0.1
+       },
+       {
+        "bone": "arm.R.1",
+        "turn_deg": 2.285,
+        "length_scale": 1.0058,
+        "root_move_u": null
+       },
+       {
+        "bone": "arm.R.2",
+        "turn_deg": 3.263,
+        "length_scale": 1.0415,
+        "root_move_u": null
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "target": [
+     "leg"
+    ],
+    "heading": "mirror-symmetric",
+    "bones": [
+     {
+      "bone": "leg.L.0",
+      "turn_deg": 2.546,
+      "length_scale": 1.0028,
+      "root_move_u": 0.05
+     },
+     {
+      "bone": "leg.L.1",
+      "turn_deg": 3.393,
+      "length_scale": 1.0027,
+      "root_move_u": null
+     },
+     {
+      "bone": "leg.L.2",
+      "turn_deg": 1.272,
+      "length_scale": 1.0318,
+      "root_move_u": null
+     },
+     {
+      "bone": "leg.R.0",
+      "turn_deg": 2.506,
+      "length_scale": 0.993,
+      "root_move_u": 0.05
+     },
+     {
+      "bone": "leg.R.1",
+      "turn_deg": 3.315,
+      "length_scale": 0.9894,
+      "root_move_u": null
+     },
+     {
+      "bone": "leg.R.2",
+      "turn_deg": 1.195,
+      "length_scale": 0.9697,
+      "root_move_u": null
+     }
+    ],
+    "lift": null,
+    "legs": [
+     {
+      "chain": "leg",
+      "match": "mean",
+      "joints_before": {
+       "L": [
+        [
+         0.55,
+         0.45,
+         2.3
+        ],
+        [
+         0.95,
+         0.5,
+         1.05
+        ],
+        [
+         1.1,
+         0.38,
+         0.42
+        ],
+        [
+         0.95,
+         -0.55,
+         0.08
+        ]
+       ],
+       "R": [
+        [
+         -0.55,
+         0.35,
+         2.3
+        ],
+        [
+         -0.99,
+         0.29,
+         1.05
+        ],
+        [
+         -1.2,
+         0.22,
+         0.42
+        ],
+        [
+         -1.0,
+         -0.77,
+         0.08
+        ]
+       ]
+      },
+      "joints_after": {
+       "L": [
+        [
+         0.55,
+         0.4,
+         2.3
+        ],
+        [
+         0.97,
+         0.395,
+         1.0517
+        ],
+        [
+         1.15,
+         0.3,
+         0.4234
+        ],
+        [
+         0.975,
+         -0.66,
+         0.0834
+        ]
+       ],
+       "R": [
+        [
+         -0.55,
+         0.4,
+         2.3
+        ],
+        [
+         -0.97,
+         0.395,
+         1.0515
+        ],
+        [
+         -1.15,
+         0.3,
+         0.4229
+        ],
+        [
+         -0.975,
+         -0.66,
+         0.0829
+        ]
+       ]
+      },
+      "mirror_joint_err_before_u": [
+       0.1,
+       0.2138,
+       0.1887,
+       0.2256
+      ],
+      "mirror_joint_err_after_u": [
+       0.0,
+       0.0002,
+       0.0005,
+       0.0005
+      ],
+      "foot_min_z_before_u": {
+       "L": -0.0052,
+       "R": -0.0012
+      },
+      "foot_min_z_after_u": {
+       "L": -0.0,
+       "R": -0.0
+      },
+      "plant_iters": [
+       {
+        "L": 0.00343,
+        "R": 0.00294
+       },
+       {
+        "L": 0.0,
+        "R": 0.0
+       }
+      ],
+      "bones": [
+       {
+        "bone": "leg.L.0",
+        "turn_deg": 2.546,
+        "length_scale": 1.0028,
+        "root_move_u": 0.05
+       },
+       {
+        "bone": "leg.L.1",
+        "turn_deg": 3.393,
+        "length_scale": 1.0027,
+        "root_move_u": null
+       },
+       {
+        "bone": "leg.L.2",
+        "turn_deg": 1.272,
+        "length_scale": 1.0318,
+        "root_move_u": null
+       },
+       {
+        "bone": "leg.R.0",
+        "turn_deg": 2.506,
+        "length_scale": 0.993,
+        "root_move_u": 0.05
+       },
+       {
+        "bone": "leg.R.1",
+        "turn_deg": 3.315,
+        "length_scale": 0.9894,
+        "root_move_u": null
+       },
+       {
+        "bone": "leg.R.2",
+        "turn_deg": 1.195,
+        "length_scale": 0.9697,
+        "root_move_u": null
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "target": [
+     "neck",
+     "head"
+    ],
+    "heading": "-y",
+    "amount": 1.0,
+    "bones": [
+     {
+      "bone": "neck",
+      "yaw_deg": -2.528,
+      "heading_before_deg": -88.854,
+      "horizontal_frac": 0.673
+     },
+     {
+      "bone": "head",
+      "yaw_deg": -5.055,
+      "heading_before_deg": -84.945,
+      "horizontal_frac": 0.999
+     }
+    ],
+    "lift": null,
+    "joints_before": [
+     [
+      0.0,
+      0.1,
+      5.05
+     ],
+     [
+      0.01,
+      -0.4,
+      5.6
+     ],
+     [
+      0.125,
+      -1.7,
+      5.65
+     ]
+    ],
+    "joints_after": [
+     [
+      0.0,
+      0.1,
+      5.05
+     ],
+     [
+      -0.0121,
+      -0.4,
+      5.6
+     ],
+     [
+      -0.0121,
+      -1.705,
+      5.65
+     ]
+    ]
+   },
+   {
+    "target": "mantle",
+    "heading": "to_points",
+    "bones": [
+     {
+      "bone": "mantle.0",
+      "turn_deg": 3.52,
+      "length_scale": 0.9949
+     },
+     {
+      "bone": "mantle.1",
+      "turn_deg": 4.96,
+      "length_scale": 0.9949
+     },
+     {
+      "bone": "mantle.2",
+      "turn_deg": 9.21,
+      "length_scale": 0.9949
+     },
+     {
+      "bone": "mantle.3",
+      "turn_deg": 3.58,
+      "length_scale": 0.9949
+     }
+    ],
+    "lift": null,
+    "joints_before": [
+     [
+      0.0,
+      1.15,
+      4.6
+     ],
+     [
+      -0.05,
+      1.3,
+      3.8
+     ],
+     [
+      -0.12,
+      1.4,
+      3.0
+     ],
+     [
+      -0.25,
+      1.45,
+      2.2
+     ],
+     [
+      -0.3,
+      1.45,
+      1.4
+     ]
+    ],
+    "joints_after": [
+     [
+      0.0,
+      1.15,
+      4.6
+     ],
+     [
+      0.0,
+      1.2995,
+      3.8026
+     ],
+     [
+      0.0,
+      1.3995,
+      3.0037
+     ],
+     [
+      0.0,
+      1.45,
+      2.1975
+     ],
+     [
+      0.0,
+      1.45,
+      1.4
+     ]
+    ]
+   }
+  ],
+  "moved_bones": [
+   "neck",
+   "head",
+   "arm.L.0",
+   "arm.L.1",
+   "arm.L.2",
+   "arm.R.0",
+   "arm.R.1",
+   "arm.R.2",
+   "leg.L.0",
+   "leg.L.1",
+   "leg.L.2",
+   "leg.R.0",
+   "leg.R.1",
+   "leg.R.2",
+   "mantle.0",
+   "mantle.1",
+   "mantle.2",
+   "mantle.3"
+  ],
+  "verts_moved": 7840,
+  "max_displacement_u": 0.3055,
+  "stretch_all": {
+   "edges_moved": 24901,
+   "max": 9.1926,
+   "p99": 1.3129,
+   "p999": 2.3192,
+   "min": 0.232,
+   "over_1.25": 327,
+   "under_0.8": 194,
+   "max_at_u": [
+    -1.232,
+    0.888,
+    1.079
+   ],
+   "rule": "edge length after / before the repose, edges with a moved vertex"
+  },
+  "rigid_check": [
+   {
+    "bone": "head",
+    "verts": 2762,
+    "max_dev_from_rigid_u": 0.0
+   }
+  ],
+  "rule": "LBS with the contract rig's weights (+ rigid pins), yaw-only straightening (+ lift), applied as rest",
+  "stretch_arm": {
+   "edges_moved": 3582,
+   "max": 3.8644,
+   "p99": 1.7613,
+   "p999": 3.3677,
+   "min": 0.232,
+   "over_1.25": 126,
+   "under_0.8": 70,
+   "max_at_u": [
+    1.097,
+    -0.439,
+    2.298
+   ],
+   "rule": "edge length after / before the repose, edges with a moved vertex"
+  },
+  "stretch_leg": {
+   "edges_moved": 4340,
+   "max": 9.1926,
+   "p99": 1.5198,
+   "p999": 3.023,
+   "min": 0.311,
+   "over_1.25": 126,
+   "under_0.8": 94,
+   "max_at_u": [
+    -1.232,
+    0.888,
+    1.079
+   ],
+   "rule": "edge length after / before the repose, edges with a moved vertex"
+  },
+  "stretch_neck_head": {
+   "edges_moved": 16144,
+   "max": 3.6507,
+   "p99": 1.1754,
+   "p999": 2.0282,
+   "min": 0.232,
+   "over_1.25": 86,
+   "under_0.8": 65,
+   "max_at_u": [
+    -1.611,
+    0.22,
+    3.113
+   ],
+   "rule": "edge length after / before the repose, edges with a moved vertex"
+  },
+  "stretch_mantle": {
+   "edges_moved": 2414,
+   "max": 2.539,
+   "p99": 1.5074,
+   "p999": 2.4021,
+   "min": 0.3366,
+   "over_1.25": 70,
+   "under_0.8": 25,
+   "max_at_u": [
+    -0.594,
+    1.096,
+    2.392
+   ],
+   "rule": "edge length after / before the repose, edges with a moved vertex"
+  },
+  "self_intersections": {
+   "before": {
+    "all": 86,
+    "moved_region": 70
+   },
+   "after": {
+    "all": 342,
+    "moved_region": 323
+   },
+   "rule": "intersecting triangle pairs sharing no vertex (BVH overlap)"
+  },
+  "mirror_before": {
+   "plane_x_u": 0.0,
+   "max_u": 0.58068,
+   "p99_u": 0.31824,
+   "p90_u": 0.15041,
+   "mean_u": 0.06038,
+   "rule": "every vertex mirrored in X about the plane -> distance to the nearest surface (0 = exactly symmetric)"
+  },
+  "mirror_after": {
+   "plane_x_u": 0.0,
+   "max_u": 0.38457,
+   "p99_u": 0.19891,
+   "p90_u": 0.07188,
+   "mean_u": 0.03254,
+   "rule": "every vertex mirrored in X about the plane -> distance to the nearest surface (0 = exactly symmetric)"
+  },
+  "seconds": 0.3
+ },
+ "belly": {
+  "centre": [
+   0.0,
+   0.55,
+   2.8
+  ],
+  "z_radius": [
+   0.75,
+   0.8
+  ],
+  "push_front_u": 0.38,
+  "push_side_u": 0.17,
+  "y_full": 1.0,
+  "x_full": 0.9,
+  "front_x_radius": 1.6,
+  "side_back_ramp": [
+   0.6,
+   1.2
+  ],
+  "field_max_u": 0.3797,
+  "verts_pushed": 940,
+  "excluded_chains": [
+   "leg"
+  ],
+  "why": "artist 2026-10-17: 'can we make storm bear fatter, bigger belly' (orchestrator: ~15-20 % more belly depth in the side view and width in the front view, most at the navel). Navel cz 2.8 = the middle of the belly dip on the low (belly front y -0.61 at z 2.5..3.1 vs -0.80 at the chest z 3.3 and the crotch z 2.3); cy 0.55 = the spine line. At cz: torso width 2.00 u (front view, arms / legs excluded) and depth 2.24 u (side view, belly front to the back of the coat, |x| < 0.6): push_front 0.38 = +17 % depth, push_side 0.17 per side = +17 % width; z_radius 0.75 below / 0.80 above so the push fades out by the crotch (2.05) and under the chest V tip (3.6); front_x_radius 1.6 rounds the belly; the coat behind y 1.2 is not widened. The legs keep their shape (exclude); the arms swing out rigidly about the shoulder by atan(0.17 / 1.65) = 5.9 deg so the gap to the fuller belly stays. light.pulls does not fit: it runs on the proxy BEFORE the watertight remesh, so a belly pushed toward the arms (0.1..0.2 u gap) would fuse with them, and its constant grab vector cannot carry the arms rigidly",
+  "swing": [
+   {
+    "chain": "arm",
+    "swing_out_deg": 5.882,
+    "root": [
+     1.0,
+     0.0,
+     4.45
+    ],
+    "lever_u": 1.65
+   }
+  ],
+  "swing_max_move_u": 0.3079,
+  "metrics": [
+   {
+    "before": {
+     "z_u": 2.55,
+     "width_x_u": 2.0176,
+     "depth_y_u": 2.2141,
+     "belly_front_y_u": -0.5937
+    },
+    "after": {
+     "z_u": 2.55,
+     "width_x_u": 2.2628,
+     "depth_y_u": 2.4671,
+     "belly_front_y_u": -0.8467
+    },
+    "width_gain_pct": 12.15,
+    "depth_gain_pct": 11.43
+   },
+   {
+    "before": {
+     "z_u": 2.8,
+     "width_x_u": 2.0042,
+     "depth_y_u": 2.243,
+     "belly_front_y_u": -0.6094
+    },
+    "after": {
+     "z_u": 2.8,
+     "width_x_u": 2.3418,
+     "depth_y_u": 2.6169,
+     "belly_front_y_u": -0.9822
+    },
+    "width_gain_pct": 16.84,
+    "depth_gain_pct": 16.67
+   },
+   {
+    "before": {
+     "z_u": 3.05,
+     "width_x_u": 2.665,
+     "depth_y_u": 2.1758,
+     "belly_front_y_u": -0.6261
+    },
+    "after": {
+     "z_u": 3.05,
+     "width_x_u": 2.913,
+     "depth_y_u": 2.4733,
+     "belly_front_y_u": -0.92
+    },
+    "width_gain_pct": 9.31,
+    "depth_gain_pct": 13.67
+   }
+  ],
+  "self_intersections": {
+   "before": {
+    "all": 342,
+    "moved_region": 209
+   },
+   "after": {
+    "all": 336,
+    "moved_region": 203
+   }
+  },
+  "stretch": {
+   "edges_moved": 6655,
+   "max": 2.24,
+   "p99": 1.273,
+   "p999": 1.4783,
+   "min": 0.4093,
+   "over_1.25": 101,
+   "under_0.8": 32,
+   "max_at_u": [
+    1.057,
+    0.171,
+    2.581
+   ],
+   "rule": "edge length after / before the repose, edges with a moved vertex"
+  },
+  "mirror_after": {
+   "plane_x_u": 0.0,
+   "max_u": 0.38457,
+   "p99_u": 0.20065,
+   "p90_u": 0.07259,
+   "mean_u": 0.03277,
+   "rule": "every vertex mirrored in X about the plane -> distance to the nearest surface (0 = exactly symmetric)"
+  }
+ },
+ "centre_shift": [
+  0.015471,
+  -0.00521,
+  -0.0
+ ],
+ "floor": {
+  "min_z_after_repose_u": -0.0,
+  "rule": "stage 1 floored the FEET at z 0; the centring puts the lowest point at 0"
+ },
+ "regions_area_share": {
+  "proxy_albedo": 1.0
+ },
+ "facing": {
+  "rule": "shell centroid -> the front-most midline point of the shell (proxy finish default)",
+  "anchor": [
+   0.0,
+   -0.1263,
+   4.0096
+  ],
+  "landmark": [
+   -0.0179,
+   -1.7743,
+   5.5376
+  ],
+  "angle_from_minusY_deg": -0.622
+ },
+ "tris": {
+  "total": 18000,
+  "shell": 18000
+ },
+ "open_edges": {
+  "per_island": {
+   "shell": 0
+  },
+  "total": 0,
+  "nonmanifold_edges": 0,
+  "rule": "the watertight remesh, decimated (closed)"
+ },
+ "measure": {
+  "bbox": [
+   [
+    -2.1787,
+    -1.7773,
+    0.0
+   ],
+   [
+    2.1787,
+    1.7773,
+    6.7525
+   ]
+  ],
+  "height": 6.7525,
+  "width_x": 4.3574,
+  "depth_y": 3.5546,
+  "export_cell_fit_report_only": {
+   "scale": 0.26657
+  }
+ },
+ "finish": {
+  "open_edges": 0,
+  "tris": 18000,
+  "mirror": {
+   "plane_x_u": 0.0,
+   "max_u": 0.40168,
+   "p99_u": 0.21054,
+   "p90_u": 0.0745,
+   "mean_u": 0.03229,
+   "rule": "every vertex mirrored in X about the plane -> distance to the nearest surface (0 = exactly symmetric)"
+  },
+  "tri_budget": [
+   8000,
+   22000
+  ],
+  "in_budget": true,
+  "mode": "light"
+ },
+ "focus_face_centre": [
+  0.0367,
+  -0.6753,
+  5.9769
+ ],
+ "digest_geometry_colour_uv": "720038b733cb7c0c",
+ "palette": {
+  "default": {
+   "proxy_albedo": {
+    "rgb": [
+     255,
+     255,
+     255
+    ]
+   },
+   "eye_glow": {
+    "rgb": [
+     255,
+     255,
+     255
+    ],
+    "emission": [
+     125,
+     168,
+     235
+    ],
+    "emission_scale": 1.0
+   },
+   "crystal_core": {
+    "rgb": [
+     255,
+     255,
+     255
+    ],
+    "emission": [
+     46,
+     193,
+     253
+    ],
+    "emission_scale": 0.5
+   },
+   "crystal_glow": {
+    "rgb": [
+     255,
+     255,
+     255
+    ],
+    "emission": [
+     61,
+     106,
+     244
+    ],
+    "emission_scale": 0.3
+   }
+  },
+  "files": [
+   "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\palettes\\storm_bear\\default.json"
+  ]
+ }
+}

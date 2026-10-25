@@ -1,0 +1,12 @@
+{
+ "unit": "storm_bear",
+ "skin": "default",
+ "description": "storm_bear default look, LIGHT proxy finish: the colour is the Pixal3D proxy's own texture (white + charcoal fur lifted to the sheet's tones, crystals to the sheet's crystal blue) baked onto the low (improved/textures/storm_bear_basecolor.png); proxy_albedo (white) tints it; three GLOW regions carry the emission (Glow -> Emission Color): the eyes, the crystal lightning cores, the crystal bodies (hand + toe claws included)",
+ "regions": {
+  "proxy_albedo": {"rgb": [255, 255, 255], "note": "tint over the baked proxy albedo (light mode); white keeps the fur / crystals as baked. Sheet chips for reference: fur 230,221,218, crystal 188,218,253 / 61,106,244, charcoal 101,108,136 / 69,71,86, lightning cyan 46,193,253"},
+  "eye_glow": {"rgb": [255, 255, 255], "emission": [125, 168, 235], "emission_scale": 1.0, "note": "the glowing blue eyes (sheet front / side eye pixels, brightest quarter 119..144,163..188,231..240); rgb white keeps the baked albedo"},
+  "crystal_core": {"rgb": [255, 255, 255], "emission": [46, 193, 253], "emission_scale": 0.5, "note": "the lightning inside the crystals (the sheet's 6th chip, bright cyan 46,193,253): the brightest crystal faces"},
+  "crystal_glow": {"rgb": [255, 255, 255], "emission": [61, 106, 244], "emission_scale": 0.3, "note": "the crystals' inner glow (sheet chip 61,106,244), low so the faceted albedo still reads; no external arcs (sheet)"}
+ },
+ "material": {"roughness": 0.85, "emission_strength": 1.0, "alpha": 1.0}
+}

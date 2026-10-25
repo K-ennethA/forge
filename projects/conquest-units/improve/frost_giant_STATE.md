@@ -1,0 +1,33 @@
+# frost_giant STATE (v2, 2026-10-17; v1 draft 2026-10-16)
+
+- Version: v1 = the Pixal3D proxy (seed 56, sha 0a7d8650), LIGHT finish (proxy_finish.py; config improve/frost_giant_finish.json). Geometry kept as generated except the ground-shadow fins under the feet (light.cuts). No symmetrise, nothing cut on the head / face. v1 DIGEST a73277178d121b0a.
+- v2 (2026-10-17, artist: "our characters should be symmetrical head turns are done through posing"): SYMMETRY PASS ONLY; every v1 colour / glow / cut kept. DIGEST 92154da01bbdea11 (twin identical, bake diff 0 texels).
+  - Measured on the v1 low (best mirror plane per height slab, yaw +-10 deg x plane-x sweep, p99): the body is NOT turned, only off-centre. Feet 0 deg x 0.07; belly -1..+0.5 deg x 0.05..0.07 (p99 0.069..0.078); chest -1 deg x 0.03; shoulders +1 deg x 0.05; whole low 0 deg x 0.05. Only the head (z > 5.4) is turned: +3.75 deg whole head, +4.5 deg face/mask, eye line +3.4 deg, horn tips +5.7 deg.
+  - The face is NOT sculpted crooked: face p99 0.050 u about its own plane (0.096 at yaw 0). In the face frame the glow slits are 0.232 / 0.235 u wide at the same height (z 6.59..6.76), roll -0.4 deg.
+  - light.yaw deg 0, about (0.055, 0) -> (0, 0): one rigid shift puts the body plane on x 0 (mirror p99 0.161 -> 0.129).
+  - repose (bones): the legs are mirror-symmetric at the mean (joint error 0.025 / 0.021 / 0.082 / 0.086 u -> <= 0.059, the difference left by the plant). Both soles are planted on z 0 (the +x sole was 0.112 up, the -x one -0.009). The arms are mirror-symmetric at the mean (wrist error 0.089 -> 0). The neck turns -2.125 deg and the head -4.25 deg (the face straight ahead, -y). One rigid box holds the mask, eye slits, horns, icicle beard and back icicles on the head bone (4358 verts, rigid max deviation 0.0). No tail chain, because the sheet draws no tail.
+  - After the repose (face frame): the eye line is -0.87 deg, the horn tip line +1.4 deg, and the eye / mask / horn midpoints are at x -0.012 / +0.006 / -0.018.
+  - Result: mirror p99 0.161 -> 0.105 u (repose frame, x 0 = the body plane). Measured about the bbox centre it is 0.131 (build) / 0.142 (glb): the final centring is on the bbox, and the -x hand's claws spread 0.07 u wider, so the body plane sits +0.036 u off the origin.
+  - Repose quality: edge stretch p99 1.078, max 1.268 (5 edges > 1.25: the +x toe plant, and the back of the shoulder at the head box's margin). Self-intersections 3 -> 3. Tris 18000, open edges 0.
+  - Gate: front 0.892 / side 0.856 / mean 0.874 (v1 0.896 / 0.860 / 0.878); finish gate mean 0.874, pre-repose 0.878. Contract checks: only cell_fit fails (report-only). Walk clip min_z -0.039 (unchanged). Evidence: renders/frost_giant/frost_giant_v2_symmetry.png.
+  - Left as generated: the -x hand is a touch larger than the +x one (claw spread), and the +x horn has a small knob at its tip.
+- Spec: design/review-log.md "2026-10-16 — NEW UNITS x14" (FROST GIANT); sheet design/reference/frost_giant-character-sheet.png; intake design/reference/frost_giant/intake.json (proxy gate reliable: mean IoU 0.879, side length -4.2 %).
+- What the finish changed:
+  - geometry: Pixal3D extruded the sheet's floor shadow pool into two thin vertical fins, one under each foot (x -0.37..-0.30 / +0.42..+0.48, y -1.52..+1.52, z 0..0.35, 0.03..0.08 u thick). These read as the flat dark disc in the side render. Four light.cuts boxes remove them: in front of the toes, behind the heels, and the strip under each sole. The removed faces also leave the bake source (4019 proxy faces).
+  - frame: refloor to the -x foot sole (z0 0.093), then x1.0157 to the sheet front height 7.77 (built height 7.788 u).
+  - decimation: 18000 tris. The head box (mask, horns, beard, back icicles) is held 2.5x dense (share 0.533), and each eye-slit box is denser again.
+  - colour (texture only, light.recolour3d). The grey-slate / lavender proxy ice is taken to the sheet's icy blue at full facet contrast (ice_body 170,212,242). The bluer texels (claws, beard, icicles) go to the sheet claw blue 118,188,237, the darkest texels (seams, V line) to the seam chip (55,125,188), and the horns to 170,220,241 / 112,186,236. Eye slits: teal core -> glow chip 96,210,251, rim -> seam blue 50,120,183. Stage-1 texture, front ortho: L* p25/50/75 70/84/87, a* -7.6, b* -19.8 (sheet 67/83/89, -5.5, -18.1).
+  - glow: light.glow3d eye_slits -> palette region eye_glow (emission 96,210,251 x 1.0), 444 faces. No other glow.
+  - bakes: ao_from_low (64 samples, ao_distance 0.45), bake_drop_interior 0.08, flat reference.
+- Rig (v2): spine hips / spine / chest / neck / head on the body plane (x 0 in the light.yaw frame); the head bone runs from (0.02, 0, 5.9) along the face heading. The `arm` chain (shoulder, elbow, wrist, claw centre) and the `leg` chain (hip, knee, ankle, toe) are the proxy's own per-side joints (points / points_R), made one mirror pair by the repose.
+- LOCKED: nothing yet (awaiting the artist).
+- Knobs that matter: light.recolour3d targets (ice_body 170,212,242 + detail_gamma 1.0 / clip 1.05; ice_shards 118,188,237; seams_deep 55,125,188; horns 170,220,241); the b* -23 split between body ice and icicle blue; ao_distance 0.45; body_tris 18000; head dense box 2.5; palettes/frost_giant/default.json eye_glow emission_scale 1.0; clips (idle 72 f, breathe 1.2, walk 36 f, leg_swing 12, arm_swing 6).
+- Open for the artist:
+  - movement + in-game height: the clips are PLACEHOLDERS.
+  - (v1) as generated, asymmetric (mirror p99 0.163 u, the head turned ~4 deg): resolved in v2 by light.yaw + repose (see v2). The v1 note that the -x eye slit was narrower came from the head turn; in the face frame the two slits are equal.
+  - (v1) the +x foot floated 0.12 u: resolved in v2 by the repose plant (both soles at z 0). The walk clip still dips the foot 0.04 u below the floor (clip_loops min_z -0.039, kit walk).
+  - the body is 1.6 % short of the sheet front height before the rescale. This is fixed by the refloor rescale.
+  - the basecolor atlas is darker than the stage-1 texture: AO median 0.83, p25 0.58 under the beard / arms; albedo L* median 71 -> basecolor 64. Exposed faces are hardly touched. If the artist wants it paler overall, lower ao_distance.
+  - the belly V panel shares the chest's ice tone; the dark V seam carries the shape (the sheet's panel is a touch bluer, 174,210,238).
+- Unit gates: digest twins, bake gate, contract checks (cell_fit report-only), compose GATE lines, proxy_finish.py gate + panel (renders/frost_giant/frost_giant_finish_panel.png).
+- Open artist questions: design/OPEN-QUESTIONS.md section 'frost_giant'.

@@ -1,0 +1,10 @@
+{
+ "unit": "ember_rex",
+ "skin": "default",
+ "description": "ember_rex default look, LIGHT proxy finish: the colour is the Pixal3D proxy's own texture (feathers lifted to the sheet's warm reds / flame tips, legs to the scaled brown, the chest gem painted) baked onto the low (improved/textures/ember_rex_basecolor.png); proxy_albedo (white) tints it; one GLOW region (the chest ember gem) carries the emission (Glow -> Emission Color)",
+ "regions": {
+  "proxy_albedo": {"rgb": [255, 255, 255], "note": "tint over the baked proxy albedo (light mode); white keeps the feathers as baked. Sheet chips for reference: 70,52,54 / 127,45,46 / 157,66,60 / 248,127,74 / 253,197,109 / 235,219,206"},
+  "ember_gem": {"rgb": [255, 255, 255], "emission": [248, 127, 74], "emission_scale": 1.0, "note": "the small glowing ember gem on the chest (sheet chip 248,127,74; gem core 255,201,108 is painted in the albedo); rgb white keeps the baked albedo"}
+ },
+ "material": {"roughness": 0.85, "emission_strength": 1.0, "alpha": 1.0}
+}

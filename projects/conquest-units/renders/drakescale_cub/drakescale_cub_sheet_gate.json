@@ -1,0 +1,41 @@
+{
+ "unit": "drakescale_cub",
+ "views": {
+  "front": {
+   "iou": 0.8833,
+   "iou_shape": 0.7997,
+   "aspect_rel": 0.0444,
+   "row_err_u": 0.247,
+   "row_err_pct": 8.2,
+   "w_u": 3.03,
+   "h_u": 5.89,
+   "ref_w_u": 3.16,
+   "ref_h_u": 5.87,
+   "iou_in_frame": 0.8813,
+   "row_err_pct_in_frame": 8.3,
+   "proxy_iou": 0.8983,
+   "flag": false
+  },
+  "side": {
+   "iou": 0.7356,
+   "iou_shape": 0.7118,
+   "aspect_rel": 0.015,
+   "row_err_u": 0.46,
+   "row_err_pct": 9.5,
+   "w_u": 6.2,
+   "h_u": 5.89,
+   "ref_w_u": 5.76,
+   "ref_h_u": 5.39,
+   "iou_in_frame": 0.7052,
+   "row_err_pct_in_frame": 11.9,
+   "proxy_iou": 0.825,
+   "flag": true
+  }
+ },
+ "proxy_sha256": "57ad4b2d42a9a99964ab0c79e05a9271b2dab4f8d1c45e81db1a207d4ed708d7",
+ "proxy_gate": "proxy unreliable, work from the sheet (side length off by +8.4%)",
+ "flagged": [
+  "side"
+ ],
+ "mean_iou": 0.8095
+}

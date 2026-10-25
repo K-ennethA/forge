@@ -1,0 +1,39 @@
+{
+ "unit": "iron_scale_knight",
+ "views": {
+  "back": {
+   "iou": 0.7816,
+   "iou_shape": 0.6349,
+   "aspect_rel": 0.2231,
+   "row_err_u": 0.624,
+   "row_err_pct": 17.9,
+   "w_u": 5.75,
+   "h_u": 6.82,
+   "ref_w_u": 4.5,
+   "ref_h_u": 6.87,
+   "iou_in_frame": 0.7785,
+   "row_err_pct_in_frame": 18.2,
+   "proxy_iou": 0.7807,
+   "flag": false
+  },
+  "side": {
+   "iou": 0.8805,
+   "iou_shape": 0.8565,
+   "aspect_rel": 0.0024,
+   "row_err_u": 0.174,
+   "row_err_pct": 5.0,
+   "w_u": 4.1,
+   "h_u": 6.82,
+   "ref_w_u": 4.12,
+   "ref_h_u": 6.87,
+   "iou_in_frame": 0.8604,
+   "row_err_pct_in_frame": 7.0,
+   "proxy_iou": 0.8562,
+   "flag": false
+  }
+ },
+ "proxy_sha256": "e5092e7d35612b57beb8bb5802c9d1aba6f4b258aa5b87e2af817c35e956d3ee",
+ "proxy_gate": "proxy unreliable, work from the sheet (side length off by +7.3%)",
+ "flagged": [],
+ "mean_iou": 0.831
+}

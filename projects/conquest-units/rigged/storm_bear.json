@@ -1,0 +1,488 @@
+{
+ "unit": "storm_bear",
+ "source": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\improved\\storm_bear.blend",
+ "fps": 24,
+ "finish": {
+  "open_edges": 0,
+  "tris": 18000,
+  "mirror": {
+   "plane_x_u": 0.0,
+   "max_u": 0.40168,
+   "p99_u": 0.21054,
+   "p90_u": 0.0745,
+   "mean_u": 0.03229,
+   "rule": "every vertex mirrored in X about the plane -> distance to the nearest surface (0 = exactly symmetric)"
+  },
+  "tri_budget": [
+   8000,
+   22000
+  ],
+  "in_budget": true,
+  "mode": "light"
+ },
+ "weights": {
+  "max_influences": 4,
+  "unweighted": 0,
+  "sum_dev_max": 4.440892098500626e-16,
+  "per_bone_dominant": {
+   "hips": 244,
+   "spine": 176,
+   "chest": 225,
+   "neck": 1266,
+   "head": 2061,
+   "arm.L.0": 698,
+   "arm.L.1": 194,
+   "arm.L.2": 171,
+   "arm.R.0": 653,
+   "arm.R.1": 195,
+   "arm.R.2": 194,
+   "leg.L.0": 463,
+   "leg.L.1": 251,
+   "leg.L.2": 189,
+   "leg.R.0": 470,
+   "leg.R.1": 244,
+   "leg.R.2": 161,
+   "mantle.0": 439,
+   "mantle.1": 142,
+   "mantle.2": 173,
+   "mantle.3": 75
+  },
+  "parts": {},
+  "rule": "shell: exp(-((d - d_min) / (0.06 H))^2) over bone-segment distances, side-aware, <= 4, normalised; parts rigid on their bone"
+ },
+ "clips": {
+  "idle": {
+   "frames": [
+    1,
+    73
+   ],
+   "seconds": 3.0,
+   "cyclic": true,
+   "seam_mm": 0.0,
+   "clearance_min_z": -0.0153
+  },
+  "walk": {
+   "frames": [
+    1,
+    37
+   ],
+   "seconds": 1.5,
+   "cyclic": true,
+   "seam_mm": 0.0,
+   "clearance_min_z": -0.253
+  }
+ },
+ "bones": [
+  {
+   "name": "root",
+   "parent": null,
+   "deform": false,
+   "head": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "tail": [
+    0.0,
+    0.0,
+    0.4
+   ]
+  },
+  {
+   "name": "hips",
+   "parent": "root",
+   "deform": true,
+   "head": [
+    -0.0155,
+    0.5052,
+    2.35
+   ],
+   "tail": [
+    -0.0155,
+    0.6052,
+    3.35
+   ]
+  },
+  {
+   "name": "spine",
+   "parent": "hips",
+   "deform": true,
+   "head": [
+    -0.0155,
+    0.6052,
+    3.35
+   ],
+   "tail": [
+    -0.0155,
+    0.4552,
+    4.35
+   ]
+  },
+  {
+   "name": "chest",
+   "parent": "spine",
+   "deform": true,
+   "head": [
+    -0.0155,
+    0.4552,
+    4.35
+   ],
+   "tail": [
+    -0.0155,
+    0.1052,
+    5.05
+   ]
+  },
+  {
+   "name": "neck",
+   "parent": "chest",
+   "deform": true,
+   "head": [
+    -0.0155,
+    0.1052,
+    5.05
+   ],
+   "tail": [
+    -0.0275,
+    -0.3947,
+    5.6
+   ]
+  },
+  {
+   "name": "head",
+   "parent": "neck",
+   "deform": true,
+   "head": [
+    -0.0275,
+    -0.3947,
+    5.6
+   ],
+   "tail": [
+    -0.0275,
+    -1.6998,
+    5.65
+   ]
+  },
+  {
+   "name": "arm.L.0",
+   "parent": "chest",
+   "deform": true,
+   "head": [
+    0.9845,
+    0.0052,
+    4.45
+   ],
+   "tail": [
+    1.7337,
+    -0.1248,
+    3.4716
+   ]
+  },
+  {
+   "name": "arm.L.1",
+   "parent": "arm.L.0",
+   "deform": true,
+   "head": [
+    1.7337,
+    -0.1248,
+    3.4716
+   ],
+   "tail": [
+    1.7972,
+    -0.7148,
+    2.5633
+   ]
+  },
+  {
+   "name": "arm.L.2",
+   "parent": "arm.L.1",
+   "deform": true,
+   "head": [
+    1.7972,
+    -0.7148,
+    2.5633
+   ],
+   "tail": [
+    1.8217,
+    -0.9848,
+    1.837
+   ]
+  },
+  {
+   "name": "arm.R.0",
+   "parent": "chest",
+   "deform": true,
+   "head": [
+    -0.9845,
+    0.0052,
+    4.45
+   ],
+   "tail": [
+    -1.7337,
+    -0.1248,
+    3.4716
+   ]
+  },
+  {
+   "name": "arm.R.1",
+   "parent": "arm.R.0",
+   "deform": true,
+   "head": [
+    -1.7337,
+    -0.1248,
+    3.4716
+   ],
+   "tail": [
+    -1.7972,
+    -0.7148,
+    2.5633
+   ]
+  },
+  {
+   "name": "arm.R.2",
+   "parent": "arm.R.1",
+   "deform": true,
+   "head": [
+    -1.7972,
+    -0.7148,
+    2.5633
+   ],
+   "tail": [
+    -1.8217,
+    -0.9848,
+    1.837
+   ]
+  },
+  {
+   "name": "mantle.0",
+   "parent": "chest",
+   "deform": true,
+   "head": [
+    -0.0155,
+    1.1552,
+    4.6
+   ],
+   "tail": [
+    -0.0155,
+    1.3047,
+    3.8026
+   ]
+  },
+  {
+   "name": "mantle.1",
+   "parent": "mantle.0",
+   "deform": true,
+   "head": [
+    -0.0155,
+    1.3047,
+    3.8026
+   ],
+   "tail": [
+    -0.0155,
+    1.4047,
+    3.0037
+   ]
+  },
+  {
+   "name": "mantle.2",
+   "parent": "mantle.1",
+   "deform": true,
+   "head": [
+    -0.0155,
+    1.4047,
+    3.0037
+   ],
+   "tail": [
+    -0.0155,
+    1.4552,
+    2.1974
+   ]
+  },
+  {
+   "name": "mantle.3",
+   "parent": "mantle.2",
+   "deform": true,
+   "head": [
+    -0.0155,
+    1.4552,
+    2.1974
+   ],
+   "tail": [
+    -0.0155,
+    1.4552,
+    1.4
+   ]
+  },
+  {
+   "name": "leg.L.0",
+   "parent": "hips",
+   "deform": true,
+   "head": [
+    0.5345,
+    0.4052,
+    2.3
+   ],
+   "tail": [
+    0.9545,
+    0.4002,
+    1.0517
+   ]
+  },
+  {
+   "name": "leg.L.1",
+   "parent": "leg.L.0",
+   "deform": true,
+   "head": [
+    0.9545,
+    0.4002,
+    1.0517
+   ],
+   "tail": [
+    1.1345,
+    0.3052,
+    0.4234
+   ]
+  },
+  {
+   "name": "leg.L.2",
+   "parent": "leg.L.1",
+   "deform": true,
+   "head": [
+    1.1345,
+    0.3052,
+    0.4234
+   ],
+   "tail": [
+    0.9595,
+    -0.6548,
+    0.0834
+   ]
+  },
+  {
+   "name": "leg.R.0",
+   "parent": "hips",
+   "deform": true,
+   "head": [
+    -0.5345,
+    0.4052,
+    2.3
+   ],
+   "tail": [
+    -0.9545,
+    0.4002,
+    1.0517
+   ]
+  },
+  {
+   "name": "leg.R.1",
+   "parent": "leg.R.0",
+   "deform": true,
+   "head": [
+    -0.9545,
+    0.4002,
+    1.0517
+   ],
+   "tail": [
+    -1.1345,
+    0.3052,
+    0.4234
+   ]
+  },
+  {
+   "name": "leg.R.2",
+   "parent": "leg.R.1",
+   "deform": true,
+   "head": [
+    -1.1345,
+    0.3052,
+    0.4234
+   ],
+   "tail": [
+    -0.9595,
+    -0.6548,
+    0.0834
+   ]
+  }
+ ],
+ "bone_count": 22,
+ "digest": {
+  "parts": {
+   "solid_grid": "844f71fb14a5dfc4",
+   "bake_normal": "7984d31002ac5f39",
+   "bake_ao": "671dcfb8f173e777",
+   "bake_albedo": "2a02f512040b36af",
+   "glow3d": "6fbb64019f75a150",
+   "repose": "19048777be6b99e8",
+   "belly": "1f76b1c0c86c0a56",
+   "geometry_colour_uv": "720038b733cb7c0c",
+   "weights": "7bf645d5c4661ac8",
+   "keys": "19d0092168bce15f",
+   "clip_samples": "bee6f20e6113a34e"
+  },
+  "combined": "12c689d0273cdf5b"
+ },
+ "glb": {
+  "path": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\rigged\\storm_bear.glb",
+  "bytes": 13331588,
+  "seconds": 0.7
+ },
+ "skins": {
+  "default": {
+   "file": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\rigged\\storm_bear.blend",
+   "palette": {
+    "proxy_albedo": {
+     "rgb": [
+      255,
+      255,
+      255
+     ]
+    },
+    "eye_glow": {
+     "rgb": [
+      255,
+      255,
+      255
+     ],
+     "emission": [
+      125,
+      168,
+      235
+     ],
+     "emission_scale": 1.0
+    },
+    "crystal_core": {
+     "rgb": [
+      255,
+      255,
+      255
+     ],
+     "emission": [
+      46,
+      193,
+      253
+     ],
+     "emission_scale": 0.5
+    },
+    "crystal_glow": {
+     "rgb": [
+      255,
+      255,
+      255
+     ],
+     "emission": [
+      61,
+      106,
+      244
+     ],
+     "emission_scale": 0.3
+    }
+   }
+  },
+  "repaint_proof": {
+   "default_digest_before": "720038b733cb7c0c",
+   "after_repaint": "720038b733cb7c0c"
+  }
+ },
+ "improved_report": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\improved\\storm_bear.json",
+ "seconds": 144.2
+}

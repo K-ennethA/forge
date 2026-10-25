@@ -162,3 +162,23 @@ are asked, deviations from the sheet are reported.)
 ## Vulture Creature (sheets 2026-10-12)
 - N15 Movement intent (walks? hops? flies with the cloak wings?) still OPEN (placeholder idle + walk in game).
   Height ANSWERED 2026-10-12: 5 ft (1.524 m).
+
+## Batch of 14 (sheets 2026-10-16)
+Movement intent + in-game height per unit (placeholder idle + walk until answered):
+- N16 Icehorn Moose
+- N17 Frost Calf
+- N18 Frost Giant
+- N19 Frost Giant Child
+- N20 Storm Bear (upright on the sheet: walks on two legs, or drops to four?)
+- N21 Spike Beak (the small round one)
+- N22 Spring Pig (the sheet says the spring tail is "used for high jumping": hop / bounce?)
+- N23 Raven Shade (walks, hops, flies with the cloak wings?)
+- N24 Ember Rex (walks, flies?)
+- N25 Ember Rex 2 (walks, flies?)
+- N26 Iron Scale Knight
+- N27 Shadowscale
+- N28 Azure Scale Mage
+- N29 Drakescale Beast (four-legged on the sheet)
+- N30 Spike Beak 3 (the tall one); N31 Spike Beak 2 (the rounder mature one, sheet file pending)
+- N32 Drakescale Cub (sheet 2026-10-17): movement + in-game height.
+- N31 Spike Beak 2 sheet received 2026-10-17: movement + in-game height.

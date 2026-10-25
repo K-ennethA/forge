@@ -1,0 +1,6 @@
+﻿WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\iron_scale_knight\iron_scale_knight_sheet_vs_model.png
+GATE view=back  iou=0.782 in_frame=0.778 row_err=17.9% | proxy iou=0.781
+GATE view=side  iou=0.880 in_frame=0.860 row_err=5.0% | proxy iou=0.856
+GATE mean_iou=0.831 flagged=none proxy=proxy unreliable, work from the sheet (side length off by +7.3%)
+GATE bake_reference=none (no object.bake call found)
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\iron_scale_knight\iron_scale_knight_contact.png

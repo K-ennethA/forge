@@ -1,0 +1,2107 @@
+{
+ "unit": "frost_giant",
+ "conquest_character_id": "frost_giant",
+ "tier": "regular",
+ "tri_budget": [
+  8000,
+  22000
+ ],
+ "pattern": "proxy finish LIGHT (proxy_finish.py stage_light + proxy_finish_light.py): the frozen Pixal3D sheet proxy kept as generated (geometry + texture), made watertight, decimated, baked, optionally reposed with bones",
+ "config": {
+  "unit": "frost_giant",
+  "char_id": "frost_giant",
+  "tier": "regular",
+  "tri_budget": [
+   8000,
+   22000
+  ],
+  "body_tris": 18000,
+  "mode": "light",
+  "refloor": {
+   "y_windows": [
+    [
+     0.3,
+     0.8
+    ]
+   ],
+   "x_abs_min": 0.0,
+   "pct": 0.2,
+   "rescale_to_front_height": true,
+   "why": "sheet_proxy floored the GROUND-SHADOW FINS (two thin vertical plates under the feet, x -0.37..-0.30 / +0.42..+0.48, y -1.52..+1.52, z 0.00..0.35: the sheet's floor pool extruded; cut below); the feet stand on them. Floor to the -x foot sole (wide foot section from z 0.10 at y 0.4..0.7; the fin's few vertices keep the window's 0.2-percentile at 0.093), then x(7.77 / height) to the sheet front height"
+  },
+  "light": {
+   "steps_per_height": 300,
+   "cuts": [
+    {
+     "box": [
+      [
+       -0.8,
+       -1.8,
+       -0.3
+      ],
+      [
+       0.8,
+       0.18,
+       0.28
+      ]
+     ],
+     "why": "ground-shadow fin, FRONT of the toes (stage-1 y < 0.18; both toes start at y 0.20, below z 0.31 only the two fins, x-width 0.03..0.08, live there). Not on the sheet: the side view's floor pool is a cast shadow, not the character"
+    },
+    {
+     "box": [
+      [
+       -0.8,
+       0.67,
+       -0.3
+      ],
+      [
+       0.8,
+       1.8,
+       0.28
+      ]
+     ],
+     "why": "ground-shadow fin, BEHIND the heels (the -x heel ends at y 0.65, the +x at 0.60; the fin tops out at z 0.26 there, the leg starts at z 0.31)"
+    },
+    {
+     "box": [
+      [
+       -0.8,
+       0.18,
+       -0.3
+      ],
+      [
+       0.0,
+       0.67,
+       -0.01
+      ]
+     ],
+     "why": "the -x fin's strip under the -x sole (the wide foot section, x-width 0.11..0.17, starts at z 0.00 at y 0.45..0.65; below it only the fin)"
+    },
+    {
+     "box": [
+      [
+       0.0,
+       0.18,
+       -0.3
+      ],
+      [
+       0.8,
+       0.67,
+       0.115
+      ]
+     ],
+     "why": "the +x fin's strip under the +x sole (the +x foot's wide section starts at z 0.125 at y 0.35..0.5; below it only the 0.03..0.08-wide fin)"
+    }
+   ],
+   "dense": [
+    {
+     "box": [
+      [
+       -0.95,
+       -1.3,
+       5.0
+      ],
+      [
+       0.95,
+       1.45,
+       7.95
+      ]
+     ],
+     "density": 2.5,
+     "vg_weight": 0.3,
+     "why": "the head: angular ice mask, eye slits, two horns, the icicle beard and back icicles (proxy sections z 5.11..6.97: x -1.07..1.12, y -0.73..1.30; horn tips at z 7.74); vg_weight 0.3 so the eye boxes below can sit denser"
+    },
+    {
+     "box": [
+      [
+       -0.38,
+       -0.8,
+       6.53
+      ],
+      [
+       0.02,
+       -0.25,
+       6.85
+      ]
+     ],
+     "density": 2.5,
+     "vg_weight": 0.0,
+     "why": "the -x eye slit (teal proxy texels x -0.35..-0.03, z 6.56..6.75, y -0.49; dark rim to x 0.00, z 6.82) held denser so the glow core and the dark rim land on separate faces (vulture_creature lesson)"
+    },
+    {
+     "box": [
+      [
+       0.2,
+       -0.8,
+       6.53
+      ],
+      [
+       0.52,
+       -0.25,
+       6.85
+      ]
+     ],
+     "density": 2.5,
+     "vg_weight": 0.0,
+     "why": "the +x eye slit (teal x 0.24..0.45, z 6.59..6.76, y -0.45; rim x 0.23..0.48, z to 6.82), as the -x one"
+    }
+   ],
+   "ao_from_low": true,
+   "ao_samples": 64,
+   "ao_why": "AO baked on the watertight low itself: the proxy's icicle shards are inner shells that black-hole AO rays (crystal_canine / vulture_creature / frost_calf lesson)",
+   "ao_distance": 0.45,
+   "ao_distance_why": "only real crevices darken (the sheet's ice is pale and flat); frost_calf value",
+   "bake_drop_interior": 0.08,
+   "bake_drop_interior_why": "proxy faces with solid on both sides (inner shells under the icicle shards) left out of the bake source so the cage stays tight",
+   "recolour3d": [
+    {
+     "name": "eye_core",
+     "boxes": [
+      [
+       [
+        -0.38,
+        -0.8,
+        6.53
+       ],
+       [
+        0.02,
+        -0.25,
+        6.85
+       ]
+      ],
+      [
+       [
+        0.2,
+        -0.8,
+        6.53
+       ],
+       [
+        0.52,
+        -0.25,
+        6.85
+       ]
+      ]
+     ],
+     "feather": 0.02,
+     "select": {
+      "a": [
+       -100,
+       -8
+      ],
+      "soft": 2
+     },
+     "target_rgb": [
+      96,
+      210,
+      251
+     ],
+     "detail_gamma": 0.3,
+     "detail_clip": [
+      0.85,
+      1.1
+     ],
+     "why": "spec: 'narrow glowing eye slits (96,210,251)': the proxy's teal slit interiors (median 135,189,193, a* < -8; front ortho x -0.35..-0.03 / 0.24..0.45, z 6.56..6.76) painted the sheet glow chip; the emission comes from glow3d"
+    },
+    {
+     "name": "eye_rim",
+     "boxes": [
+      [
+       [
+        -0.38,
+        -0.8,
+        6.53
+       ],
+       [
+        0.02,
+        -0.25,
+        6.85
+       ]
+      ],
+      [
+       [
+        0.2,
+        -0.8,
+        6.53
+       ],
+       [
+        0.52,
+        -0.25,
+        6.85
+       ]
+      ]
+     ],
+     "feather": 0.02,
+     "select": {
+      "L": [
+       0,
+       66
+      ],
+      "soft": 3
+     },
+     "target_rgb": [
+      50,
+      120,
+      183
+     ],
+     "detail_gamma": 0.5,
+     "detail_clip": [
+      0.7,
+      1.3
+     ],
+     "why": "the sheet outlines each slit in the seam blue (chip 50,120,183; sheet front px 185..214 / 236..262 x 166..187); the proxy's slit rim is grey-slate (median 95,130,152, L* < 62)"
+    },
+    {
+     "name": "horn_light",
+     "boxes": [
+      [
+       [
+        -0.45,
+        -0.45,
+        7.25
+       ],
+       [
+        -0.1,
+        0.15,
+        7.8
+       ]
+      ],
+      [
+       [
+        0.2,
+        -0.35,
+        7.25
+       ],
+       [
+        0.52,
+        0.15,
+        7.8
+       ]
+      ]
+     ],
+     "feather": 0.03,
+     "select": {
+      "L": [
+       62,
+       101
+      ],
+      "soft": 3
+     },
+     "target_rgb": [
+      170,
+      220,
+      241
+     ],
+     "detail_gamma": 0.5,
+     "detail_clip": [
+      0.75,
+      1.08
+     ],
+     "why": "spec 'straight crystalline horns, semi-translucent': sheet front horns median 170,220,241 (cyan, a* -7); proxy horns 132,182,212 (L* 72). Horn boxes = the proxy's two horn columns above the mask dome (z >= 7.25: x -0.39..-0.16 / 0.24..0.47)"
+    },
+    {
+     "name": "horn_deep",
+     "boxes": [
+      [
+       [
+        -0.45,
+        -0.45,
+        7.25
+       ],
+       [
+        -0.1,
+        0.15,
+        7.8
+       ]
+      ],
+      [
+       [
+        0.2,
+        -0.35,
+        7.25
+       ],
+       [
+        0.52,
+        0.15,
+        7.8
+       ]
+      ]
+     ],
+     "feather": 0.03,
+     "select": {
+      "L": [
+       0,
+       62
+      ],
+      "soft": 3
+     },
+     "target_rgb": [
+      112,
+      186,
+      236
+     ],
+     "detail_gamma": 0.6,
+     "detail_clip": [
+      0.6,
+      1.15
+     ],
+     "why": "the horns' darker facets to the sheet's mid ice blue (between chips 128,190,238 and the claw blue 107,187,236)"
+    },
+    {
+     "name": "ice_body",
+     "boxes": [
+      [
+       [
+        -2.3,
+        -2.0,
+        -0.3
+       ],
+       [
+        2.3,
+        2.0,
+        8.0
+       ]
+      ]
+     ],
+     "exclude": [
+      [
+       [
+        -0.45,
+        -0.45,
+        7.25
+       ],
+       [
+        -0.1,
+        0.15,
+        7.8
+       ]
+      ],
+      [
+       [
+        0.2,
+        -0.35,
+        7.25
+       ],
+       [
+        0.52,
+        0.15,
+        7.8
+       ]
+      ]
+     ],
+     "feather": 0.03,
+     "select": {
+      "L": [
+       44,
+       101
+      ],
+      "b": [
+       -23,
+       100
+      ],
+      "soft": 2
+     },
+     "target_rgb": [
+      170,
+      212,
+      242
+     ],
+     "detail_gamma": 1.0,
+     "detail_clip": [
+      0.4,
+      1.05
+     ],
+     "why": "orchestrator: the proxy texture reads GREY-slate / lavender where the sheet is pale icy blue: proxy front-ortho L* p10/25/50/75/90 49/59/72/80/86, a* -2.3 vs the sheet front 49/67/83/89/92, a* -5.5, b* -18. The body ice (L* >= 44, not strongly blue: b* >= -23) to the sheet's icy blue with the proxy's facet shading kept at FULL contrast (gamma 1, so the shaded sides stay mid-blue like the sheet's p25) and the highlights capped (clip 1.05, so the blue channel never saturates: at 1.1 it clipped to 255 and the highlights turned cyan, a* -8.5 vs the sheet -5.5): target 170,212,242 = the sheet front median hue (168,212,240), a few % up for the AO multiply. Runs over the eye boxes too (v1 run 1: a separate eye_skin pass left a lighter square around each slit); the eye core / rim outputs are skipped by its b* >= -23 select"
+    },
+    {
+     "name": "ice_shards",
+     "boxes": [
+      [
+       [
+        -2.3,
+        -2.0,
+        -0.3
+       ],
+       [
+        2.3,
+        2.0,
+        8.0
+       ]
+      ]
+     ],
+     "exclude": [
+      [
+       [
+        -0.38,
+        -0.8,
+        6.53
+       ],
+       [
+        0.02,
+        -0.25,
+        6.85
+       ]
+      ],
+      [
+       [
+        0.2,
+        -0.8,
+        6.53
+       ],
+       [
+        0.52,
+        -0.25,
+        6.85
+       ]
+      ],
+      [
+       [
+        -0.45,
+        -0.45,
+        7.25
+       ],
+       [
+        -0.1,
+        0.15,
+        7.8
+       ]
+      ],
+      [
+       [
+        0.2,
+        -0.35,
+        7.25
+       ],
+       [
+        0.52,
+        0.15,
+        7.8
+       ]
+      ]
+     ],
+     "feather": 0.03,
+     "select": {
+      "L": [
+       44,
+       101
+      ],
+      "b": [
+       -100,
+       -23
+      ],
+      "soft": 2
+     },
+     "target_rgb": [
+      118,
+      188,
+      237
+     ],
+     "detail_gamma": 0.9,
+     "detail_clip": [
+      0.45,
+      1.2
+     ],
+     "why": "the proxy's bluer texels (b* < -23: the claws a* -9 b* -26..-29, the beard b* -25 vs the body's b* -16..-19) are the sheet's deeper-blue icicles: to the sheet claw / beard blue (sheet front hands median 107,187,236, beard 115,182,226; chip 128,190,238)"
+    },
+    {
+     "name": "seams_deep",
+     "boxes": [
+      [
+       [
+        -2.3,
+        -2.0,
+        -0.3
+       ],
+       [
+        2.3,
+        2.0,
+        8.0
+       ]
+      ]
+     ],
+     "exclude": [
+      [
+       [
+        -0.38,
+        -0.8,
+        6.53
+       ],
+       [
+        0.02,
+        -0.25,
+        6.85
+       ]
+      ],
+      [
+       [
+        0.2,
+        -0.8,
+        6.53
+       ],
+       [
+        0.52,
+        -0.25,
+        6.85
+       ]
+      ],
+      [
+       [
+        -0.45,
+        -0.45,
+        7.25
+       ],
+       [
+        -0.1,
+        0.15,
+        7.8
+       ]
+      ],
+      [
+       [
+        0.2,
+        -0.35,
+        7.25
+       ],
+       [
+        0.52,
+        0.15,
+        7.8
+       ]
+      ]
+     ],
+     "feather": 0.03,
+     "select": {
+      "L": [
+       0,
+       44
+      ],
+      "soft": 2
+     },
+     "target_rgb": [
+      55,
+      125,
+      188
+     ],
+     "detail_gamma": 0.6,
+     "detail_clip": [
+      0.6,
+      1.3
+     ],
+     "why": "the proxy's darkest texels (L* < 44: the chevron seams, the V belly line, deep icicle cores; proxy navy-slate median 62,92,127) to the sheet's seam chip 50,120,183 (a touch above it for the AO multiply)"
+    }
+   ],
+   "glow3d": [
+    {
+     "name": "eye_slits",
+     "boxes": [
+      [
+       [
+        -0.38,
+        -0.8,
+        6.53
+       ],
+       [
+        0.02,
+        -0.25,
+        6.85
+       ]
+      ],
+      [
+       [
+        0.2,
+        -0.8,
+        6.53
+       ],
+       [
+        0.52,
+        -0.25,
+        6.85
+       ]
+      ]
+     ],
+     "feather": 0.02,
+     "select": {
+      "L": [
+       60,
+       101
+      ],
+      "a": [
+       -100,
+       -12
+      ],
+      "soft": 3
+     },
+     "levels": [
+      [
+       0.5,
+       "eye_glow"
+      ]
+     ],
+     "why": "glow ONLY in the eye slits (sheet): faces of the slit interiors whose baked albedo is the glow cyan (a* < -12; the recoloured core 96,210,251 has a* -20, the mask a* -4, the rim L* 49) -> region eye_glow (emission 96,210,251 x 1.0)"
+    }
+   ],
+   "yaw": {
+    "deg": 0.0,
+    "about": [
+     0.055,
+     0.0
+    ],
+    "to": [
+     0.0,
+     0.0
+    ],
+    "why": "v2 (artist 2026-10-17: 'our characters should be symmetrical head turns are done through posing'): best mirror plane per height slab of the v1 low (yaw sweep +-10 deg, plane-x sweep, p99): feet z 0..0.5 yaw 0 x 0.07; belly z 2.5..3.5 torso -1..+0.5 deg x 0.05..0.07 (p99 0.069..0.078); chest z 3.5..4.6 -1 deg x 0.03 (0.102); shoulders z 4.6..5.4 +1 deg x 0.05 (0.085); whole low 0 deg x 0.05 (0.126). The BODY is NOT turned, only off-centre by +0.055 u: deg 0 = one rigid shift of -0.055 u in x puts the body plane on x 0 (mirror p99 0.161 -> 0.130). Only the head is turned (beard / mask / horns z > 5.4: +3.75..+4.5 deg; the face's own plane p99 0.050 u, eye slits equal width 0.232 / 0.235 u and equal height z 6.59..6.76 in the face frame, eye-line roll -0.4 deg: turned, NOT sculpted crooked): the repose turns it back with bones. The rig / repose / rigid / focus boxes below are in this shifted frame"
+   }
+  },
+  "rig": {
+   "spine_names": [
+    "hips",
+    "spine",
+    "chest",
+    "neck",
+    "head"
+   ],
+   "spine": [
+    [
+     0.0,
+     0.4,
+     2.45
+    ],
+    [
+     0.0,
+     0.45,
+     3.4
+    ],
+    [
+     0.0,
+     0.5,
+     4.4
+    ],
+    [
+     0.0,
+     0.52,
+     5.2
+    ],
+    [
+     0.02,
+     0.0,
+     5.9
+    ],
+    [
+     0.0867,
+     -0.8975,
+     6.75
+    ]
+   ],
+   "spine_why": "v2, shifted frame (light.yaw): the spine on the body plane x 0; the head joint (0.02, 0, 5.9) sits on the face's own mirror plane (the neck's half-turn carries it onto x 0) and the head bone points along the face heading, 4.25 deg toward +x of -y (face mirror plane +4.5, whole head +3.75, eye line +3.4 deg), so the repose's heading -y turns the face straight by exactly that",
+   "chains": [
+    {
+     "name": "arm",
+     "kind": "arm",
+     "parent": "chest",
+     "phase": {
+      "L": 0.5,
+      "R": 0.0
+     },
+     "points": [
+      [
+       0.8,
+       0.6,
+       4.75
+      ],
+      [
+       1.257,
+       0.429,
+       3.4
+      ],
+      [
+       1.325,
+       -0.19,
+       2.3
+      ],
+      [
+       1.139,
+       -0.227,
+       1.2
+      ]
+     ],
+     "points_R": [
+      [
+       -0.8,
+       0.6,
+       4.75
+      ],
+      [
+       -1.251,
+       0.443,
+       3.4
+      ],
+      [
+       -1.365,
+       -0.11,
+       2.3
+      ],
+      [
+       -1.157,
+       -0.223,
+       1.2
+      ]
+     ],
+     "why": "v2, shifted frame, the proxy's own arm joints per side (surface-sample arm-column centres, 0.08 u slabs): shoulder inside the torso top (z 4.75), elbow (z 3.4: +1.257, 0.429 / -1.251, 0.443), wrist (z 2.3: +1.325, -0.19 / -1.365, -0.11), claw centre (z 1.2: +1.139, -0.227 / -1.157, -0.223); points = +x, points_R = -x as generated (the +x hand ~0.08 u further forward); the repose makes them one mirror pair"
+    },
+    {
+     "name": "leg",
+     "kind": "leg",
+     "parent": "hips",
+     "phase": {
+      "L": 0.0,
+      "R": 0.5
+     },
+     "points": [
+      [
+       0.24,
+       0.354,
+       2.45
+      ],
+      [
+       0.292,
+       0.555,
+       1.3
+      ],
+      [
+       0.384,
+       0.488,
+       0.4
+      ],
+      [
+       0.395,
+       0.22,
+       0.145
+      ]
+     ],
+     "points_R": [
+      [
+       -0.215,
+       0.353,
+       2.45
+      ],
+      [
+       -0.285,
+       0.575,
+       1.3
+      ],
+      [
+       -0.376,
+       0.57,
+       0.4
+      ],
+      [
+       -0.382,
+       0.22,
+       0.06
+      ]
+     ],
+     "why": "v2, shifted frame, the proxy's own leg joints per side: hip (z 2.45: +0.24 / -0.215), knee (z 1.3: +0.292, 0.555 / -0.285, 0.575), ankle (z 0.4: +0.384, 0.488 / -0.376, 0.57: the -x leg 0.08 u back), toe (y 0.22, 0.06 above each sole: the +x sole floats at z 0.085..0.11, the -x sole is on the floor); points = +x, points_R = -x"
+    }
+   ]
+  },
+  "clips": {
+   "idle_frames": 72,
+   "breathe_deg": 1.2,
+   "walk_frames": 36,
+   "walk_bob": 0.012,
+   "walk_roll": 2.0,
+   "leg_swing": 12.0,
+   "arm_swing": 6.0,
+   "why": "PLACEHOLDER (movement + height are the open artist questions, OPEN-QUESTIONS frost_giant): idle = breathe + the kit's arm sway; walk = a slow long-legged stride with a small arm swing (the arms reach the knees)"
+  },
+  "focus": {
+   "head": [
+    [
+     -1.005,
+     -1.3,
+     5.0
+    ],
+    [
+     0.895,
+     1.45,
+     7.95
+    ]
+   ],
+   "hands": [
+    [
+     0.645,
+     -1.3,
+     0.5
+    ],
+    [
+     2.245,
+     0.8,
+     2.6
+    ]
+   ]
+  },
+  "bake_res": [
+   1024,
+   1024
+  ],
+  "_doc": "LIGHT finish of the raw Pixal3D proxy (seed 56, sha 0a7d8650). Points: stage-1 frame (refloored to the -x sole, x the sheet front height), sheet units. v2 (2026-10-17): symmetry pass only (light.yaw shift + repose); every v1 colour / glow / cut kept. Rig / repose / focus points: the shifted frame (light.yaw).",
+  "repose": {
+   "targets": [
+    {
+     "symmetric": [
+      "leg"
+     ],
+     "match": "mean",
+     "plant": true,
+     "plant_radius": 0.5,
+     "falloff": 0.03,
+     "radius": [
+      [
+       0.45,
+       0.12
+      ],
+      [
+       0.4,
+       0.12
+      ],
+      [
+       0.45,
+       0.12
+      ]
+     ],
+     "why": "artist 2026-10-17: symmetric rest pose; the two legs mirror-symmetric at the mean (the -x leg ~0.08 u back at the ankle), both soles planted on the floor (v1: the +x sole floated 0.11 u)",
+     "radius_why": "[reach, taper] per bone: the leg bones never grab the hands (the claw tips hang 0.35 u outside the legs)"
+    },
+    {
+     "symmetric": [
+      "arm"
+     ],
+     "match": "mean",
+     "falloff": 0.06,
+     "radius": [
+      [
+       0.55,
+       0.12
+      ],
+      [
+       0.75,
+       0.15
+      ],
+      [
+       0.9,
+       0.15
+      ]
+     ],
+     "why": "the two arms mirror-symmetric at the mean (wrist mirror error 0.09 u before). No plant: the hands hang free",
+     "radius_why": "[reach, taper] per bone: the forearm / hand reach the whole spread claw (0.75 / 0.9 u: at 0.45 / 0.65 the forearm front faces fell to the hips bone, edge stretch 1.42 offline)"
+    },
+    {
+     "bones": [
+      "neck",
+      "head"
+     ],
+     "heading": "-y",
+     "distribute": true,
+     "why": "the head turned 4.25 deg toward +x (see spine_why): the face straight ahead (-y); the neck twists half (-2.125 deg), the head the rest"
+    }
+   ],
+   "rigid": [
+    {
+     "box": [
+      [
+       -0.9,
+       -1.05,
+       5.35
+      ],
+      [
+       0.9,
+       1.45,
+       7.95
+      ]
+     ],
+     "bone": "head",
+     "margin": 0.25,
+     "why": "the whole head moves as ONE rigid body with the head bone: angular ice mask, both eye slits, both horns, the icicle beard and the back icicles (proxy z 5.4..7.78, |x| < 0.85); never deformed or re-sculpted (as generated)"
+    }
+   ],
+   "why": "v2 (artist 2026-10-17, symmetric rest pose): the proxy's off-centre body is shifted rigidly (light.yaw, deg 0), its turned head and staggered legs / floating +x foot are undone with BONES (proxy_finish_repose), never by mirror-averaging geometry. No tail chain: the sheet draws no tail"
+  }
+ },
+ "units": "sheet units: 1 unit = 100 px of the reference sheet; floor z = 0",
+ "stage1_stdout": [
+  "RECOLOUR3D [{\"name\": \"eye_core\", \"target_rgb\": [96.0, 210.0, 251.0], \"why\": \"spec: 'narrow glowing eye slits (96,210,251)': the proxy's teal slit interiors (median 135,189,193, a* < -8; front ortho x -0.35..-0.03 / 0.24..0.45, z 6.56..6.76) painted the sheet glow chip; the emission comes from glow3d\", \"texels_touched\": 5634, \"texels_ge_half\": 4923, \"median_src_rgb\": [92.0, 138.0, 153.0], \"median_new_rgb\": [96.0, 209.0, 249.0]}, {\"name\": \"eye_rim\", \"target_rgb\": [50.0, 120.0, 183.0], \"why\": \"the sheet outlines each slit in the seam blue (chip 50,120,183; sheet front px 185..214 / 236..262 x 166..187); the proxy's slit rim is grey-slate (median 95,130,152, L* < 62)\", \"texels_touched\": 3392, \"texels_ge_half\": 2815, \"median_src_rgb\": [104.0, 140.0, 163.0], \"median_new_rgb\": [50.0, 120.0, 183.0]}, {\"name\": \"horn_light\", \"target_rgb\": [170.0, 220.0, 241.0], \"why\": \"spec 'straight crystalline horns, semi-translucent': sheet front horns median 170,220,241 (cyan, a* -7); proxy horns 132,182,212 (L* 72). Horn boxes = the proxy's two horn columns above the mask dome (z >= 7.25: x -0.39..-0.16 / 0.24..0.47)\", \"texels_touched\": 15525, \"texels_ge_half\": 14316, \"median_src_rgb\": [138.0, 189.0, 218.0], \"median_new_rgb\": [170.0, 220.0, 241.0]}, {\"name\": \"horn_deep\", \"target_rgb\": [112.0, 186.0, 236.0], \"why\": \"the horns' darker facets to the sheet's mid ice blue (between chips 128,190,238 and the claw blue 107,187,236)\", \"texels_touched\": 3283, \"texels_ge_half\": 2981, \"median_src_rgb\": [91.0, 138.0, 176.0], \"median_new_rgb\": [112.0, 186.0, 236.0]}, {\"name\": \"ice_body\", \"target_rgb\": [170.0, 212.0, 242.0], \"why\": \"orchestrator: the proxy texture reads GREY-slate / lavender where the sheet is pale icy blue: proxy front-ortho L* p10/25/50/75/90 49/59/72/80/86, a* -2.3 vs the sheet front 49/67/83/89/92, a* -5.5, b* -18. The body ice (L* >= 44, not strongly blue: b* >= -23) to the sheet's icy blue with the proxy's facet shading kept at FULL contrast (gamma 1, so the shaded sides stay mid-blue like the sheet's p25) and the highlights capped (clip 1.05, so the blue channel never saturates: at 1.1 it clipped to 255 and the highlights turned cyan, a* -8.5 vs the sheet -5.5): target 170,212,242 = the sheet front median hue (168,212,240), a few % up for the AO multiply. Runs over the eye boxes too (v1 run 1: a separate eye_skin pass left a lighter square around each slit); the eye core / rim outputs are skipped by its b* >= -23 select\", \"texels_touched\": 1718532, \"texels_ge_half\": 1629860, \"median_src_rgb\": [145.0, 172.0, 201.0], \"median_new_rgb\": [169.0, 211.0, 241.0]}, {\"name\": \"ice_shards\", \"target_rgb\": [118.0, 188.0, 237.0], \"why\": \"the proxy's bluer texels (b* < -23: the claws a* -9 b* -26..-29, the beard b* -25 vs the body's b* -16..-19) are the sheet's deeper-blue icicles: to the sheet claw / beard blue (sheet front hands median 107,187,236, beard 115,182,226; chip 128,190,238)\", \"texels_touched\": 361037, \"texels_ge_half\": 337820, \"median_src_rgb\": [106.0, 158.0, 204.0], \"median_new_rgb\": [118.0, 188.0, 237.0]}, {\"name\": \"seams_deep\", \"target_rgb\": [55.0, 125.0, 188.0], \"why\": \"the proxy's darkest texels (L* < 44: the chevron seams, the V belly line, deep icicle cores; proxy navy-slate median 62,92,127) to the sheet's seam chip 50,120,183 (a touch above it for the AO multiply)\", \"texels_touched\": 106451, \"texels_ge_half\": 103397, \"median_src_rgb\": [63.0, 93.0, 128.0], \"median_new_rgb\": [55.0, 125.0, 188.0]}]"
+ ],
+ "stage1": {
+  "unit": "frost_giant",
+  "proxy": {
+   "glb": "proxy/frost_giant_proxy.glb",
+   "sha256": "0a7d865069659475df1b4a72b2d251ee7949851e9c6b4a229837b59561281b96",
+   "gate": "reliable",
+   "mean_iou": 0.8788,
+   "refloor": {
+    "foot_contact_z_u": 0.0926,
+    "rescale": 1.0157,
+    "y_windows": [
+     [
+      0.3,
+      0.8
+     ]
+    ],
+    "window_z_u": [
+     0.0926
+    ],
+    "x_abs_min": 0.0,
+    "rule": "sheet_proxy put the floor at the lowest point (a tail curl): the feet hung z0 above it; floor moved to the feet, then scaled to the sheet front height"
+   },
+   "tris": 199246,
+   "verts": 142059,
+   "height_u": 7.864,
+   "samples": 2981165,
+   "textured": true,
+   "z_range_u": [
+    -0.094,
+    7.77
+   ]
+  },
+  "solid": {
+   "step": 0.0262,
+   "grid": [
+    161,
+    135,
+    318
+   ],
+   "shell_nodes": 187106,
+   "close_voxels": 1,
+   "sealed_cavities": 174,
+   "min_half_thickness_u": 0.0131,
+   "shell_nodes_signed_outside_frac": 0.759,
+   "smooth_sigma_vox": 0.0,
+   "pieces": [
+    1,
+    [
+     445519
+    ]
+   ],
+   "rule": "LIGHT: watertight remesh only (no smoothing / straighten / symmetrise / cuts); the surface sits min_half_thickness x step = 0.0131 u outside the proxy",
+   "light_cuts": [
+    {
+     "shape": "box",
+     "nodes_inside": 99308,
+     "why": "ground-shadow fin, FRONT of the toes (stage-1 y < 0.18; both toes start at y 0.20, below z 0.31 only the two fins, x-width 0.03..0.08, live there). Not on the sheet: the side view's floor pool is a cast shadow, not the character"
+    },
+    {
+     "shape": "box",
+     "nodes_inside": 56364,
+     "why": "ground-shadow fin, BEHIND the heels (the -x heel ends at y 0.65, the +x at 0.60; the fin tops out at z 0.26 there, the leg starts at z 0.31)"
+    },
+    {
+     "shape": "box",
+     "nodes_inside": 6270,
+     "why": "the -x fin's strip under the -x sole (the wide foot section, x-width 0.11..0.17, starts at z 0.00 at y 0.45..0.65; below it only the fin)"
+    },
+    {
+     "shape": "box",
+     "nodes_inside": 8550,
+     "why": "the +x fin's strip under the +x sole (the +x foot's wide section starts at z 0.125 at y 0.35..0.5; below it only the 0.03..0.08-wide fin)"
+    }
+   ],
+   "bake_interior_tris_dropped": 40555
+  },
+  "colour": {
+   "mode": "light: the proxy texture as generated",
+   "drift_fit": null,
+   "textures": {
+    "0": [
+     2048,
+     2048,
+     3
+    ]
+   }
+  },
+  "recolour3d": [
+   {
+    "name": "eye_core",
+    "target_rgb": [
+     96.0,
+     210.0,
+     251.0
+    ],
+    "why": "spec: 'narrow glowing eye slits (96,210,251)': the proxy's teal slit interiors (median 135,189,193, a* < -8; front ortho x -0.35..-0.03 / 0.24..0.45, z 6.56..6.76) painted the sheet glow chip; the emission comes from glow3d",
+    "texels_touched": 5634,
+    "texels_ge_half": 4923,
+    "median_src_rgb": [
+     92.0,
+     138.0,
+     153.0
+    ],
+    "median_new_rgb": [
+     96.0,
+     209.0,
+     249.0
+    ]
+   },
+   {
+    "name": "eye_rim",
+    "target_rgb": [
+     50.0,
+     120.0,
+     183.0
+    ],
+    "why": "the sheet outlines each slit in the seam blue (chip 50,120,183; sheet front px 185..214 / 236..262 x 166..187); the proxy's slit rim is grey-slate (median 95,130,152, L* < 62)",
+    "texels_touched": 3392,
+    "texels_ge_half": 2815,
+    "median_src_rgb": [
+     104.0,
+     140.0,
+     163.0
+    ],
+    "median_new_rgb": [
+     50.0,
+     120.0,
+     183.0
+    ]
+   },
+   {
+    "name": "horn_light",
+    "target_rgb": [
+     170.0,
+     220.0,
+     241.0
+    ],
+    "why": "spec 'straight crystalline horns, semi-translucent': sheet front horns median 170,220,241 (cyan, a* -7); proxy horns 132,182,212 (L* 72). Horn boxes = the proxy's two horn columns above the mask dome (z >= 7.25: x -0.39..-0.16 / 0.24..0.47)",
+    "texels_touched": 15525,
+    "texels_ge_half": 14316,
+    "median_src_rgb": [
+     138.0,
+     189.0,
+     218.0
+    ],
+    "median_new_rgb": [
+     170.0,
+     220.0,
+     241.0
+    ]
+   },
+   {
+    "name": "horn_deep",
+    "target_rgb": [
+     112.0,
+     186.0,
+     236.0
+    ],
+    "why": "the horns' darker facets to the sheet's mid ice blue (between chips 128,190,238 and the claw blue 107,187,236)",
+    "texels_touched": 3283,
+    "texels_ge_half": 2981,
+    "median_src_rgb": [
+     91.0,
+     138.0,
+     176.0
+    ],
+    "median_new_rgb": [
+     112.0,
+     186.0,
+     236.0
+    ]
+   },
+   {
+    "name": "ice_body",
+    "target_rgb": [
+     170.0,
+     212.0,
+     242.0
+    ],
+    "why": "orchestrator: the proxy texture reads GREY-slate / lavender where the sheet is pale icy blue: proxy front-ortho L* p10/25/50/75/90 49/59/72/80/86, a* -2.3 vs the sheet front 49/67/83/89/92, a* -5.5, b* -18. The body ice (L* >= 44, not strongly blue: b* >= -23) to the sheet's icy blue with the proxy's facet shading kept at FULL contrast (gamma 1, so the shaded sides stay mid-blue like the sheet's p25) and the highlights capped (clip 1.05, so the blue channel never saturates: at 1.1 it clipped to 255 and the highlights turned cyan, a* -8.5 vs the sheet -5.5): target 170,212,242 = the sheet front median hue (168,212,240), a few % up for the AO multiply. Runs over the eye boxes too (v1 run 1: a separate eye_skin pass left a lighter square around each slit); the eye core / rim outputs are skipped by its b* >= -23 select",
+    "texels_touched": 1718532,
+    "texels_ge_half": 1629860,
+    "median_src_rgb": [
+     145.0,
+     172.0,
+     201.0
+    ],
+    "median_new_rgb": [
+     169.0,
+     211.0,
+     241.0
+    ]
+   },
+   {
+    "name": "ice_shards",
+    "target_rgb": [
+     118.0,
+     188.0,
+     237.0
+    ],
+    "why": "the proxy's bluer texels (b* < -23: the claws a* -9 b* -26..-29, the beard b* -25 vs the body's b* -16..-19) are the sheet's deeper-blue icicles: to the sheet claw / beard blue (sheet front hands median 107,187,236, beard 115,182,226; chip 128,190,238)",
+    "texels_touched": 361037,
+    "texels_ge_half": 337820,
+    "median_src_rgb": [
+     106.0,
+     158.0,
+     204.0
+    ],
+    "median_new_rgb": [
+     118.0,
+     188.0,
+     237.0
+    ]
+   },
+   {
+    "name": "seams_deep",
+    "target_rgb": [
+     55.0,
+     125.0,
+     188.0
+    ],
+    "why": "the proxy's darkest texels (L* < 44: the chevron seams, the V belly line, deep icicle cores; proxy navy-slate median 62,92,127) to the sheet's seam chip 50,120,183 (a touch above it for the AO multiply)",
+    "texels_touched": 106451,
+    "texels_ge_half": 103397,
+    "median_src_rgb": [
+     63.0,
+     93.0,
+     128.0
+    ],
+    "median_new_rgb": [
+     55.0,
+     125.0,
+     188.0
+    ]
+   }
+  ],
+  "grid_sha": "69ea75e03c8b9369",
+  "proxy_sha": "55cfc41cf96a0c21"
+ },
+ "proxy_faces_cut": {
+  "faces_removed": 4019,
+  "faces_kept": 154672,
+  "rule": "proxy faces whose centroid lies inside a light.cuts volume leave the bake source (normal / AO / albedo) and the proxy-distance metrics"
+ },
+ "high": {
+  "tris": 730344,
+  "verts": 365146,
+  "specks_dropped": {
+   "pieces": 1,
+   "kept": 1,
+   "dropped_verts": 0
+  },
+  "open_edges": 0,
+  "nonmanifold_edges": 0,
+  "rule": "marching tets of the whole remesh grid (no mirror)",
+  "seconds": 2.8
+ },
+ "low": {
+  "method": "collapse decimation: uniform to 300000, then 18000 with the dense boxes calibrated",
+  "pre_tris": 300000,
+  "tris": 18000,
+  "verts": 8974,
+  "specks": {
+   "pieces": 1,
+   "kept": 1,
+   "dropped_verts": 0
+  },
+  "open_edges": 0,
+  "nonmanifold_edges": 0,
+  "dense": {
+   "density": 2.5,
+   "box_area_frac": 0.312,
+   "target_tri_share": 0.5313,
+   "got_tri_share": 0.5334,
+   "factor_log10": -1.0,
+   "trials": [
+    [
+     -7.0,
+     0.4403
+    ],
+    [
+     -3.0,
+     0.4413
+    ],
+    [
+     -1.0,
+     0.5334
+    ],
+    [
+     -2.0,
+     0.4484
+    ],
+    [
+     -1.5,
+     0.4679
+    ],
+    [
+     -1.25,
+     0.4929
+    ],
+    [
+     -1.125,
+     0.5108
+    ],
+    [
+     -1.062,
+     0.5224
+    ],
+    [
+     -1.031,
+     0.5277
+    ],
+    [
+     -1.016,
+     0.531
+    ]
+   ],
+   "rule": "dense boxes weighted 0.02 (vs 1) in the collapse decimation; the factor bisected until the boxes hold density x the rest's triangles per area"
+  },
+  "low_to_proxy": {
+   "mean": 0.01549,
+   "p99": 0.04285,
+   "max": 0.05431
+  },
+  "proxy_to_low_sampled": {
+   "mean": 0.02602,
+   "p99": 0.07093,
+   "max": 0.10855
+  },
+  "p99_over_height": 0.00902,
+  "seconds": 30.9
+ },
+ "regions_faces": {
+  "proxy_albedo": 17556,
+  "eye_glow": 444
+ },
+ "albedo_source": {
+  "texture": "tex_0",
+  "size": [
+   2048,
+   2048
+  ],
+  "faces_textured": 154672,
+  "faces": 154672
+ },
+ "bake": {
+  "reference": "flat",
+  "source": "the proxy mesh itself (not the remesh)",
+  "NORMAL": {
+   "result": [
+    "FINISHED"
+   ],
+   "seconds": 0.6
+  },
+  "ao_distance": {
+   "u": 0.45,
+   "world_default": 10.0
+  },
+  "AO": {
+   "result": [
+    "FINISHED"
+   ],
+   "seconds": 5.3
+  },
+  "EMIT": {
+   "result": [
+    "FINISHED"
+   ],
+   "seconds": 3.8
+  },
+  "ao_source": "the low itself (opt-in light.ao_from_low), 64 samples",
+  "cage_extrusion": 0.2128,
+  "resolution": {
+   "normal": 1024,
+   "ao": 1024,
+   "albedo": 2048
+  },
+  "high_tris": 154672,
+  "normal_coverage_pct": 95.72,
+  "albedo_coverage_pct": 87.2,
+  "normal_detail_fraction_dev_gt_0.05": 0.7796,
+  "ao_mean": 0.7463,
+  "pixel_sha": {
+   "normal": "f10d37bf6f2bd4b0",
+   "ao": "ae2b30aa46d743da",
+   "albedo": "9c00159b42133512"
+  },
+  "seconds": 11.6
+ },
+ "glow3d": {
+  "faces": {
+   "proxy_albedo": 17556,
+   "eye_glow": 444
+  },
+  "area_share": {
+   "proxy_albedo": 0.99893,
+   "eye_glow": 0.00107
+  },
+  "rows": [
+   {
+    "spec": "eye_slits",
+    "region": "eye_glow",
+    "min_weight": 0.5,
+    "faces": 444,
+    "albedo_select": true,
+    "why": "glow ONLY in the eye slits (sheet): faces of the slit interiors whose baked albedo is the glow cyan (a* < -12; the recoloured core 96,210,251 has a* -20, the mask a* -4, the rim L* 49) -> region eye_glow (emission 96,210,251 x 1.0)"
+   }
+  ],
+  "paint": {
+   "proxy_albedo": 17556,
+   "eye_glow": 444
+  },
+  "face_region_sha": "78f3b1f622fe18fa",
+  "rule": "faces -> glow palette regions (emission -> Glow -> Emission Color); rgb white keeps the baked albedo"
+ },
+ "yaw": {
+  "deg": 0.0,
+  "about": [
+   0.055,
+   0.0
+  ],
+  "to": [
+   0.0,
+   0.0
+  ],
+  "mirror_after": {
+   "plane_x_u": 0.0,
+   "max_u": 0.30164,
+   "p99_u": 0.12901,
+   "p90_u": 0.06995,
+   "mean_u": 0.0327,
+   "rule": "every vertex mirrored in X about the plane -> distance to the nearest surface (0 = exactly symmetric)"
+  },
+  "why": "v2 (artist 2026-10-17: 'our characters should be symmetrical head turns are done through posing'): best mirror plane per height slab of the v1 low (yaw sweep +-10 deg, plane-x sweep, p99): feet z 0..0.5 yaw 0 x 0.07; belly z 2.5..3.5 torso -1..+0.5 deg x 0.05..0.07 (p99 0.069..0.078); chest z 3.5..4.6 -1 deg x 0.03 (0.102); shoulders z 4.6..5.4 +1 deg x 0.05 (0.085); whole low 0 deg x 0.05 (0.126). The BODY is NOT turned, only off-centre by +0.055 u: deg 0 = one rigid shift of -0.055 u in x puts the body plane on x 0 (mirror p99 0.161 -> 0.130). Only the head is turned (beard / mask / horns z > 5.4: +3.75..+4.5 deg; the face's own plane p99 0.050 u, eye slits equal width 0.232 / 0.235 u and equal height z 6.59..6.76 in the face frame, eye-line roll -0.4 deg: turned, NOT sculpted crooked): the repose turns it back with bones. The rig / repose / rigid / focus boxes below are in this shifted frame",
+  "rule": "p' = Rz(deg) (p - about) + to on every vertex of the finished low (one rigid turn about Z, the root orientation; no vertex moves relative to another)",
+  "mirror_before": {
+   "plane_x_u": 0.0,
+   "max_u": 0.3674,
+   "p99_u": 0.16063,
+   "p90_u": 0.11755,
+   "mean_u": 0.06254,
+   "rule": "every vertex mirrored in X about the plane -> distance to the nearest surface (0 = exactly symmetric)"
+  }
+ },
+ "repose": {
+  "auto_chains": {},
+  "bones": [
+   "hips",
+   "spine",
+   "chest",
+   "neck",
+   "head",
+   "arm.L.0",
+   "arm.L.1",
+   "arm.L.2",
+   "arm.R.0",
+   "arm.R.1",
+   "arm.R.2",
+   "leg.L.0",
+   "leg.L.1",
+   "leg.L.2",
+   "leg.R.0",
+   "leg.R.1",
+   "leg.R.2"
+  ],
+  "rigid": [
+   {
+    "bone": "head",
+    "verts_rigid": 4358,
+    "verts_ramped": 388,
+    "margin_u": 0.25
+   }
+  ],
+  "targets": [
+   {
+    "target": [
+     "leg"
+    ],
+    "heading": "mirror-symmetric",
+    "bones": [
+     {
+      "bone": "leg.L.0",
+      "turn_deg": 0.415,
+      "length_scale": 1.0302,
+      "root_move_u": 0.0125
+     },
+     {
+      "bone": "leg.L.1",
+      "turn_deg": 2.052,
+      "length_scale": 1.0349,
+      "root_move_u": null
+     },
+     {
+      "bone": "leg.L.2",
+      "turn_deg": 0.661,
+      "length_scale": 1.1592,
+      "root_move_u": null
+     },
+     {
+      "bone": "leg.R.0",
+      "turn_deg": 0.7,
+      "length_scale": 1.0013,
+      "root_move_u": 0.0125
+     },
+     {
+      "bone": "leg.R.1",
+      "turn_deg": 1.952,
+      "length_scale": 1.0053,
+      "root_move_u": null
+     },
+     {
+      "bone": "leg.R.2",
+      "turn_deg": 0.501,
+      "length_scale": 0.8792,
+      "root_move_u": null
+     }
+    ],
+    "lift": null,
+    "legs": [
+     {
+      "chain": "leg",
+      "match": "mean",
+      "joints_before": {
+       "L": [
+        [
+         0.24,
+         0.354,
+         2.45
+        ],
+        [
+         0.292,
+         0.555,
+         1.3
+        ],
+        [
+         0.384,
+         0.488,
+         0.4
+        ],
+        [
+         0.395,
+         0.22,
+         0.145
+        ]
+       ],
+       "R": [
+        [
+         -0.215,
+         0.353,
+         2.45
+        ],
+        [
+         -0.285,
+         0.575,
+         1.3
+        ],
+        [
+         -0.376,
+         0.57,
+         0.4
+        ],
+        [
+         -0.382,
+         0.22,
+         0.06
+        ]
+       ]
+      },
+      "joints_after": {
+       "L": [
+        [
+         0.2275,
+         0.3535,
+         2.45
+        ],
+        [
+         0.2885,
+         0.565,
+         1.2664
+        ],
+        [
+         0.38,
+         0.529,
+         0.3327
+        ],
+        [
+         0.3885,
+         0.22,
+         0.0352
+        ]
+       ],
+       "R": [
+        [
+         -0.2275,
+         0.3535,
+         2.45
+        ],
+        [
+         -0.2885,
+         0.565,
+         1.2959
+        ],
+        [
+         -0.38,
+         0.529,
+         0.3918
+        ],
+        [
+         -0.3885,
+         0.22,
+         0.0943
+        ]
+       ]
+      },
+      "mirror_joint_err_before_u": [
+       0.025,
+       0.0212,
+       0.0824,
+       0.086
+      ],
+      "mirror_joint_err_after_u": [
+       0.0,
+       0.0296,
+       0.0591,
+       0.0591
+      ],
+      "foot_min_z_before_u": {
+       "L": 0.1124,
+       "R": -0.0088
+      },
+      "foot_min_z_after_u": {
+       "L": 0.0,
+       "R": 0.0
+      },
+      "plant_iters": [
+       {
+        "L": -0.06729,
+        "R": -0.00843
+       },
+       {
+        "L": 0.0,
+        "R": 0.00026
+       },
+       {
+        "L": 0.0,
+        "R": -1e-05
+       }
+      ],
+      "bones": [
+       {
+        "bone": "leg.L.0",
+        "turn_deg": 0.415,
+        "length_scale": 1.0302,
+        "root_move_u": 0.0125
+       },
+       {
+        "bone": "leg.L.1",
+        "turn_deg": 2.052,
+        "length_scale": 1.0349,
+        "root_move_u": null
+       },
+       {
+        "bone": "leg.L.2",
+        "turn_deg": 0.661,
+        "length_scale": 1.1592,
+        "root_move_u": null
+       },
+       {
+        "bone": "leg.R.0",
+        "turn_deg": 0.7,
+        "length_scale": 1.0013,
+        "root_move_u": 0.0125
+       },
+       {
+        "bone": "leg.R.1",
+        "turn_deg": 1.952,
+        "length_scale": 1.0053,
+        "root_move_u": null
+       },
+       {
+        "bone": "leg.R.2",
+        "turn_deg": 0.501,
+        "length_scale": 0.8792,
+        "root_move_u": null
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "target": [
+     "arm"
+    ],
+    "heading": "mirror-symmetric",
+    "bones": [
+     {
+      "bone": "arm.L.0",
+      "turn_deg": 0.296,
+      "length_scale": 0.9988,
+      "root_move_u": 0.0
+     },
+     {
+      "bone": "arm.L.1",
+      "turn_deg": 1.713,
+      "length_scale": 0.9886,
+      "root_move_u": null
+     },
+     {
+      "bone": "arm.L.2",
+      "turn_deg": 2.018,
+      "length_scale": 1.0034,
+      "root_move_u": null
+     },
+     {
+      "bone": "arm.R.0",
+      "turn_deg": 0.297,
+      "length_scale": 1.0012,
+      "root_move_u": 0.0
+     },
+     {
+      "bone": "arm.R.1",
+      "turn_deg": 1.751,
+      "length_scale": 1.0107,
+      "root_move_u": null
+     },
+     {
+      "bone": "arm.R.2",
+      "turn_deg": 2.002,
+      "length_scale": 0.9954,
+      "root_move_u": null
+     }
+    ],
+    "lift": null,
+    "legs": [
+     {
+      "chain": "arm",
+      "match": "mean",
+      "joints_before": {
+       "L": [
+        [
+         0.8,
+         0.6,
+         4.75
+        ],
+        [
+         1.257,
+         0.429,
+         3.4
+        ],
+        [
+         1.325,
+         -0.19,
+         2.3
+        ],
+        [
+         1.139,
+         -0.227,
+         1.2
+        ]
+       ],
+       "R": [
+        [
+         -0.8,
+         0.6,
+         4.75
+        ],
+        [
+         -1.251,
+         0.443,
+         3.4
+        ],
+        [
+         -1.365,
+         -0.11,
+         2.3
+        ],
+        [
+         -1.157,
+         -0.223,
+         1.2
+        ]
+       ]
+      },
+      "joints_after": {
+       "L": [
+        [
+         0.8,
+         0.6,
+         4.75
+        ],
+        [
+         1.254,
+         0.436,
+         3.4
+        ],
+        [
+         1.345,
+         -0.15,
+         2.3
+        ],
+        [
+         1.148,
+         -0.225,
+         1.2
+        ]
+       ],
+       "R": [
+        [
+         -0.8,
+         0.6,
+         4.75
+        ],
+        [
+         -1.254,
+         0.436,
+         3.4
+        ],
+        [
+         -1.345,
+         -0.15,
+         2.3
+        ],
+        [
+         -1.148,
+         -0.225,
+         1.2
+        ]
+       ]
+      },
+      "mirror_joint_err_before_u": [
+       0.0,
+       0.0152,
+       0.0894,
+       0.0184
+      ],
+      "mirror_joint_err_after_u": [
+       0.0,
+       0.0,
+       0.0,
+       0.0
+      ],
+      "foot_min_z_before_u": {
+       "L": 1.004,
+       "R": 0.9626
+      },
+      "foot_min_z_after_u": {
+       "L": 1.0034,
+       "R": 0.9603
+      },
+      "plant_iters": [],
+      "bones": [
+       {
+        "bone": "arm.L.0",
+        "turn_deg": 0.296,
+        "length_scale": 0.9988,
+        "root_move_u": 0.0
+       },
+       {
+        "bone": "arm.L.1",
+        "turn_deg": 1.713,
+        "length_scale": 0.9886,
+        "root_move_u": null
+       },
+       {
+        "bone": "arm.L.2",
+        "turn_deg": 2.018,
+        "length_scale": 1.0034,
+        "root_move_u": null
+       },
+       {
+        "bone": "arm.R.0",
+        "turn_deg": 0.297,
+        "length_scale": 1.0012,
+        "root_move_u": 0.0
+       },
+       {
+        "bone": "arm.R.1",
+        "turn_deg": 1.751,
+        "length_scale": 1.0107,
+        "root_move_u": null
+       },
+       {
+        "bone": "arm.R.2",
+        "turn_deg": 2.002,
+        "length_scale": 0.9954,
+        "root_move_u": null
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "target": [
+     "neck",
+     "head"
+    ],
+    "heading": "-y",
+    "amount": 1.0,
+    "bones": [
+     {
+      "bone": "neck",
+      "yaw_deg": -2.125,
+      "heading_before_deg": -87.797,
+      "horizontal_frac": 0.597
+     },
+     {
+      "bone": "head",
+      "yaw_deg": -4.25,
+      "heading_before_deg": -85.75,
+      "horizontal_frac": 0.727
+     }
+    ],
+    "lift": null,
+    "joints_before": [
+     [
+      0.0,
+      0.52,
+      5.2
+     ],
+     [
+      0.02,
+      0.0,
+      5.9
+     ],
+     [
+      0.0867,
+      -0.8975,
+      6.75
+     ]
+    ],
+    "joints_after": [
+     [
+      0.0,
+      0.52,
+      5.2
+     ],
+     [
+      0.0007,
+      -0.0004,
+      5.9
+     ],
+     [
+      0.0007,
+      -0.9004,
+      6.75
+     ]
+    ]
+   }
+  ],
+  "moved_bones": [
+   "neck",
+   "head",
+   "arm.L.0",
+   "arm.L.1",
+   "arm.L.2",
+   "arm.R.0",
+   "arm.R.1",
+   "arm.R.2",
+   "leg.L.0",
+   "leg.L.1",
+   "leg.L.2",
+   "leg.R.0",
+   "leg.R.1",
+   "leg.R.2"
+  ],
+  "verts_moved": 8601,
+  "max_displacement_u": 0.1135,
+  "stretch_all": {
+   "edges_moved": 25989,
+   "max": 1.2677,
+   "p99": 1.0783,
+   "p999": 1.1777,
+   "min": 0.7475,
+   "over_1.25": 5,
+   "under_0.8": 2,
+   "max_at_u": [
+    0.474,
+    0.269,
+    0.102
+   ],
+   "rule": "edge length after / before the repose, edges with a moved vertex"
+  },
+  "rigid_check": [
+   {
+    "bone": "head",
+    "verts": 4358,
+    "max_dev_from_rigid_u": 0.0
+   }
+  ],
+  "rule": "LBS with the contract rig's weights (+ rigid pins), yaw-only straightening (+ lift), applied as rest",
+  "stretch_leg": {
+   "edges_moved": 1712,
+   "max": 1.2677,
+   "p99": 1.1357,
+   "p999": 1.2047,
+   "min": 0.7984,
+   "over_1.25": 1,
+   "under_0.8": 1,
+   "max_at_u": [
+    0.474,
+    0.269,
+    0.102
+   ],
+   "rule": "edge length after / before the repose, edges with a moved vertex"
+  },
+  "stretch_arm": {
+   "edges_moved": 9224,
+   "max": 1.2658,
+   "p99": 1.0747,
+   "p999": 1.192,
+   "min": 0.844,
+   "over_1.25": 4,
+   "under_0.8": 0,
+   "max_at_u": [
+    -0.966,
+    0.85,
+    5.259
+   ],
+   "rule": "edge length after / before the repose, edges with a moved vertex"
+  },
+  "stretch_neck_head": {
+   "edges_moved": 17691,
+   "max": 1.2658,
+   "p99": 1.0824,
+   "p999": 1.1843,
+   "min": 0.7475,
+   "over_1.25": 4,
+   "under_0.8": 1,
+   "max_at_u": [
+    -0.966,
+    0.85,
+    5.259
+   ],
+   "rule": "edge length after / before the repose, edges with a moved vertex"
+  },
+  "self_intersections": {
+   "before": {
+    "all": 3,
+    "moved_region": 2
+   },
+   "after": {
+    "all": 3,
+    "moved_region": 2
+   },
+   "rule": "intersecting triangle pairs sharing no vertex (BVH overlap)"
+  },
+  "mirror_before": {
+   "plane_x_u": 0.0,
+   "max_u": 0.3674,
+   "p99_u": 0.16063,
+   "p90_u": 0.11755,
+   "mean_u": 0.06254,
+   "rule": "every vertex mirrored in X about the plane -> distance to the nearest surface (0 = exactly symmetric)"
+  },
+  "mirror_after": {
+   "plane_x_u": 0.0,
+   "max_u": 0.28779,
+   "p99_u": 0.10532,
+   "p90_u": 0.0542,
+   "mean_u": 0.02603,
+   "rule": "every vertex mirrored in X about the plane -> distance to the nearest surface (0 = exactly symmetric)"
+  },
+  "seconds": 0.4
+ },
+ "centre_shift": [
+  -0.036019,
+  0.219432,
+  0.0
+ ],
+ "floor": {
+  "min_z_after_repose_u": 0.0,
+  "rule": "stage 1 floored the FEET at z 0; the centring puts the lowest point at 0"
+ },
+ "regions_area_share": {
+  "proxy_albedo": 1.0
+ },
+ "facing": {
+  "rule": "shell centroid -> the front-most midline point of the shell (proxy finish default)",
+  "anchor": [
+   0.0,
+   -0.0386,
+   4.6712
+  ],
+  "landmark": [
+   0.0416,
+   -1.072,
+   6.1964
+  ],
+  "angle_from_minusY_deg": 2.302
+ },
+ "tris": {
+  "total": 18000,
+  "shell": 18000
+ },
+ "open_edges": {
+  "per_island": {
+   "shell": 0
+  },
+  "total": 0,
+  "nonmanifold_edges": 0,
+  "rule": "the watertight remesh, decimated (closed)"
+ },
+ "measure": {
+  "bbox": [
+   [
+    -1.8879,
+    -1.1344,
+    0.0
+   ],
+   [
+    1.8879,
+    1.1344,
+    7.7791
+   ]
+  ],
+  "height": 7.7791,
+  "width_x": 3.7759,
+  "depth_y": 2.2687,
+  "export_cell_fit_report_only": {
+   "scale": 0.23139
+  }
+ },
+ "finish": {
+  "open_edges": 0,
+  "tris": 18000,
+  "mirror": {
+   "plane_x_u": 0.0,
+   "max_u": 0.33423,
+   "p99_u": 0.13134,
+   "p90_u": 0.08117,
+   "mean_u": 0.03935,
+   "rule": "every vertex mirrored in X about the plane -> distance to the nearest surface (0 = exactly symmetric)"
+  },
+  "tri_budget": [
+   8000,
+   22000
+  ],
+  "in_budget": true,
+  "mode": "light"
+ },
+ "focus_face_centre": [
+  0.0679,
+  -0.0164,
+  6.5647
+ ],
+ "digest_geometry_colour_uv": "08d1c02f393644f9",
+ "palette": {
+  "default": {
+   "proxy_albedo": {
+    "rgb": [
+     255,
+     255,
+     255
+    ]
+   },
+   "eye_glow": {
+    "rgb": [
+     255,
+     255,
+     255
+    ],
+    "emission": [
+     96,
+     210,
+     251
+    ],
+    "emission_scale": 1.0
+   }
+  },
+  "files": [
+   "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\palettes\\frost_giant\\default.json"
+  ]
+ }
+}

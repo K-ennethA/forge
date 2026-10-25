@@ -1,0 +1,10 @@
+{
+ "unit": "frost_giant",
+ "skin": "default",
+ "description": "frost_giant default look, LIGHT proxy finish: the colour is the Pixal3D proxy's own texture (grey-slate ice lifted to the sheet's pale icy blues, icicles / claws / horns to the sheet's deeper blues, seams to the seam blue, eye slits to the glow cyan) baked onto the low (improved/textures/frost_giant_basecolor.png); proxy_albedo (white) tints it; one GLOW region (the eye slits) carries the emission (Glow -> Emission Color)",
+ "regions": {
+  "proxy_albedo": {"rgb": [255, 255, 255], "note": "tint over the baked proxy albedo (light mode); white keeps the ice as baked. Sheet chips for reference: 212,234,250 / 167,213,243 / 128,190,238 / seams 50,120,183"},
+  "eye_glow": {"rgb": [255, 255, 255], "emission": [96, 210, 251], "emission_scale": 1.0, "note": "the eye-slit glow (sheet glow chip 96,210,251); rgb white keeps the baked albedo"}
+ },
+ "material": {"roughness": 0.85, "emission_strength": 1.0, "alpha": 1.0}
+}

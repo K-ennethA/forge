@@ -1,0 +1,835 @@
+{
+ "unit": "raven_shade",
+ "sheet": "design/reference/raven_shade-character-sheet.png",
+ "size_px": [
+  1672,
+  941
+ ],
+ "background_rgb": [
+  38,
+  38,
+  38
+ ],
+ "bg_tol": 26.0,
+ "views": {
+  "front": {
+   "bbox_px": [
+    18,
+    156,
+    443,
+    780
+   ],
+   "axis_x_px": 236.0,
+   "floor_y_px": 779,
+   "height_px": 624,
+   "height_units": 6.24,
+   "width_units": 4.25,
+   "half_width_profile": {
+    "0.00": {
+     "y_px": 779,
+     "half_w_units": 0.72
+    },
+    "0.10": {
+     "y_px": 717,
+     "half_w_units": 2.07
+    },
+    "0.25": {
+     "y_px": 623,
+     "half_w_units": 2.11
+    },
+    "0.50": {
+     "y_px": 468,
+     "half_w_units": 1.94
+    },
+    "0.75": {
+     "y_px": 312,
+     "half_w_units": 1.64
+    },
+    "0.90": {
+     "y_px": 218,
+     "half_w_units": 1.16
+    }
+   },
+   "transform": "z = (779 - y_px) / 100 ; x = (x_px - 236.0) / 100"
+  },
+  "back": {
+   "bbox_px": [
+    443,
+    166,
+    804,
+    742
+   ],
+   "axis_x_px": 601.0,
+   "floor_y_px": 741,
+   "height_px": 576,
+   "height_units": 5.76,
+   "width_units": 3.61,
+   "half_width_profile": {
+    "0.00": {
+     "y_px": 741,
+     "half_w_units": 1.86
+    },
+    "0.10": {
+     "y_px": 684,
+     "half_w_units": 1.93
+    },
+    "0.25": {
+     "y_px": 597,
+     "half_w_units": 1.94
+    },
+    "0.50": {
+     "y_px": 454,
+     "half_w_units": 1.58
+    },
+    "0.75": {
+     "y_px": 310,
+     "half_w_units": 2.02
+    },
+    "0.90": {
+     "y_px": 224,
+     "half_w_units": 0.67
+    }
+   },
+   "transform": "z = (741 - y_px) / 100 ; x = (x_px - 601.0) / 100"
+  },
+  "side": {
+   "bbox_px": [
+    804,
+    146,
+    1196,
+    782
+   ],
+   "axis_x_px": 989.5,
+   "floor_y_px": 781,
+   "height_px": 636,
+   "height_units": 6.36,
+   "width_units": 3.92,
+   "half_width_profile": {
+    "0.00": {
+     "y_px": 781,
+     "half_w_units": 0.035
+    },
+    "0.10": {
+     "y_px": 718,
+     "half_w_units": 1.965
+    },
+    "0.25": {
+     "y_px": 622,
+     "half_w_units": 1.935
+    },
+    "0.50": {
+     "y_px": 464,
+     "half_w_units": 1.915
+    },
+    "0.75": {
+     "y_px": 305,
+     "half_w_units": 1.855
+    },
+    "0.90": {
+     "y_px": 210,
+     "half_w_units": 1.395
+    }
+   },
+   "transform": "z = (781 - y_px) / 100 ; x = (x_px - 989.5) / 100"
+  }
+ },
+ "ortho_frame": {
+  "views": [
+   "front",
+   "side"
+  ],
+  "width_px": 480,
+  "height_px": 700,
+  "below_floor_px": 20,
+  "crops": {
+   "front": [
+    -4,
+    99,
+    476,
+    799
+   ],
+   "back": [
+    361,
+    61,
+    841,
+    761
+   ],
+   "side": [
+    750,
+    101,
+    1230,
+    801
+   ]
+  }
+ },
+ "unnamed_extra_segments_px": [],
+ "swatches": [
+  {
+   "centre_px": [
+    1250.0,
+    881.1
+   ],
+   "rgb": [
+    29,
+    29,
+    31
+   ],
+   "diameter_px": 52,
+   "inferred_by_spacing": true
+  },
+  {
+   "centre_px": [
+    1321.0,
+    881.1
+   ],
+   "rgb": [
+    75,
+    73,
+    81
+   ],
+   "diameter_px": 52
+  },
+  {
+   "centre_px": [
+    1393.0,
+    881.0
+   ],
+   "rgb": [
+    97,
+    102,
+    127
+   ],
+   "diameter_px": 52
+  },
+  {
+   "centre_px": [
+    1462.7,
+    882.0
+   ],
+   "rgb": [
+    64,
+    59,
+    77
+   ],
+   "diameter_px": 52
+  },
+  {
+   "centre_px": [
+    1535.0,
+    881.1
+   ],
+   "rgb": [
+    191,
+    168,
+    153
+   ],
+   "diameter_px": 52
+  },
+  {
+   "centre_px": [
+    1605.0,
+    881.0
+   ],
+   "rgb": [
+    141,
+    55,
+    65
+   ],
+   "diameter_px": 52
+  }
+ ],
+ "swatch_rejects_off_column": [
+  {
+   "centre_px": [
+    1550.0,
+    299.3
+   ],
+   "rgb": [
+    42,
+    42,
+    42
+   ],
+   "diameter_px": 12
+  }
+ ],
+ "base_frac": 0.06,
+ "axis_overrides": {},
+ "units_rule": "1 sheet unit = 100 px; per view z = (floor_y - y) / 100, x = (x - axis_x) / 100",
+ "caveat": "automatic split: VERIFY intake_overlay.png before dispatch (overlapping views or a floor shadow fuse / extend a view; rerun with --views or --bg-tol). A DARK subject on a dark sheet (shadowbun) loses its outline into the background: the floor line can sit high by ~15 px - check the soles",
+ "smart": true,
+ "auto_flags": {
+  "axis": {
+   "front": 236.0,
+   "back": 601.0,
+   "side": 989.5
+  },
+  "floor": {
+   "back": 741
+  },
+  "ortho_views": [
+   "front",
+   "side"
+  ]
+ },
+ "auto_flags_cli": "--floor back=741 --axis front=236,back=601,side=989.5 --ortho-views front,side",
+ "side_facing": {
+  "facing": "left",
+  "source": "flag",
+  "guess": "left",
+  "score": -0.004,
+  "confidence": 0.01,
+  "cue": "colour",
+  "front_back_separation": 0.093,
+  "rule": "score > 0 = face toward image-right; 'right' needs >= 0.14, else the house default (left)",
+  "meshgen_camera": "left"
+ },
+ "view_checks": {
+  "front": {
+   "floating_parts": [],
+   "mass_centroid_px": 256.1,
+   "core_width_px": 372,
+   "mass_axis_px": 236.0,
+   "mirror_iou": 0.761,
+   "mirror_iou_core": 0.557,
+   "tone_asym": 0.709,
+   "half_area_ratio": 0.978,
+   "contact_x_px": [
+    302,
+    314
+   ],
+   "floor_candidates": {
+    "raw_lowest_px": 779,
+    "body_lowest_px": 779,
+    "contact_px": 779,
+    "shadow_px": 0,
+    "support_run_min_px": 62,
+    "skipped": []
+   },
+   "floor_px": 779,
+   "feet_axis_px": 268.5,
+   "threshold_holes_frac": 0.015,
+   "near_bg_frac": 0.71,
+   "dark_subject": true,
+   "three_quarter_suspect": false,
+   "three_quarter_why": []
+  },
+  "back": {
+   "floating_parts": [
+    {
+     "bbox_px": [
+      776,
+      282,
+      804,
+      352
+     ],
+     "area_px": 1091,
+     "below_body": false
+    }
+   ],
+   "mass_centroid_px": 612.2,
+   "core_width_px": 298,
+   "mass_axis_px": 601.0,
+   "mirror_iou": 0.711,
+   "mirror_iou_core": 0.726,
+   "tone_asym": 0.674,
+   "half_area_ratio": 0.812,
+   "contact_x_px": [
+    537,
+    760
+   ],
+   "floor_candidates": {
+    "raw_lowest_px": 774,
+    "body_lowest_px": 774,
+    "contact_px": 741,
+    "shadow_px": 0,
+    "support_run_min_px": 60,
+    "skipped": []
+   },
+   "floor_px": 741,
+   "feet_axis_px": 639.5,
+   "threshold_holes_frac": 0.019,
+   "near_bg_frac": 0.725,
+   "dark_subject": true,
+   "three_quarter_suspect": true,
+   "three_quarter_why": [
+    "mirror IoU 0.71",
+    "tone asymmetry 0.67"
+   ]
+  },
+  "side": {
+   "floating_parts": [
+    {
+     "bbox_px": [
+      804,
+      618,
+      830,
+      662
+     ],
+     "area_px": 370,
+     "below_body": false
+    }
+   ],
+   "mass_centroid_px": 995.7,
+   "core_width_px": 331,
+   "mass_axis_px": 989.5,
+   "contact_x_px": [
+    983,
+    996
+   ],
+   "floor_candidates": {
+    "raw_lowest_px": 781,
+    "body_lowest_px": 781,
+    "contact_px": 781,
+    "shadow_px": 1411,
+    "support_run_min_px": 63,
+    "skipped": []
+   },
+   "floor_px": 781,
+   "feet_axis_px": 942.5,
+   "threshold_holes_frac": 0.025,
+   "near_bg_frac": 0.724,
+   "dark_subject": true
+  }
+ },
+ "front_back_width_ratio": 0.801,
+ "height_check": {
+  "heights_units": {
+   "front": 6.24,
+   "back": 5.76,
+   "side": 6.36
+  },
+  "pairs": [
+   {
+    "views": [
+     "front",
+     "back"
+    ],
+    "diff_pct": 7.7
+   },
+   {
+    "views": [
+     "front",
+     "side"
+    ],
+    "diff_pct": 1.9
+   },
+   {
+    "views": [
+     "back",
+     "side"
+    ],
+    "diff_pct": 9.4
+   }
+  ],
+  "worst": {
+   "views": [
+    "back",
+    "side"
+   ],
+   "diff_pct": 9.4
+  }
+ },
+ "clutter_removed": {
+  "panels": [
+   [
+    1196,
+    439,
+    1428,
+    628
+   ],
+   [
+    1196,
+    634,
+    1428,
+    792
+   ]
+  ],
+  "panel_column": [
+   1196,
+   439,
+   1672,
+   792
+  ],
+  "rules": 60,
+  "title_blobs": 84
+ },
+ "matte_strips_px": [
+  [
+   18,
+   443
+  ],
+  [
+   443,
+   804
+  ],
+  [
+   804,
+   1196
+  ]
+ ],
+ "dark_strips": [
+  {
+   "x_px": [
+    18,
+    443
+   ],
+   "threshold_holes_frac": 0.389,
+   "near_bg_frac": 0.527,
+   "carved_px": 393
+  },
+  {
+   "x_px": [
+    443,
+    804
+   ],
+   "threshold_holes_frac": 0.432,
+   "near_bg_frac": 0.519,
+   "carved_px": 0
+  },
+  {
+   "x_px": [
+    804,
+    1196
+   ],
+   "threshold_holes_frac": 0.43,
+   "near_bg_frac": 0.523,
+   "carved_px": 406
+  }
+ ],
+ "palette_fallback": null,
+ "view_masks": {
+  "path": "view_masks.png",
+  "labels": {
+   "front": 1,
+   "back": 2,
+   "side": 3
+  },
+  "rule": "label image at sheet px: the silhouette each view was measured on"
+ },
+ "intake_notes": [
+  "removed 2 framed panel(s), 84 title blob(s) and 60 rule line(s) before the split (was --region)",
+  "dark subject on a dark sheet at x 18-443; 443-804; 804-1196 (the threshold lost 38%, 43%, 43% of the filled silhouette): BiRefNet matte merged in, enclosed background carved (393, 0, 406 px)",
+  "front axis 236.0 px (mirror-symmetry of the body mass); the feet-base rule says 268.5",
+  "back floor 741 px = the lowest body contact; ignored a part with no leg-like support hanging 33 px lower (tail curl / pool / unpaired tail) (raw lowest row 774)",
+  "back axis 601.0 px (mirror-symmetry of the body mass); the feet-base rule says 639.5",
+  "side axis 989.5 px (centre of the floor contact span); the feet-base rule says 942.5",
+  "front and back body widths disagree (0.80, eroded silhouettes): one of them may be drawn 3/4 or in perspective",
+  "probable 3/4 / perspective view(s): back (mirror IoU 0.71, tone asymmetry 0.67) -> ortho_views front,side (a 3/4 SIDE is not auto-detected: check it)",
+  "side view faces image-left (flag, colour score -0.00) -> meshgen view 'left'",
+  "front-vs-side height: front 6.24 u, side 6.36 u (+1.9%)"
+ ],
+ "proxy": {
+  "glb": "proxy/raven_shade_proxy.glb",
+  "sha256": "92e56d17541edd7043192275fc193b93088b156a305d5e67e1886ed8b9064fbc",
+  "seed": 56,
+  "model": "Pixal3D multi-view (meshgen, shared_frame)",
+  "views_sent": {
+   "front": "../../../../../../../../../AppData/Local/Temp/claude/C--Users-kenne-OneDrive-Desktop-git-forge/5eaeb76f-be56-497f-8b1e-0a29f5e6168b/scratchpad/raven_regen/norm/view_front.png",
+   "left": "../../../../../../../../../AppData/Local/Temp/claude/C--Users-kenne-OneDrive-Desktop-git-forge/5eaeb76f-be56-497f-8b1e-0a29f5e6168b/scratchpad/raven_regen/norm/view_side.png"
+  },
+  "side_facing": "left",
+  "frame": {
+   "above_floor_px": 635,
+   "below_floor_px": 11,
+   "pad_px": 20,
+   "height_px": 687,
+   "views": {
+    "front": {
+     "crop_origin_px": [
+      -2,
+      124
+     ],
+     "floor_row": 655,
+     "mask_bbox_px": [
+      18,
+      156,
+      443,
+      780
+     ]
+    },
+    "back": {
+     "crop_origin_px": [
+      423,
+      86
+     ],
+     "floor_row": 655,
+     "mask_bbox_px": [
+      443,
+      166,
+      804,
+      753
+     ]
+    },
+    "side": {
+     "crop_origin_px": [
+      784,
+      126
+     ],
+     "floor_row": 655,
+     "mask_bbox_px": [
+      804,
+      146,
+      1196,
+      782
+     ]
+    }
+   }
+  },
+  "generated": {
+   "via": "reused",
+   "source": "C:\\Users\\kenne\\AppData\\Local\\Temp\\claude\\C--Users-kenne-OneDrive-Desktop-git-forge\\5eaeb76f-be56-497f-8b1e-0a29f5e6168b\\scratchpad\\raven_regen\\raven_sym.glb"
+  },
+  "transform": {
+   "rotation": [
+    [
+     1.0,
+     0.0,
+     0.0
+    ],
+    [
+     0.0,
+     1.0,
+     0.0
+    ],
+    [
+     0.0,
+     0.0,
+     1.0
+    ]
+   ],
+   "offset": [
+    9.553134441375732e-05,
+    -0.0004729628562927246,
+    -0.47073081135749817
+   ],
+   "scale": 6.857142857142857,
+   "rule": "v_sheet = scale * (R @ v_zup - offset); glTF (x, y, z) -> z-up (x, -z, y)",
+   "orientation_identity_iou": 0.768,
+   "orientation_best_iou": 0.768
+  },
+  "clipped_below_floor_px": {
+   "back": 336
+  },
+  "scores": {
+   "front": {
+    "iou": 0.7405,
+    "iou_shape": 0.7098,
+    "aspect_rel": 0.1882,
+    "row_err_u": 0.477,
+    "row_err_pct": 11.6,
+    "w_u": 3.45,
+    "h_u": 6.24,
+    "ref_w_u": 4.25,
+    "ref_h_u": 6.24,
+    "scored": true
+   },
+   "back": {
+    "iou": 0.7882,
+    "iou_shape": 0.7431,
+    "aspect_rel": 0.101,
+    "row_err_u": 0.301,
+    "row_err_pct": 8.7,
+    "w_u": 3.45,
+    "h_u": 6.24,
+    "ref_w_u": 3.61,
+    "ref_h_u": 5.87,
+    "scored": false
+   },
+   "side": {
+    "iou": 0.8464,
+    "iou_shape": 0.8202,
+    "aspect_rel": 0.0821,
+    "row_err_u": 0.266,
+    "row_err_pct": 7.6,
+    "w_u": 4.19,
+    "h_u": 6.24,
+    "ref_w_u": 3.92,
+    "ref_h_u": 6.36,
+    "scored": true
+   }
+  },
+  "mean_iou": 0.7934,
+  "side_len_over_front_h": {
+   "mesh": 0.671,
+   "sheet": 0.628,
+   "rel_err": 0.0689
+  },
+  "front_w_over_h": {
+   "mesh": 0.553,
+   "sheet": 0.681
+  },
+  "gate": {
+   "pass": false,
+   "verdict": "proxy unreliable, work from the sheet (side length off by +6.9%)",
+   "rule": "mean IoU >= 0.75 and side length within 5%"
+  },
+  "sections": [
+   {
+    "z_frac": 0.06,
+    "z_u": 0.374,
+    "x_min_u": -1.178,
+    "x_max_u": 1.155,
+    "width_x_u": 2.334,
+    "y_front_u": -1.9,
+    "y_back_u": 0.848,
+    "depth_y_u": 2.748,
+    "y_centre_u": -0.526,
+    "points": 2394
+   },
+   {
+    "z_frac": 0.18,
+    "z_u": 1.122,
+    "x_min_u": -1.401,
+    "x_max_u": 1.4,
+    "width_x_u": 2.801,
+    "y_front_u": -0.803,
+    "y_back_u": 1.955,
+    "depth_y_u": 2.758,
+    "y_centre_u": 0.576,
+    "points": 2314
+   },
+   {
+    "z_frac": 0.3,
+    "z_u": 1.87,
+    "x_min_u": -1.567,
+    "x_max_u": 1.562,
+    "width_x_u": 3.129,
+    "y_front_u": -1.535,
+    "y_back_u": 1.84,
+    "depth_y_u": 3.375,
+    "y_centre_u": 0.152,
+    "points": 5838
+   },
+   {
+    "z_frac": 0.42,
+    "z_u": 2.618,
+    "x_min_u": -1.581,
+    "x_max_u": 1.604,
+    "width_x_u": 3.185,
+    "y_front_u": -1.733,
+    "y_back_u": 1.899,
+    "depth_y_u": 3.632,
+    "y_centre_u": 0.083,
+    "points": 6434
+   },
+   {
+    "z_frac": 0.54,
+    "z_u": 3.366,
+    "x_min_u": -1.56,
+    "x_max_u": 1.561,
+    "width_x_u": 3.121,
+    "y_front_u": -1.871,
+    "y_back_u": 1.82,
+    "depth_y_u": 3.692,
+    "y_centre_u": -0.025,
+    "points": 3962
+   },
+   {
+    "z_frac": 0.66,
+    "z_u": 4.114,
+    "x_min_u": -1.301,
+    "x_max_u": 1.303,
+    "width_x_u": 2.604,
+    "y_front_u": -1.649,
+    "y_back_u": 1.286,
+    "depth_y_u": 2.935,
+    "y_centre_u": -0.182,
+    "points": 2524
+   },
+   {
+    "z_frac": 0.78,
+    "z_u": 4.863,
+    "x_min_u": -0.904,
+    "x_max_u": 0.904,
+    "width_x_u": 1.808,
+    "y_front_u": -2.039,
+    "y_back_u": 0.9,
+    "depth_y_u": 2.938,
+    "y_centre_u": -0.57,
+    "points": 1588
+   },
+   {
+    "z_frac": 0.9,
+    "z_u": 5.611,
+    "x_min_u": -0.514,
+    "x_max_u": 0.515,
+    "width_x_u": 1.03,
+    "y_front_u": -1.895,
+    "y_back_u": 0.508,
+    "depth_y_u": 2.404,
+    "y_centre_u": -0.694,
+    "points": 1144
+   }
+  ],
+  "landmarks": {
+   "height_u": 6.234,
+   "top": {
+    "z_u": 6.234,
+    "x_u": 0.078,
+    "y_u": 0.117
+   },
+   "front_most": {
+    "y_u": -2.094,
+    "z_u": 2.917,
+    "note": "the most -Y point (snout / chest / beak tip)"
+   },
+   "rear_most": {
+    "y_u": 2.094,
+    "z_u": 1.251,
+    "note": "the most +Y point (tail)"
+   },
+   "length_y_u": 4.187,
+   "width_x_u": 3.45,
+   "widest_band": {
+    "z_u": 2.618,
+    "width_x_u": 3.185
+   },
+   "depth_at_intake_rows": {
+    "0.00": {
+     "z_u": 0.125,
+     "depth_y_u": 1.074,
+     "half_w_x_u": 1.355,
+     "sheet_half_w_u": 0.72
+    },
+    "0.10": {
+     "z_u": 0.623,
+     "depth_y_u": 3.753,
+     "half_w_x_u": 0.772,
+     "sheet_half_w_u": 2.07
+    },
+    "0.25": {
+     "z_u": 1.559,
+     "depth_y_u": 3.402,
+     "half_w_x_u": 1.66,
+     "sheet_half_w_u": 2.11
+    },
+    "0.50": {
+     "z_u": 3.117,
+     "depth_y_u": 3.555,
+     "half_w_x_u": 1.587,
+     "sheet_half_w_u": 1.94
+    },
+    "0.75": {
+     "z_u": 4.676,
+     "depth_y_u": 2.372,
+     "half_w_x_u": 1.082,
+     "sheet_half_w_u": 1.64
+    },
+    "0.90": {
+     "z_u": 5.611,
+     "depth_y_u": 2.404,
+     "half_w_x_u": 0.515,
+     "sheet_half_w_u": 1.16
+    }
+   }
+  },
+  "render": "../../../../../../../../../AppData/Local/Temp/claude/C--Users-kenne-OneDrive-Desktop-git-forge/5eaeb76f-be56-497f-8b1e-0a29f5e6168b/scratchpad/raven_regen/norm/raven_shade_proxy_vs_sheet.png",
+  "notes": [
+   "clipped below the floor line (perspective tails / curls; --keep-below-floor to keep): back 336 px",
+   "back left out: the intake flags it 3/4 (mirror IoU 0.71, tone asymmetry 0.67)",
+   "v3 (2026-10-17, artist: 'the face looks crooked'): regenerated from SYMMETRIC views: front = the sheet's back silhouette (largest blob, image-left half mirrored) flipped, plain; back = the same symmetric back; left = the sheet side; right = the side mirrored; seed 56, shared_frame. The sheet's front is near-profile 3/4 so it was not used. Previous proxy in proxy_v1_3q/."
+  ],
+  "use": "3D REFERENCE ONLY: cite sections / landmark depths in the build's constants; the sheet is the spec and the rest pose stays symmetric (the proxy copies the sheet's pose)",
+  "units": "sheet units (1 u = 100 sheet px); z up from the floor, x = the creature's left/right (bbox centred), y = depth, front = -y"
+ }
+}

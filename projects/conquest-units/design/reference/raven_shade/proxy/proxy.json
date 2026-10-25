@@ -1,0 +1,313 @@
+{
+ "glb": "../../../../../../../../../AppData/Local/Temp/claude/C--Users-kenne-OneDrive-Desktop-git-forge/5eaeb76f-be56-497f-8b1e-0a29f5e6168b/scratchpad/raven_regen/norm/raven_shade_proxy.glb",
+ "sha256": "92e56d17541edd7043192275fc193b93088b156a305d5e67e1886ed8b9064fbc",
+ "seed": 56,
+ "model": "Pixal3D multi-view (meshgen, shared_frame)",
+ "views_sent": {
+  "front": "../../../../../../../../../AppData/Local/Temp/claude/C--Users-kenne-OneDrive-Desktop-git-forge/5eaeb76f-be56-497f-8b1e-0a29f5e6168b/scratchpad/raven_regen/norm/view_front.png",
+  "left": "../../../../../../../../../AppData/Local/Temp/claude/C--Users-kenne-OneDrive-Desktop-git-forge/5eaeb76f-be56-497f-8b1e-0a29f5e6168b/scratchpad/raven_regen/norm/view_side.png"
+ },
+ "side_facing": "left",
+ "frame": {
+  "above_floor_px": 635,
+  "below_floor_px": 11,
+  "pad_px": 20,
+  "height_px": 687,
+  "views": {
+   "front": {
+    "crop_origin_px": [
+     -2,
+     124
+    ],
+    "floor_row": 655,
+    "mask_bbox_px": [
+     18,
+     156,
+     443,
+     780
+    ]
+   },
+   "back": {
+    "crop_origin_px": [
+     423,
+     86
+    ],
+    "floor_row": 655,
+    "mask_bbox_px": [
+     443,
+     166,
+     804,
+     753
+    ]
+   },
+   "side": {
+    "crop_origin_px": [
+     784,
+     126
+    ],
+    "floor_row": 655,
+    "mask_bbox_px": [
+     804,
+     146,
+     1196,
+     782
+    ]
+   }
+  }
+ },
+ "generated": {
+  "via": "reused",
+  "source": "C:\\Users\\kenne\\AppData\\Local\\Temp\\claude\\C--Users-kenne-OneDrive-Desktop-git-forge\\5eaeb76f-be56-497f-8b1e-0a29f5e6168b\\scratchpad\\raven_regen\\raven_sym.glb"
+ },
+ "transform": {
+  "rotation": [
+   [
+    1.0,
+    0.0,
+    0.0
+   ],
+   [
+    0.0,
+    1.0,
+    0.0
+   ],
+   [
+    0.0,
+    0.0,
+    1.0
+   ]
+  ],
+  "offset": [
+   9.553134441375732e-05,
+   -0.0004729628562927246,
+   -0.47073081135749817
+  ],
+  "scale": 6.857142857142857,
+  "rule": "v_sheet = scale * (R @ v_zup - offset); glTF (x, y, z) -> z-up (x, -z, y)",
+  "orientation_identity_iou": 0.768,
+  "orientation_best_iou": 0.768
+ },
+ "clipped_below_floor_px": {
+  "back": 336
+ },
+ "scores": {
+  "front": {
+   "iou": 0.7405,
+   "iou_shape": 0.7098,
+   "aspect_rel": 0.1882,
+   "row_err_u": 0.477,
+   "row_err_pct": 11.6,
+   "w_u": 3.45,
+   "h_u": 6.24,
+   "ref_w_u": 4.25,
+   "ref_h_u": 6.24,
+   "scored": true
+  },
+  "back": {
+   "iou": 0.7882,
+   "iou_shape": 0.7431,
+   "aspect_rel": 0.101,
+   "row_err_u": 0.301,
+   "row_err_pct": 8.7,
+   "w_u": 3.45,
+   "h_u": 6.24,
+   "ref_w_u": 3.61,
+   "ref_h_u": 5.87,
+   "scored": false
+  },
+  "side": {
+   "iou": 0.8464,
+   "iou_shape": 0.8202,
+   "aspect_rel": 0.0821,
+   "row_err_u": 0.266,
+   "row_err_pct": 7.6,
+   "w_u": 4.19,
+   "h_u": 6.24,
+   "ref_w_u": 3.92,
+   "ref_h_u": 6.36,
+   "scored": true
+  }
+ },
+ "mean_iou": 0.7934,
+ "side_len_over_front_h": {
+  "mesh": 0.671,
+  "sheet": 0.628,
+  "rel_err": 0.0689
+ },
+ "front_w_over_h": {
+  "mesh": 0.553,
+  "sheet": 0.681
+ },
+ "gate": {
+  "pass": false,
+  "verdict": "proxy unreliable, work from the sheet (side length off by +6.9%)",
+  "rule": "mean IoU >= 0.75 and side length within 5%"
+ },
+ "sections": [
+  {
+   "z_frac": 0.06,
+   "z_u": 0.374,
+   "x_min_u": -1.178,
+   "x_max_u": 1.155,
+   "width_x_u": 2.334,
+   "y_front_u": -1.9,
+   "y_back_u": 0.848,
+   "depth_y_u": 2.748,
+   "y_centre_u": -0.526,
+   "points": 2394
+  },
+  {
+   "z_frac": 0.18,
+   "z_u": 1.122,
+   "x_min_u": -1.401,
+   "x_max_u": 1.4,
+   "width_x_u": 2.801,
+   "y_front_u": -0.803,
+   "y_back_u": 1.955,
+   "depth_y_u": 2.758,
+   "y_centre_u": 0.576,
+   "points": 2314
+  },
+  {
+   "z_frac": 0.3,
+   "z_u": 1.87,
+   "x_min_u": -1.567,
+   "x_max_u": 1.562,
+   "width_x_u": 3.129,
+   "y_front_u": -1.535,
+   "y_back_u": 1.84,
+   "depth_y_u": 3.375,
+   "y_centre_u": 0.152,
+   "points": 5838
+  },
+  {
+   "z_frac": 0.42,
+   "z_u": 2.618,
+   "x_min_u": -1.581,
+   "x_max_u": 1.604,
+   "width_x_u": 3.185,
+   "y_front_u": -1.733,
+   "y_back_u": 1.899,
+   "depth_y_u": 3.632,
+   "y_centre_u": 0.083,
+   "points": 6434
+  },
+  {
+   "z_frac": 0.54,
+   "z_u": 3.366,
+   "x_min_u": -1.56,
+   "x_max_u": 1.561,
+   "width_x_u": 3.121,
+   "y_front_u": -1.871,
+   "y_back_u": 1.82,
+   "depth_y_u": 3.692,
+   "y_centre_u": -0.025,
+   "points": 3962
+  },
+  {
+   "z_frac": 0.66,
+   "z_u": 4.114,
+   "x_min_u": -1.301,
+   "x_max_u": 1.303,
+   "width_x_u": 2.604,
+   "y_front_u": -1.649,
+   "y_back_u": 1.286,
+   "depth_y_u": 2.935,
+   "y_centre_u": -0.182,
+   "points": 2524
+  },
+  {
+   "z_frac": 0.78,
+   "z_u": 4.863,
+   "x_min_u": -0.904,
+   "x_max_u": 0.904,
+   "width_x_u": 1.808,
+   "y_front_u": -2.039,
+   "y_back_u": 0.9,
+   "depth_y_u": 2.938,
+   "y_centre_u": -0.57,
+   "points": 1588
+  },
+  {
+   "z_frac": 0.9,
+   "z_u": 5.611,
+   "x_min_u": -0.514,
+   "x_max_u": 0.515,
+   "width_x_u": 1.03,
+   "y_front_u": -1.895,
+   "y_back_u": 0.508,
+   "depth_y_u": 2.404,
+   "y_centre_u": -0.694,
+   "points": 1144
+  }
+ ],
+ "landmarks": {
+  "height_u": 6.234,
+  "top": {
+   "z_u": 6.234,
+   "x_u": 0.078,
+   "y_u": 0.117
+  },
+  "front_most": {
+   "y_u": -2.094,
+   "z_u": 2.917,
+   "note": "the most -Y point (snout / chest / beak tip)"
+  },
+  "rear_most": {
+   "y_u": 2.094,
+   "z_u": 1.251,
+   "note": "the most +Y point (tail)"
+  },
+  "length_y_u": 4.187,
+  "width_x_u": 3.45,
+  "widest_band": {
+   "z_u": 2.618,
+   "width_x_u": 3.185
+  },
+  "depth_at_intake_rows": {
+   "0.00": {
+    "z_u": 0.125,
+    "depth_y_u": 1.074,
+    "half_w_x_u": 1.355,
+    "sheet_half_w_u": 0.72
+   },
+   "0.10": {
+    "z_u": 0.623,
+    "depth_y_u": 3.753,
+    "half_w_x_u": 0.772,
+    "sheet_half_w_u": 2.07
+   },
+   "0.25": {
+    "z_u": 1.559,
+    "depth_y_u": 3.402,
+    "half_w_x_u": 1.66,
+    "sheet_half_w_u": 2.11
+   },
+   "0.50": {
+    "z_u": 3.117,
+    "depth_y_u": 3.555,
+    "half_w_x_u": 1.587,
+    "sheet_half_w_u": 1.94
+   },
+   "0.75": {
+    "z_u": 4.676,
+    "depth_y_u": 2.372,
+    "half_w_x_u": 1.082,
+    "sheet_half_w_u": 1.64
+   },
+   "0.90": {
+    "z_u": 5.611,
+    "depth_y_u": 2.404,
+    "half_w_x_u": 0.515,
+    "sheet_half_w_u": 1.16
+   }
+  }
+ },
+ "render": "../../../../../../../../../AppData/Local/Temp/claude/C--Users-kenne-OneDrive-Desktop-git-forge/5eaeb76f-be56-497f-8b1e-0a29f5e6168b/scratchpad/raven_regen/norm/raven_shade_proxy_vs_sheet.png",
+ "notes": [
+  "clipped below the floor line (perspective tails / curls; --keep-below-floor to keep): back 336 px",
+  "back left out: the intake flags it 3/4 (mirror IoU 0.71, tone asymmetry 0.67)"
+ ],
+ "use": "3D REFERENCE ONLY: cite sections / landmark depths in the build's constants; the sheet is the spec and the rest pose stays symmetric (the proxy copies the sheet's pose)",
+ "units": "sheet units (1 u = 100 sheet px); z up from the floor, x = the creature's left/right (bbox centred), y = depth, front = -y"
+}

@@ -1,0 +1,10 @@
+00:01.828  blend            | Read blend: "C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\rigged\drakescale_cub.blend"
+00:04.719  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\drakescale_cub\drakescale_cub_face.png'
+00:05.266  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\drakescale_cub\drakescale_cub_feet.png'
+00:05.688  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\drakescale_cub\drakescale_cub_head.png'
+00:06.110  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\drakescale_cub\drakescale_cub_tail.png'
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\drakescale_cub\drakescale_cub_face.png
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\drakescale_cub\drakescale_cub_feet.png
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\drakescale_cub\drakescale_cub_head.png
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\drakescale_cub\drakescale_cub_tail.png
+Blender 5.0.1 (hash a3db93c5b259 built 2025-12-16 01:32:30)

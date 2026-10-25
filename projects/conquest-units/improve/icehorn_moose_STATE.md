@@ -1,0 +1,28 @@
+# icehorn_moose STATE (v2, 2026-10-17; v1 draft 2026-10-16)
+
+- Version: v1 = Pixal3D proxy (forced 3-view front / back / side, seed 56, sha c254679c), LIGHT finish (proxy_finish.py; config improve/icehorn_moose_finish.json). Body, head, face, ears, mane, legs and hooves are kept as generated: no symmetrise, no repose, no cuts on the head or face. The ice antlers were REBUILT (orchestrator unit note: the proxy made them as flat slabs / paper panels).
+- v2 (2026-10-17, artist: "our characters should be symmetrical head turns are done through posing"): SYMMETRY PASS ONLY; every v1 colour / glow / cut / add (antlers) kept.
+  - Measured on the v1 low: the body is NOT turned. The torso's best mirror plane is yaw 0.0 deg at x 0.110 (p99 0.101). The legs show 4..7 deg, which is the walk stagger. The face is NOT sculpted crooked: face p99 0.026 about its own plane (yaw -2.5 deg, x 0.065), snout plane -1.0 deg. Eye centres (texture) +x (0.429, -0.747, 4.586) / -x (-0.261, -0.736, 4.606): heights differ by 0.020 u.
+  - light.yaw deg 0, about (0.11, 0) -> (0, 0): one rigid shift puts the body plane on x 0 (mirror p99 0.417 -> 0.314).
+  - light.cuts +1: the FLOOR PLATE was cut. It was the sheet drop shadow made solid, z 0..0.18 under the legs: the front soles were sunk in it and the hind soles stood on top. v1 had claimed hooves at z 0; in fact front was 0.10 and hind 0.19..0.20.
+  - repose (bones): four legs mirror-symmetric at the mean. Joint error went from front 0.03 / 0.29 / 0.40 / 0.41 u to <= 0.004, and hind from 0.10 / 0.12 / 0.23 / 0.23 to <= 0.024. Every hoof is planted on z 0 (it was 0.185..0.205). The neck yaws 5.2 deg so the head and antlers TRANSLATE 0.05 u onto the midline, not turned: the antlers were built mirror-symmetric about yaw 0. Four rigid boxes hold the face, ears, crest and antlers on the head bone (rigid max deviation 0.0). No tail chain, because the sheet draws no tail.
+  - Result: mirror p99 0.417 -> 0.106 (build) / 0.131 (glb); edge stretch p99 1.21, max 3.18 (inner -x front shoulder, z 2.2); self-intersections 11 -> 40; tris 18000; open edges 0. Gate: front 0.771 / side 0.800 / mean 0.785 (pre-repose 0.804). The side view drops 0.04 because the sheet's side draws the stagger. Evidence: renders/icehorn_moose/icehorn_moose_v2_symmetry.png.
+  - Left for the artist: the face keeps its 2.5 deg turn relative to the antlers, since turning it would swing the antler tips 0.06 u. The legs are about 6..10 % longer, because planting pulled the hooves down to the floor.
+- Spec: design/review-log.md "2026-10-16 — NEW UNITS x14" (ICEHORN MOOSE); sheet design/reference/icehorn_moose-character-sheet.png; intake design/reference/icehorn_moose/intake.json.
+- What the finish changed:
+  - refloor: the proxy was already floored at the hooves (hind -x hoof z 0.000, front hooves +0.005). Only rescaled x1.0045 to the sheet front height 6.77.
+  - light.cuts (15 boxes): every slab antler, paper panel and beam outside the head, ears and crest tuft. This includes the pale panel fused to the inner and outer sides of the -x ear and a panel stub on the midline between the crest and the ears. The cut faces also leave the bake source.
+  - light.adds (84 capsules): the antlers rebuilt mirror-symmetric about the head midline x 0.06. Each antler is the sheet's dominant one (front image-left + side near antler): a beam from the head top in front of the ears, a lower tine sweeping forward-down-out, and three upward tines. Radius 0.12-0.15 at the beam, tapering to 0.03 at the tips.
+  - glow: faces within r + 0.04 of the antler capsules go to the palette region antler_ice (2164 faces, 6.0 % of the area). Its rgb is 160,230,255 (a tint over the baked fill) and its emission is the sheet chip 129,217,251 x 0.35. Nothing else glows.
+  - dense: the head / face box and both antler boxes hold 2.5 x the triangles per area of the rest (box share 0.321 of 18000).
+  - bake: bake_drop_interior 0.08 (17406 inner-shell tris dropped), AO from the low (ao_distance 0.6, 64 samples), ao_fill_below 0.04.
+- LOCKED: nothing yet (awaiting the artist).
+- Knobs that matter: palettes/icehorn_moose/default.json antler_ice rgb / emission / emission_scale (the antler colour and glow strength); the antler capsule chains in light.adds (tine count, spread, radii; generated from sheet px, see adds_why); body_tris 18000; light.dense density; clips (PLACEHOLDER).
+- Open for the artist:
+  - movement + in-game height (OPEN-QUESTIONS); the clips are PLACEHOLDER (the kit walk dips the hooves 0.109 u below the floor, idle 0.029 u).
+  - The antlers are one flat icy-blue tone: no internal cracks, translucency or refraction. The tines are rounded capsule chains, faceted by decimation, not cut crystal planes.
+  - The sheet draws two different antlers (front view: the image-right one is smaller with a short hook). Only the dominant one is built, mirrored, so the rest pose stays symmetric.
+  - The -x ear reads as a flat-topped block (x -0.39..-0.22, top z 5.52): the proxy fused it to a paper panel. It is left as generated (no cuts on the face).
+  - (v1) walk stagger: resolved in v2 by repose.
+  - The fur bakes darker / greyer than the sheet's light blue (proxy texture as generated; no recolour applied).
+- Unit gates: digest twins, bake gate, contract checks (cell_fit report-only), compose GATE lines, proxy_finish.py gate + panel (renders/icehorn_moose/icehorn_moose_finish_panel.png).

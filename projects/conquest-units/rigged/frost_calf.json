@@ -1,0 +1,416 @@
+{
+ "unit": "frost_calf",
+ "source": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\improved\\frost_calf.blend",
+ "fps": 24,
+ "finish": {
+  "open_edges": 0,
+  "tris": 18000,
+  "mirror": {
+   "plane_x_u": 0.0,
+   "max_u": 0.62747,
+   "p99_u": 0.41201,
+   "p90_u": 0.14838,
+   "mean_u": 0.05973,
+   "rule": "every vertex mirrored in X about the plane -> distance to the nearest surface (0 = exactly symmetric)"
+  },
+  "tri_budget": [
+   8000,
+   22000
+  ],
+  "in_budget": true,
+  "mode": "light"
+ },
+ "weights": {
+  "max_influences": 4,
+  "unweighted": 0,
+  "sum_dev_max": 2.220446049250313e-16,
+  "per_bone_dominant": {
+   "hips": 557,
+   "belly": 319,
+   "chest": 334,
+   "neck": 1700,
+   "head": 2690,
+   "arm.L.0": 396,
+   "arm.L.1": 254,
+   "arm.L.2": 70,
+   "arm.R.0": 424,
+   "arm.R.1": 264,
+   "arm.R.2": 78,
+   "leg.L.0": 275,
+   "leg.L.1": 272,
+   "leg.L.2": 94,
+   "leg.R.0": 249,
+   "leg.R.1": 243,
+   "leg.R.2": 158,
+   "tail.0": 370,
+   "tail.1": 237
+  },
+  "parts": {},
+  "rule": "shell: exp(-((d - d_min) / (0.06 H))^2) over bone-segment distances, side-aware, <= 4, normalised; parts rigid on their bone"
+ },
+ "clips": {
+  "idle": {
+   "frames": [
+    1,
+    73
+   ],
+   "seconds": 3.0,
+   "cyclic": true,
+   "seam_mm": 0.0,
+   "clearance_min_z": -0.0845
+  },
+  "walk": {
+   "frames": [
+    1,
+    33
+   ],
+   "seconds": 1.333,
+   "cyclic": true,
+   "seam_mm": 0.0,
+   "clearance_min_z": -0.0931
+  }
+ },
+ "bones": [
+  {
+   "name": "root",
+   "parent": null,
+   "deform": false,
+   "head": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "tail": [
+    0.0,
+    0.0,
+    0.4
+   ]
+  },
+  {
+   "name": "hips",
+   "parent": "root",
+   "deform": true,
+   "head": [
+    0.0299,
+    1.6913,
+    3.45
+   ],
+   "tail": [
+    0.0299,
+    0.4913,
+    3.3
+   ]
+  },
+  {
+   "name": "belly",
+   "parent": "hips",
+   "deform": true,
+   "head": [
+    0.0299,
+    0.4913,
+    3.3
+   ],
+   "tail": [
+    0.0299,
+    -0.6087,
+    3.4
+   ]
+  },
+  {
+   "name": "chest",
+   "parent": "belly",
+   "deform": true,
+   "head": [
+    0.0299,
+    -0.6087,
+    3.4
+   ],
+   "tail": [
+    0.0299,
+    -0.7087,
+    3.85
+   ]
+  },
+  {
+   "name": "neck",
+   "parent": "chest",
+   "deform": true,
+   "head": [
+    0.0299,
+    -0.7087,
+    3.85
+   ],
+   "tail": [
+    0.0299,
+    -1.2859,
+    4.6
+   ]
+  },
+  {
+   "name": "head",
+   "parent": "neck",
+   "deform": true,
+   "head": [
+    0.0299,
+    -1.2859,
+    4.6
+   ],
+   "tail": [
+    0.0299,
+    -2.4359,
+    4.6
+   ]
+  },
+  {
+   "name": "arm.L.0",
+   "parent": "chest",
+   "deform": true,
+   "head": [
+    0.5749,
+    -0.4552,
+    2.75
+   ],
+   "tail": [
+    0.6689,
+    -0.4212,
+    1.5536
+   ]
+  },
+  {
+   "name": "arm.L.1",
+   "parent": "arm.L.0",
+   "deform": true,
+   "head": [
+    0.6689,
+    -0.4212,
+    1.5536
+   ],
+   "tail": [
+    0.8294,
+    -0.5702,
+    0.3072
+   ]
+  },
+  {
+   "name": "arm.L.2",
+   "parent": "arm.L.1",
+   "deform": true,
+   "head": [
+    0.8294,
+    -0.5702,
+    0.3072
+   ],
+   "tail": [
+    0.8689,
+    -0.7227,
+    0.0272
+   ]
+  },
+  {
+   "name": "arm.R.0",
+   "parent": "chest",
+   "deform": true,
+   "head": [
+    -0.5749,
+    -0.4552,
+    2.75
+   ],
+   "tail": [
+    -0.6689,
+    -0.4212,
+    1.5536
+   ]
+  },
+  {
+   "name": "arm.R.1",
+   "parent": "arm.R.0",
+   "deform": true,
+   "head": [
+    -0.6689,
+    -0.4212,
+    1.5536
+   ],
+   "tail": [
+    -0.8294,
+    -0.5702,
+    0.3072
+   ]
+  },
+  {
+   "name": "arm.R.2",
+   "parent": "arm.R.1",
+   "deform": true,
+   "head": [
+    -0.8294,
+    -0.5702,
+    0.3072
+   ],
+   "tail": [
+    -0.8689,
+    -0.7227,
+    0.0272
+   ]
+  },
+  {
+   "name": "leg.L.0",
+   "parent": "hips",
+   "deform": true,
+   "head": [
+    0.3964,
+    2.0193,
+    2.75
+   ],
+   "tail": [
+    0.4359,
+    2.1678,
+    1.5773
+   ]
+  },
+  {
+   "name": "leg.L.1",
+   "parent": "leg.L.0",
+   "deform": true,
+   "head": [
+    0.4359,
+    2.1678,
+    1.5773
+   ],
+   "tail": [
+    0.6109,
+    2.2083,
+    0.3546
+   ]
+  },
+  {
+   "name": "leg.L.2",
+   "parent": "leg.L.1",
+   "deform": true,
+   "head": [
+    0.6109,
+    2.2083,
+    0.3546
+   ],
+   "tail": [
+    0.6739,
+    2.1703,
+    0.0746
+   ]
+  },
+  {
+   "name": "leg.R.0",
+   "parent": "hips",
+   "deform": true,
+   "head": [
+    -0.3964,
+    2.0193,
+    2.75
+   ],
+   "tail": [
+    -0.4359,
+    2.1678,
+    1.5773
+   ]
+  },
+  {
+   "name": "leg.R.1",
+   "parent": "leg.R.0",
+   "deform": true,
+   "head": [
+    -0.4359,
+    2.1678,
+    1.5773
+   ],
+   "tail": [
+    -0.6109,
+    2.2083,
+    0.3546
+   ]
+  },
+  {
+   "name": "leg.R.2",
+   "parent": "leg.R.1",
+   "deform": true,
+   "head": [
+    -0.6109,
+    2.2083,
+    0.3546
+   ],
+   "tail": [
+    -0.6739,
+    2.1703,
+    0.0746
+   ]
+  },
+  {
+   "name": "tail.0",
+   "parent": "hips",
+   "deform": true,
+   "head": [
+    0.0299,
+    1.9213,
+    3.85
+   ],
+   "tail": [
+    0.0299,
+    2.1117,
+    4.2802
+   ]
+  },
+  {
+   "name": "tail.1",
+   "parent": "tail.0",
+   "deform": true,
+   "head": [
+    0.0299,
+    2.1117,
+    4.2802
+   ],
+   "tail": [
+    0.0299,
+    2.1413,
+    4.98
+   ]
+  }
+ ],
+ "bone_count": 20,
+ "digest": {
+  "parts": {
+   "solid_grid": "2bf7ae1bf389ad2f",
+   "bake_normal": "6d88c1121798234c",
+   "bake_ao": "abd9b23dfae9ebeb",
+   "bake_albedo": "be86c163f1e01b6e",
+   "yaw": "9450347a5c2b3631",
+   "repose": "513325da65a2d2c4",
+   "geometry_colour_uv": "42edbd89188dcc59",
+   "weights": "dae896f7c30a1b45",
+   "keys": "f5432779a665b9d6",
+   "clip_samples": "56a8e20bfd88b6ef"
+  },
+  "combined": "d6a849d06e2e94a3"
+ },
+ "glb": {
+  "path": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\rigged\\frost_calf.glb",
+  "bytes": 11666980,
+  "seconds": 0.9
+ },
+ "skins": {
+  "default": {
+   "file": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\rigged\\frost_calf.blend",
+   "palette": {
+    "proxy_albedo": {
+     "rgb": [
+      255,
+      255,
+      255
+     ]
+    }
+   }
+  },
+  "repaint_proof": {
+   "default_digest_before": "42edbd89188dcc59",
+   "after_repaint": "42edbd89188dcc59"
+  }
+ },
+ "improved_report": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\improved\\frost_calf.json",
+ "seconds": 102.5
+}

@@ -1,0 +1,39 @@
+{
+ "unit": "frost_giant",
+ "views": {
+  "front": {
+   "iou": 0.8921,
+   "iou_shape": 0.8278,
+   "aspect_rel": 0.0014,
+   "row_err_u": 0.131,
+   "row_err_pct": 4.6,
+   "w_u": 3.79,
+   "h_u": 7.78,
+   "ref_w_u": 3.78,
+   "ref_h_u": 7.77,
+   "iou_in_frame": 0.8921,
+   "row_err_pct_in_frame": 4.6,
+   "proxy_iou": 0.902,
+   "flag": false
+  },
+  "side": {
+   "iou": 0.8562,
+   "iou_shape": 0.6981,
+   "aspect_rel": 0.2651,
+   "row_err_u": 0.12,
+   "row_err_pct": 5.6,
+   "w_u": 2.27,
+   "h_u": 7.78,
+   "ref_w_u": 3.18,
+   "ref_h_u": 8.01,
+   "iou_in_frame": 0.8511,
+   "row_err_pct_in_frame": 6.0,
+   "proxy_iou": 0.8363,
+   "flag": false
+  }
+ },
+ "proxy_sha256": "0a7d865069659475df1b4a72b2d251ee7949851e9c6b4a229837b59561281b96",
+ "proxy_gate": "reliable",
+ "flagged": [],
+ "mean_iou": 0.8741
+}

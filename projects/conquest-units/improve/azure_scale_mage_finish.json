@@ -1,0 +1,1483 @@
+{
+ "unit": "azure_scale_mage",
+ "char_id": "azure_scale_mage",
+ "tier": "regular",
+ "tri_budget": [
+  8000,
+  22000
+ ],
+ "body_tris": 18000,
+ "mode": "light",
+ "fit_side_length": true,
+ "fit_side_length_why": "unit note + proxy gate (sha 2387a65c): side length / front height 0.637 vs the sheet's 0.605 (+5.3 %): Y scaled x 0.950 to the sheet",
+ "refloor": {
+  "y_windows": [
+   [
+    -1.4,
+    0.4
+   ]
+  ],
+  "x_abs_min": 0.0,
+  "pct": 0.0,
+  "rescale_to_front_height": true,
+  "why": "sheet_proxy already floored the FEET: the lowest texels are the dark talons (L* 8..15) at x -0.19 / +0.53, y -0.85 / +0.22, z 0.000..0.006; the tail tip (pale, x 1.46 y 1.78) sits 0.06 u up. The window only confirms the foot contact and rescales x(7.17 / 7.102) = 1.0096 to the sheet front height (sheet front 7.17 vs side 7.16 u: the views agree, -0.1 %)"
+ },
+ "light": {
+  "steps_per_height": 300,
+  "dense": [
+   {
+    "box": [
+     [
+      -2.25,
+      -2.3,
+      5.0
+     ],
+     [
+      1.3,
+      1.4,
+      7.25
+     ]
+    ],
+    "density": 2.5,
+    "vg_weight": 0.3,
+    "why": "the head: sorcerer hat (brim x -2.07..1.15, top z 7.17), pangolin snout, eyes (proxy slabs z 5.0..7.17 after the refloor, sha 2387a65c; landmark front_most y -2.26 x0.950 = -2.15 at z 5.5); vg_weight 0.3 so the eye box can sit denser"
+   },
+   {
+    "box": [
+     [
+      -1.2,
+      -1.28,
+      5.53
+     ],
+     [
+      -0.64,
+      -0.76,
+      5.88
+     ]
+    ],
+    "density": 2.5,
+    "vg_weight": 0.0,
+    "why": "the two eyes under the brim (proxy vivid-blue texels b* < -55, L* > 48: x -1.12..-1.00 and -0.80..-0.72, y -1.18..-1.06, z 5.60..5.78; head turned to -x as generated) held denser so the glow lands on the eye faces, not the snout scales"
+   }
+  ],
+  "ao_from_low": true,
+  "ao_samples": 64,
+  "ao_why": "AO baked on the watertight low itself: the proxy's layered scale blades are inner shells that black-hole AO rays (storm_bear / vulture_creature lesson)",
+  "ao_distance": 0.2,
+  "ao_distance_why": "storm_bear lesson: about one scale-blade length keeps the real crevices (under the hat brim, arm pits, between the legs) without the broad darkening of the layered robe",
+  "ao_fill_below": 0.04,
+  "ao_fill_why": "AO texels under 0.04 (bake origins inside the scale soup) refilled from valid neighbours (storm_bear idiom)",
+  "bake_drop_interior": 0.08,
+  "bake_drop_interior_why": "proxy faces with solid on both sides (inner scale shells) left out of the bake source so the cage stays tight",
+  "uv_island_margin": 0.001,
+  "uv_island_margin_why": "the scale-blade low unwraps into thousands of islands; the default margin starves the atlas (storm_bear / vulture_creature idiom)",
+  "recolour3d": [
+   {
+    "name": "tone_tips_white_blue",
+    "boxes": [
+     [
+      [
+       -2.6,
+       -2.6,
+       -0.1
+      ],
+      [
+       2.6,
+       2.6,
+       7.4
+      ]
+     ]
+    ],
+    "exclude": [
+     [
+      [
+       -1.18,
+       -1.26,
+       5.55
+      ],
+      [
+       -0.66,
+       -0.78,
+       5.86
+      ]
+     ]
+    ],
+    "feather": 0.03,
+    "select": {
+     "L": [
+      55,
+      101
+     ],
+     "b": [
+      -52.0,
+      -15.2
+     ],
+     "soft": 2
+    },
+    "target_rgb": [
+     193,
+     202,
+     242
+    ],
+    "detail_gamma": 0.776,
+    "detail_clip": [
+     0.3,
+     2.5
+    ],
+    "why": "UNIT NOTE (tone): the proxy texture reads darker / duller than the sheet's white-to-blue gradient: proxy texels L* p10/25/50/75/90 7/13/25/41/57 vs the sheet front + side masks 15/23/38/59/73. The sheet drift fit (light.colour_fit) refused itself (median residual 54.8 RGB > 35: the scale pattern does not register per pixel); run 1 (6 L* bands, one hue each) matched L* but flattened the hue spread (basecolor b* p10 -26.8 vs the sheet -38.9: the finish read silver-grey on the panel). Now a 2D QUANTILE map: 6 L* bands (brightest first, so a band's output sits above the next band's select) x 3 b* thirds per band (bluest first), each class to the sheet's colour at the same L* quantile band and the same b* third, the proxy's detail kept as a luma ratio. Crystals (b* < -52) and the eyes (box) keep their colour (glow below). Sim on 400k proxy samples (/1.08): L* p10/25/50/75/90 16.9/23.7/37.7/59.1/71.8 vs the sheet 14.8/22.9/37.9/58.9/73.4; b* p10/50/90 -38.3/-21.1/-0.1 vs -38.9/-19.7/-1.7; 7 % of texels caught by two classes (sim included). | class: proxy L* 55..100 (quantiles 87.9..100.0 % of the non-crystal texels), b* -52.0..-15.2 (this band's blue third; proxy median [139, 144, 194]) -> the sheet's same L* quantile band (front + side masks L* 71.5..98.9) and same b* third (b* -44.0..-8.9, median [179, 188, 225]), x1.08 for the AO multiply; gamma = the sheet / proxy log luma spread q10..q90"
+   },
+   {
+    "name": "tone_tips_white_mid",
+    "boxes": [
+     [
+      [
+       -2.6,
+       -2.6,
+       -0.1
+      ],
+      [
+       2.6,
+       2.6,
+       7.4
+      ]
+     ]
+    ],
+    "exclude": [
+     [
+      [
+       -1.18,
+       -1.26,
+       5.55
+      ],
+      [
+       -0.66,
+       -0.78,
+       5.86
+      ]
+     ]
+    ],
+    "feather": 0.03,
+    "select": {
+     "L": [
+      55,
+      101
+     ],
+     "b": [
+      -15.2,
+      -3.8
+     ],
+     "soft": 2
+    },
+    "target_rgb": [
+     217,
+     207,
+     217
+    ],
+    "detail_gamma": 0.788,
+    "detail_clip": [
+     0.3,
+     2.5
+    ],
+    "why": "proxy L* 55..100 (quantiles 87.9..100.0 % of the non-crystal texels), b* -15.2..-3.8 (this band's mid third; proxy median [162, 156, 175]) -> the sheet's same L* quantile band (front + side masks L* 71.5..98.9) and same b* third (b* -8.9..1.8, median [201, 192, 201]), x1.08 for the AO multiply; gamma = the sheet / proxy log luma spread q10..q90"
+   },
+   {
+    "name": "tone_tips_white_neutral",
+    "boxes": [
+     [
+      [
+       -2.6,
+       -2.6,
+       -0.1
+      ],
+      [
+       2.6,
+       2.6,
+       7.4
+      ]
+     ]
+    ],
+    "exclude": [
+     [
+      [
+       -1.18,
+       -1.26,
+       5.55
+      ],
+      [
+       -0.66,
+       -0.78,
+       5.86
+      ]
+     ]
+    ],
+    "feather": 0.03,
+    "select": {
+     "L": [
+      55,
+      101
+     ],
+     "b": [
+      -3.8,
+      100.0
+     ],
+     "soft": 2
+    },
+    "target_rgb": [
+     236,
+     214,
+     207
+    ],
+    "detail_gamma": 0.71,
+    "detail_clip": [
+     0.3,
+     2.5
+    ],
+    "why": "proxy L* 55..100 (quantiles 87.9..100.0 % of the non-crystal texels), b* -3.8..100.0 (this band's neutral third; proxy median [168, 156, 157]) -> the sheet's same L* quantile band (front + side masks L* 71.5..98.9) and same b* third (b* 1.8..17.3, median [218, 198, 191]), x1.08 for the AO multiply; gamma = the sheet / proxy log luma spread q10..q90"
+   },
+   {
+    "name": "tone_pale_blue_blue",
+    "boxes": [
+     [
+      [
+       -2.6,
+       -2.6,
+       -0.1
+      ],
+      [
+       2.6,
+       2.6,
+       7.4
+      ]
+     ]
+    ],
+    "exclude": [
+     [
+      [
+       -1.18,
+       -1.26,
+       5.55
+      ],
+      [
+       -0.66,
+       -0.78,
+       5.86
+      ]
+     ]
+    ],
+    "feather": 0.03,
+    "select": {
+     "L": [
+      40,
+      55
+     ],
+     "b": [
+      -52.0,
+      -30.0
+     ],
+     "soft": 2
+    },
+    "target_rgb": [
+     147,
+     165,
+     227
+    ],
+    "detail_gamma": 0.607,
+    "detail_clip": [
+     0.3,
+     2.5
+    ],
+    "why": "proxy L* 40..55 (quantiles 74.4..87.9 % of the non-crystal texels), b* -52.0..-30.0 (this band's blue third; proxy median [95, 103, 173]) -> the sheet's same L* quantile band (front + side masks L* 58.7..71.5) and same b* third (b* -52.0..-19.8, median [136, 153, 210]), x1.08 for the AO multiply; gamma = the sheet / proxy log luma spread q10..q90"
+   },
+   {
+    "name": "tone_pale_blue_mid",
+    "boxes": [
+     [
+      [
+       -2.6,
+       -2.6,
+       -0.1
+      ],
+      [
+       2.6,
+       2.6,
+       7.4
+      ]
+     ]
+    ],
+    "exclude": [
+     [
+      [
+       -1.18,
+       -1.26,
+       5.55
+      ],
+      [
+       -0.66,
+       -0.78,
+       5.86
+      ]
+     ]
+    ],
+    "feather": 0.03,
+    "select": {
+     "L": [
+      40,
+      55
+     ],
+     "b": [
+      -30.0,
+      -16.0
+     ],
+     "soft": 2
+    },
+    "target_rgb": [
+     169,
+     168,
+     194
+    ],
+    "detail_gamma": 0.626,
+    "detail_clip": [
+     0.3,
+     2.5
+    ],
+    "why": "proxy L* 40..55 (quantiles 74.4..87.9 % of the non-crystal texels), b* -30.0..-16.0 (this band's mid third; proxy median [105, 106, 150]) -> the sheet's same L* quantile band (front + side masks L* 58.7..71.5) and same b* third (b* -19.8..-6.1, median [156, 155, 179]), x1.08 for the AO multiply; gamma = the sheet / proxy log luma spread q10..q90"
+   },
+   {
+    "name": "tone_pale_blue_neutral",
+    "boxes": [
+     [
+      [
+       -2.6,
+       -2.6,
+       -0.1
+      ],
+      [
+       2.6,
+       2.6,
+       7.4
+      ]
+     ]
+    ],
+    "exclude": [
+     [
+      [
+       -1.18,
+       -1.26,
+       5.55
+      ],
+      [
+       -0.66,
+       -0.78,
+       5.86
+      ]
+     ]
+    ],
+    "feather": 0.03,
+    "select": {
+     "L": [
+      40,
+      55
+     ],
+     "b": [
+      -16.0,
+      100.0
+     ],
+     "soft": 2
+    },
+    "target_rgb": [
+     184,
+     169,
+     173
+    ],
+    "detail_gamma": 0.621,
+    "detail_clip": [
+     0.3,
+     2.5
+    ],
+    "why": "proxy L* 40..55 (quantiles 74.4..87.9 % of the non-crystal texels), b* -16.0..100.0 (this band's neutral third; proxy median [118, 111, 126]) -> the sheet's same L* quantile band (front + side masks L* 58.7..71.5) and same b* third (b* -6.1..17.3, median [170, 156, 160]), x1.08 for the AO multiply; gamma = the sheet / proxy log luma spread q10..q90"
+   },
+   {
+    "name": "tone_mid_blue_blue",
+    "boxes": [
+     [
+      [
+       -2.6,
+       -2.6,
+       -0.1
+      ],
+      [
+       2.6,
+       2.6,
+       7.4
+      ]
+     ]
+    ],
+    "exclude": [
+     [
+      [
+       -1.18,
+       -1.26,
+       5.55
+      ],
+      [
+       -0.66,
+       -0.78,
+       5.86
+      ]
+     ]
+    ],
+    "feather": 0.03,
+    "select": {
+     "L": [
+      28,
+      40
+     ],
+     "b": [
+      -52.0,
+      -33.0
+     ],
+     "soft": 2
+    },
+    "target_rgb": [
+     108,
+     128,
+     202
+    ],
+    "detail_gamma": 0.81,
+    "detail_clip": [
+     0.3,
+     2.5
+    ],
+    "why": "proxy L* 28..40 (quantiles 58.1..74.4 % of the non-crystal texels), b* -52.0..-33.0 (this band's blue third; proxy median [60, 72, 143]) -> the sheet's same L* quantile band (front + side masks L* 44.1..58.7) and same b* third (b* -52.0..-28.7, median [100, 118, 187]), x1.08 for the AO multiply; gamma = the sheet / proxy log luma spread q10..q90"
+   },
+   {
+    "name": "tone_mid_blue_mid",
+    "boxes": [
+     [
+      [
+       -2.6,
+       -2.6,
+       -0.1
+      ],
+      [
+       2.6,
+       2.6,
+       7.4
+      ]
+     ]
+    ],
+    "exclude": [
+     [
+      [
+       -1.18,
+       -1.26,
+       5.55
+      ],
+      [
+       -0.66,
+       -0.78,
+       5.86
+      ]
+     ]
+    ],
+    "feather": 0.03,
+    "select": {
+     "L": [
+      28,
+      40
+     ],
+     "b": [
+      -33.0,
+      -22.1
+     ],
+     "soft": 2
+    },
+    "target_rgb": [
+     122,
+     130,
+     174
+    ],
+    "detail_gamma": 0.836,
+    "detail_clip": [
+     0.3,
+     2.5
+    ],
+    "why": "proxy L* 28..40 (quantiles 58.1..74.4 % of the non-crystal texels), b* -33.0..-22.1 (this band's mid third; proxy median [69, 74, 122]) -> the sheet's same L* quantile band (front + side masks L* 44.1..58.7) and same b* third (b* -28.7..-15.7, median [113, 120, 161]), x1.08 for the AO multiply; gamma = the sheet / proxy log luma spread q10..q90"
+   },
+   {
+    "name": "tone_mid_blue_neutral",
+    "boxes": [
+     [
+      [
+       -2.6,
+       -2.6,
+       -0.1
+      ],
+      [
+       2.6,
+       2.6,
+       7.4
+      ]
+     ]
+    ],
+    "exclude": [
+     [
+      [
+       -1.18,
+       -1.26,
+       5.55
+      ],
+      [
+       -0.66,
+       -0.78,
+       5.86
+      ]
+     ]
+    ],
+    "feather": 0.03,
+    "select": {
+     "L": [
+      28,
+      40
+     ],
+     "b": [
+      -22.1,
+      100.0
+     ],
+     "soft": 2
+    },
+    "target_rgb": [
+     140,
+     131,
+     147
+    ],
+    "detail_gamma": 0.851,
+    "detail_clip": [
+     0.3,
+     2.5
+    ],
+    "why": "proxy L* 28..40 (quantiles 58.1..74.4 % of the non-crystal texels), b* -22.1..100.0 (this band's neutral third; proxy median [78, 77, 103]) -> the sheet's same L* quantile band (front + side masks L* 44.1..58.7) and same b* third (b* -15.7..16.3, median [129, 121, 136]), x1.08 for the AO multiply; gamma = the sheet / proxy log luma spread q10..q90"
+   },
+   {
+    "name": "tone_blue_blue",
+    "boxes": [
+     [
+      [
+       -2.6,
+       -2.6,
+       -0.1
+      ],
+      [
+       2.6,
+       2.6,
+       7.4
+      ]
+     ]
+    ],
+    "exclude": [
+     [
+      [
+       -1.18,
+       -1.26,
+       5.55
+      ],
+      [
+       -0.66,
+       -0.78,
+       5.86
+      ]
+     ]
+    ],
+    "feather": 0.03,
+    "select": {
+     "L": [
+      18,
+      28
+     ],
+     "b": [
+      -52.0,
+      -31.4
+     ],
+     "soft": 2
+    },
+    "target_rgb": [
+     69,
+     84,
+     157
+    ],
+    "detail_gamma": 1.017,
+    "detail_clip": [
+     0.3,
+     2.5
+    ],
+    "why": "proxy L* 18..28 (quantiles 37.7..58.1 % of the non-crystal texels), b* -52.0..-31.4 (this band's blue third; proxy median [37, 50, 111]) -> the sheet's same L* quantile band (front + side masks L* 29.0..44.1) and same b* third (b* -52.0..-30.9, median [64, 78, 145]), x1.08 for the AO multiply; gamma = the sheet / proxy log luma spread q10..q90"
+   },
+   {
+    "name": "tone_blue_mid",
+    "boxes": [
+     [
+      [
+       -2.6,
+       -2.6,
+       -0.1
+      ],
+      [
+       2.6,
+       2.6,
+       7.4
+      ]
+     ]
+    ],
+    "exclude": [
+     [
+      [
+       -1.18,
+       -1.26,
+       5.55
+      ],
+      [
+       -0.66,
+       -0.78,
+       5.86
+      ]
+     ]
+    ],
+    "feather": 0.03,
+    "select": {
+     "L": [
+      18,
+      28
+     ],
+     "b": [
+      -31.4,
+      -22.1
+     ],
+     "soft": 2
+    },
+    "target_rgb": [
+     79,
+     87,
+     134
+    ],
+    "detail_gamma": 1.03,
+    "detail_clip": [
+     0.3,
+     2.5
+    ],
+    "why": "proxy L* 18..28 (quantiles 37.7..58.1 % of the non-crystal texels), b* -31.4..-22.1 (this band's mid third; proxy median [43, 50, 94]) -> the sheet's same L* quantile band (front + side masks L* 29.0..44.1) and same b* third (b* -30.9..-21.1, median [74, 81, 125]), x1.08 for the AO multiply; gamma = the sheet / proxy log luma spread q10..q90"
+   },
+   {
+    "name": "tone_blue_neutral",
+    "boxes": [
+     [
+      [
+       -2.6,
+       -2.6,
+       -0.1
+      ],
+      [
+       2.6,
+       2.6,
+       7.4
+      ]
+     ]
+    ],
+    "exclude": [
+     [
+      [
+       -1.18,
+       -1.26,
+       5.55
+      ],
+      [
+       -0.66,
+       -0.78,
+       5.86
+      ]
+     ]
+    ],
+    "feather": 0.03,
+    "select": {
+     "L": [
+      18,
+      28
+     ],
+     "b": [
+      -22.1,
+      100.0
+     ],
+     "soft": 2
+    },
+    "target_rgb": [
+     92,
+     89,
+     113
+    ],
+    "detail_gamma": 1.044,
+    "detail_clip": [
+     0.3,
+     2.5
+    ],
+    "why": "proxy L* 18..28 (quantiles 37.7..58.1 % of the non-crystal texels), b* -22.1..100.0 (this band's neutral third; proxy median [51, 51, 79]) -> the sheet's same L* quantile band (front + side masks L* 29.0..44.1) and same b* third (b* -21.1..12.3, median [85, 82, 105]), x1.08 for the AO multiply; gamma = the sheet / proxy log luma spread q10..q90"
+   },
+   {
+    "name": "tone_deep_blue_blue",
+    "boxes": [
+     [
+      [
+       -2.6,
+       -2.6,
+       -0.1
+      ],
+      [
+       2.6,
+       2.6,
+       7.4
+      ]
+     ]
+    ],
+    "exclude": [
+     [
+      [
+       -1.18,
+       -1.26,
+       5.55
+      ],
+      [
+       -0.66,
+       -0.78,
+       5.86
+      ]
+     ]
+    ],
+    "feather": 0.03,
+    "select": {
+     "L": [
+      10,
+      18
+     ],
+     "b": [
+      -52.0,
+      -26.7
+     ],
+     "soft": 2
+    },
+    "target_rgb": [
+     49,
+     60,
+     115
+    ],
+    "detail_gamma": 0.852,
+    "detail_clip": [
+     0.3,
+     2.5
+    ],
+    "why": "proxy L* 10..18 (quantiles 17.4..37.7 % of the non-crystal texels), b* -52.0..-26.7 (this band's blue third; proxy median [23, 33, 79]) -> the sheet's same L* quantile band (front + side masks L* 18.8..29.0) and same b* third (b* -51.9..-26.2, median [45, 55, 106]), x1.08 for the AO multiply; gamma = the sheet / proxy log luma spread q10..q90"
+   },
+   {
+    "name": "tone_deep_blue_mid",
+    "boxes": [
+     [
+      [
+       -2.6,
+       -2.6,
+       -0.1
+      ],
+      [
+       2.6,
+       2.6,
+       7.4
+      ]
+     ]
+    ],
+    "exclude": [
+     [
+      [
+       -1.18,
+       -1.26,
+       5.55
+      ],
+      [
+       -0.66,
+       -0.78,
+       5.86
+      ]
+     ]
+    ],
+    "feather": 0.03,
+    "select": {
+     "L": [
+      10,
+      18
+     ],
+     "b": [
+      -26.7,
+      -21.7
+     ],
+     "soft": 2
+    },
+    "target_rgb": [
+     51,
+     57,
+     97
+    ],
+    "detail_gamma": 0.78,
+    "detail_clip": [
+     0.3,
+     2.5
+    ],
+    "why": "proxy L* 10..18 (quantiles 17.4..37.7 % of the non-crystal texels), b* -26.7..-21.7 (this band's mid third; proxy median [24, 30, 68]) -> the sheet's same L* quantile band (front + side masks L* 18.8..29.0) and same b* third (b* -26.2..-19.8, median [47, 53, 90]), x1.08 for the AO multiply; gamma = the sheet / proxy log luma spread q10..q90"
+   },
+   {
+    "name": "tone_deep_blue_neutral",
+    "boxes": [
+     [
+      [
+       -2.6,
+       -2.6,
+       -0.1
+      ],
+      [
+       2.6,
+       2.6,
+       7.4
+      ]
+     ]
+    ],
+    "exclude": [
+     [
+      [
+       -1.18,
+       -1.26,
+       5.55
+      ],
+      [
+       -0.66,
+       -0.78,
+       5.86
+      ]
+     ]
+    ],
+    "feather": 0.03,
+    "select": {
+     "L": [
+      10,
+      18
+     ],
+     "b": [
+      -21.7,
+      100.0
+     ],
+     "soft": 2
+    },
+    "target_rgb": [
+     58,
+     56,
+     81
+    ],
+    "detail_gamma": 0.84,
+    "detail_clip": [
+     0.3,
+     2.5
+    ],
+    "why": "proxy L* 10..18 (quantiles 17.4..37.7 % of the non-crystal texels), b* -21.7..100.0 (this band's neutral third; proxy median [32, 33, 59]) -> the sheet's same L* quantile band (front + side masks L* 18.8..29.0) and same b* third (b* -19.8..10.4, median [54, 52, 75]), x1.08 for the AO multiply; gamma = the sheet / proxy log luma spread q10..q90"
+   },
+   {
+    "name": "tone_navy_blue",
+    "boxes": [
+     [
+      [
+       -2.6,
+       -2.6,
+       -0.1
+      ],
+      [
+       2.6,
+       2.6,
+       7.4
+      ]
+     ]
+    ],
+    "exclude": [
+     [
+      [
+       -1.18,
+       -1.26,
+       5.55
+      ],
+      [
+       -0.66,
+       -0.78,
+       5.86
+      ]
+     ]
+    ],
+    "feather": 0.03,
+    "select": {
+     "L": [
+      0,
+      10
+     ],
+     "b": [
+      -52.0,
+      -22.6
+     ],
+     "soft": 2
+    },
+    "target_rgb": [
+     32,
+     40,
+     77
+    ],
+    "detail_gamma": 1.29,
+    "detail_clip": [
+     0.3,
+     2.5
+    ],
+    "why": "proxy L* 0..10 (quantiles 0.0..17.4 % of the non-crystal texels), b* -52.0..-22.6 (this band's blue third; proxy median [13, 20, 57]) -> the sheet's same L* quantile band (front + side masks L* 0.0..18.8) and same b* third (b* -51.5..-18.8, median [30, 37, 71]), x1.08 for the AO multiply; gamma = the sheet / proxy log luma spread q10..q90"
+   },
+   {
+    "name": "tone_navy_mid",
+    "boxes": [
+     [
+      [
+       -2.6,
+       -2.6,
+       -0.1
+      ],
+      [
+       2.6,
+       2.6,
+       7.4
+      ]
+     ]
+    ],
+    "exclude": [
+     [
+      [
+       -1.18,
+       -1.26,
+       5.55
+      ],
+      [
+       -0.66,
+       -0.78,
+       5.86
+      ]
+     ]
+    ],
+    "feather": 0.03,
+    "select": {
+     "L": [
+      0,
+      10
+     ],
+     "b": [
+      -22.6,
+      -19.1
+     ],
+     "soft": 2
+    },
+    "target_rgb": [
+     33,
+     35,
+     61
+    ],
+    "detail_gamma": 0.854,
+    "detail_clip": [
+     0.3,
+     2.5
+    ],
+    "why": "proxy L* 0..10 (quantiles 0.0..17.4 % of the non-crystal texels), b* -22.6..-19.1 (this band's mid third; proxy median [8, 14, 46]) -> the sheet's same L* quantile band (front + side masks L* 0.0..18.8) and same b* third (b* -18.8..-12.5, median [31, 33, 57]), x1.08 for the AO multiply; gamma = the sheet / proxy log luma spread q10..q90"
+   },
+   {
+    "name": "tone_navy_neutral",
+    "boxes": [
+     [
+      [
+       -2.6,
+       -2.6,
+       -0.1
+      ],
+      [
+       2.6,
+       2.6,
+       7.4
+      ]
+     ]
+    ],
+    "exclude": [
+     [
+      [
+       -1.18,
+       -1.26,
+       5.55
+      ],
+      [
+       -0.66,
+       -0.78,
+       5.86
+      ]
+     ]
+    ],
+    "feather": 0.03,
+    "select": {
+     "L": [
+      0,
+      10
+     ],
+     "b": [
+      -19.1,
+      100.0
+     ],
+     "soft": 2
+    },
+    "target_rgb": [
+     31,
+     28,
+     42
+    ],
+    "detail_gamma": 1.397,
+    "detail_clip": [
+     0.3,
+     2.5
+    ],
+    "why": "proxy L* 0..10 (quantiles 0.0..17.4 % of the non-crystal texels), b* -19.1..100.0 (this band's neutral third; proxy median [12, 15, 39]) -> the sheet's same L* quantile band (front + side masks L* 0.0..18.8) and same b* third (b* -12.5..9.0, median [28, 26, 38]), x1.08 for the AO multiply; gamma = the sheet / proxy log luma spread q10..q90"
+   }
+  ],
+  "glow3d": [
+   {
+    "name": "eyes",
+    "boxes": [
+     [
+      [
+       -1.18,
+       -1.26,
+       5.55
+      ],
+      [
+       -0.66,
+       -0.78,
+       5.86
+      ]
+     ]
+    ],
+    "feather": 0.02,
+    "select": {
+     "L": [
+      45,
+      101
+     ],
+     "b": [
+      -100,
+      -50
+     ],
+     "soft": 2
+    },
+    "levels": [
+     [
+      0.5,
+      "eye_glow"
+     ]
+    ],
+    "why": "sheet: NARROW, INTENSE blue eye (front / side eye pixels b* < -30, brightest quarter 76..96,109..121,188..192, cores to 116..126,207..209,255): faces in the eye box whose baked albedo is the vivid eye blue (L* >= 45, b* <= -50: the proxy eye texels 81..86,109..114,222..237; run 1 at b* <= -40 lit 490 faces incl. the dark-blue brim underside 71,85,177 L* 40 b* -51) -> eye_glow"
+   },
+   {
+    "name": "crystal_core",
+    "boxes": [
+     [
+      [
+       -2.6,
+       -2.6,
+       -0.1
+      ],
+      [
+       2.6,
+       2.6,
+       7.4
+      ]
+     ]
+    ],
+    "exclude": [
+     [
+      [
+       -1.18,
+       -1.26,
+       5.55
+      ],
+      [
+       -0.66,
+       -0.78,
+       5.86
+      ]
+     ]
+    ],
+    "feather": 0.03,
+    "select": {
+     "L": [
+      52,
+      101
+     ],
+     "b": [
+      -100,
+      -48
+     ],
+     "soft": 2
+    },
+    "levels": [
+     [
+      0.5,
+      "crystal_core"
+     ]
+    ],
+    "why": "sheet: ARCANE CRYSTALS EMBEDDED (bright blue diamonds on chest, arms, robe, hat): the brightest crystal faces (baked L* >= 52, b* <= -48; run 1 at L* >= 58 / b* <= -45 caught 5 faces: the per-face UV-centroid albedo of an 18k low rarely lands on a core texel; sheet cores L* > 65 b* < -40 = 127,165,249, 0.5 % of the front + side masks) -> crystal_core"
+   },
+   {
+    "name": "crystal_body",
+    "boxes": [
+     [
+      [
+       -2.6,
+       -2.6,
+       -0.1
+      ],
+      [
+       2.6,
+       2.6,
+       7.4
+      ]
+     ]
+    ],
+    "exclude": [
+     [
+      [
+       -1.18,
+       -1.26,
+       5.55
+      ],
+      [
+       -0.66,
+       -0.78,
+       5.86
+      ]
+     ]
+    ],
+    "feather": 0.03,
+    "select": {
+     "L": [
+      38,
+      101
+     ],
+     "b": [
+      -100,
+      -52
+     ],
+     "soft": 2
+    },
+    "levels": [
+     [
+      0.5,
+      "crystal_glow"
+     ]
+    ],
+    "why": "the rest of the crystal faces: vivid blue (baked b* <= -52 = the texels the tone map leaves as generated, L* >= 38: 2.1 % of the proxy samples vs the sheet b* < -55 share 2.0 %; run 1 at L* >= 44 / b* <= -55 lit only 151 faces) -> crystal_glow (sheet crystals b* < -55: median 63,99,218, 2.0 % of the front + side masks)"
+   }
+  ],
+  "yaw": {
+   "deg": 35.0,
+   "about": [
+    -0.14,
+    0.0
+   ],
+   "to": [
+    0.0,
+    0.0
+   ],
+   "why": "v2 (artist 2026-10-17: 'our characters should be symmetrical head turns are done through posing so our models remain flexible'): Pixal3D copied the sheet's 3/4 FRONT by building the whole mage turned about Z. Measured on the v1 low (stage-1 frame): whole-low best mirror plane yaw -35 deg through x -0.14 (p99 0.927 at x 0 -> 0.534); head z > 5 best plane -40.5 deg (p99 0.267; face slabs -31..-39, hat slabs -43..-48); the two eye-glow clusters are a symmetric pair about the -40.5 head plane (lateral +0.147 / -0.132, depth -1.369 / -1.349, z 5.704 / 5.658), i.e. the face is TURNED, not sculpted crooked; a +35 deg turn puts the robe train on the midline (tail tip x 1.40 -> 0.23) and the planted +x foot pointing straight ahead. One rigid turn (no vertex moves relative to another); the repose below works in this turned frame"
+  }
+ },
+ "rig": {
+  "spine_names": [
+   "hips",
+   "spine",
+   "chest",
+   "neck",
+   "head"
+  ],
+  "spine": [
+   [
+    0.0,
+    0.15,
+    2.2
+   ],
+   [
+    0.0,
+    0.1,
+    3.2
+   ],
+   [
+    0.0,
+    0.0,
+    4.2
+   ],
+   [
+    0.05,
+    -0.2,
+    4.95
+   ],
+   [
+    0.0,
+    -0.55,
+    5.5
+   ],
+   [
+    -0.1,
+    -1.6,
+    5.4
+   ]
+  ],
+  "spine_why": "v2, turned frame (light.yaw +35): spine on the body plane x 0; the head bone (0, -0.55, 5.5) -> (-0.10, -1.60, 5.40) runs along the face's own forward axis (the head plane, 5.5 deg off -y after the root turn), so heading -y turns it exactly onto the midline",
+  "chains": [
+   {
+    "name": "arm",
+    "kind": "arm",
+    "parent": "chest",
+    "phase": {
+     "L": 0.5,
+     "R": 0.0
+    },
+    "points": [
+     [
+      0.85,
+      -0.15,
+      4.4
+     ],
+     [
+      1.12,
+      -0.22,
+      3.4
+     ],
+     [
+      1.15,
+      -0.1,
+      2.4
+     ],
+     [
+      1.3,
+      0.15,
+      1.5
+     ]
+    ],
+    "points_R": [
+     [
+      -0.85,
+      -0.5,
+      4.4
+     ],
+     [
+      -1.17,
+      -0.84,
+      3.4
+     ],
+     [
+      -1.21,
+      -1.1,
+      2.75
+     ],
+     [
+      -1.25,
+      -1.2,
+      2.25
+     ]
+    ],
+    "why": "v2, turned frame (arm-column medians |x| > 1.0 in 0.3 u slabs of the v1 low): points = the +x arm hanging at the side (column x 1.10..1.17, y -0.2..0.2 from z 4.4 down to the claws z 1.5), points_R = the -x arm as generated: carried forward (column y -0.6..-1.2 at z 2.6..4.4) with the hand raised (claws z 2.3..2.8); the repose makes the pair mirror-symmetric (mean)"
+   },
+   {
+    "name": "leg",
+    "kind": "leg",
+    "parent": "hips",
+    "phase": {
+     "L": 0.0,
+     "R": 0.5
+    },
+    "points": [
+     [
+      0.42,
+      0.3,
+      2.1
+     ],
+     [
+      0.52,
+      0.34,
+      1.2
+     ],
+     [
+      0.58,
+      0.22,
+      0.4
+     ],
+     [
+      0.6,
+      -0.65,
+      0.08
+     ]
+    ],
+    "points_R": [
+     [
+      -0.42,
+      0.3,
+      2.1
+     ],
+     [
+      -0.71,
+      -0.52,
+      1.2
+     ],
+     [
+      -0.77,
+      -0.77,
+      0.45
+     ],
+     [
+      -1.05,
+      -1.3,
+      0.2
+     ]
+    ],
+    "why": "v2, turned frame (leg-column tracking, 0.15 u slabs, radius 0.4, + top-down slices of the v1 low): points = the +x leg, planted (column x 0.52..0.61, y 0.2..0.35 for z 0.2..1.6; talons forward to y -0.75 on z 0), points_R = the -x leg as generated: a stride, stepped forward and out with the foot lifted (ankle -0.77, -0.77, 0.45; toes splayed ~35 deg out to y -1.3, lowest z 0.1); the hips are set mirror-symmetric (moving the -x hip root tore the robe offline, stretch max 9.2)"
+   },
+   {
+    "name": "tail",
+    "kind": "tail",
+    "mirror": false,
+    "parent": "hips",
+    "points": [
+     [
+      0.0,
+      0.85,
+      2.0
+     ],
+     [
+      -0.08,
+      1.3,
+      1.5
+     ],
+     [
+      -0.03,
+      1.69,
+      1.0
+     ],
+     [
+      0.1,
+      2.05,
+      0.5
+     ],
+     [
+      0.23,
+      2.36,
+      0.1
+     ]
+    ],
+    "why": "v2 (artist 2026-10-17: a tail chain that rests centred and can be posed to either side): a 4-bone TAIL CHAIN (tail.0..tail.3) through the long robe train (v1 tail points turned +35 deg: root (0, 0.85, 2.0) -> tip (0.23, 2.36, 0.1))"
+   }
+  ]
+ },
+ "clips": {
+  "idle_frames": 72,
+  "breathe_deg": 1.2,
+  "walk_frames": 36,
+  "walk_bob": 0.012,
+  "walk_roll": 2.0,
+  "leg_swing": 8.0,
+  "arm_swing": 5.0,
+  "why": "PLACEHOLDER (movement + height are the open artist questions): idle = breathe + the kit's arm / tail sway; walk = a measured upright stride (leg_swing 8: the kit's foot bend dips the toes below the floor at larger swings, storm_bear / ember_rex lesson)"
+ },
+ "focus": {
+  "head": [
+   [
+    -1.7,
+    -2.75,
+    4.9
+   ],
+   [
+    1.7,
+    1.9,
+    7.3
+   ]
+  ],
+  "hands": [
+   [
+    -1.6,
+    -1.0,
+    1.3
+   ],
+   [
+    1.6,
+    0.6,
+    3.0
+   ]
+  ]
+ },
+ "bake_res": [
+  1024,
+  1024
+ ],
+ "_doc": "LIGHT finish of the raw Pixal3D proxy (seed 56, sha 2387a65c). Points: stage-1 frame (fit_side_length Y x0.950, feet on the floor, x1.0096 to the sheet front height), sheet units. v2: light.yaw +35 (root turn) + repose (legs / arms / head / tail chain); rig, repose, focus in the turned frame.",
+ "repose": {
+  "targets": [
+   {
+    "symmetric": [
+     "leg"
+    ],
+    "match": "L",
+    "plant": true,
+    "plant_radius": 0.5,
+    "falloff": 0.06,
+    "why": "artist 2026-10-17: symmetric rest pose. The -x leg's stride (stepped forward ~0.9 u and out, foot lifted 0.1..0.45 u, toes splayed) is pose: both legs carried onto the planted +x leg (match L; a mean would leave both feet half-lifted mid-stride), both feet planted on z 0; falloff 0.06 (offline on the v1 low: 0.03 tore the robe blades at the -x hip, stretch max 9.2 -> 3.8)"
+   },
+   {
+    "symmetric": [
+     "arm"
+    ],
+    "match": "mean",
+    "falloff": 0.06,
+    "why": "the arms mirror-symmetric at the mean (the -x arm hung 0.35..1.0 u further forward with the hand 0.35..0.75 u higher); no plant, the claws hang free"
+   },
+   {
+    "bones": [
+     "neck",
+     "head"
+    ],
+    "heading": "-y",
+    "distribute": true,
+    "why": "the face straight ahead: after the root turn the head plane is still 5.5 deg off (head best plane -5.5 deg, x +0.04); the neck twists 2.7, the head 5.4; the head is RIGID (below). Offline: head best plane after -0.5 deg, x +0.02"
+   },
+   {
+    "chain": "tail",
+    "heading": "+y",
+    "why": "the robe train / tail on the midline (heading +y = each tail bone yawed onto straight back), the chain rests centred and is posed to the side later"
+   }
+  ],
+  "rigid": [
+   {
+    "box": [
+     [
+      -1.7,
+      -2.75,
+      5.05
+     ],
+     [
+      1.7,
+      1.9,
+      7.3
+     ]
+    ],
+    "bone": "head",
+    "margin": 0.3,
+    "why": "the whole head (sorcerer hat + brim + curled tip, pangolin snout, both eyes; z > 5.05 in the turned frame) moves as ONE rigid body with the head bone: never deformed or re-sculpted (face as generated)"
+   }
+  ],
+  "why": "v2 (artist 2026-10-17, 'our characters should be symmetrical head turns are done through posing so our models remain flexible'): the proxy's root turn is undone as ONE rigid turn (light.yaw) and the stride / forward arm / head residual / swung train with BONES (proxy_finish_repose) in the turned frame, never by mirror-averaging geometry. v1 colours, glow, dense, AO are unchanged (stage-1 boxes)"
+ },
+ "focus_why": "v2: focus boxes in the turned frame (light.yaw)"
+}

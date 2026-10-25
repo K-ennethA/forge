@@ -1,0 +1,34 @@
+{
+ "unit": "frost_giant_child",
+ "skin": "default",
+ "description": "frost_giant_child default look, LIGHT proxy finish: the colour is the Pixal3D proxy's own texture (pale facets lifted to the sheet's white-blue ice, blue facets to the sheet's blue, eye sockets painted pale) baked onto the low (improved/textures/frost_giant_child_basecolor.png); proxy_albedo (white) tints it; one GLOW region (eye_glow) carries the soft eye emission",
+ "regions": {
+  "proxy_albedo": {
+   "rgb": [
+    255,
+    255,
+    255
+   ],
+   "note": "tint over the baked proxy albedo (light mode; white = as baked). Sheet chips for reference: 233,233,232 / 177,210,243 / 105,163,236 / 84,104,150 / accent 128,144,249"
+  },
+  "eye_glow": {
+   "rgb": [
+    255,
+    255,
+    255
+   ],
+   "emission": [
+    194,
+    233,
+    243
+   ],
+   "emission_scale": 0.7,
+   "note": "the pale eye interiors: rgb white keeps the baked (pale) albedo; emission = the sheet's eye-interior colour (front view, median 194,233,243) x 0.7 (soft self-lit glow, spec 'glowing pale eyes'; at x 0.4 the recessed, AO-darkened sockets rendered 157,188,199 against a 255 face, darker than the face where the sheet draws them as bright as it)"
+  }
+ },
+ "material": {
+  "roughness": 0.85,
+  "emission_strength": 1.0,
+  "alpha": 1.0
+ }
+}

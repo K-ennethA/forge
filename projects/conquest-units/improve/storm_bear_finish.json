@@ -1,0 +1,693 @@
+{
+ "unit": "storm_bear",
+ "char_id": "storm_bear",
+ "tier": "regular",
+ "tri_budget": [
+  8000,
+  22000
+ ],
+ "body_tris": 18000,
+ "mode": "light",
+ "refloor": {
+  "y_windows": [
+   [
+    -1.1,
+    1.3
+   ]
+  ],
+  "x_abs_min": 0.3,
+  "pct": 0.0,
+  "rescale_to_front_height": true,
+  "why": "sheet_proxy already floored the FEET (the crystal toe claws: z 0.00..0.05 at |x| 0.3..1.85, y -1.04..0.82; no tail / hem below them): the window only confirms the foot contact (z0 0.0) and rescales x(6.74 / 6.676) = 1.0096 to the sheet front height"
+ },
+ "light": {
+  "steps_per_height": 300,
+  "dense": [
+   {
+    "box": [
+     [
+      -0.95,
+      -1.85,
+      5.15
+     ],
+     [
+      1.15,
+      0.35,
+      6.8
+     ]
+    ],
+    "density": 2.5,
+    "vg_weight": 0.3,
+    "why": "the head / face: ears, brow, glowing eyes, nose, muzzle, mouth line (proxy slabs z 5.2..6.7 after the refloor: head x -0.95..1.10 above the fur ring, y -1.77 (snout, landmark front_most z 5.47 x1.0096) ..0.35; sha 4b3d3ed2); vg_weight 0.3 so the eye boxes below can sit denser"
+   },
+   {
+    "box": [
+     [
+      -0.2,
+      -1.65,
+      5.75
+     ],
+     [
+      0.06,
+      -1.3,
+      6.12
+     ]
+    ],
+    "density": 2.5,
+    "vg_weight": 0.0,
+    "why": "the -x eye (proxy cyan texels x -0.127..-0.004, y -1.525..-1.443, z 5.82..6.05, centre -0.068, -1.497, 5.925) held denser so the glow lands on the eye faces, not the brow fur (vulture_creature lesson)"
+   },
+   {
+    "box": [
+     [
+      0.17,
+      -1.62,
+      5.75
+     ],
+     [
+      0.44,
+      -1.27,
+      6.12
+     ]
+    ],
+    "density": 2.5,
+    "vg_weight": 0.0,
+    "why": "the +x eye (cyan texels x 0.242..0.363, y -1.496..-1.413, z 5.83..6.04, centre 0.306, -1.469, 5.919), as the -x one"
+   }
+  ],
+  "ao_from_low": true,
+  "ao_samples": 64,
+  "ao_why": "AO baked on the watertight low itself: the proxy's fur shards / crystal plates are inner shells that black-hole AO rays (crystal_canine / vulture_creature / frost_calf lesson)",
+  "ao_distance": 0.2,
+  "ao_distance_why": "run 1 at 0.45 u (frost_calf value): the fur ring's shard soup took AO to median 0.62 (charcoal fur 0.40, white 0.72; p10 0.07): basecolor charcoal L* 23 / white 70 vs the sheet 33 / 81. 0.2 u (about one fur-shard length) keeps the real crevices (arm pits, between the legs, under the ring) and drops the broad darkening",
+  "bake_drop_interior": 0.08,
+  "bake_drop_interior_why": "proxy faces with solid on both sides (inner fur / crystal shells) left out of the bake source so the cage stays tight and rays hit the outer skin",
+  "recolour3d": [
+   {
+    "name": "crystals",
+    "boxes": [
+     [
+      [
+       -2.3,
+       -2.0,
+       -0.1
+      ],
+      [
+       2.3,
+       2.0,
+       7.0
+      ]
+     ]
+    ],
+    "exclude": [
+     [
+      [
+       -2.3,
+       -2.0,
+       5.25
+      ],
+      [
+       2.3,
+       2.0,
+       7.0
+      ]
+     ]
+    ],
+    "feather": 0.05,
+    "select": {
+     "b": [
+      -100,
+      -20
+     ],
+     "soft": 3
+    },
+    "target_rgb": [
+     116,
+     146,
+     222
+    ],
+    "detail_gamma": 0.9,
+    "detail_clip": [
+     0.45,
+     1.6
+    ],
+    "why": "unit note: the crystals read dull. Proxy crystal texels (b* < -20, 6.1 % of the surface: chest, arms, legs, hand + toe claws) median 85,109,159 (L* 46, b* -27) vs the sheet crystals (front / side view b* < -20: median 112,141,213, L* 59, a* 7.5, b* -34; p10..p90 L* 39..78). Blue texels (b* <= -20, soft to -17; run 1 at -17 also turned the faintly blue-shaded flank fur (b* -14..-20, only 50 % of it within 0.06 u of a real crystal) into vivid crystal, scattering blue facets over the side view) to the sheet crystal hue with the facets kept (gamma 0.9; highlights may go to 1.6x so the lightning cores read pale cyan-white like the sheet's p90 166,199,250). Sim on the proxy samples: L* p10/50/90 40/61/81. The head (z >= 5.25) is excluded: no crystals there on the sheet, and the eyes / pale brow streaks stay as generated (face as generated)"
+   },
+   {
+    "name": "fur",
+    "boxes": [
+     [
+      [
+       -2.3,
+       -2.0,
+       -0.1
+      ],
+      [
+       2.3,
+       2.0,
+       7.0
+      ]
+     ]
+    ],
+    "feather": 0.05,
+    "select": {
+     "b": [
+      -16,
+      100
+     ],
+     "soft": 3
+    },
+    "target_rgb": [
+     134,
+     136,
+     145
+    ],
+    "detail_gamma": 0.743,
+    "detail_clip": [
+     0.3,
+     1.65
+    ],
+    "why": "unit note: the proxy reads darker than the sheet, and it is the TEXTURE, not the panel lighting: proxy white fur (L* > 55) median 175,177,183 (L* 72) vs the sheet 194..199,200..202,203..204 (L* 78..81, p25..p75 70..83); proxy charcoal fur (L* < 40) 51,48,50 (L* 20) vs the sheet 76..77,74..76,85..88 (L* 32..33). Both furs share one cool-neutral hue on the sheet, so ONE tone curve (no white / charcoal split, so no posterised border): luma' = target x (luma / median)^0.743, the exponent fitted so proxy charcoal luma 49 -> 77 and white 177 -> 200 (+~7 % for the AO multiply; run 1 target 130,132,141 left the baked albedo white fur at L* p75 82 but basecolor median 70); highlights capped at 1.65x. Sim on the proxy samples: white L* p25/50/75 76/83/87, charcoal L* 31/34/39 (sheet 70/81/83, 33). Selects b* >= -16 (soft to -19), meeting the crystal pass; the crystal texels (now b* < -30) are not selected; the cyan eyes (b* -29..-39) keep their colour"
+   }
+  ],
+  "glow3d": [
+   {
+    "name": "eyes",
+    "boxes": [
+     [
+      [
+       -0.15,
+       -1.56,
+       5.8
+      ],
+      [
+       0.02,
+       -1.41,
+       6.07
+      ]
+     ],
+     [
+      [
+       0.22,
+       -1.53,
+       5.81
+      ],
+      [
+       0.39,
+       -1.38,
+       6.06
+      ]
+     ]
+    ],
+    "feather": 0.02,
+    "select": {
+     "b": [
+      -100,
+      -15
+     ],
+     "soft": 3
+    },
+    "levels": [
+     [
+      0.5,
+      "eye_glow"
+     ]
+    ],
+    "why": "sheet: GLOWING BLUE EYES: faces of the proxy's cyan eye texels (boxes = the texel extents + 0.02 u, after the x1.0096 rescale) whose baked albedo is blue (b* < -15; the white brow fur is b* -6) -> region eye_glow (emission = the sheet eye core, brightest quarter 119..144,163..188,231..240)"
+   },
+   {
+    "name": "crystal_core",
+    "boxes": [
+     [
+      [
+       -2.3,
+       -2.0,
+       -0.1
+      ],
+      [
+       2.3,
+       2.0,
+       7.0
+      ]
+     ]
+    ],
+    "exclude": [
+     [
+      [
+       -2.3,
+       -2.0,
+       5.25
+      ],
+      [
+       2.3,
+       2.0,
+       7.0
+      ]
+     ]
+    ],
+    "feather": 0.05,
+    "select": {
+     "L": [
+      70,
+      101
+     ],
+     "b": [
+      -100,
+      -24
+     ],
+     "soft": 3
+    },
+    "levels": [
+     [
+      0.5,
+      "crystal_core"
+     ]
+    ],
+    "why": "sheet: 'lightning contained within crystals', the internal glow, no external arcs: the brightest crystal faces (baked L* >= 70 and b* <= -24, the top quarter of the recoloured crystals: the lightning cores) -> crystal_core (emission = the sheet's 6th chip, the bright cyan 46,193,253, not auto-found by intake; sampled at chip px 1611,868)"
+   },
+   {
+    "name": "crystal_body",
+    "boxes": [
+     [
+      [
+       -2.3,
+       -2.0,
+       -0.1
+      ],
+      [
+       2.3,
+       2.0,
+       7.0
+      ]
+     ]
+    ],
+    "exclude": [
+     [
+      [
+       -2.3,
+       -2.0,
+       5.25
+      ],
+      [
+       2.3,
+       2.0,
+       7.0
+      ]
+     ]
+    ],
+    "feather": 0.05,
+    "select": {
+     "b": [
+      -100,
+      -24
+     ],
+     "soft": 3
+    },
+    "levels": [
+     [
+      0.5,
+      "crystal_glow"
+     ]
+    ],
+    "why": "the rest of the crystal faces (chest, arms, legs, hand + toe claws: baked b* <= -24, so only clearly blue crystal faces emit, not the blended crystal / fur border faces) -> crystal_glow (emission = the sheet's deep crystal chip 61,106,244, low scale: a translucent inner glow, the faceted albedo still reads)"
+   }
+  ],
+  "ao_fill_below": 0.04,
+  "ao_fill_why": "run 1: 10 % of the AO texels under 0.07 (bake origins inside the fur soup, the dark blotches on the face in the head close-up): texels under 0.04 refilled from valid neighbours (vulture_creature / sand_drill_worm idiom)",
+  "uv_island_margin": 0.001,
+  "uv_island_margin_why": "run 2: the fur-shard low unwraps into ~3970 islands; at the default margin the atlas held 10.2 % texels (check uv_health coverage 0.102), the albedo blurred into blotches: margin 0.001 (vulture_creature idiom)",
+  "belly": {
+   "centre": [
+    0.0,
+    0.55,
+    2.8
+   ],
+   "z_radius": [
+    0.75,
+    0.8
+   ],
+   "push_front": 0.38,
+   "y_full": 1.0,
+   "front_x_radius": 1.6,
+   "push_side": 0.17,
+   "x_full": 0.9,
+   "side_back_ramp": [
+    0.6,
+    1.2
+   ],
+   "exclude": [
+    "leg"
+   ],
+   "swing": [
+    "arm"
+   ],
+   "swing_gain": 1.0,
+   "measure_z": [
+    2.55,
+    2.8,
+    3.05
+   ],
+   "why": "artist 2026-10-17: 'can we make storm bear fatter, bigger belly' (orchestrator: ~15-20 % more belly depth in the side view and width in the front view, most at the navel). Navel cz 2.8 = the middle of the belly dip on the low (belly front y -0.61 at z 2.5..3.1 vs -0.80 at the chest z 3.3 and the crotch z 2.3); cy 0.55 = the spine line. At cz: torso width 2.00 u (front view, arms / legs excluded) and depth 2.24 u (side view, belly front to the back of the coat, |x| < 0.6): push_front 0.38 = +17 % depth, push_side 0.17 per side = +17 % width; z_radius 0.75 below / 0.80 above so the push fades out by the crotch (2.05) and under the chest V tip (3.6); front_x_radius 1.6 rounds the belly; the coat behind y 1.2 is not widened. The legs keep their shape (exclude); the arms swing out rigidly about the shoulder by atan(0.17 / 1.65) = 5.9 deg so the gap to the fuller belly stays. light.pulls does not fit: it runs on the proxy BEFORE the watertight remesh, so a belly pushed toward the arms (0.1..0.2 u gap) would fuse with them, and its constant grab vector cannot carry the arms rigidly"
+  }
+ },
+ "rig": {
+  "spine_names": [
+   "hips",
+   "spine",
+   "chest",
+   "neck",
+   "head"
+  ],
+  "spine": [
+   [
+    0.0,
+    0.5,
+    2.35
+   ],
+   [
+    0.0,
+    0.6,
+    3.35
+   ],
+   [
+    0.0,
+    0.45,
+    4.35
+   ],
+   [
+    0.0,
+    0.1,
+    5.05
+   ],
+   [
+    0.01,
+    -0.4,
+    5.6
+   ],
+   [
+    0.125,
+    -1.7,
+    5.65
+   ]
+  ],
+  "chains": [
+   {
+    "name": "arm",
+    "kind": "arm",
+    "parent": "chest",
+    "phase": {
+     "L": 0.5,
+     "R": 0.0
+    },
+    "points": [
+     [
+      1.0,
+      0.1,
+      4.45
+     ],
+     [
+      1.62,
+      0.1,
+      3.4
+     ],
+     [
+      1.62,
+      -0.52,
+      2.5
+     ],
+     [
+      1.56,
+      -0.84,
+      1.76
+     ]
+    ],
+    "why": "v2 (measured on the v1 low, arm slabs |x| > 1.15): points = the +x arm, points_R = the -x arm as generated: shoulder (inside the fur ring, z 4.45; the -x shoulder sits 0.2 u forward), elbow (z 3.4: +x 1.62, 0.10 / -x -1.67, -0.36), wrist (z 2.5: 1.62, -0.52 / -1.61, -0.92), claw centre (z 1.76: 1.56, -0.84 / -1.57, -1.14): the -x arm hangs 0.30..0.46 u further forward; the repose makes the pair symmetric",
+    "points_R": [
+     [
+      -1.0,
+      -0.1,
+      4.45
+     ],
+     [
+      -1.67,
+      -0.36,
+      3.4
+     ],
+     [
+      -1.61,
+      -0.92,
+      2.48
+     ],
+     [
+      -1.57,
+      -1.14,
+      1.77
+     ]
+    ]
+   },
+   {
+    "name": "leg",
+    "kind": "leg",
+    "parent": "hips",
+    "phase": {
+     "L": 0.0,
+     "R": 0.5
+    },
+    "points": [
+     [
+      0.55,
+      0.45,
+      2.3
+     ],
+     [
+      0.95,
+      0.5,
+      1.05
+     ],
+     [
+      1.1,
+      0.38,
+      0.42
+     ],
+     [
+      0.95,
+      -0.55,
+      0.08
+     ]
+    ],
+    "why": "v2 (leg slabs 0.2 < |x| < 1.6): points = the +x leg, points_R = the -x leg: hip (inside the pelvis), knee (z 1.05: 0.95, 0.50 / -0.99, 0.29), ankle (z 0.42: 1.10, 0.38 / -1.20, 0.22), toe (front claws, z 0.08: foot front y -0.85 / -1.06): the -x leg is staggered 0.19..0.23 u forward",
+    "points_R": [
+     [
+      -0.55,
+      0.35,
+      2.3
+     ],
+     [
+      -0.99,
+      0.29,
+      1.05
+     ],
+     [
+      -1.2,
+      0.22,
+      0.42
+     ],
+     [
+      -1.0,
+      -0.77,
+      0.08
+     ]
+    ]
+   },
+   {
+    "name": "mantle",
+    "kind": "chain",
+    "mirror": false,
+    "parent": "chest",
+    "points": [
+     [
+      0.0,
+      1.15,
+      4.6
+     ],
+     [
+      -0.05,
+      1.3,
+      3.8
+     ],
+     [
+      -0.12,
+      1.4,
+      3.0
+     ],
+     [
+      -0.25,
+      1.45,
+      2.2
+     ],
+     [
+      -0.3,
+      1.45,
+      1.4
+     ]
+    ],
+    "why": "v2: the dark fur COAT down the back (sheet: 'extends down back'; the back view draws it on the midline). As generated its lower half hangs to -x: the deep-back centroid (y in the back 30 %) is x -0.25..-0.32 at z 1.5..2.4, -0.16 at 3.0, ~0 at 4.2. A chain so it rests centred (repose to_points) and can be posed; kind 'chain' (a small sway in the clips)"
+   }
+  ],
+  "spine_why": "v2: the spine on the body midline x 0 (low slab mid-x z 2.0..5.0: -0.08..+0.06); neck root (0, 0.1, 5.05); the head bone runs from the pivot (0.01, -0.4, 5.6; between the ears, ear centroids x +0.424 / -0.390 at y -0.49) to the snout (0.125, -1.7, 5.65; snout mid-x +0.117 at y < -1.3, z 5.5..5.8), so its heading IS the face's turn (5.1 deg to +x)"
+ },
+ "clips": {
+  "idle_frames": 72,
+  "breathe_deg": 1.2,
+  "walk_frames": 36,
+  "walk_bob": 0.012,
+  "walk_roll": 2.0,
+  "leg_swing": 8.0,
+  "arm_swing": 6.0,
+  "why": "PLACEHOLDER (movement + height are the open artist questions, OPEN-QUESTIONS storm_bear): idle = breathe + the kit's arm sway; walk = a heavy upright bear stride with a small arm swing (frost_giant values); leg_swing 8 (run 2 at 12: the kit's foot bend dipped the toes 0.43 u below the floor in walk, clip_loops min_z -0.433)"
+ },
+ "focus": {
+  "head": [
+   [
+    -0.95,
+    -1.85,
+    5.1
+   ],
+   [
+    1.15,
+    0.4,
+    6.8
+   ]
+  ],
+  "hands": [
+   [
+    1.0,
+    -1.6,
+    1.3
+   ],
+   [
+    2.45,
+    0.6,
+    3.0
+   ]
+  ]
+ },
+ "bake_res": [
+  1024,
+  1024
+ ],
+ "_doc": "v2 (2026-10-17): LIGHT finish of the raw Pixal3D proxy (seed 56, sha 4b3d3ed2) + bone repose to a symmetric rest pose (arms, legs, head, coat) + light.belly. Points: stage-1 frame (feet already on the floor, x1.0096 to the sheet front height), sheet units.",
+ "repose": {
+  "targets": [
+   {
+    "symmetric": [
+     "arm"
+    ],
+    "match": "mean",
+    "falloff": 0.03,
+    "radius": [
+     [
+      0.6,
+      0.15
+     ],
+     [
+      0.55,
+      0.12
+     ],
+     [
+      0.55,
+      0.12
+     ]
+    ],
+    "why": "artist 2026-10-17: a symmetric rest pose; the two arms mirror-symmetric at the mean (the -x arm hung 0.30..0.46 u forward). No plant: the hands hang free",
+    "radius_why": "[reach, taper] per bone: arm / leg bones never grab the torso sides (the arm inner edge is only 0.1..0.2 u from the belly)"
+   },
+   {
+    "symmetric": [
+     "leg"
+    ],
+    "match": "mean",
+    "plant": true,
+    "plant_radius": 0.5,
+    "falloff": 0.03,
+    "radius": [
+     [
+      0.6,
+      0.12
+     ],
+     [
+      0.75,
+      0.15
+     ],
+     [
+      0.6,
+      0.12
+     ]
+    ],
+    "why": "the two legs mirror-symmetric at the mean (the -x leg staggered ~0.2 u forward), both feet planted on the floor",
+    "radius_why": "[reach, taper] per bone: arm / leg bones never grab the torso sides (the arm inner edge is only 0.1..0.2 u from the belly)"
+   },
+   {
+    "bones": [
+     "neck",
+     "head"
+    ],
+    "heading": "-y",
+    "distribute": true,
+    "why": "the head turned ~5 deg to +x (snout mid-x +0.117): the face straight ahead (-y); the neck twists half, the head the rest"
+   },
+   {
+    "chain": "mantle",
+    "falloff": 0.03,
+    "radius": [
+     [
+      0.6,
+      0.15
+     ]
+    ],
+    "to_points": [
+     [
+      0,
+      1.3,
+      3.8
+     ],
+     [
+      0,
+      1.4,
+      3.0
+     ],
+     [
+      0,
+      1.45,
+      2.2
+     ],
+     [
+      0,
+      1.45,
+      1.4
+     ]
+    ],
+    "why": "the coat on the midline: its chain carried onto x = 0 at the same heights / depths (the coat keeps its drape and length)"
+   }
+  ],
+  "rigid": [
+   {
+    "box": [
+     [
+      -0.95,
+      -1.85,
+      5.2
+     ],
+     [
+      1.1,
+      0.35,
+      6.8
+     ]
+    ],
+    "bone": "head",
+    "margin": 0.3,
+    "why": "the head / face moves as ONE rigid body with the head bone: never deformed or re-sculpted (face as generated)"
+   }
+  ]
+ }
+}

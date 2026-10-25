@@ -1,0 +1,1518 @@
+{
+ "unit": "shadowscale",
+ "char_id": "shadowscale",
+ "tier": "regular",
+ "tri_budget": [
+  8000,
+  22000
+ ],
+ "body_tris": 18000,
+ "mode": "light",
+ "fit_side_length": true,
+ "fit_side_length_why": "UNIT NOTE + proxy gate (sha 8633d29a): side length / front height 0.671 vs the sheet's 0.596 (+12.6 %): Y scaled x 0.888 to the sheet",
+ "refloor": {
+  "y_windows": [
+   [
+    -1.7,
+    0.3
+   ]
+  ],
+  "x_abs_min": 0.0,
+  "pct": 0.0,
+  "rescale_to_front_height": true,
+  "why": "sheet_proxy floored the TAIL-train tip (x -2.37, y 0.46..0.84, z 0.000: the train swung to -x behind the body); the talons hung 0.090 u above it (front foot x 0.4..0.6, y -0.4..-0.2, z 0.090; rear foot x -1.2..-0.8, y 0.6..1.0, z 0.13). Floor to the lowest TALON contact (window y -1.7..0.3 = the front foot only), then x(6.89 / 6.762) = 1.019 to the sheet front height (sheet front 6.89 / side 6.82 u: -1.0 %, the views agree; back 7.02 is the 3/4 back with the crest arc higher)"
+ },
+ "light": {
+  "steps_per_height": 300,
+  "dense": [
+   {
+    "box": [
+     [
+      -1.55,
+      -2.2,
+      5.1
+     ],
+     [
+      0.45,
+      0.35,
+      6.95
+     ]
+    ],
+    "density": 2.5,
+    "vg_weight": 0.1,
+    "why": "the head: pangolin helmet plates, elongated snout (tip y -2.08, z 5.37 stage frame; proxy landmark front_most y -2.30 z 5.357, sha 8633d29a, x0.888 x1.019), the crest arc (top z 6.89 at x -0.62) and both red eyes; turned to -x as generated (the sheet front is 3/4); vg_weight 0.1 so the two eye boxes below can sit denser"
+   },
+   {
+    "box": [
+     [
+      -1.36,
+      -1.69,
+      5.85
+     ],
+     [
+      -1.13,
+      -1.46,
+      6.07
+     ]
+    ],
+    "density": 2.5,
+    "vg_weight": 0.0,
+    "why": "the -x red eye (proxy red texels a* > 30, L* > 25: x -1.26..-1.21, y -1.60..-1.55, z 5.93..6.00 stage frame, rgb 154,22,25): held dense so the painted eye keeps its own faces"
+   },
+   {
+    "box": [
+     [
+      -1.06,
+      -1.87,
+      5.83
+     ],
+     [
+      -0.83,
+      -1.63,
+      6.06
+     ]
+    ],
+    "density": 2.5,
+    "vg_weight": 0.0,
+    "why": "the second red eye (x -0.97..-0.92, y -1.77..-1.71, z 5.90..6.00 stage frame, rgb 145,26,27): held dense, as above"
+   }
+  ],
+  "floor_lift": {
+   "ramps": [
+    [
+     "x",
+     -1.3,
+     -1.5
+    ]
+   ],
+   "band": 0.35,
+   "why": "after the refloor the tail-train tip (x < -1.4, y 0.4..0.9) hangs 0.092 u below the floor (the sheet draws the train ON the floor line); squashed up onto z 0 within the bottom 0.35 u; both feet (x >= -1.25) keep weight 0"
+  },
+  "ao_from_low": true,
+  "ao_samples": 64,
+  "ao_why": "AO baked on the watertight low itself: the layered blade-scale soup has inner shells that black-hole AO rays (storm_bear / vulture_creature / azure_scale_mage lesson)",
+  "ao_distance": 0.2,
+  "ao_distance_why": "about one blade-scale length: real crevices darken, not the whole layered coat (batch lesson: AO darkens the basecolor below the sheet)",
+  "ao_fill_below": 0.04,
+  "ao_fill_why": "AO texels under 0.04 (bake origins inside the scale soup) refilled from valid neighbours",
+  "bake_drop_interior": 0.08,
+  "bake_drop_interior_why": "proxy faces with solid on both sides (inner scale shells) left out of the bake source so the cage stays tight",
+  "uv_island_margin": 0.001,
+  "uv_island_margin_why": "the blade-scale low unwraps into thousands of islands; the default margin starves the atlas (storm_bear / vulture_creature idiom)",
+  "recolour3d": [
+   {
+    "name": "plates_L6_warm",
+    "boxes": [
+     [
+      [
+       -2.7,
+       -2.4,
+       -0.1
+      ],
+      [
+       2.7,
+       2.4,
+       7.1
+      ]
+     ]
+    ],
+    "exclude": [
+     [
+      [
+       -1.36,
+       -1.69,
+       5.85
+      ],
+      [
+       -1.13,
+       -1.46,
+       6.07
+      ]
+     ],
+     [
+      [
+       -1.06,
+       -1.87,
+       5.83
+      ],
+      [
+       -0.83,
+       -1.63,
+       6.06
+      ]
+     ]
+    ],
+    "feather": 0.03,
+    "select": {
+     "L": [
+      49.6,
+      101.0
+     ],
+     "a": [
+      3.4,
+      17.0
+     ],
+     "soft": 2
+    },
+    "target_rgb": [
+     215,
+     180,
+     172
+    ],
+    "detail_gamma": 1.339,
+    "detail_clip": [
+     0.3,
+     2.5
+    ],
+    "why": "plates: proxy L* 49.6..101.0 (quantiles 97..100 % of the plates texels), a* 3.4..17.0 (proxy median [145, 129, 120]) -> the sheet's same L* quantile band (front + back + side masks L* 62.1..100.0, the warm half by a*, median [199, 167, 159]) x1.08 for the AO multiply; gamma = the sheet / proxy log luma spread q10..q90"
+   },
+   {
+    "name": "plates_L6_cool",
+    "boxes": [
+     [
+      [
+       -2.7,
+       -2.4,
+       -0.1
+      ],
+      [
+       2.7,
+       2.4,
+       7.1
+      ]
+     ]
+    ],
+    "exclude": [
+     [
+      [
+       -1.36,
+       -1.69,
+       5.85
+      ],
+      [
+       -1.13,
+       -1.46,
+       6.07
+      ]
+     ],
+     [
+      [
+       -1.06,
+       -1.87,
+       5.83
+      ],
+      [
+       -0.83,
+       -1.63,
+       6.06
+      ]
+     ]
+    ],
+    "feather": 0.03,
+    "select": {
+     "L": [
+      49.6,
+      101.0
+     ],
+     "a": [
+      -100.0,
+      3.4
+     ],
+     "soft": 2
+    },
+    "target_rgb": [
+     242,
+     222,
+     215
+    ],
+    "detail_gamma": 1.219,
+    "detail_clip": [
+     0.3,
+     2.5
+    ],
+    "why": "plates: proxy L* 49.6..101.0 (quantiles 97..100 % of the plates texels), a* -100.0..3.4 (proxy median [145, 133, 121]) -> the sheet's same L* quantile band (front + back + side masks L* 62.1..100.0, the cool half by a*, median [224, 206, 199]) x1.08 for the AO multiply; gamma = the sheet / proxy log luma spread q10..q90"
+   },
+   {
+    "name": "plates_L5_warm",
+    "boxes": [
+     [
+      [
+       -2.7,
+       -2.4,
+       -0.1
+      ],
+      [
+       2.7,
+       2.4,
+       7.1
+      ]
+     ]
+    ],
+    "exclude": [
+     [
+      [
+       -1.36,
+       -1.69,
+       5.85
+      ],
+      [
+       -1.13,
+       -1.46,
+       6.07
+      ]
+     ],
+     [
+      [
+       -1.06,
+       -1.87,
+       5.83
+      ],
+      [
+       -0.83,
+       -1.63,
+       6.06
+      ]
+     ]
+    ],
+    "feather": 0.03,
+    "select": {
+     "L": [
+      36.4,
+      49.6
+     ],
+     "a": [
+      3.5,
+      17.0
+     ],
+     "soft": 2
+    },
+    "target_rgb": [
+     162,
+     131,
+     125
+    ],
+    "detail_gamma": 0.866,
+    "detail_clip": [
+     0.3,
+     2.5
+    ],
+    "why": "plates: proxy L* 36.4..49.6 (quantiles 90..97 % of the plates texels), a* 3.5..17.0 (proxy median [109, 95, 89]) -> the sheet's same L* quantile band (front + back + side masks L* 47.1..62.1, the warm half by a*, median [150, 121, 116]) x1.08 for the AO multiply; gamma = the sheet / proxy log luma spread q10..q90"
+   },
+   {
+    "name": "plates_L5_cool",
+    "boxes": [
+     [
+      [
+       -2.7,
+       -2.4,
+       -0.1
+      ],
+      [
+       2.7,
+       2.4,
+       7.1
+      ]
+     ]
+    ],
+    "exclude": [
+     [
+      [
+       -1.36,
+       -1.69,
+       5.85
+      ],
+      [
+       -1.13,
+       -1.46,
+       6.07
+      ]
+     ],
+     [
+      [
+       -1.06,
+       -1.87,
+       5.83
+      ],
+      [
+       -0.83,
+       -1.63,
+       6.06
+      ]
+     ]
+    ],
+    "feather": 0.03,
+    "select": {
+     "L": [
+      36.4,
+      49.6
+     ],
+     "a": [
+      -100.0,
+      3.5
+     ],
+     "soft": 2
+    },
+    "target_rgb": [
+     148,
+     129,
+     125
+    ],
+    "detail_gamma": 0.868,
+    "detail_clip": [
+     0.3,
+     2.5
+    ],
+    "why": "plates: proxy L* 36.4..49.6 (quantiles 90..97 % of the plates texels), a* -100.0..3.5 (proxy median [107, 97, 89]) -> the sheet's same L* quantile band (front + back + side masks L* 47.1..62.1, the cool half by a*, median [137, 119, 116]) x1.08 for the AO multiply; gamma = the sheet / proxy log luma spread q10..q90"
+   },
+   {
+    "name": "plates_L4_warm",
+    "boxes": [
+     [
+      [
+       -2.7,
+       -2.4,
+       -0.1
+      ],
+      [
+       2.7,
+       2.4,
+       7.1
+      ]
+     ]
+    ],
+    "exclude": [
+     [
+      [
+       -1.36,
+       -1.69,
+       5.85
+      ],
+      [
+       -1.13,
+       -1.46,
+       6.07
+      ]
+     ],
+     [
+      [
+       -1.06,
+       -1.87,
+       5.83
+      ],
+      [
+       -0.83,
+       -1.63,
+       6.06
+      ]
+     ]
+    ],
+    "feather": 0.03,
+    "select": {
+     "L": [
+      24.2,
+      36.4
+     ],
+     "a": [
+      3.3,
+      17.0
+     ],
+     "soft": 2
+    },
+    "target_rgb": [
+     120,
+     96,
+     94
+    ],
+    "detail_gamma": 0.936,
+    "detail_clip": [
+     0.3,
+     2.5
+    ],
+    "why": "plates: proxy L* 24.2..36.4 (quantiles 75..90 % of the plates texels), a* 3.3..17.0 (proxy median [79, 67, 65]) -> the sheet's same L* quantile band (front + back + side masks L* 32.8..47.1, the warm half by a*, median [111, 89, 87]) x1.08 for the AO multiply; gamma = the sheet / proxy log luma spread q10..q90"
+   },
+   {
+    "name": "plates_L4_cool",
+    "boxes": [
+     [
+      [
+       -2.7,
+       -2.4,
+       -0.1
+      ],
+      [
+       2.7,
+       2.4,
+       7.1
+      ]
+     ]
+    ],
+    "exclude": [
+     [
+      [
+       -1.36,
+       -1.69,
+       5.85
+      ],
+      [
+       -1.13,
+       -1.46,
+       6.07
+      ]
+     ],
+     [
+      [
+       -1.06,
+       -1.87,
+       5.83
+      ],
+      [
+       -0.83,
+       -1.63,
+       6.06
+      ]
+     ]
+    ],
+    "feather": 0.03,
+    "select": {
+     "L": [
+      24.2,
+      36.4
+     ],
+     "a": [
+      -100.0,
+      3.3
+     ],
+     "soft": 2
+    },
+    "target_rgb": [
+     107,
+     93,
+     93
+    ],
+    "detail_gamma": 0.887,
+    "detail_clip": [
+     0.3,
+     2.5
+    ],
+    "why": "plates: proxy L* 24.2..36.4 (quantiles 75..90 % of the plates texels), a* -100.0..3.3 (proxy median [73, 66, 63]) -> the sheet's same L* quantile band (front + back + side masks L* 32.8..47.1, the cool half by a*, median [99, 86, 86]) x1.08 for the AO multiply; gamma = the sheet / proxy log luma spread q10..q90"
+   },
+   {
+    "name": "plates_L3_warm",
+    "boxes": [
+     [
+      [
+       -2.7,
+       -2.4,
+       -0.1
+      ],
+      [
+       2.7,
+       2.4,
+       7.1
+      ]
+     ]
+    ],
+    "exclude": [
+     [
+      [
+       -1.36,
+       -1.69,
+       5.85
+      ],
+      [
+       -1.13,
+       -1.46,
+       6.07
+      ]
+     ],
+     [
+      [
+       -1.06,
+       -1.87,
+       5.83
+      ],
+      [
+       -0.83,
+       -1.63,
+       6.06
+      ]
+     ]
+    ],
+    "feather": 0.03,
+    "select": {
+     "L": [
+      14.5,
+      24.2
+     ],
+     "a": [
+      2.9,
+      17.0
+     ],
+     "soft": 2
+    },
+    "target_rgb": [
+     83,
+     64,
+     65
+    ],
+    "detail_gamma": 0.881,
+    "detail_clip": [
+     0.3,
+     2.5
+    ],
+    "why": "plates: proxy L* 14.5..24.2 (quantiles 55..75 % of the plates texels), a* 2.9..17.0 (proxy median [56, 43, 43]) -> the sheet's same L* quantile band (front + back + side masks L* 21.5..32.8, the warm half by a*, median [77, 59, 60]) x1.08 for the AO multiply; gamma = the sheet / proxy log luma spread q10..q90"
+   },
+   {
+    "name": "plates_L3_cool",
+    "boxes": [
+     [
+      [
+       -2.7,
+       -2.4,
+       -0.1
+      ],
+      [
+       2.7,
+       2.4,
+       7.1
+      ]
+     ]
+    ],
+    "exclude": [
+     [
+      [
+       -1.36,
+       -1.69,
+       5.85
+      ],
+      [
+       -1.13,
+       -1.46,
+       6.07
+      ]
+     ],
+     [
+      [
+       -1.06,
+       -1.87,
+       5.83
+      ],
+      [
+       -0.83,
+       -1.63,
+       6.06
+      ]
+     ]
+    ],
+    "feather": 0.03,
+    "select": {
+     "L": [
+      14.5,
+      24.2
+     ],
+     "a": [
+      -100.0,
+      2.9
+     ],
+     "soft": 2
+    },
+    "target_rgb": [
+     75,
+     64,
+     66
+    ],
+    "detail_gamma": 0.935,
+    "detail_clip": [
+     0.3,
+     2.5
+    ],
+    "why": "plates: proxy L* 14.5..24.2 (quantiles 55..75 % of the plates texels), a* -100.0..2.9 (proxy median [48, 44, 43]) -> the sheet's same L* quantile band (front + back + side masks L* 21.5..32.8, the cool half by a*, median [69, 59, 61]) x1.08 for the AO multiply; gamma = the sheet / proxy log luma spread q10..q90"
+   },
+   {
+    "name": "plates_L2_warm",
+    "boxes": [
+     [
+      [
+       -2.7,
+       -2.4,
+       -0.1
+      ],
+      [
+       2.7,
+       2.4,
+       7.1
+      ]
+     ]
+    ],
+    "exclude": [
+     [
+      [
+       -1.36,
+       -1.69,
+       5.85
+      ],
+      [
+       -1.13,
+       -1.46,
+       6.07
+      ]
+     ],
+     [
+      [
+       -1.06,
+       -1.87,
+       5.83
+      ],
+      [
+       -0.83,
+       -1.63,
+       6.06
+      ]
+     ]
+    ],
+    "feather": 0.03,
+    "select": {
+     "L": [
+      8.7,
+      14.5
+     ],
+     "a": [
+      2.4,
+      17.0
+     ],
+     "soft": 2
+    },
+    "target_rgb": [
+     59,
+     43,
+     44
+    ],
+    "detail_gamma": 0.949,
+    "detail_clip": [
+     0.3,
+     2.5
+    ],
+    "why": "plates: proxy L* 8.7..14.5 (quantiles 35..55 % of the plates texels), a* 2.4..17.0 (proxy median [38, 27, 29]) -> the sheet's same L* quantile band (front + back + side masks L* 14.1..21.5, the warm half by a*, median [55, 40, 41]) x1.08 for the AO multiply; gamma = the sheet / proxy log luma spread q10..q90"
+   },
+   {
+    "name": "plates_L2_cool",
+    "boxes": [
+     [
+      [
+       -2.7,
+       -2.4,
+       -0.1
+      ],
+      [
+       2.7,
+       2.4,
+       7.1
+      ]
+     ]
+    ],
+    "exclude": [
+     [
+      [
+       -1.36,
+       -1.69,
+       5.85
+      ],
+      [
+       -1.13,
+       -1.46,
+       6.07
+      ]
+     ],
+     [
+      [
+       -1.06,
+       -1.87,
+       5.83
+      ],
+      [
+       -0.83,
+       -1.63,
+       6.06
+      ]
+     ]
+    ],
+    "feather": 0.03,
+    "select": {
+     "L": [
+      8.7,
+      14.5
+     ],
+     "a": [
+      -100.0,
+      2.4
+     ],
+     "soft": 2
+    },
+    "target_rgb": [
+     52,
+     44,
+     46
+    ],
+    "detail_gamma": 0.932,
+    "detail_clip": [
+     0.3,
+     2.5
+    ],
+    "why": "plates: proxy L* 8.7..14.5 (quantiles 35..55 % of the plates texels), a* -100.0..2.4 (proxy median [32, 29, 30]) -> the sheet's same L* quantile band (front + back + side masks L* 14.1..21.5, the cool half by a*, median [48, 41, 43]) x1.08 for the AO multiply; gamma = the sheet / proxy log luma spread q10..q90"
+   },
+   {
+    "name": "plates_L1_warm",
+    "boxes": [
+     [
+      [
+       -2.7,
+       -2.4,
+       -0.1
+      ],
+      [
+       2.7,
+       2.4,
+       7.1
+      ]
+     ]
+    ],
+    "exclude": [
+     [
+      [
+       -1.36,
+       -1.69,
+       5.85
+      ],
+      [
+       -1.13,
+       -1.46,
+       6.07
+      ]
+     ],
+     [
+      [
+       -1.06,
+       -1.87,
+       5.83
+      ],
+      [
+       -0.83,
+       -1.63,
+       6.06
+      ]
+     ]
+    ],
+    "feather": 0.03,
+    "select": {
+     "L": [
+      4.7,
+      8.7
+     ],
+     "a": [
+      1.7,
+      17.0
+     ],
+     "soft": 2
+    },
+    "target_rgb": [
+     42,
+     28,
+     29
+    ],
+    "detail_gamma": 1.134,
+    "detail_clip": [
+     0.3,
+     2.5
+    ],
+    "why": "plates: proxy L* 4.7..8.7 (quantiles 15..35 % of the plates texels), a* 1.7..17.0 (proxy median [25, 19, 22]) -> the sheet's same L* quantile band (front + back + side masks L* 7.6..14.1, the warm half by a*, median [39, 26, 27]) x1.08 for the AO multiply; gamma = the sheet / proxy log luma spread q10..q90"
+   },
+   {
+    "name": "plates_L1_cool",
+    "boxes": [
+     [
+      [
+       -2.7,
+       -2.4,
+       -0.1
+      ],
+      [
+       2.7,
+       2.4,
+       7.1
+      ]
+     ]
+    ],
+    "exclude": [
+     [
+      [
+       -1.36,
+       -1.69,
+       5.85
+      ],
+      [
+       -1.13,
+       -1.46,
+       6.07
+      ]
+     ],
+     [
+      [
+       -1.06,
+       -1.87,
+       5.83
+      ],
+      [
+       -0.83,
+       -1.63,
+       6.06
+      ]
+     ]
+    ],
+    "feather": 0.03,
+    "select": {
+     "L": [
+      4.7,
+      8.7
+     ],
+     "a": [
+      -100.0,
+      1.7
+     ],
+     "soft": 2
+    },
+    "target_rgb": [
+     35,
+     29,
+     30
+    ],
+    "detail_gamma": 1.04,
+    "detail_clip": [
+     0.3,
+     2.5
+    ],
+    "why": "plates: proxy L* 4.7..8.7 (quantiles 15..35 % of the plates texels), a* -100.0..1.7 (proxy median [21, 19, 20]) -> the sheet's same L* quantile band (front + back + side masks L* 7.6..14.1, the cool half by a*, median [32, 27, 28]) x1.08 for the AO multiply; gamma = the sheet / proxy log luma spread q10..q90"
+   },
+   {
+    "name": "plates_L0_warm",
+    "boxes": [
+     [
+      [
+       -2.7,
+       -2.4,
+       -0.1
+      ],
+      [
+       2.7,
+       2.4,
+       7.1
+      ]
+     ]
+    ],
+    "exclude": [
+     [
+      [
+       -1.36,
+       -1.69,
+       5.85
+      ],
+      [
+       -1.13,
+       -1.46,
+       6.07
+      ]
+     ],
+     [
+      [
+       -1.06,
+       -1.87,
+       5.83
+      ],
+      [
+       -0.83,
+       -1.63,
+       6.06
+      ]
+     ]
+    ],
+    "feather": 0.03,
+    "select": {
+     "L": [
+      0.0,
+      4.7
+     ],
+     "a": [
+      0.8,
+      17.0
+     ],
+     "soft": 2
+    },
+    "target_rgb": [
+     26,
+     14,
+     15
+    ],
+    "detail_gamma": 1.6,
+    "detail_clip": [
+     0.3,
+     2.5
+    ],
+    "why": "plates: proxy L* 0.0..4.7 (quantiles 0..15 % of the plates texels), a* 0.8..17.0 (proxy median [16, 12, 15]) -> the sheet's same L* quantile band (front + back + side masks L* 0.0..7.6, the warm half by a*, median [24, 13, 14]) x1.08 for the AO multiply; gamma = the sheet / proxy log luma spread q10..q90"
+   },
+   {
+    "name": "plates_L0_cool",
+    "boxes": [
+     [
+      [
+       -2.7,
+       -2.4,
+       -0.1
+      ],
+      [
+       2.7,
+       2.4,
+       7.1
+      ]
+     ]
+    ],
+    "exclude": [
+     [
+      [
+       -1.36,
+       -1.69,
+       5.85
+      ],
+      [
+       -1.13,
+       -1.46,
+       6.07
+      ]
+     ],
+     [
+      [
+       -1.06,
+       -1.87,
+       5.83
+      ],
+      [
+       -0.83,
+       -1.63,
+       6.06
+      ]
+     ]
+    ],
+    "feather": 0.03,
+    "select": {
+     "L": [
+      0.0,
+      4.7
+     ],
+     "a": [
+      -100.0,
+      0.8
+     ],
+     "soft": 2
+    },
+    "target_rgb": [
+     16,
+     12,
+     12
+    ],
+    "detail_gamma": 1.6,
+    "detail_clip": [
+     0.3,
+     2.5
+    ],
+    "why": "plates: proxy L* 0.0..4.7 (quantiles 0..15 % of the plates texels), a* -100.0..0.8 (proxy median [10, 9, 11]) -> the sheet's same L* quantile band (front + back + side masks L* 0.0..7.6, the cool half by a*, median [15, 11, 11]) x1.08 for the AO multiply; gamma = the sheet / proxy log luma spread q10..q90"
+   },
+   {
+    "name": "crimson_L2",
+    "boxes": [
+     [
+      [
+       -2.7,
+       -2.4,
+       -0.1
+      ],
+      [
+       2.7,
+       2.4,
+       7.1
+      ]
+     ]
+    ],
+    "exclude": [
+     [
+      [
+       -1.36,
+       -1.69,
+       5.85
+      ],
+      [
+       -1.13,
+       -1.46,
+       6.07
+      ]
+     ],
+     [
+      [
+       -1.06,
+       -1.87,
+       5.83
+      ],
+      [
+       -0.83,
+       -1.63,
+       6.06
+      ]
+     ]
+    ],
+    "feather": 0.03,
+    "select": {
+     "L": [
+      20.6,
+      101.0
+     ],
+     "a": [
+      17.0,
+      100.0
+     ],
+     "soft": 2
+    },
+    "target_rgb": [
+     129,
+     64,
+     71
+    ],
+    "detail_gamma": 1.6,
+    "detail_clip": [
+     0.3,
+     2.5
+    ],
+    "why": "crimson: proxy L* 20.6..101.0 (quantiles 80..100 % of the crimson texels), a* 17.0..100.0 (proxy median [97, 39, 41]) -> the sheet's same L* quantile band (front + back + side masks L* 27.6..85.6, median [119, 59, 66]) x1.08 for the AO multiply; gamma = the sheet / proxy log luma spread q10..q90"
+   },
+   {
+    "name": "crimson_L1",
+    "boxes": [
+     [
+      [
+       -2.7,
+       -2.4,
+       -0.1
+      ],
+      [
+       2.7,
+       2.4,
+       7.1
+      ]
+     ]
+    ],
+    "exclude": [
+     [
+      [
+       -1.36,
+       -1.69,
+       5.85
+      ],
+      [
+       -1.13,
+       -1.46,
+       6.07
+      ]
+     ],
+     [
+      [
+       -1.06,
+       -1.87,
+       5.83
+      ],
+      [
+       -0.83,
+       -1.63,
+       6.06
+      ]
+     ]
+    ],
+    "feather": 0.03,
+    "select": {
+     "L": [
+      15.6,
+      20.6
+     ],
+     "a": [
+      17.0,
+      100.0
+     ],
+     "soft": 2
+    },
+    "target_rgb": [
+     103,
+     38,
+     52
+    ],
+    "detail_gamma": 1.247,
+    "detail_clip": [
+     0.3,
+     2.5
+    ],
+    "why": "crimson: proxy L* 15.6..20.6 (quantiles 40..80 % of the crimson texels), a* 17.0..100.0 (proxy median [76, 27, 31]) -> the sheet's same L* quantile band (front + back + side masks L* 19.9..27.6, median [95, 35, 48]) x1.08 for the AO multiply; gamma = the sheet / proxy log luma spread q10..q90"
+   },
+   {
+    "name": "crimson_L0",
+    "boxes": [
+     [
+      [
+       -2.7,
+       -2.4,
+       -0.1
+      ],
+      [
+       2.7,
+       2.4,
+       7.1
+      ]
+     ]
+    ],
+    "exclude": [
+     [
+      [
+       -1.36,
+       -1.69,
+       5.85
+      ],
+      [
+       -1.13,
+       -1.46,
+       6.07
+      ]
+     ],
+     [
+      [
+       -1.06,
+       -1.87,
+       5.83
+      ],
+      [
+       -0.83,
+       -1.63,
+       6.06
+      ]
+     ]
+    ],
+    "feather": 0.03,
+    "select": {
+     "L": [
+      0.0,
+      15.6
+     ],
+     "a": [
+      17.0,
+      100.0
+     ],
+     "soft": 2
+    },
+    "target_rgb": [
+     73,
+     26,
+     33
+    ],
+    "detail_gamma": 1.6,
+    "detail_clip": [
+     0.3,
+     2.5
+    ],
+    "why": "crimson: proxy L* 0.0..15.6 (quantiles 0..40 % of the crimson texels), a* 17.0..100.0 (proxy median [62, 21, 26]) -> the sheet's same L* quantile band (front + back + side masks L* 4.0..19.9, median [68, 24, 31]) x1.08 for the AO multiply; gamma = the sheet / proxy log luma spread q10..q90"
+   }
+  ],
+  "yaw": {
+   "deg": 41.5,
+   "about": [
+    0.0,
+    0.0
+   ],
+   "to": [
+    -0.1,
+    0.0
+   ],
+   "why": "v2 (artist 2026-10-17: 'our characters should be symmetrical head turns are done through posing so our models remain flexible'): Pixal3D copied the sheet's 3/4 FRONT by building the whole assassin turned about Z. Measured on the v1 low (renders/shadowscale/_light/prerepose_low.npz, stage-1 frame): head z 5.4..6.95 best mirror plane yaw -41.5 deg through (0.32, 0) with p99 0.146 u (x = 0: 1.237); head slabs z 5.0..5.8 / 5.8..6.95 agree (-41.0 / -42.0); the two painted red eyes sit at lateral -0.139 / +0.229 about that plane, z 5.956 / 5.935 (dz 0.021), snout tip lateral +0.075: the face is TURNED, not sculpted crooked; the two feet lie on a line at -41 deg (side by side across the turned body). +41.5 deg about the origin puts the head plane at x +0.24 and the hip slabs at x 0.00..+0.08; to x -0.10 splits that lean (head +0.14, hips -0.06). One rigid turn (no vertex moves relative to another); the repose below works in this turned frame"
+  }
+ },
+ "rig": {
+  "spine_names": [
+   "hips",
+   "spine",
+   "chest",
+   "neck",
+   "head"
+  ],
+  "spine": [
+   [
+    0.0,
+    0.0,
+    2.2
+   ],
+   [
+    0.0,
+    -0.25,
+    3.2
+   ],
+   [
+    0.0,
+    -0.5,
+    4.1
+   ],
+   [
+    0.04,
+    -0.6,
+    4.9
+   ],
+   [
+    0.14,
+    -1.0,
+    5.6
+   ],
+   [
+    0.14,
+    -2.1,
+    5.45
+   ]
+  ],
+  "spine_why": "v2, turned frame (light.yaw +41.5, to x -0.10): torso slab medians y -0.23 (z 2.2) .. -0.61 (z 4.6); neck = the v1 neck joint turned (0.04, -0.54, 4.9); the head bone runs along the face's own forward axis on the head plane x +0.14 (snout tip turned: x +0.22, y -2.51, z 5.32), so heading -y is ~0 deg and the head stays as generated",
+  "chains": [
+   {
+    "name": "arm",
+    "kind": "arm",
+    "parent": "chest",
+    "phase": {
+     "L": 0.5,
+     "R": 0.0
+    },
+    "points": [
+     [
+      0.8,
+      -0.5,
+      4.4
+     ],
+     [
+      1.03,
+      -0.5,
+      3.4
+     ],
+     [
+      1.05,
+      -0.45,
+      2.4
+     ],
+     [
+      1.05,
+      -0.45,
+      1.6
+     ]
+    ],
+    "points_R": [
+     [
+      -0.7,
+      -0.6,
+      4.4
+     ],
+     [
+      -0.6,
+      -1.5,
+      3.6
+     ],
+     [
+      -0.55,
+      -1.9,
+      2.8
+     ],
+     [
+      -0.5,
+      -2.15,
+      2.1
+     ]
+    ],
+    "why": "v2, turned frame (arm columns of the v1 low in 0.3-0.4 u slabs): points = the +x blade arm hanging at the side (x med +1.01..+1.05, y -0.3..-0.5 from z 4.4 down to the claws z 1.6); points_R = the -x arm as generated, carried FORWARD across the chest (x -0.45..-0.59, y med -1.45 at z 4.6 to -2.17 at z 2.2, hand to y -2.6); the repose makes the pair mirror-symmetric (mean)"
+   },
+   {
+    "name": "leg",
+    "kind": "leg",
+    "parent": "hips",
+    "phase": {
+     "L": 0.0,
+     "R": 0.5
+    },
+    "points": [
+     [
+      0.28,
+      -0.1,
+      2.2
+     ],
+     [
+      0.47,
+      -0.02,
+      1.2
+     ],
+     [
+      0.5,
+      0.0,
+      0.4
+     ],
+     [
+      0.55,
+      -0.7,
+      0.05
+     ]
+    ],
+    "points_R": [
+     [
+      -0.28,
+      -0.1,
+      2.2
+     ],
+     [
+      -1.32,
+      0.08,
+      1.2
+     ],
+     [
+      -1.46,
+      -0.27,
+      0.4
+     ],
+     [
+      -1.8,
+      -0.7,
+      0.05
+     ]
+    ],
+    "why": "v2, turned frame (leg-column tracking, 0.15 u slabs, radius 0.4, + floor clusters z < 0.08): points = the +x leg, planted and upright (column x +0.45..+0.53, y -0.1..+0.03 for z 0.2..1.7; talons x 0.3..1.1, y -1.1..+0.3 on z 0), points_R = the -x leg as generated, splayed OUT (column x -1.36 at z 0.5, -1.22 at z 1.2, -0.97 at z 2.3; foot x -1.9..-1.25 on z 0, with the coat-train fan to x -2.85 around it); the hips are set mirror-symmetric"
+   },
+   {
+    "name": "tail",
+    "kind": "tail",
+    "mirror": false,
+    "parent": "hips",
+    "points": [
+     [
+      0.0,
+      0.85,
+      2.3
+     ],
+     [
+      0.22,
+      1.15,
+      1.4
+     ],
+     [
+      0.35,
+      1.6,
+      0.7
+     ],
+     [
+      0.45,
+      2.2,
+      0.15
+     ]
+    ],
+    "why": "v2 (artist 2026-10-17: a tail chain that rests centred and can be posed to either side): a 3-bone TAIL CHAIN (tail.0..tail.2) through the blade-scale tail / coat train behind the hips (turned frame: slab medians x +0.21..+0.45, y 1.0 at z 2.0 .. 2.12 at z 0.0, tip y 2.67)"
+   }
+  ]
+ },
+ "clips": {
+  "idle_frames": 72,
+  "breathe_deg": 1.2,
+  "walk_frames": 36,
+  "walk_bob": 0.012,
+  "walk_roll": 2.0,
+  "leg_swing": 8.0,
+  "arm_swing": 5.0,
+  "why": "PLACEHOLDER (movement + height are the open artist questions): idle = breathe + the kit's arm / tail sway; walk = a measured stalk (leg_swing 8: the kit's foot bend dips the toes below the floor at larger swings)"
+ },
+ "focus": {
+  "head": [
+   [
+    -1.0,
+    -2.7,
+    4.9
+   ],
+   [
+    1.0,
+    0.5,
+    7.0
+   ]
+  ],
+  "feet": [
+   [
+    -1.3,
+    -1.5,
+    -0.05
+   ],
+   [
+    1.3,
+    1.0,
+    1.4
+   ]
+  ]
+ },
+ "bake_res": [
+  1024,
+  1024
+ ],
+ "_doc": "LIGHT finish of the raw Pixal3D proxy (seed 56, sha 8633d29a). Points: stage-1 frame (fit_side_length Y x0.888, floor at the front talons, x1.019 to the sheet front height), sheet units.",
+ "repose": {
+  "targets": [
+   {
+    "symmetric": [
+     "leg"
+    ],
+    "match": "L",
+    "plant": true,
+    "plant_radius": 0.8,
+    "falloff": 0.06,
+    "why": "artist 2026-10-17: symmetric rest pose. The -x leg's outward splay (ankle x -1.46 vs the +x ankle +0.50) is pose: both legs carried onto the planted, upright +x leg (match L, as azure_scale_mage), both feet planted on z 0. Offline on the v1 low: leg stretch p99 2.32 (mean: 2.25 but a wide A-stance the sheet does not draw); falloff 0.12 was worse (3.26); plant_radius 0.8 (run 1 at 0.5 left coat-fan spikes around the -x foot 0.112 u below the floor, so the export centring floated both feet 0.11 u; offline at 0.8: lowest point -0.024 u, -x foot +0.029)"
+   },
+   {
+    "symmetric": [
+     "arm"
+    ],
+    "match": "mean",
+    "falloff": 0.06,
+    "why": "the arms mirror-symmetric at the mean (the -x arm hung ~1.5 u further forward across the chest); match L (both arms hanging) pulled the front cloth harder offline (arm stretch p99 5.57 vs 2.93); no plant, the claws hang free"
+   },
+   {
+    "bones": [
+     "neck",
+     "head"
+    ],
+    "heading": "-y",
+    "distribute": true,
+    "why": "the face straight ahead: after the +41.5 root turn the head plane is at yaw 0 (residual expected ~0); the head is RIGID (below)"
+   },
+   {
+    "chain": "tail",
+    "heading": "+y",
+    "why": "the tail / coat train on the midline (heading +y = each tail bone yawed onto straight back); the chain rests centred and is posed to the side later"
+   }
+  ],
+  "rigid": [
+   {
+    "box": [
+     [
+      -0.9,
+      -2.7,
+      5.1
+     ],
+     [
+      1.0,
+      0.4,
+      7.0
+     ]
+    ],
+    "bone": "head",
+    "margin": 0.3,
+    "why": "the whole head (pangolin helmet plates, snout, crest arc, both painted red eyes; z > 5.1 in the turned frame) moves as ONE rigid body with the head bone: never deformed or re-sculpted (face as generated)"
+   }
+  ],
+  "why": "v2 (artist 2026-10-17, 'our characters should be symmetrical head turns are done through posing so our models remain flexible'): the proxy's root turn is undone as ONE rigid turn (light.yaw) and the splayed -x leg / forward -x arm / swung train with BONES (proxy_finish_repose) in the turned frame, never by mirror-averaging geometry. v1 colours, dense, AO, floor_lift are unchanged (stage-1 boxes)"
+ },
+ "focus_why": "v2: focus boxes in the turned frame (light.yaw)"
+}

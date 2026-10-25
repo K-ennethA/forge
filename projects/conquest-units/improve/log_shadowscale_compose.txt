@@ -1,0 +1,6 @@
+﻿WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\shadowscale\shadowscale_sheet_vs_model.png
+GATE view=back  iou=0.632 in_frame=0.590 row_err=16.8% | proxy iou=0.641
+GATE view=side  iou=0.697 in_frame=0.681 row_err=20.7% | proxy iou=0.843  FLAG: more than 0.05 below the proxy
+GATE mean_iou=0.665 flagged=side proxy=proxy unreliable, work from the sheet (side length off by +12.6%)
+GATE bake_reference=none (no object.bake call found)
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\shadowscale\shadowscale_contact.png

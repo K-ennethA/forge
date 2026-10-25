@@ -1,0 +1,811 @@
+{
+ "unit": "spike_beak_3",
+ "sheet": "design/reference/spike_beak_3-character-sheet.png",
+ "size_px": [
+  1672,
+  941
+ ],
+ "background_rgb": [
+  37,
+  39,
+  40
+ ],
+ "bg_tol": 26.0,
+ "views": {
+  "front": {
+   "bbox_px": [
+    0,
+    124,
+    396,
+    783
+   ],
+   "axis_x_px": 200.0,
+   "floor_y_px": 782,
+   "height_px": 659,
+   "height_units": 6.59,
+   "width_units": 3.96,
+   "half_width_profile": {
+    "0.00": {
+     "y_px": 782,
+     "half_w_units": 1.18
+    },
+    "0.10": {
+     "y_px": 716,
+     "half_w_units": 1.86
+    },
+    "0.25": {
+     "y_px": 618,
+     "half_w_units": 1.88
+    },
+    "0.50": {
+     "y_px": 453,
+     "half_w_units": 1.82
+    },
+    "0.75": {
+     "y_px": 288,
+     "half_w_units": 1.04
+    },
+    "0.90": {
+     "y_px": 190,
+     "half_w_units": 0.67
+    }
+   },
+   "transform": "z = (782 - y_px) / 100 ; x = (x_px - 200.0) / 100"
+  },
+  "back": {
+   "bbox_px": [
+    400,
+    116,
+    768,
+    763
+   ],
+   "axis_x_px": 585.0,
+   "floor_y_px": 762,
+   "height_px": 647,
+   "height_units": 6.47,
+   "width_units": 3.68,
+   "half_width_profile": {
+    "0.00": {
+     "y_px": 762,
+     "half_w_units": 1.82
+    },
+    "0.10": {
+     "y_px": 697,
+     "half_w_units": 1.59
+    },
+    "0.25": {
+     "y_px": 600,
+     "half_w_units": 1.66
+    },
+    "0.50": {
+     "y_px": 439,
+     "half_w_units": 1.79
+    },
+    "0.75": {
+     "y_px": 278,
+     "half_w_units": 0.86
+    },
+    "0.90": {
+     "y_px": 181,
+     "half_w_units": 0.42
+    }
+   },
+   "transform": "z = (762 - y_px) / 100 ; x = (x_px - 585.0) / 100"
+  },
+  "side": {
+   "bbox_px": [
+    728,
+    94,
+    1200,
+    808
+   ],
+   "axis_x_px": 1041.5,
+   "floor_y_px": 807,
+   "height_px": 714,
+   "height_units": 7.14,
+   "width_units": 4.72,
+   "half_width_profile": {
+    "0.00": {
+     "y_px": 807,
+     "half_w_units": 1.305
+    },
+    "0.10": {
+     "y_px": 736,
+     "half_w_units": 2.015
+    },
+    "0.25": {
+     "y_px": 629,
+     "half_w_units": 1.575
+    },
+    "0.50": {
+     "y_px": 450,
+     "half_w_units": 2.235
+    },
+    "0.75": {
+     "y_px": 272,
+     "half_w_units": 2.795
+    },
+    "0.90": {
+     "y_px": 165,
+     "half_w_units": 1.635
+    }
+   },
+   "transform": "z = (807 - y_px) / 100 ; x = (x_px - 1041.5) / 100"
+  }
+ },
+ "ortho_frame": {
+  "views": [
+   "front",
+   "side"
+  ],
+  "width_px": 670,
+  "height_px": 780,
+  "below_floor_px": 20,
+  "crops": {
+   "front": [
+    -135,
+    22,
+    535,
+    802
+   ],
+   "back": [
+    250,
+    2,
+    920,
+    782
+   ],
+   "side": [
+    706,
+    47,
+    1376,
+    827
+   ]
+  }
+ },
+ "unnamed_extra_segments_px": [],
+ "swatches": [
+  {
+   "centre_px": [
+    1253.3,
+    877.0
+   ],
+   "rgb": [
+    210,
+    218,
+    236
+   ],
+   "diameter_px": 64
+  },
+  {
+   "centre_px": [
+    1325.1,
+    878.0
+   ],
+   "rgb": [
+    127,
+    165,
+    227
+   ],
+   "diameter_px": 64
+  },
+  {
+   "centre_px": [
+    1396.8,
+    878.0
+   ],
+   "rgb": [
+    71,
+    123,
+    224
+   ],
+   "diameter_px": 64
+  },
+  {
+   "centre_px": [
+    1468.3,
+    878.0
+   ],
+   "rgb": [
+    30,
+    76,
+    170
+   ],
+   "diameter_px": 64
+  },
+  {
+   "centre_px": [
+    1538.6,
+    878.0
+   ],
+   "rgb": [
+    31,
+    54,
+    118
+   ],
+   "diameter_px": 64
+  },
+  {
+   "centre_px": [
+    1609.3,
+    878.0
+   ],
+   "rgb": [
+    224,
+    173,
+    91
+   ],
+   "diameter_px": 64
+  }
+ ],
+ "swatch_rejects_off_column": [
+  {
+   "centre_px": [
+    1522.3,
+    41.0
+   ],
+   "rgb": [
+    39,
+    41,
+    41
+   ],
+   "diameter_px": 12
+  }
+ ],
+ "base_frac": 0.06,
+ "axis_overrides": {},
+ "units_rule": "1 sheet unit = 100 px; per view z = (floor_y - y) / 100, x = (x - axis_x) / 100",
+ "caveat": "automatic split: VERIFY intake_overlay.png before dispatch (overlapping views or a floor shadow fuse / extend a view; rerun with --views or --bg-tol). A DARK subject on a dark sheet (shadowbun) loses its outline into the background: the floor line can sit high by ~15 px - check the soles",
+ "smart": true,
+ "auto_flags": {
+  "cuts_nominal": [
+   397,
+   772
+  ],
+  "split": [
+   {
+    "x_px": 397,
+    "segment": [
+     0,
+     1200
+    ],
+    "column_px": 0
+   },
+   {
+    "x_px": 772,
+    "segment": [
+     397,
+     1200
+    ],
+    "column_px": 30
+   }
+  ],
+  "floor": {
+   "front": 782,
+   "side": 807
+  },
+  "axis": {
+   "front": 200.0,
+   "back": 585.0,
+   "side": 1041.5
+  },
+  "ortho_views": [
+   "front",
+   "side"
+  ]
+ },
+ "auto_flags_cli": "--floor front=782,side=807 --axis front=200,back=585,side=1041.5 --ortho-views front,side",
+ "side_facing": {
+  "facing": "left",
+  "source": "flag",
+  "guess": "left",
+  "score": -0.272,
+  "confidence": 0.91,
+  "cue": "colour",
+  "front_back_separation": 0.386,
+  "rule": "score > 0 = face toward image-right; 'right' needs >= 0.14, else the house default (left)",
+  "meshgen_camera": "left"
+ },
+ "view_checks": {
+  "front": {
+   "floating_parts": [],
+   "mass_centroid_px": 201.0,
+   "core_width_px": 337,
+   "mass_axis_px": 200.0,
+   "mirror_iou": 0.93,
+   "mirror_iou_core": 0.875,
+   "tone_asym": 0.238,
+   "half_area_ratio": 0.999,
+   "contact_x_px": [
+    47,
+    349
+   ],
+   "floor_candidates": {
+    "raw_lowest_px": 797,
+    "body_lowest_px": 797,
+    "contact_px": 782,
+    "shadow_px": 0,
+    "support_run_min_px": 67,
+    "skipped": []
+   },
+   "floor_px": 782,
+   "feet_axis_px": 195.0,
+   "threshold_holes_frac": 0.024,
+   "near_bg_frac": 0.096,
+   "dark_subject": false,
+   "three_quarter_suspect": false,
+   "three_quarter_why": []
+  },
+  "back": {
+   "floating_parts": [],
+   "mass_centroid_px": 585.0,
+   "core_width_px": 310,
+   "mass_axis_px": 585.0,
+   "mirror_iou": 0.947,
+   "mirror_iou_core": 0.887,
+   "tone_asym": 0.256,
+   "half_area_ratio": 0.989,
+   "contact_x_px": [
+    579,
+    606
+   ],
+   "floor_candidates": {
+    "raw_lowest_px": 822,
+    "body_lowest_px": 822,
+    "contact_px": 822,
+    "shadow_px": 32,
+    "support_run_min_px": 70,
+    "skipped": []
+   },
+   "floor_px": 822,
+   "feet_axis_px": 592.5,
+   "threshold_holes_frac": 0.02,
+   "near_bg_frac": 0.112,
+   "dark_subject": false,
+   "three_quarter_suspect": false,
+   "three_quarter_why": []
+  },
+  "side": {
+   "floating_parts": [],
+   "mass_centroid_px": 1008.4,
+   "core_width_px": 348,
+   "mass_axis_px": 1041.5,
+   "contact_x_px": [
+    926,
+    1157
+   ],
+   "floor_candidates": {
+    "raw_lowest_px": 817,
+    "body_lowest_px": 817,
+    "contact_px": 807,
+    "shadow_px": 0,
+    "support_run_min_px": 72,
+    "skipped": [
+     {
+      "y_px": 814,
+      "x_px": [
+       1158,
+       1167
+      ],
+      "why": "narrow contact at the end"
+     }
+    ]
+   },
+   "floor_px": 807,
+   "feet_axis_px": 1007.5,
+   "threshold_holes_frac": 0.016,
+   "near_bg_frac": 0.044,
+   "dark_subject": false
+  }
+ },
+ "front_back_width_ratio": 0.92,
+ "height_check": {
+  "heights_units": {
+   "front": 6.59,
+   "back": 6.47,
+   "side": 7.14
+  },
+  "pairs": [
+   {
+    "views": [
+     "front",
+     "back"
+    ],
+    "diff_pct": 1.8
+   },
+   {
+    "views": [
+     "front",
+     "side"
+    ],
+    "diff_pct": 7.7
+   },
+   {
+    "views": [
+     "back",
+     "side"
+    ],
+    "diff_pct": 9.4
+   }
+  ],
+  "worst": {
+   "views": [
+    "back",
+    "side"
+   ],
+   "diff_pct": 9.4
+  }
+ },
+ "clutter_removed": {
+  "panels": [
+   [
+    1205,
+    426,
+    1359,
+    572
+   ],
+   [
+    1205,
+    617,
+    1446,
+    797
+   ],
+   [
+    1203,
+    802,
+    1655,
+    925
+   ]
+  ],
+  "panel_column": [
+   1203,
+   426,
+   1672,
+   925
+  ],
+  "rules": 188,
+  "title_blobs": 92
+ },
+ "matte_strips_px": [],
+ "dark_strips": [],
+ "palette_fallback": null,
+ "view_masks": {
+  "path": "view_masks.png",
+  "labels": {
+   "front": 1,
+   "back": 2,
+   "side": 3
+  },
+  "rule": "label image at sheet px: the silhouette each view was measured on"
+ },
+ "intake_notes": [
+  "removed 3 framed panel(s), 92 title blob(s) and 188 rule line(s) before the split (was --region)",
+  "views fused by touching parts: split at x 397,772 by a watershed along the weakest contact (the plain-column equivalent is --cuts 397,772; --assign / --cuts override)",
+  "front floor 782 px = the lowest body contact; ignored a part with no leg-like support hanging 15 px lower (tail curl / pool / unpaired tail) (raw lowest row 797)",
+  "back axis 585.0 px (mirror-symmetry of the body mass); the feet-base rule says 592.5",
+  "side floor 807 px = the lowest body contact; ignored a part with no leg-like support hanging 10 px lower (tail curl / pool / unpaired tail), 1 narrow end contact(s) (tail tip) (raw lowest row 817)",
+  "side axis 1041.5 px (centre of the floor contact span); the feet-base rule says 1007.5",
+  "side view faces image-left (flag, colour score -0.27) -> meshgen view 'left'",
+  "front-vs-side height: front 6.59 u, side 7.14 u (+8.3%) - over 3 %: reconcile them and say how"
+ ],
+ "proxy": {
+  "glb": "proxy/spike_beak_3_proxy.glb",
+  "sha256": "70178a422d65cc0447f4a05a97749904df6f1e182d79f877923dc2fd29e9d5a6",
+  "seed": 56,
+  "model": "Pixal3D multi-view (meshgen, shared_frame)",
+  "views_sent": {
+   "front": "proxy/view_front.png",
+   "back": "proxy/view_back.png",
+   "left": "proxy/view_side.png"
+  },
+  "side_facing": "left",
+  "frame": {
+   "above_floor_px": 713,
+   "below_floor_px": 13,
+   "pad_px": 20,
+   "height_px": 767,
+   "views": {
+    "front": {
+     "crop_origin_px": [
+      -20,
+      49
+     ],
+     "floor_row": 733,
+     "mask_bbox_px": [
+      0,
+      124,
+      396,
+      796
+     ]
+    },
+    "back": {
+     "crop_origin_px": [
+      380,
+      29
+     ],
+     "floor_row": 733,
+     "mask_bbox_px": [
+      400,
+      116,
+      768,
+      775
+     ]
+    },
+    "side": {
+     "crop_origin_px": [
+      708,
+      74
+     ],
+     "floor_row": 733,
+     "mask_bbox_px": [
+      728,
+      94,
+      1200,
+      818
+     ]
+    }
+   }
+  },
+  "generated": {
+   "via": "service",
+   "seed": null,
+   "duration_ms": null,
+   "wall_s": 192.6,
+   "vram": null,
+   "stats": null,
+   "framing": null,
+   "warnings": null,
+   "free_vram_gb_before": 9.46
+  },
+  "transform": {
+   "rotation": [
+    [
+     1.0,
+     0.0,
+     0.0
+    ],
+    [
+     0.0,
+     1.0,
+     0.0
+    ],
+    [
+     0.0,
+     0.0,
+     1.0
+    ]
+   ],
+   "offset": [
+    -0.0015984773635864258,
+    -0.0028129220008850098,
+    -0.47589993476867676
+   ],
+   "scale": 7.466666666666667,
+   "rule": "v_sheet = scale * (R @ v_zup - offset); glTF (x, y, z) -> z-up (x, -z, y)",
+   "orientation_identity_iou": 0.8148,
+   "orientation_best_iou": 0.8148
+  },
+  "clipped_below_floor_px": {
+   "front": 6,
+   "back": 2013
+  },
+  "scores": {
+   "front": {
+    "iou": 0.9142,
+    "iou_shape": 0.8937,
+    "aspect_rel": 0.0021,
+    "row_err_u": 0.141,
+    "row_err_pct": 3.6,
+    "w_u": 3.94,
+    "h_u": 6.7,
+    "ref_w_u": 3.96,
+    "ref_h_u": 6.72,
+    "scored": true
+   },
+   "back": {
+    "iou": 0.8936,
+    "iou_shape": 0.9017,
+    "aspect_rel": 0.0504,
+    "row_err_u": 0.266,
+    "row_err_pct": 7.4,
+    "w_u": 3.94,
+    "h_u": 6.7,
+    "ref_w_u": 3.68,
+    "ref_h_u": 6.59,
+    "scored": true
+   },
+   "side": {
+    "iou": 0.8711,
+    "iou_shape": 0.7446,
+    "aspect_rel": 0.0765,
+    "row_err_u": 0.262,
+    "row_err_pct": 7.5,
+    "w_u": 4.73,
+    "h_u": 6.7,
+    "ref_w_u": 4.72,
+    "ref_h_u": 7.24,
+    "scored": true
+   }
+  },
+  "mean_iou": 0.893,
+  "side_len_over_front_h": {
+   "mesh": 0.706,
+   "sheet": 0.702,
+   "rel_err": 0.0051
+  },
+  "front_w_over_h": {
+   "mesh": 0.588,
+   "sheet": 0.589
+  },
+  "gate": {
+   "pass": true,
+   "verdict": "reliable",
+   "rule": "mean IoU >= 0.75 and side length within 5%"
+  },
+  "sections": [
+   {
+    "z_frac": 0.06,
+    "z_u": 0.402,
+    "x_min_u": -1.751,
+    "x_max_u": 1.747,
+    "width_x_u": 3.498,
+    "y_front_u": -1.378,
+    "y_back_u": 2.267,
+    "depth_y_u": 3.645,
+    "y_centre_u": 0.445,
+    "points": 3882
+   },
+   {
+    "z_frac": 0.18,
+    "z_u": 1.205,
+    "x_min_u": -1.617,
+    "x_max_u": 1.614,
+    "width_x_u": 3.231,
+    "y_front_u": -0.331,
+    "y_back_u": 2.13,
+    "depth_y_u": 2.461,
+    "y_centre_u": 0.9,
+    "points": 3492
+   },
+   {
+    "z_frac": 0.3,
+    "z_u": 2.008,
+    "x_min_u": -1.745,
+    "x_max_u": 1.75,
+    "width_x_u": 3.494,
+    "y_front_u": -0.957,
+    "y_back_u": 2.081,
+    "depth_y_u": 3.038,
+    "y_centre_u": 0.562,
+    "points": 5614
+   },
+   {
+    "z_frac": 0.42,
+    "z_u": 2.811,
+    "x_min_u": -1.855,
+    "x_max_u": 1.871,
+    "width_x_u": 3.727,
+    "y_front_u": -1.217,
+    "y_back_u": 2.113,
+    "depth_y_u": 3.33,
+    "y_centre_u": 0.448,
+    "points": 6206
+   },
+   {
+    "z_frac": 0.54,
+    "z_u": 3.614,
+    "x_min_u": -1.745,
+    "x_max_u": 1.788,
+    "width_x_u": 3.533,
+    "y_front_u": -1.496,
+    "y_back_u": 1.941,
+    "depth_y_u": 3.437,
+    "y_centre_u": 0.222,
+    "points": 4508
+   },
+   {
+    "z_frac": 0.66,
+    "z_u": 4.418,
+    "x_min_u": -1.344,
+    "x_max_u": 1.408,
+    "width_x_u": 2.752,
+    "y_front_u": -1.185,
+    "y_back_u": 1.81,
+    "depth_y_u": 2.995,
+    "y_centre_u": 0.312,
+    "points": 2974
+   },
+   {
+    "z_frac": 0.78,
+    "z_u": 5.221,
+    "x_min_u": -0.802,
+    "x_max_u": 0.835,
+    "width_x_u": 1.637,
+    "y_front_u": -2.137,
+    "y_back_u": 1.635,
+    "depth_y_u": 3.772,
+    "y_centre_u": -0.251,
+    "points": 1304
+   },
+   {
+    "z_frac": 0.9,
+    "z_u": 6.024,
+    "x_min_u": -0.458,
+    "x_max_u": 0.582,
+    "width_x_u": 1.04,
+    "y_front_u": -1.108,
+    "y_back_u": 1.378,
+    "depth_y_u": 2.486,
+    "y_centre_u": 0.135,
+    "points": 912
+   }
+  ],
+  "landmarks": {
+   "height_u": 6.693,
+   "top": {
+    "z_u": 6.693,
+    "x_u": 0.024,
+    "y_u": 0.169
+   },
+   "front_most": {
+    "y_u": -2.365,
+    "z_u": 4.837,
+    "note": "the most -Y point (snout / chest / beak tip)"
+   },
+   "rear_most": {
+    "y_u": 2.365,
+    "z_u": 1.471,
+    "note": "the most +Y point (tail)"
+   },
+   "length_y_u": 4.729,
+   "width_x_u": 3.94,
+   "widest_band": {
+    "z_u": 2.811,
+    "width_x_u": 3.727
+   },
+   "depth_at_intake_rows": {
+    "0.00": {
+     "z_u": 0.134,
+     "depth_y_u": 3.905,
+     "half_w_x_u": 1.965,
+     "sheet_half_w_u": 1.18
+    },
+    "0.10": {
+     "z_u": 0.669,
+     "depth_y_u": 2.574,
+     "half_w_x_u": 1.663,
+     "sheet_half_w_u": 1.86
+    },
+    "0.25": {
+     "z_u": 1.673,
+     "depth_y_u": 2.882,
+     "half_w_x_u": 1.719,
+     "sheet_half_w_u": 1.88
+    },
+    "0.50": {
+     "z_u": 3.347,
+     "depth_y_u": 3.5,
+     "half_w_x_u": 1.778,
+     "sheet_half_w_u": 1.82
+    },
+    "0.75": {
+     "z_u": 5.02,
+     "depth_y_u": 3.684,
+     "half_w_x_u": 1.016,
+     "sheet_half_w_u": 1.04
+    },
+    "0.90": {
+     "z_u": 6.024,
+     "depth_y_u": 2.486,
+     "half_w_x_u": 0.582,
+     "sheet_half_w_u": 0.67
+    }
+   }
+  },
+  "render": "proxy/spike_beak_3_proxy_vs_sheet.png",
+  "notes": [
+   "clipped below the floor line (perspective tails / curls; --keep-below-floor to keep): front 6 px, back 2013 px"
+  ],
+  "use": "3D REFERENCE ONLY: cite sections / landmark depths in the build's constants; the sheet is the spec and the rest pose stays symmetric (the proxy copies the sheet's pose)",
+  "units": "sheet units (1 u = 100 sheet px); z up from the floor, x = the creature's left/right (bbox centred), y = depth, front = -y"
+ }
+}

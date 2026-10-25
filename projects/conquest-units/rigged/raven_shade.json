@@ -1,0 +1,430 @@
+{
+ "unit": "raven_shade",
+ "source": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\improved\\raven_shade.blend",
+ "fps": 24,
+ "finish": {
+  "open_edges": 0,
+  "tris": 18000,
+  "mirror": {
+   "plane_x_u": 0.0,
+   "max_u": 0.53975,
+   "p99_u": 0.05875,
+   "p90_u": 0.02956,
+   "mean_u": 0.01657,
+   "rule": "every vertex mirrored in X about the plane -> distance to the nearest surface (0 = exactly symmetric)"
+  },
+  "tri_budget": [
+   8000,
+   22000
+  ],
+  "in_budget": true,
+  "mode": "light"
+ },
+ "weights": {
+  "max_influences": 4,
+  "unweighted": 0,
+  "sum_dev_max": 3.3306690738754696e-16,
+  "per_bone_dominant": {
+   "hips": 163,
+   "spine": 326,
+   "chest": 601,
+   "neck": 468,
+   "head": 868,
+   "wing.L.0": 761,
+   "wing.L.1": 512,
+   "wing.L.2": 150,
+   "wing.R.0": 703,
+   "wing.R.1": 503,
+   "wing.R.2": 139,
+   "leg.L.0": 478,
+   "leg.L.1": 158,
+   "leg.L.2": 224,
+   "leg.R.0": 476,
+   "leg.R.1": 237,
+   "leg.R.2": 649,
+   "tail.0": 393,
+   "tail.1": 217,
+   "tail.2": 72
+  },
+  "parts": {},
+  "rule": "shell: exp(-((d - d_min) / (0.06 H))^2) over bone-segment distances, side-aware, <= 4, normalised; parts rigid on their bone"
+ },
+ "clips": {
+  "idle": {
+   "frames": [
+    1,
+    73
+   ],
+   "seconds": 3.0,
+   "cyclic": true,
+   "seam_mm": 0.0,
+   "clearance_min_z": -0.0324
+  },
+  "walk": {
+   "frames": [
+    1,
+    33
+   ],
+   "seconds": 1.333,
+   "cyclic": true,
+   "seam_mm": 0.0,
+   "clearance_min_z": -0.1925
+  }
+ },
+ "bones": [
+  {
+   "name": "root",
+   "parent": null,
+   "deform": false,
+   "head": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "tail": [
+    0.0,
+    0.0,
+    0.4
+   ]
+  },
+  {
+   "name": "hips",
+   "parent": "root",
+   "deform": true,
+   "head": [
+    -0.0103,
+    0.3036,
+    2.0148
+   ],
+   "tail": [
+    -0.0103,
+    0.2536,
+    2.9148
+   ]
+  },
+  {
+   "name": "spine",
+   "parent": "hips",
+   "deform": true,
+   "head": [
+    -0.0103,
+    0.2536,
+    2.9148
+   ],
+   "tail": [
+    -0.0103,
+    0.0036,
+    3.8148
+   ]
+  },
+  {
+   "name": "chest",
+   "parent": "spine",
+   "deform": true,
+   "head": [
+    -0.0103,
+    0.0036,
+    3.8148
+   ],
+   "tail": [
+    -0.0103,
+    -0.3964,
+    4.7148
+   ]
+  },
+  {
+   "name": "neck",
+   "parent": "chest",
+   "deform": true,
+   "head": [
+    -0.0103,
+    -0.3964,
+    4.7148
+   ],
+   "tail": [
+    -0.0103,
+    -0.5464,
+    5.1648
+   ]
+  },
+  {
+   "name": "head",
+   "parent": "neck",
+   "deform": true,
+   "head": [
+    -0.0103,
+    -0.5464,
+    5.1648
+   ],
+   "tail": [
+    -0.0103,
+    -1.0964,
+    5.7648
+   ]
+  },
+  {
+   "name": "wing.L.0",
+   "parent": "chest",
+   "deform": true,
+   "head": [
+    0.7897,
+    0.1036,
+    4.4148
+   ],
+   "tail": [
+    1.2897,
+    0.3536,
+    3.4148
+   ]
+  },
+  {
+   "name": "wing.L.1",
+   "parent": "wing.L.0",
+   "deform": true,
+   "head": [
+    1.2897,
+    0.3536,
+    3.4148
+   ],
+   "tail": [
+    1.4897,
+    0.8036,
+    2.1148
+   ]
+  },
+  {
+   "name": "wing.L.2",
+   "parent": "wing.L.1",
+   "deform": true,
+   "head": [
+    1.4897,
+    0.8036,
+    2.1148
+   ],
+   "tail": [
+    1.4397,
+    1.5036,
+    0.8648
+   ]
+  },
+  {
+   "name": "wing.R.0",
+   "parent": "chest",
+   "deform": true,
+   "head": [
+    -0.7897,
+    0.1036,
+    4.4148
+   ],
+   "tail": [
+    -1.2897,
+    0.3536,
+    3.4148
+   ]
+  },
+  {
+   "name": "wing.R.1",
+   "parent": "wing.R.0",
+   "deform": true,
+   "head": [
+    -1.2897,
+    0.3536,
+    3.4148
+   ],
+   "tail": [
+    -1.4897,
+    0.8036,
+    2.1148
+   ]
+  },
+  {
+   "name": "wing.R.2",
+   "parent": "wing.R.1",
+   "deform": true,
+   "head": [
+    -1.4897,
+    0.8036,
+    2.1148
+   ],
+   "tail": [
+    -1.4397,
+    1.5036,
+    0.8648
+   ]
+  },
+  {
+   "name": "leg.L.0",
+   "parent": "hips",
+   "deform": true,
+   "head": [
+    0.4897,
+    0.2036,
+    2.1148
+   ],
+   "tail": [
+    0.5397,
+    0.1536,
+    1.3148
+   ]
+  },
+  {
+   "name": "leg.L.1",
+   "parent": "leg.L.0",
+   "deform": true,
+   "head": [
+    0.5397,
+    0.1536,
+    1.3148
+   ],
+   "tail": [
+    0.5897,
+    -0.0464,
+    0.4348
+   ]
+  },
+  {
+   "name": "leg.L.2",
+   "parent": "leg.L.1",
+   "deform": true,
+   "head": [
+    0.5897,
+    -0.0464,
+    0.4348
+   ],
+   "tail": [
+    0.5897,
+    -0.8964,
+    0.1348
+   ]
+  },
+  {
+   "name": "leg.R.0",
+   "parent": "hips",
+   "deform": true,
+   "head": [
+    -0.4897,
+    0.2036,
+    2.1148
+   ],
+   "tail": [
+    -0.5397,
+    0.1536,
+    1.3148
+   ]
+  },
+  {
+   "name": "leg.R.1",
+   "parent": "leg.R.0",
+   "deform": true,
+   "head": [
+    -0.5397,
+    0.1536,
+    1.3148
+   ],
+   "tail": [
+    -0.5897,
+    -0.0464,
+    0.4348
+   ]
+  },
+  {
+   "name": "leg.R.2",
+   "parent": "leg.R.1",
+   "deform": true,
+   "head": [
+    -0.5897,
+    -0.0464,
+    0.4348
+   ],
+   "tail": [
+    -0.5897,
+    -0.8964,
+    0.1348
+   ]
+  },
+  {
+   "name": "tail.0",
+   "parent": "hips",
+   "deform": true,
+   "head": [
+    -0.0103,
+    0.6036,
+    2.0148
+   ],
+   "tail": [
+    -0.0103,
+    1.2036,
+    1.5148
+   ]
+  },
+  {
+   "name": "tail.1",
+   "parent": "tail.0",
+   "deform": true,
+   "head": [
+    -0.0103,
+    1.2036,
+    1.5148
+   ],
+   "tail": [
+    -0.0103,
+    1.6036,
+    1.0148
+   ]
+  },
+  {
+   "name": "tail.2",
+   "parent": "tail.1",
+   "deform": true,
+   "head": [
+    -0.0103,
+    1.6036,
+    1.0148
+   ],
+   "tail": [
+    -0.0103,
+    1.7536,
+    0.5648
+   ]
+  }
+ ],
+ "bone_count": 21,
+ "digest": {
+  "parts": {
+   "solid_grid": "0463301d9d170b17",
+   "bake_normal": "1929fa3ca2b6db07",
+   "bake_ao": "d3d30aacc5c51488",
+   "bake_albedo": "ca83198b5c973957",
+   "geometry_colour_uv": "1bbfe5960fd5e237",
+   "weights": "278b7b96541dafe6",
+   "keys": "e36163a02a5826ac",
+   "clip_samples": "54e7c2df29ec3c90"
+  },
+  "combined": "914c2a4aa6c671a7"
+ },
+ "glb": {
+  "path": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\rigged\\raven_shade.glb",
+  "bytes": 13226684,
+  "seconds": 0.7
+ },
+ "skins": {
+  "default": {
+   "file": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\rigged\\raven_shade.blend",
+   "palette": {
+    "proxy_albedo": {
+     "rgb": [
+      255,
+      255,
+      255
+     ]
+    }
+   }
+  },
+  "repaint_proof": {
+   "default_digest_before": "1bbfe5960fd5e237",
+   "after_repaint": "1bbfe5960fd5e237"
+  }
+ },
+ "improved_report": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\improved\\raven_shade.json",
+ "seconds": 313.1
+}

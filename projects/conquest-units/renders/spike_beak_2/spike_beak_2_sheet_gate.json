@@ -1,0 +1,39 @@
+{
+ "unit": "spike_beak_2",
+ "views": {
+  "front": {
+   "iou": 0.9215,
+   "iou_shape": 0.8963,
+   "aspect_rel": 0.0069,
+   "row_err_u": 0.155,
+   "row_err_pct": 4.0,
+   "w_u": 3.76,
+   "h_u": 5.91,
+   "ref_w_u": 3.85,
+   "ref_h_u": 6.01,
+   "iou_in_frame": 0.9171,
+   "row_err_pct_in_frame": 4.2,
+   "proxy_iou": 0.939,
+   "flag": false
+  },
+  "side": {
+   "iou": 0.9008,
+   "iou_shape": 0.8791,
+   "aspect_rel": 0.0088,
+   "row_err_u": 0.143,
+   "row_err_pct": 4.5,
+   "w_u": 4.16,
+   "h_u": 5.91,
+   "ref_w_u": 4.2,
+   "ref_h_u": 6.02,
+   "iou_in_frame": 0.9008,
+   "row_err_pct_in_frame": 4.5,
+   "proxy_iou": 0.8974,
+   "flag": false
+  }
+ },
+ "proxy_sha256": "793ce80b0437734d0445e805197efdec8861c06ff0261898c7e417efcb7d23aa",
+ "proxy_gate": "reliable",
+ "flagged": [],
+ "mean_iou": 0.9112
+}

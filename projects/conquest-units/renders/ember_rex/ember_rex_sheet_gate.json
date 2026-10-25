@@ -1,0 +1,42 @@
+{
+ "unit": "ember_rex",
+ "views": {
+  "back": {
+   "iou": 0.7563,
+   "iou_shape": 0.5842,
+   "aspect_rel": 0.1039,
+   "row_err_u": 0.229,
+   "row_err_pct": 7.4,
+   "w_u": 3.43,
+   "h_u": 6.58,
+   "ref_w_u": 3.88,
+   "ref_h_u": 6.67,
+   "iou_in_frame": 0.7296,
+   "row_err_pct_in_frame": 8.1,
+   "proxy_iou": 0.8268,
+   "flag": true
+  },
+  "side": {
+   "iou": 0.7888,
+   "iou_shape": 0.4824,
+   "aspect_rel": 0.1528,
+   "row_err_u": 0.29,
+   "row_err_pct": 8.6,
+   "w_u": 5.9,
+   "h_u": 6.58,
+   "ref_w_u": 4.9,
+   "ref_h_u": 6.45,
+   "iou_in_frame": 0.7515,
+   "row_err_pct_in_frame": 10.6,
+   "proxy_iou": 0.8559,
+   "flag": true
+  }
+ },
+ "proxy_sha256": "cbbd25d9a4e91803549ae120370083fc40fb181ac09d45b2d49ec1c7312a9bc6",
+ "proxy_gate": "proxy unreliable, work from the sheet (side length off by +8.9%)",
+ "flagged": [
+  "back",
+  "side"
+ ],
+ "mean_iou": 0.7725
+}

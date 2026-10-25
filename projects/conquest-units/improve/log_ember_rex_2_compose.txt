@@ -1,0 +1,6 @@
+﻿WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\ember_rex_2\ember_rex_2_sheet_vs_model.png
+GATE view=back  iou=0.728 in_frame=0.294 row_err=12.3% | proxy iou=0.726
+GATE view=side  iou=0.711 in_frame=0.695 row_err=15.3% | proxy iou=0.742
+GATE mean_iou=0.720 flagged=none proxy=proxy unreliable, work from the sheet (mean IoU 0.69 < 0.75)
+GATE bake_reference=none (no object.bake call found)
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\ember_rex_2\ember_rex_2_contact.png

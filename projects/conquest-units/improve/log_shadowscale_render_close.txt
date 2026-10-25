@@ -1,0 +1,10 @@
+00:01.312  blend            | Read blend: "C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\rigged\shadowscale.blend"
+00:03.312  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\shadowscale\shadowscale_face.png'
+00:03.828  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\shadowscale\shadowscale_feet.png'
+00:04.203  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\shadowscale\shadowscale_head.png'
+00:04.625  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\shadowscale\shadowscale_tail.png'
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\shadowscale\shadowscale_face.png
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\shadowscale\shadowscale_feet.png
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\shadowscale\shadowscale_head.png
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\shadowscale\shadowscale_tail.png
+Blender 5.0.1 (hash a3db93c5b259 built 2025-12-16 01:32:30)

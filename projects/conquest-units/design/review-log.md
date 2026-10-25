@@ -2772,3 +2772,373 @@ on the branch? can push"
 - Conquest feat/forge-unit-import pushed to origin at ec87b06 (7 forge-import
   commits, 6ba132b..ec87b06).
 - crystal_canine basecolor mipmaps: explained, pending the artist's call.
+
+## 2026-10-16 — NEW UNITS x14: batch of artist reference sheets (artist verbatim)
+Artist (verbatim): "prepare to intake more conquest references and create
+blends for them" / "I am going to paste in many references" / "each is its
+own character".
+Common to all 14: sheets pasted inline, saved as
+design/reference/<unit>-character-sheet.png (webp -> png, pixels unchanged);
+smart intake; Pixal3D LIGHT flow (proxy_finish.py, "mode": "light": proxy
+geometry + texture as generated, no symmetrise / repose / cuts unless a
+region needs it, never on the head / face); tier REGULAR [8000, 22000];
+idle + walk PLACEHOLDER clips; movement + in-game height asked (OPEN-QUESTIONS
+N16-N29). Every side view faces image-left (meshgen 'left'). Glow ships ONLY
+where the sheet draws it. Two sheets share the title EMBER REX: per "each is
+its own character" they are two units, ember_rex (darker, ember-tipped
+feathers) and ember_rex_2 (living-flame plumage).
+
+ICEHORN MOOSE ("icehorn_moose", ~6.8 u). Intake --region 0,0,1190,850 (the
+side box ran into the detail panels).
+- Light-blue furred moose (181,206,234), a thick white volumetric NECK COAT /
+  mane (234,232,231) distinct from the body fur, shaggy tufted legs, dark
+  slate hooves (63,82,107), shadow 106,125,160.
+- Head: rounded moose snout, solid dark eye, tall ears.
+- Antlers: TRUE ICE, translucent crystalline, angular, internal cracks, a
+  subtle frosty glow (icy blue 129,217,251).
+
+FROST CALF ("frost_calf", ~6.6 u).
+- Young deer/moose calf: light-blue soft short fur (196,216,234 /
+  156,187,223), slight neck tuft, smooth body, long thin gangly legs, flared
+  dark hooves (66,84,112 / 50,61,78), large dark eyes, rounded muzzle with a
+  dark nose, tall upright ears, NO horns / antlers.
+- Short upward fluffy tail tuft in darker blue (80,126,183).
+
+FROST GIANT ("frost_giant", ~7.8 u).
+- Tall gaunt faceted-ice humanoid (212,234,250 / 167,213,243 / 128,190,238),
+  darker blue chevron seams (50,120,183).
+- Head: angular ice MASK with two straight crystalline horns and narrow
+  glowing eye slits (96,210,251); a long hanging ICICLE BEARD down to the
+  chest, irregular lengths, semi-transparent.
+- Very long arms with large clawed icicle hands reaching the knees; thin
+  legs; ice plates and frosty edges along the arms / shoulders.
+
+FROST GIANT CHILD ("frost_giant_child", ~6.7 u).
+- Chunky low-poly faceted crystal child (233,233,232 / 177,210,243 /
+  105,163,236 / 84,104,150, accent 128,144,249).
+- Big angular head, two small emerging ice horns, large simple glowing pale
+  eyes, minimal mouth; crystal growths from neck + shoulders; fingerless
+  tapered crystal arms; sturdy wide crystal feet.
+
+STORM BEAR ("storm_bear", ~6.8 u).
+- Upright white-furred bear (230,221,218), a thick dark charcoal FUR RING
+  around neck / head running down the back as a cape (69,71,86 /
+  101,108,136).
+- Translucent blue ICE CRYSTALS with lightning contained inside, integrated
+  into the fur on chest, arms, legs (188,218,253 / 61,106,244; the sheet's
+  6th chip, bright cyan, was not auto-found).
+- Massive ice-crystal CLAWS on hands and feet, internal glow, NO external
+  electric arcs. Glowing blue eyes.
+
+SPIKE BEAK ("spike_beak", sheet 6, the small round one, ~3.9 u).
+- Round ball-shaped blue bird (182,208,227 / 106,158,216 / 70,114,179 /
+  54,67,97), small tucked wings, short feathered tail.
+- Long straight yellow beak (236,206,129 / 221,176,89) that rises into a
+  small forehead SPIKE; round expressive eyes (cream ring, dark pupil).
+- Yellow bird legs, three front toes, small curved dark claws.
+- Front-vs-side height -10 %: the forehead spike reads taller seen from the
+  front; the side is the depth reference.
+
+SPRING PIG ("spring_pig", ~6.1 u).
+- Round pink pig (244,152,153 / 212,120,126, highlight 252,231,231), biped
+  on two short sturdy legs with brown hoof feet (116,79,68 / 95,67,58).
+- Ball body with a brown torso PANEL integrated into the body (no straps or
+  rivets); stubby arms with brown tips.
+- Head: round, long rectangular snout, upright pointed ears, a simple
+  GOGGLE (round dark lens, brass rim 208,152,105, brown strap).
+- Tail: a pink coiled SPRING tail from the lower back to the floor (soft,
+  natural, no mechanical parts).
+
+RAVEN SHADE ("raven_shade", ~6.3 u). Intake --cuts 443,804 (the matte
+fused the views).
+- Hunched raven assassin in black / charcoal feathers (29,29,31 / 75,73,81 /
+  64,59,77), blade-like feather edges tipped steel-blue (97,102,127).
+- Head: hooded feather crest, large hooked dark beak, narrow red eye
+  (141,55,65), subtle scar marking.
+- Layered feather CLOAK / tucked wings to the floor; a small diamond
+  PENDANT clasp at the throat and on the back (tan 191,168,153).
+- Large scaled dark talons, thick claws; layered blade-like tail feathers.
+
+EMBER REX ("ember_rex", sheet 9, ~6.6 u).
+- Tall phoenix-like raptor bird: dark brown-red body (70,52,54 / 127,45,46 /
+  157,66,60), layered dark neck feathers, a lighter tan breast, a small
+  glowing ember GEM on the chest.
+- Phoenix flame crest, sharp yellow beak, flame-tipped feathers
+  (248,127,74 / 253,197,109 / 235,219,206).
+- Large razor-like wing feathers hanging to the floor, gradient brown/red
+  to orange/yellow; long tail feathers. Raptor legs, scaled, curved talons.
+
+EMBER REX 2 ("ember_rex_2", sheet 10, ~6.7 u). Intake on a split-helper
+copy design/reference/ember_rex_2-character-sheet-split.png (the back
+view's tail tip under the side view blacked out; the original is
+untouched): --region 0,60,1195,850 --cuts 339,612 --floor 786/786/788
+--axis back=578.
+- Phoenix of living flame: high flame crest, flowing flame collar, cream
+  scaled neck / breast (246,214,182), deep red to bright orange / yellow
+  plumage (68,38,42 / 161,42,48 / 225,76,58 / 253,124,67 / 253,201,100).
+- Large blade-like flame wing feathers; a LONG draconic flame tail trailing
+  on the floor; raptor legs with glowing flame-lit cracks, curved talons.
+- Glow: the flame plumage and the leg cracks are drawn self-lit.
+
+IRON SCALE KNIGHT ("iron_scale_knight", ~6.8 u).
+- Armoured pangolin knight: overlapping steel scale plates (245,233,221 /
+  195,176,164 / 124,115,114) with gold trim and rivets (200,149,100), dark
+  cloth underlayer (70,59,56 / 91,62,54), leather straps + buckles, a
+  hanging tabard with a gold emblem.
+- Head: pangolin helmet, elongated snout, narrow amber eye slit, a thin
+  crest arc over the top.
+- Long armoured scaled tail to the floor; heavy armoured legs, clawed feet.
+
+SHADOWSCALE ("shadowscale", ~6.9 u).
+- Assassin pangolin: dark gunmetal blade-like scale plates (21,21,21 /
+  56,49,51 / 97,88,91), crimson cloth scarf / hood wrap and hanging strips
+  (111,35,40), leather straps with rings and tassels (83,65,60).
+- Head: pangolin helmet, elongated snout, red predatory eye, crest arc.
+- Blade-scale arms, long flexible blade-scale tail, digitigrade armoured
+  legs with curved talons.
+
+AZURE SCALE MAGE ("azure_scale_mage", ~7.2 u).
+- Pangolin mage: blade-like scales in a white-to-blue gradient (38,42,63 /
+  54,72,130 / 117,141,203 / 185,198,230 / 234,222,213) flowing like a robe;
+  dark scaled legs (110,105,111).
+- Head: a SORCERER HAT made of scales, its tip curling forward, integrated
+  into the head and neck scales; pangolin snout; narrow glowing blue eye.
+- Embedded glowing blue ARCANE CRYSTALS on chest, arms and robe; long
+  flowing scale tail; digitigrade legs with talons.
+
+DRAKESCALE BEAST ("drakescale_beast", ~6.6 u).
+- Quadruped pangolin-dragon: layered brown pangolin scales (43,36,36 /
+  72,57,48 / 124,87,65) with lighter tips (188,146,115), a cream belly and
+  throat (220,187,156).
+- Head: pangolin-inspired draconic snout, horn-like scale protrusions,
+  narrow orange eye; dorsal spines along neck and back.
+- Four plantigrade legs, thick scale armour, large dark claws; a long
+  powerful scaled tail.
+
+## 2026-10-16 — NEW UNIT: Spike Beak 3 (artist reference sheet, the tall one)
+Artist (verbatim): (pasted the tall SPIKE BEAK sheet) / "only comment on
+spikebeak 3 is to make its face mask on the top portion above the eye extend
+further back and its white feathers on stomach fo further back, and make its
+tail longer as well".
+Sheet: design/reference/spike_beak_3-character-sheet.png (the third SPIKE
+BEAK sheet: small round = spike_beak, rounder mature white-chested =
+spike_beak_2 (file pending), tall long-winged = spike_beak_3). Intake
+--side-facing left --floor back=762 (the back view's tail tip hung to 822).
+Same batch rules as the x14 entry (light flow, regular tier, placeholder
+clips).
+
+SPIKE BEAK 3 ("spike_beak_3", ~6.6 u).
+- Tall vertically elongated blue bird (palette 210,218,236 / 127,165,227 /
+  71,123,224 / 30,76,170 / 31,54,118, beak 224,173,91), clear white chest
+  pattern, large long wings hanging below the legs, layered feathers.
+- Head: an extended, wider integrated yellow BEAK MASK, a long sharp beak,
+  a pronounced forehead spike, large expressive eyes in cream, layered head
+  feathers.
+- Strong sturdy yellow legs, three front toes, sharp curved dark claws.
+- Tail: white-tipped layered tail feathers hanging behind.
+Binding deviations from the sheet (artist):
+- The mask's TOP portion, above the eye, extends further BACK over the head.
+- The white stomach feathers wrap further BACK along the sides.
+- The TAIL is longer.
+
+## 2026-10-16 — Spike Beak v1 note (artist verbatim + 1 image)
+Artist (on a crop of the side view, a red outline around the front wing flap
+just behind the eye): "two wings  this one needs to be removed".
+Binding reading: the side shows TWO wing shapes per side; the FRONT one (the
+vertical feather flap behind the eye / cheek, in front of the main tucked
+wing) is removed on both sides; the main tucked wing stays. The sheet draws
+one small tucked wing per side.
+
+## 2026-10-17 — Batch x15 v1 verdict (artist verbatim + 1 image)
+Artist: "our characters should be symmetrical head turns are done through
+posing so our models remain flexible - spring pig and the child frost giant
+seem to have issues with this,  for example ember rex tail is moved to one
+side, can we rig it so we can position it in the center or the side, just
+want to make sure these things are considered, if its just posed that way
+then thats fine but if not then there may be issues" / "can we make storm
+bear fatter, bigger belly" / "ffor spring pig the end of tail should be wider
+like the ref pick so it can believed like he's flying/floating with the tail"
+(image: a blue bamboo-copter toy, a two-blade propeller on a stick; saved as
+design/reference/spring_pig-v1-tail-propeller-reference.png) / "raven shade
+also has symmetry issue and should have 2 eyes - can we make its last wing
+feather red so it looks like a blood soaked blade" / "the image refs you gave
+me I cant zoom in so hard to critique details" / "the head looks off for
+drakescale" / "spikebeak 3 has readability issues and is hard to tell" / "we
+need better images or a way so i can zoom and see details".
+Binding reading:
+- ALL units: the REST POSE is symmetric (head straight, legs paired, tail on
+  the midline); head turns / swung tails are POSES in the rig. This resolves
+  the light-flow tension: asymmetry from the proxy is removed by REPOSE
+  (bones: proxy_finish_repose), not by mirror-averaging geometry; the face is
+  carried rigidly, never re-sculpted. Named: spring_pig, frost_giant_child,
+  ember_rex (tail: a tail chain that rests centred and can be posed to the
+  side), raven_shade. Applies to every unit with a turned head / swung tail /
+  staggered legs.
+- Storm Bear: fatter, bigger belly.
+- Spring Pig: the END of the spring tail widens into a two-blade PROPELLER like
+  the bamboo-copter reference, so it reads as flying / floating on the tail.
+- Raven Shade: two eyes (mirror the existing one), symmetric; its LAST wing
+  feather on each wing (the longest, lowest tip) red, like a blood-soaked
+  blade (sheet red 141,55,65 toward the tip).
+- Drakescale Beast: the head looks off (detail pending the zoomable review).
+- Spike Beak 3: readability issues (detail pending the zoomable review).
+- Review: a zoomable way to inspect models (3D viewer + full-res renders).
+
+## 2026-10-17 — NEW UNIT: Drakescale Cub (artist reference sheet)
+Artist (verbatim): "here is another one to intake".
+Sheet: design/reference/drakescale_cub-character-sheet.png (clipboard capture,
+pixels unchanged). Intake --side-facing left --floor back=728,side=748 (the
+auto floor took the tail tips). Same rules as the batch: Pixal3D light flow,
+regular tier, placeholder clips, SYMMETRIC REST POSE by repose (2026-10-17
+verdict). Front-vs-side height -9.9 % (the front view's paws are drawn lower,
+in perspective).
+
+DRAKESCALE CUB ("drakescale_cub", ~5.9 u): the young Drakescale Beast.
+- Quadruped pangolin-dragon cub: layered brown pangolin scales (41,35,34 /
+  71,54,47 / 126,84,63) with copper tips (191,145,112), cream belly / throat
+  (224,189,157); grey accent 105,97,99.
+- Head: smaller, youthful, pangolin-inspired snout, horn-like scale
+  protrusions (smaller), softer orange eye, friendly curious expression.
+- Smaller dorsal spines; lighter, slimmer silhouette; slimmer limbs; smaller
+  rounded claws. Long tapered scaled tail.
+
+## 2026-10-17 — Spike Beak 3 v1 notes (artist verbatim + 3 annotated images)
+Artist: "the spikes should extend past and we can't see the eyes well" /
+"lets make the white tufts extend further" / "and add larger tail, the second
+part, in white".
+Images: design/reference/spike_beak_3-v1-mask-spikes-annotation.png (side
+head: two red lines carrying the mask's brow spikes from above the eye back
+and up PAST the head feathers), spike_beak_3-v1-white-tufts-annotation.png
+(front: two red lines from the chest down and outward past the feet),
+spike_beak_3-v1-tail-annotation.png (back: a larger red outline hanging below
+the current tail tip).
+Binding reading:
+- The mask's brow SPIKES (the v1 extension band) become long, distinct blade
+  spikes that sweep back and up past the head's crest feathers (side view),
+  one per side; yellow beak/mask colour.
+- The EYES must read clearly: larger / higher-contrast eye (cream ring, dark
+  iris) not hidden by the mask edge or cheek flap.
+- The WHITE chest tufts extend further: longer white feather tips running down
+  and outward in a V past the legs toward the floor (front view).
+- A SECOND, larger TAIL section in WHITE below / behind the current tail tip
+  (back view), so the tail reads longer and two-part.
+
+## 2026-10-17 — Ember Rex 2 v1 notes (artist verbatim + 2 images)
+Artist: "ember rex 2 cant see the eye" / "the flames here  dont contract well
+enough with the body - that goes for all the actual fire parts like its
+feathers and crest on its head and the chest flame".
+Images: design/reference/ember_rex_2-v1-eye-annotation.png (head close-up,
+no readable eye), ember_rex_2-v1-flame-collar-annotation.png (the flame
+collar band across the neck / shoulders outlined in blue).
+Binding reading ("contract" = contrast):
+- The EYE must read: a clear eye on each side of the head (the sheet's
+  intense, regal yellow-orange eye with a dark pupil), crisp, not lost in the
+  red.
+- Every FIRE part - the flame collar (outlined), the flame crest, the
+  flame-tipped feathers / wing and tail flames, the chest flame - must
+  CONTRAST strongly with the body: brighter, more saturated orange -> yellow
+  (sheet 253,124,67 / 253,201,100, hot cores toward pale yellow) and
+  stronger glow, against a darker, more muted red body (sheet 68,38,42 /
+  161,42,48). The body itself is not lit.
+
+## 2026-10-17 — Drakescale Beast v1 head note (artist verbatim + 1 image)
+Artist: "compare this head to the ref, its way too compressed and looks
+smooshed where we cant see eyes or any other face details".
+Image: design/reference/drakescale_beast-v1-head-annotation.png (the v1 head
+in side view: a short, crushed muzzle; no readable eye).
+Binding reading: the head must match the sheet's HEAD DETAIL panel: a longer
+pangolin-dragon SNOUT (not compressed), a clear narrow ORANGE EYE on each
+side, readable face detail (the cream lower jaw / mouth line, nostril, brow
+ridge), and the horn-like scale protrusions swept back above it.
+
+## 2026-10-17 — NEW UNIT: Spike Beak 2 (artist reference sheet)
+Artist (verbatim): "spike beak 2 is essentially a smaller simpler version of 3".
+Sheet: design/reference/spike_beak_2-character-sheet.png (webp -> png, pixels
+unchanged; the mid Spike Beak, after the small round spike_beak and before
+the tall spike_beak_3). Smart intake, --side-facing left. Same rules as the
+batch: Pixal3D light flow, regular tier, placeholder clips, SYMMETRIC REST
+POSE by repose.
+
+SPIKE BEAK 2 ("spike_beak_2", ~5.9 u).
+- A large, round, powerful blue bird (205,210,222 / 130,158,199 / 72,117,188 /
+  47,82,148 / 39,57,103), rounded tucked wings, layered feathers, white
+  accent feathers in a V on the chest and a white collar band.
+- Head: an integrated yellow beak MASK (215,170,94), a long sharp beak, the
+  forehead spike continuing the mask, a LARGE expressive eye (cream ring, dark
+  navy iris), layered head feathers; mature, intimidating look.
+- Strong sturdy yellow legs, three front toes, sharp curved dark claws.
+- Tail: a short layered tail with white tips (back view).
+Reading of "smaller simpler version of 3": the same design language as
+Spike Beak 3 (mask, spike, white V, blue layers) on a rounder, simpler body.
+The artist's Spike Beak 3 notes (readable eyes, a clear mask spike) apply in
+spirit: the eye must read clearly and the mask / spike must read as one
+yellow shape.
+
+## 2026-10-17 — Spring Pig v2 face note (artist verbatim + 1 image)
+Artist: "there are massive symmetry issues with spring big on the face  it
+was done to match the picture only but here one eye sticks out there is more
+correct but looks broken and the snout is on the side" / "ears also looked
+crooked". Image: design/reference/spring_pig-v2-face-annotation.png.
+Binding reading: the face is rebuilt symmetric: snout centred pointing
+forward with two nostrils on its front face, two goggle lenses at equal
+height on one strap, ears matched. Done by RE-GENERATING the proxy without
+the sheet's 3/4 front (design/reference/spring_pig/proxy/ notes); the
+propeller tail (v2) carries over.
+
+## 2026-10-17 — Raven Shade v2 face note (artist verbatim + 1 image)
+Artist: "the face looks crooked" (image, pasted inline: the v2 head from the
+front: the beak bends to one side, the eyes sit at different heights).
+Binding reading: the head must be truly symmetric - beak straight on the
+midline, both eyes level and matched. The v2 repose only turned the head
+rigidly; the asymmetry is SCULPTED into the proxy head (the sheet's front and
+back are 3/4). Fix: a HEAD GRAFT like Drakescale Beast's - a head-only
+Pixal3D mesh from the sheet's FACE / HEAD DETAIL panel, its drawn half
+mirrored, placed on the body (design/reference/raven_shade/head_graft/).
+
+## 2026-10-17 — Spring Pig v3 snout note (artist verbatim)
+Artist (on v3): "ah yes it updated now, the snout needs to be cynlidrincal".
+Binding reading: replace v3's wide flat box snout with a CYLINDER pointing
+straight forward (-y) on the midline: a round cross-section, a flat front
+disc carrying the two nostrils, sized from the sheet's side view (length and
+height of the drawn snout) - near-square in profile, round from the front.
+Everything else in v3 stays (symmetric head, level lenses, ears, propeller).
+
+## 2026-10-17 — Drakescale Beast v2 tail note (artist verbatim + 1 image)
+Artist: "why is the tail  different here, lets just extend and duplicate
+exisiting tails and end in a point". Image:
+design/reference/drakescale_beast-v2-tail-annotation.png (the smooth banded
+tube tail next to the scaled body).
+Binding reading: drop the v1/v2 capsule TUBE tail. Build the tail from the
+model's OWN scaled tail: take the generated tail-root segment (pangolin scale
+plates + its texture) and DUPLICATE it along the sheet's side-view tail curve,
+each copy slightly smaller, tapering to a POINT at the tip. Same scales and
+colours as the body; centred on the tail chain (posable). Applies to any unit
+where a tail had to be lengthened (house rule from now on: extend tails by
+duplicating the generated tail segments, never a smooth tube).
+
+## 2026-10-17 — Spring Pig v3.1 face note (artist verbatim + 1 image)
+Artist: "smooth out the face and move the eyes a bit closer to center".
+Image: design/reference/spring_pig-v31-face-annotation.png (blue marks on the
+seams of the rebuilt cheek patch: the patch's top edge under the strap and
+its jagged left/right edges, plus the dark cheek blotches).
+Binding reading: (1) the face reads as ONE smooth surface: no patch outline,
+no ledge or seam where the v3.1 cheek rebuild meets the head, no dark
+blotches (the normal-map fix previewed earlier) - geometry smoothed across
+the seam and the albedo / normals blended; (2) the two goggle lenses (and
+their brass rings + the strap ends at them) move a bit closer to the centre,
+symmetric about x = 0, staying level on the strap. Snout cylinder, nostrils,
+ears, propeller unchanged.
+
+## 2026-10-17 — Batch pause + carry-over notes (artist verbatim)
+Artist: "after this pause work, a lot of models have issues with the eyes, or
+tails goin under the body when it doesnt make sense to but can pick another
+time".
+Binding reading (next session, across the batch):
+- EYES: many units' eyes read poorly (too small / soft / dark / hidden by the
+  mask or cheek, or painted low-res). Review every unit's eyes in the viewer
+  and fix them so they read clearly at game distance (crisp shape, contrast,
+  the sheet's colour; geometry where the socket is lost).
+- TAILS: tails curling forward UNDER the body where the sheet does not mean it
+  (e.g. Drakescale Beast's J-curve under the belly). Rest tails trail BEHIND
+  the body, centred, unless the sheet clearly draws otherwise; the tail chain
+  still allows posing.

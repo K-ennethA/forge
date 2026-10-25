@@ -1,0 +1,1 @@
+{"rotation": [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]], "offset": [9.553134441375732e-05, -0.0004729628562927246, -0.47073081135749817], "scale": 6.857142857142857, "rule": "v_sheet = scale * (R @ v_zup - offset); glTF (x, y, z) -> z-up (x, -z, y)", "orientation_identity_iou": 0.768, "orientation_best_iou": 0.768}

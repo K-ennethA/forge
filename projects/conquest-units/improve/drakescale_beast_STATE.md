@@ -1,0 +1,73 @@
+# drakescale_beast STATE (v2.1, 2026-10-17)
+
+- Version: v2 = Pixal3D proxy (front + side views, seed 56, sha 197465d1), LIGHT finish (proxy_finish.py; config improve/drakescale_beast_finish.json).
+  - Head: a GRAFTED head (light.head_graft) replaces the proxy's crushed head. Source: the orchestrator's head-only Pixal3D mesh from the sheet's HEAD DETAIL panel (design/reference/drakescale_beast/head_graft/head_pixal3d.glb, sha 1d769ddc8e44).
+  - Rest pose: SYMMETRIC by repose (bones). No symmetrise, no glow.
+  - Tail (v2.1): the proxy's OWN scaled tail-root segment duplicated along the sheet's tail curve, tapering to a point (light.segment_array). The v1/v2 tube is gone.
+- Spec:
+  - design/review-log.md "2026-10-16 — NEW UNITS x14" (DRAKESCALE BEAST).
+  - "2026-10-17 — Batch x15 v1 verdict" (symmetric rest pose).
+  - "2026-10-17 — Drakescale Beast v1 head note" (the crushed head).
+  - "2026-10-17 — Drakescale Beast v2 tail note" (no tube: duplicate the generated tail, end in a point).
+- What v2.1 changed (tail only; everything below still applies):
+  - Removed: the capsule tube (light.adds, 69 capsules) and its paint bands (light.recolour, 4 specs).
+  - New kit op light.segment_array (opt-in, improve/proxy_finish_light.py; absent key = no change, frost_calf DIGEST 362f5f93d32ac747 unchanged).
+  - Source: the generated tail root under the rump, box x +-0.95, y 1.75..3.45, z 1.15..1.95 (a ring of plates, dorsal spines on +y). Axis (0, 2.40, 1.95) -> (0, 2.68, 1.15), 0.85 u. Its hollow-skin cavity is filled (17110 nodes), so the copies are solid and the cut root end is closed.
+  - Copies: 7 along the sheet side-view tail curve at x = 0 (stage-1 side registration u = 882.26 + 100 y, v = 803.96 - 100 z), lifted onto the floor (floor_z 0). Scale 0.85^i (0.85 .. 0.32), overlap 20 %, smooth union k 0.03. The last copy is 2x long and its cross-section ramps to 0.02 = the point. Tip at (0, 0.40, 0.12); array 2.94 u long.
+  - Bake: 5686 source faces per copy appended with their UVs (39802). Buried faces dropped: 3565 copy + 1573 proxy (both sides solid at +-0.06 u).
+  - Rig: tail chain re-pointed onto the copies (7 bones, x = 0, mirror false).
+  - Numbers: DIGEST 64758c5e225e4134 (twin identical, bake diff 0). GATE front 0.856, side 0.751, mean 0.803. FINISH_GATE mean 0.778 (vs picked 0.833). Mirror p99 0.956 -> 0.292 u. Self-intersections 370 -> 399 (v2 246 -> 246; the extra are the shingled copies). Edge stretch p99 1.37, max 2.33.
+  - Evidence: renders/drakescale_beast/drakescale_beast_v21_tail.png (tail side, back 3/4, top, whole side).
+- What v2 changed (v1 items below still apply):
+  - Head graft (kit op light.head_graft, opt-in, in improve/proxy_finish_light.py):
+    - Frame: the glb head is a full 3D head, built turned. A mirror search on the face fixed its frame: yaw 37 deg, roll 6 deg, mid plane q2 = 0.006.
+    - Symmetric: the good half (q2 >= 0, the generation-camera side) is folded and mirrored. The face is the generated one; it is never re-sculpted.
+    - Placement: one similarity onto the sheet SIDE-view head, fitted on snout tip / eye / chin through the v1 body-only side registration: scale 2.438, pitch -3.56 deg, place (y -2.129, z 5.705). Residuals 0.008..0.011 u. The snout tip lands at (0, -3.353, 5.426) and the eyes at (+-0.280, -2.733, 5.605).
+    - Clip and taper: the head block's flat back wall is clipped at q0 0.34 (k 0.03). The block's back also tapers by 0.45 u into the neck (q0 0.20 -> 0.34), so no flat cap shows.
+    - Stump: the throat cross-section at q1 -0.32 continues down to q1 -0.62 (body z ~4.2), so the jaw meets the neck.
+    - Neck blend: smooth union with k 0.05 before the remesh; 24132 grid nodes added.
+    - Texture: the head texture sits in an atlas beside the proxy texture. It is toned in CIELab (L* map + a*/b* shift per L* band, measured against the sheet head panel). The orange eye is kept.
+    - Bake source: 160912 graft faces appended. 20786 that float outside the tapered surface are dropped, which keeps the bake cage at 0.157 u (it was 0.71 u with them in).
+  - Proxy head removed (light.cuts):
+    - The beak in front of the throat (y < -2.45, z >= 4.75).
+    - The crushed face and crest above the neck (y -2.45..-1.75, z >= 4.9).
+    - The old muzzle knob under the jaw (x +-0.3, y -2.8..-2.2, z 4.2..4.95, k 0.05).
+    - light.erase3d refills the old yellow eye remnants. The recolour3d tone specs no longer exclude the old eye boxes.
+  - Repose (repose block):
+    - Front ("arm") and hind ("leg") pairs are mirror-symmetric at the mean, with paws planted. Points = the +x leg, points_R = the -x leg, measured on the v2 pre-repose low; shoulders and hips sit symmetric inside the body.
+    - Reach / taper per bone: arm 1.4/0.7, 1.0/0.45, 1.1/0.45; leg 1.1/0.5, 0.9/0.4, 1.0/0.35. Falloff 0.06, plant_radius 0.8.
+    - neck / head heading -y: an identity (yaw 0 / 0), because the graft is symmetric.
+    - The head is rigid (box (-0.8, -3.5, 4.7)..(0.8, -1.8, 6.65), margin 0.3).
+  - Numbers:
+    - Mirror p99 0.965 -> 0.299 u (glb 0.301).
+    - Joint mirror error, front: 1.15 / 1.30 / 1.25 -> 0.03 / 0.07 / 0.07 u. Hind: 0.09 / 0.41 / 0.39 -> 0.08 / 0.16 / 0.16 u.
+    - Paws at z 0.000 (were -0.003 / 0.007 front, 0.26 / 0.14 hind); the lowest vertex is -0.008.
+    - Edge stretch p99 1.325, max 2.48.
+    - Self-intersections 246 -> 246.
+    - Rigid face: max deviation 0.0.
+  - Rig: the spine runs to the grafted snout (neck (0, -1.5, 4.1) -> head pivot (0, -1.9, 5.3) -> snout (0, -3.35, 5.43)). The tail chain is 6 bones on x = 0 (mirror false), so the tail can be posed to either side.
+  - Dense boxes: grafted head (-0.8, -3.5, 4.55)..(0.8, -1.2, 6.7); face (-0.5, -3.45, 4.85)..(0.5, -2.3, 5.9).
+- Tail decision (v2; superseded by v2.1, which duplicates the root segment instead): the v1 tube stayed.
+  - The proxy's own tail cannot be reposed onto the sheet curve. It is a horseshoe curl lying on the floor (x -1.5..+1.6, y 2.4..3.2) plus a flat plate 0.15 u thick (z -0.68..-0.3, x -2.15..1.75) under the hind legs. It is not a chain-shaped tail.
+  - The tube is mirror-symmetric by construction, so it needs no repose target. A heading +y target would turn its forward floor run by 180 deg.
+- LOCKED: nothing yet (awaiting the artist).
+- Knobs that matter:
+  - light.head_graft:
+    - Placement and fit: scale / pitch_deg / place (the sheet side-view fit).
+    - Neck blend: clip_q0, taper (from_q0, to_q0, shrink_u), stump (q1, to_q1), k.
+    - Head tone: tone.L_map and tone.ab_shift_by_L.
+  - The head-cut boxes (light.cuts 4..6).
+  - Repose reach / taper per bone, and match "mean" (the alternative "L" copies the +x stance).
+  - light.segment_array: box / axis (the source segment), curve, count, taper, overlap, tip_length / tip_frac.
+  - v1 knobs: recolour3d tone targets, refloor window, body_tris 18000.
+- Open for the artist:
+  - Movement + in-game height (clips are PLACEHOLDER).
+  - Height is now 6.58 u (v1 6.28): the head follows the sheet SIDE view, whose horns reach 6.63. The sheet FRONT view draws the head lower (eyes 0.55 u lower). The front gate drops 0.879 -> 0.856.
+  - The grafted head reads charcoal-grey on top (the sheet panel is dark grey-brown); tone knob tone.ab_shift_by_L.
+  - The back of the head, where the taper blends into the neck, is smoother and less scaled than the rest.
+  - The tail follows the sheet's J-curve. Its forward floor run sits on the midline under the body, so the side view mostly hides it behind the +x hind leg (the sheet draws it in front, a 3/4 perspective). Posable on the tail chain.
+  - On the floor run the root's dorsal spines face down (the copies turn about X only, no twist), so they are flattened on the floor.
+- Unit gates:
+  - Digest twins, bake gate, contract checks (cell_fit report-only), compose GATE lines.
+  - proxy_finish.py gate + panel (renders/drakescale_beast/drakescale_beast_finish_panel.png).
+  - v2 evidence: renders/drakescale_beast/drakescale_beast_v2_symmetry.png (front ortho before / after) and renders/drakescale_beast/drakescale_beast_v2_head_vs_sheet.png (head side / 3/4 / front vs the sheet head panel).

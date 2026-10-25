@@ -1,0 +1,2138 @@
+{
+ "unit": "spike_beak_2",
+ "char_id": "spike_beak_2",
+ "tier": "regular",
+ "tri_budget": [
+  8000,
+  22000
+ ],
+ "body_tris": 18000,
+ "mode": "light",
+ "refloor": {
+  "y_windows": [
+   [
+    -0.7,
+    0.3
+   ]
+  ],
+  "x_abs_min": 0.25,
+  "pct": 0.0,
+  "rescale_to_front_height": true,
+  "why": "sheet_proxy already floored a FOOT: the -x front claw tip (-1.13, -0.60, 0.000); the +x claws sit 0.070 u up (the repose plants them). The window (front toes y -0.7..0.3, |x| >= 0.25) only confirms the foot contact and rescales x0.9849 (5.90 / 5.991) to the sheet front height (sheet front 5.90 vs side 5.99 u, +1.5 %)"
+ },
+ "light": {
+  "steps_per_height": 300,
+  "dense": [
+   {
+    "box": [
+     [
+      -1.05,
+      -2.15,
+      3.65
+     ],
+     [
+      1.1,
+      1.0,
+      6.0
+     ]
+    ],
+    "density": 2.5,
+    "vg_weight": 0.3,
+    "why": "the head / face: beak (tip (0.030, -2.074, 3.784) stage frame), mask plate + forehead spike (top (0.040, -0.681, 5.900)), both eyes, crest feathers (proxy sha 793ce80b x0.9849); vg_weight 0.3 so the eye / tip boxes sit denser"
+   },
+   {
+    "box": [
+     [
+      0.1507,
+      -1.04,
+      4.4219
+     ],
+     [
+      0.6307,
+      -0.56,
+      4.9019
+     ]
+    ],
+    "density": 2.5,
+    "vg_weight": 0.0,
+    "why": "the +x eye (pupil centroid [0.3907, -0.8, 4.6619] stage frame; eyeball r 0.19 u): eyeball bulge / socket on their own faces so the crisp eye paint sits on the eye's own outline"
+   },
+   {
+    "box": [
+     [
+      -0.5678,
+      -1.0445,
+      4.4204
+     ],
+     [
+      -0.0878,
+      -0.5645,
+      4.9004
+     ]
+    ],
+    "density": 2.5,
+    "vg_weight": 0.0,
+    "why": "the -x eye (pupil centroid [-0.3278, -0.8045, 4.6604] stage frame; eyeball r 0.19 u): eyeball bulge / socket on their own faces so the crisp eye paint sits on the eye's own outline"
+   },
+   {
+    "box": [
+     [
+      -0.16,
+      -0.92,
+      5.4
+     ],
+     [
+      0.24,
+      -0.42,
+      5.95
+     ]
+    ],
+    "density": 2.5,
+    "vg_weight": 0.1,
+    "why": "the forehead spike tip (0.040, -0.681, 5.900): kept sharp"
+   },
+   {
+    "box": [
+     [
+      -0.14,
+      -2.12,
+      3.72
+     ],
+     [
+      0.2,
+      -1.7,
+      4.3
+     ]
+    ],
+    "density": 2.5,
+    "vg_weight": 0.1,
+    "why": "the beak tip (0.030, -2.074, 3.784): kept sharp"
+   }
+  ],
+  "recolour3d": [
+   {
+    "name": "mask_beak_yellow",
+    "boxes": [
+     [
+      [
+       -1.1,
+       -2.25,
+       3.4
+      ],
+      [
+       1.15,
+       1.0,
+       6.0
+      ]
+     ]
+    ],
+    "exclude": [
+     [
+      [
+       0.0607,
+       -1.13,
+       4.3319
+      ],
+      [
+       0.7207,
+       -0.47,
+       4.9919
+      ]
+     ],
+     [
+      [
+       -0.6578,
+       -1.1345,
+       4.3304
+      ],
+      [
+       0.0022,
+       -0.4745,
+       4.9904
+      ]
+     ]
+    ],
+    "feather": 0.03,
+    "select": {
+     "L": [
+      25,
+      98
+     ],
+     "a": [
+      -12,
+      25
+     ],
+     "b": [
+      22,
+      110
+     ],
+     "soft": 3
+    },
+    "target_rgb": [
+     236,
+     187,
+     103
+    ],
+    "detail_gamma": 0.35,
+    "detail_clip": [
+     0.8,
+     1.08
+    ],
+    "why": "UNIT NOTE (2): the beak / mask / spike read brownish: proxy head yellow (visible texels, front + side) median 193,150,86 (L* 64.8) vs the sheet's chip 215,170,94 (sheet head yellow front 234,197,130 / side 204,167,109). Head yellow texels (z >= 3.4, b* >= 22; the eyes are excluded and painted below) to the chip lifted for the AO multiply, the proxy's shading kept at reduced contrast (gamma 0.35, clip 0.8..1.08; run 1 at 0.6 / 0.7..1.12 left brown smudges on the forehead plate) so it reads as ONE clean yellow shape. Legs untouched: the proxy legs (201,154,89) already sit on the sheet's legs (front 199,154,92 / side 185,142,85)"
+   },
+   {
+    "name": "tone_white_blue",
+    "boxes": [
+     [
+      [
+       -2.2,
+       -2.3,
+       0.42
+      ],
+      [
+       2.2,
+       2.3,
+       6.1
+      ]
+     ]
+    ],
+    "exclude": [
+     [
+      [
+       0.0607,
+       -1.13,
+       4.3319
+      ],
+      [
+       0.7207,
+       -0.47,
+       4.9919
+      ]
+     ],
+     [
+      [
+       -0.6578,
+       -1.1345,
+       4.3304
+      ],
+      [
+       0.0022,
+       -0.4745,
+       4.9904
+      ]
+     ]
+    ],
+    "feather": 0.03,
+    "select": {
+     "L": [
+      71.0,
+      101.0
+     ],
+     "b": [
+      -110.0,
+      -7.3
+     ],
+     "soft": 2
+    },
+    "target_rgb": [
+     205,
+     211,
+     232
+    ],
+    "detail_gamma": 1.011,
+    "detail_clip": [
+     0.3,
+     2.5
+    ],
+    "why": "UNIT NOTE (1) TONE: the proxy reads dark navy and dull next to the sheet's bright layered blues and clear whites. Visible proxy feather texels L* p5/25/50/75/95 [17.7, 27.7, 35.8, 53.5, 81.5] vs the sheet front + side [17.1, 26.2, 38.6, 56.2, 86.1]; b* p10 -37.3 vs -44.1 (the proxy is less saturated). A 2D QUANTILE map (azure_scale_mage method): 6 L* bands (brightest first) x 3 b* thirds per band, each class to the sheet's colour at the same L* quantile band and b* third, the proxy's feather detail kept as a luma ratio; the eyes (boxes) and the yellow (b* > 15) keep their own specs; claws (z < 0.42) untouched. | proxy L* 71.0..101.0 (quantiles 87..100 % of the visible feather texels, front + side, eyes / yellow / claws out), b* -110.0..-7.3 (this band's blue third; proxy median [176, 182, 201]) -> the sheet's same L* quantile band (front + side masks, L* 75.5..100.0) and same b* third (median [186, 192, 211]), x1.10 for the AO multiply; gamma = the sheet / proxy log-luma spread q10..q90"
+   },
+   {
+    "name": "tone_white_mid",
+    "boxes": [
+     [
+      [
+       -2.2,
+       -2.3,
+       0.42
+      ],
+      [
+       2.2,
+       2.3,
+       6.1
+      ]
+     ]
+    ],
+    "exclude": [
+     [
+      [
+       0.0607,
+       -1.13,
+       4.3319
+      ],
+      [
+       0.7207,
+       -0.47,
+       4.9919
+      ]
+     ],
+     [
+      [
+       -0.6578,
+       -1.1345,
+       4.3304
+      ],
+      [
+       0.0022,
+       -0.4745,
+       4.9904
+      ]
+     ]
+    ],
+    "feather": 0.03,
+    "select": {
+     "L": [
+      71.0,
+      101.0
+     ],
+     "b": [
+      -7.3,
+      -3.1
+     ],
+     "soft": 2
+    },
+    "target_rgb": [
+     229,
+     230,
+     239
+    ],
+    "detail_gamma": 0.818,
+    "detail_clip": [
+     0.3,
+     2.5
+    ],
+    "why": "proxy L* 71.0..101.0 (quantiles 87..100 % of the visible feather texels, front + side, eyes / yellow / claws out), b* -7.3..-3.1 (this band's mid third; proxy median [196, 198, 208]) -> the sheet's same L* quantile band (front + side masks, L* 75.5..100.0) and same b* third (median [208, 209, 217]), x1.10 for the AO multiply; gamma = the sheet / proxy log-luma spread q10..q90"
+   },
+   {
+    "name": "tone_white_neutral",
+    "boxes": [
+     [
+      [
+       -2.2,
+       -2.3,
+       0.42
+      ],
+      [
+       2.2,
+       2.3,
+       6.1
+      ]
+     ]
+    ],
+    "exclude": [
+     [
+      [
+       0.0607,
+       -1.13,
+       4.3319
+      ],
+      [
+       0.7207,
+       -0.47,
+       4.9919
+      ]
+     ],
+     [
+      [
+       -0.6578,
+       -1.1345,
+       4.3304
+      ],
+      [
+       0.0022,
+       -0.4745,
+       4.9904
+      ]
+     ]
+    ],
+    "feather": 0.03,
+    "select": {
+     "L": [
+      71.0,
+      101.0
+     ],
+     "b": [
+      -3.1,
+      15.0
+     ],
+     "soft": 2
+    },
+    "target_rgb": [
+     243,
+     242,
+     244
+    ],
+    "detail_gamma": 0.674,
+    "detail_clip": [
+     0.3,
+     2.5
+    ],
+    "why": "proxy L* 71.0..101.0 (quantiles 87..100 % of the visible feather texels, front + side, eyes / yellow / claws out), b* -3.1..15.0 (this band's neutral third; proxy median [212, 211, 213]) -> the sheet's same L* quantile band (front + side masks, L* 75.5..100.0) and same b* third (median [221, 220, 222]), x1.10 for the AO multiply; gamma = the sheet / proxy log-luma spread q10..q90"
+   },
+   {
+    "name": "tone_pale_blue_blue",
+    "boxes": [
+     [
+      [
+       -2.2,
+       -2.3,
+       0.42
+      ],
+      [
+       2.2,
+       2.3,
+       6.1
+      ]
+     ]
+    ],
+    "exclude": [
+     [
+      [
+       0.0607,
+       -1.13,
+       4.3319
+      ],
+      [
+       0.7207,
+       -0.47,
+       4.9919
+      ]
+     ],
+     [
+      [
+       -0.6578,
+       -1.1345,
+       4.3304
+      ],
+      [
+       0.0022,
+       -0.4745,
+       4.9904
+      ]
+     ]
+    ],
+    "feather": 0.03,
+    "select": {
+     "L": [
+      47.0,
+      71.0
+     ],
+     "b": [
+      -110.0,
+      -20.5
+     ],
+     "soft": 2
+    },
+    "target_rgb": [
+     122,
+     147,
+     196
+    ],
+    "detail_gamma": 0.622,
+    "detail_clip": [
+     0.3,
+     2.5
+    ],
+    "why": "proxy L* 47.0..71.0 (quantiles 72..87 % of the visible feather texels, front + side, eyes / yellow / claws out), b* -110.0..-20.5 (this band's blue third; proxy median [110, 125, 169]) -> the sheet's same L* quantile band (front + side masks, L* 53.5..75.5) and same b* third (median [111, 134, 178]), x1.10 for the AO multiply; gamma = the sheet / proxy log-luma spread q10..q90"
+   },
+   {
+    "name": "tone_pale_blue_mid",
+    "boxes": [
+     [
+      [
+       -2.2,
+       -2.3,
+       0.42
+      ],
+      [
+       2.2,
+       2.3,
+       6.1
+      ]
+     ]
+    ],
+    "exclude": [
+     [
+      [
+       0.0607,
+       -1.13,
+       4.3319
+      ],
+      [
+       0.7207,
+       -0.47,
+       4.9919
+      ]
+     ],
+     [
+      [
+       -0.6578,
+       -1.1345,
+       4.3304
+      ],
+      [
+       0.0022,
+       -0.4745,
+       4.9904
+      ]
+     ]
+    ],
+    "feather": 0.03,
+    "select": {
+     "L": [
+      47.0,
+      71.0
+     ],
+     "b": [
+      -20.5,
+      -14.4
+     ],
+     "soft": 2
+    },
+    "target_rgb": [
+     155,
+     172,
+     207
+    ],
+    "detail_gamma": 1.126,
+    "detail_clip": [
+     0.3,
+     2.5
+    ],
+    "why": "proxy L* 47.0..71.0 (quantiles 72..87 % of the visible feather texels, front + side, eyes / yellow / claws out), b* -20.5..-14.4 (this band's mid third; proxy median [139, 150, 182]) -> the sheet's same L* quantile band (front + side masks, L* 53.5..75.5) and same b* third (median [141, 156, 188]), x1.10 for the AO multiply; gamma = the sheet / proxy log-luma spread q10..q90"
+   },
+   {
+    "name": "tone_pale_blue_neutral",
+    "boxes": [
+     [
+      [
+       -2.2,
+       -2.3,
+       0.42
+      ],
+      [
+       2.2,
+       2.3,
+       6.1
+      ]
+     ]
+    ],
+    "exclude": [
+     [
+      [
+       0.0607,
+       -1.13,
+       4.3319
+      ],
+      [
+       0.7207,
+       -0.47,
+       4.9919
+      ]
+     ],
+     [
+      [
+       -0.6578,
+       -1.1345,
+       4.3304
+      ],
+      [
+       0.0022,
+       -0.4745,
+       4.9904
+      ]
+     ]
+    ],
+    "feather": 0.03,
+    "select": {
+     "L": [
+      47.0,
+      71.0
+     ],
+     "b": [
+      -14.4,
+      15.0
+     ],
+     "soft": 2
+    },
+    "target_rgb": [
+     183,
+     194,
+     219
+    ],
+    "detail_gamma": 0.835,
+    "detail_clip": [
+     0.3,
+     2.5
+    ],
+    "why": "proxy L* 47.0..71.0 (quantiles 72..87 % of the visible feather texels, front + side, eyes / yellow / claws out), b* -14.4..15.0 (this band's neutral third; proxy median [157, 166, 186]) -> the sheet's same L* quantile band (front + side masks, L* 53.5..75.5) and same b* third (median [166, 176, 199]), x1.10 for the AO multiply; gamma = the sheet / proxy log-luma spread q10..q90"
+   },
+   {
+    "name": "tone_mid_blue_blue",
+    "boxes": [
+     [
+      [
+       -2.2,
+       -2.3,
+       0.42
+      ],
+      [
+       2.2,
+       2.3,
+       6.1
+      ]
+     ]
+    ],
+    "exclude": [
+     [
+      [
+       0.0607,
+       -1.13,
+       4.3319
+      ],
+      [
+       0.7207,
+       -0.47,
+       4.9919
+      ]
+     ],
+     [
+      [
+       -0.6578,
+       -1.1345,
+       4.3304
+      ],
+      [
+       0.0022,
+       -0.4745,
+       4.9904
+      ]
+     ]
+    ],
+    "feather": 0.03,
+    "select": {
+     "L": [
+      37.2,
+      47.0
+     ],
+     "b": [
+      -110.0,
+      -33.6
+     ],
+     "soft": 2
+    },
+    "target_rgb": [
+     69,
+     112,
+     199
+    ],
+    "detail_gamma": 1.3,
+    "detail_clip": [
+     0.3,
+     2.5
+    ],
+    "why": "proxy L* 37.2..47.0 (quantiles 55..72 % of the visible feather texels, front + side, eyes / yellow / claws out), b* -110.0..-33.6 (this band's blue third; proxy median [68, 90, 150]) -> the sheet's same L* quantile band (front + side masks, L* 41.0..53.5) and same b* third (median [63, 102, 181]), x1.10 for the AO multiply; gamma = the sheet / proxy log-luma spread q10..q90"
+   },
+   {
+    "name": "tone_mid_blue_mid",
+    "boxes": [
+     [
+      [
+       -2.2,
+       -2.3,
+       0.42
+      ],
+      [
+       2.2,
+       2.3,
+       6.1
+      ]
+     ]
+    ],
+    "exclude": [
+     [
+      [
+       0.0607,
+       -1.13,
+       4.3319
+      ],
+      [
+       0.7207,
+       -0.47,
+       4.9919
+      ]
+     ],
+     [
+      [
+       -0.6578,
+       -1.1345,
+       4.3304
+      ],
+      [
+       0.0022,
+       -0.4745,
+       4.9904
+      ]
+     ]
+    ],
+    "feather": 0.03,
+    "select": {
+     "L": [
+      37.2,
+      47.0
+     ],
+     "b": [
+      -33.6,
+      -31.2
+     ],
+     "soft": 2
+    },
+    "target_rgb": [
+     85,
+     121,
+     194
+    ],
+    "detail_gamma": 1.3,
+    "detail_clip": [
+     0.3,
+     2.5
+    ],
+    "why": "proxy L* 37.2..47.0 (quantiles 55..72 % of the visible feather texels, front + side, eyes / yellow / claws out), b* -33.6..-31.2 (this band's mid third; proxy median [72, 92, 147]) -> the sheet's same L* quantile band (front + side masks, L* 41.0..53.5) and same b* third (median [77, 110, 176]), x1.10 for the AO multiply; gamma = the sheet / proxy log-luma spread q10..q90"
+   },
+   {
+    "name": "tone_mid_blue_neutral",
+    "boxes": [
+     [
+      [
+       -2.2,
+       -2.3,
+       0.42
+      ],
+      [
+       2.2,
+       2.3,
+       6.1
+      ]
+     ]
+    ],
+    "exclude": [
+     [
+      [
+       0.0607,
+       -1.13,
+       4.3319
+      ],
+      [
+       0.7207,
+       -0.47,
+       4.9919
+      ]
+     ],
+     [
+      [
+       -0.6578,
+       -1.1345,
+       4.3304
+      ],
+      [
+       0.0022,
+       -0.4745,
+       4.9904
+      ]
+     ]
+    ],
+    "feather": 0.03,
+    "select": {
+     "L": [
+      37.2,
+      47.0
+     ],
+     "b": [
+      -31.2,
+      15.0
+     ],
+     "soft": 2
+    },
+    "target_rgb": [
+     101,
+     125,
+     174
+    ],
+    "detail_gamma": 1.04,
+    "detail_clip": [
+     0.3,
+     2.5
+    ],
+    "why": "proxy L* 37.2..47.0 (quantiles 55..72 % of the visible feather texels, front + side, eyes / yellow / claws out), b* -31.2..15.0 (this band's neutral third; proxy median [82, 99, 148]) -> the sheet's same L* quantile band (front + side masks, L* 41.0..53.5) and same b* third (median [92, 114, 158]), x1.10 for the AO multiply; gamma = the sheet / proxy log-luma spread q10..q90"
+   },
+   {
+    "name": "tone_blue_blue",
+    "boxes": [
+     [
+      [
+       -2.2,
+       -2.3,
+       0.42
+      ],
+      [
+       2.2,
+       2.3,
+       6.1
+      ]
+     ]
+    ],
+    "exclude": [
+     [
+      [
+       0.0607,
+       -1.13,
+       4.3319
+      ],
+      [
+       0.7207,
+       -0.47,
+       4.9919
+      ]
+     ],
+     [
+      [
+       -0.6578,
+       -1.1345,
+       4.3304
+      ],
+      [
+       0.0022,
+       -0.4745,
+       4.9904
+      ]
+     ]
+    ],
+    "feather": 0.03,
+    "select": {
+     "L": [
+      31.3,
+      37.2
+     ],
+     "b": [
+      -110.0,
+      -36.3
+     ],
+     "soft": 2
+    },
+    "target_rgb": [
+     57,
+     97,
+     180
+    ],
+    "detail_gamma": 1.064,
+    "detail_clip": [
+     0.3,
+     2.5
+    ],
+    "why": "proxy L* 31.3..37.2 (quantiles 35..55 % of the visible feather texels, front + side, eyes / yellow / claws out), b* -110.0..-36.3 (this band's blue third; proxy median [56, 76, 142]) -> the sheet's same L* quantile band (front + side masks, L* 30.3..41.0) and same b* third (median [52, 88, 164]), x1.10 for the AO multiply; gamma = the sheet / proxy log-luma spread q10..q90"
+   },
+   {
+    "name": "tone_blue_mid",
+    "boxes": [
+     [
+      [
+       -2.2,
+       -2.3,
+       0.42
+      ],
+      [
+       2.2,
+       2.3,
+       6.1
+      ]
+     ]
+    ],
+    "exclude": [
+     [
+      [
+       0.0607,
+       -1.13,
+       4.3319
+      ],
+      [
+       0.7207,
+       -0.47,
+       4.9919
+      ]
+     ],
+     [
+      [
+       -0.6578,
+       -1.1345,
+       4.3304
+      ],
+      [
+       0.0022,
+       -0.4745,
+       4.9904
+      ]
+     ]
+    ],
+    "feather": 0.03,
+    "select": {
+     "L": [
+      31.3,
+      37.2
+     ],
+     "b": [
+      -36.3,
+      -33.9
+     ],
+     "soft": 2
+    },
+    "target_rgb": [
+     54,
+     88,
+     165
+    ],
+    "detail_gamma": 1.3,
+    "detail_clip": [
+     0.3,
+     2.5
+    ],
+    "why": "proxy L* 31.3..37.2 (quantiles 35..55 % of the visible feather texels, front + side, eyes / yellow / claws out), b* -36.3..-33.9 (this band's mid third; proxy median [59, 79, 137]) -> the sheet's same L* quantile band (front + side masks, L* 30.3..41.0) and same b* third (median [49, 80, 150]), x1.10 for the AO multiply; gamma = the sheet / proxy log-luma spread q10..q90"
+   },
+   {
+    "name": "tone_blue_neutral",
+    "boxes": [
+     [
+      [
+       -2.2,
+       -2.3,
+       0.42
+      ],
+      [
+       2.2,
+       2.3,
+       6.1
+      ]
+     ]
+    ],
+    "exclude": [
+     [
+      [
+       0.0607,
+       -1.13,
+       4.3319
+      ],
+      [
+       0.7207,
+       -0.47,
+       4.9919
+      ]
+     ],
+     [
+      [
+       -0.6578,
+       -1.1345,
+       4.3304
+      ],
+      [
+       0.0022,
+       -0.4745,
+       4.9904
+      ]
+     ]
+    ],
+    "feather": 0.03,
+    "select": {
+     "L": [
+      31.3,
+      37.2
+     ],
+     "b": [
+      -33.9,
+      15.0
+     ],
+     "soft": 2
+    },
+    "target_rgb": [
+     57,
+     85,
+     147
+    ],
+    "detail_gamma": 1.3,
+    "detail_clip": [
+     0.3,
+     2.5
+    ],
+    "why": "proxy L* 31.3..37.2 (quantiles 35..55 % of the visible feather texels, front + side, eyes / yellow / claws out), b* -33.9..15.0 (this band's neutral third; proxy median [61, 79, 132]) -> the sheet's same L* quantile band (front + side masks, L* 30.3..41.0) and same b* third (median [52, 77, 134]), x1.10 for the AO multiply; gamma = the sheet / proxy log-luma spread q10..q90"
+   },
+   {
+    "name": "tone_deep_blue_blue",
+    "boxes": [
+     [
+      [
+       -2.2,
+       -2.3,
+       0.42
+      ],
+      [
+       2.2,
+       2.3,
+       6.1
+      ]
+     ]
+    ],
+    "exclude": [
+     [
+      [
+       0.0607,
+       -1.13,
+       4.3319
+      ],
+      [
+       0.7207,
+       -0.47,
+       4.9919
+      ]
+     ],
+     [
+      [
+       -0.6578,
+       -1.1345,
+       4.3304
+      ],
+      [
+       0.0022,
+       -0.4745,
+       4.9904
+      ]
+     ]
+    ],
+    "feather": 0.03,
+    "select": {
+     "L": [
+      23.7,
+      31.3
+     ],
+     "b": [
+      -110.0,
+      -36.0
+     ],
+     "soft": 2
+    },
+    "target_rgb": [
+     44,
+     70,
+     134
+    ],
+    "detail_gamma": 0.909,
+    "detail_clip": [
+     0.3,
+     2.5
+    ],
+    "why": "proxy L* 23.7..31.3 (quantiles 15..35 % of the visible feather texels, front + side, eyes / yellow / claws out), b* -110.0..-36.0 (this band's blue third; proxy median [45, 64, 127]) -> the sheet's same L* quantile band (front + side masks, L* 22.8..30.3) and same b* third (median [40, 64, 122]), x1.10 for the AO multiply; gamma = the sheet / proxy log-luma spread q10..q90"
+   },
+   {
+    "name": "tone_deep_blue_mid",
+    "boxes": [
+     [
+      [
+       -2.2,
+       -2.3,
+       0.42
+      ],
+      [
+       2.2,
+       2.3,
+       6.1
+      ]
+     ]
+    ],
+    "exclude": [
+     [
+      [
+       0.0607,
+       -1.13,
+       4.3319
+      ],
+      [
+       0.7207,
+       -0.47,
+       4.9919
+      ]
+     ],
+     [
+      [
+       -0.6578,
+       -1.1345,
+       4.3304
+      ],
+      [
+       0.0022,
+       -0.4745,
+       4.9904
+      ]
+     ]
+    ],
+    "feather": 0.03,
+    "select": {
+     "L": [
+      23.7,
+      31.3
+     ],
+     "b": [
+      -36.0,
+      -33.5
+     ],
+     "soft": 2
+    },
+    "target_rgb": [
+     43,
+     65,
+     122
+    ],
+    "detail_gamma": 0.764,
+    "detail_clip": [
+     0.3,
+     2.5
+    ],
+    "why": "proxy L* 23.7..31.3 (quantiles 15..35 % of the visible feather texels, front + side, eyes / yellow / claws out), b* -36.0..-33.5 (this band's mid third; proxy median [44, 61, 118]) -> the sheet's same L* quantile band (front + side masks, L* 22.8..30.3) and same b* third (median [39, 59, 111]), x1.10 for the AO multiply; gamma = the sheet / proxy log-luma spread q10..q90"
+   },
+   {
+    "name": "tone_deep_blue_neutral",
+    "boxes": [
+     [
+      [
+       -2.2,
+       -2.3,
+       0.42
+      ],
+      [
+       2.2,
+       2.3,
+       6.1
+      ]
+     ]
+    ],
+    "exclude": [
+     [
+      [
+       0.0607,
+       -1.13,
+       4.3319
+      ],
+      [
+       0.7207,
+       -0.47,
+       4.9919
+      ]
+     ],
+     [
+      [
+       -0.6578,
+       -1.1345,
+       4.3304
+      ],
+      [
+       0.0022,
+       -0.4745,
+       4.9904
+      ]
+     ]
+    ],
+    "feather": 0.03,
+    "select": {
+     "L": [
+      23.7,
+      31.3
+     ],
+     "b": [
+      -33.5,
+      15.0
+     ],
+     "soft": 2
+    },
+    "target_rgb": [
+     42,
+     63,
+     112
+    ],
+    "detail_gamma": 0.832,
+    "detail_clip": [
+     0.3,
+     2.5
+    ],
+    "why": "proxy L* 23.7..31.3 (quantiles 15..35 % of the visible feather texels, front + side, eyes / yellow / claws out), b* -33.5..15.0 (this band's neutral third; proxy median [45, 60, 112]) -> the sheet's same L* quantile band (front + side masks, L* 22.8..30.3) and same b* third (median [38, 57, 102]), x1.10 for the AO multiply; gamma = the sheet / proxy log-luma spread q10..q90"
+   },
+   {
+    "name": "tone_navy_blue",
+    "boxes": [
+     [
+      [
+       -2.2,
+       -2.3,
+       0.42
+      ],
+      [
+       2.2,
+       2.3,
+       6.1
+      ]
+     ]
+    ],
+    "exclude": [
+     [
+      [
+       0.0607,
+       -1.13,
+       4.3319
+      ],
+      [
+       0.7207,
+       -0.47,
+       4.9919
+      ]
+     ],
+     [
+      [
+       -0.6578,
+       -1.1345,
+       4.3304
+      ],
+      [
+       0.0022,
+       -0.4745,
+       4.9904
+      ]
+     ]
+    ],
+    "feather": 0.03,
+    "select": {
+     "L": [
+      0.0,
+      23.7
+     ],
+     "b": [
+      -110.0,
+      -31.2
+     ],
+     "soft": 2
+    },
+    "target_rgb": [
+     33,
+     54,
+     105
+    ],
+    "detail_gamma": 1.3,
+    "detail_clip": [
+     0.3,
+     2.5
+    ],
+    "why": "proxy L* 0.0..23.7 (quantiles 0..15 % of the visible feather texels, front + side, eyes / yellow / claws out), b* -110.0..-31.2 (this band's blue third; proxy median [35, 50, 102]) -> the sheet's same L* quantile band (front + side masks, L* 6.0..22.8) and same b* third (median [30, 49, 95]), x1.10 for the AO multiply; gamma = the sheet / proxy log-luma spread q10..q90"
+   },
+   {
+    "name": "tone_navy_mid",
+    "boxes": [
+     [
+      [
+       -2.2,
+       -2.3,
+       0.42
+      ],
+      [
+       2.2,
+       2.3,
+       6.1
+      ]
+     ]
+    ],
+    "exclude": [
+     [
+      [
+       0.0607,
+       -1.13,
+       4.3319
+      ],
+      [
+       0.7207,
+       -0.47,
+       4.9919
+      ]
+     ],
+     [
+      [
+       -0.6578,
+       -1.1345,
+       4.3304
+      ],
+      [
+       0.0022,
+       -0.4745,
+       4.9904
+      ]
+     ]
+    ],
+    "feather": 0.03,
+    "select": {
+     "L": [
+      0.0,
+      23.7
+     ],
+     "b": [
+      -31.2,
+      -28.5
+     ],
+     "soft": 2
+    },
+    "target_rgb": [
+     32,
+     51,
+     94
+    ],
+    "detail_gamma": 1.3,
+    "detail_clip": [
+     0.3,
+     2.5
+    ],
+    "why": "proxy L* 0.0..23.7 (quantiles 0..15 % of the visible feather texels, front + side, eyes / yellow / claws out), b* -31.2..-28.5 (this band's mid third; proxy median [30, 44, 91]) -> the sheet's same L* quantile band (front + side masks, L* 6.0..22.8) and same b* third (median [29, 46, 85]), x1.10 for the AO multiply; gamma = the sheet / proxy log-luma spread q10..q90"
+   },
+   {
+    "name": "tone_navy_neutral",
+    "boxes": [
+     [
+      [
+       -2.2,
+       -2.3,
+       0.42
+      ],
+      [
+       2.2,
+       2.3,
+       6.1
+      ]
+     ]
+    ],
+    "exclude": [
+     [
+      [
+       0.0607,
+       -1.13,
+       4.3319
+      ],
+      [
+       0.7207,
+       -0.47,
+       4.9919
+      ]
+     ],
+     [
+      [
+       -0.6578,
+       -1.1345,
+       4.3304
+      ],
+      [
+       0.0022,
+       -0.4745,
+       4.9904
+      ]
+     ]
+    ],
+    "feather": 0.03,
+    "select": {
+     "L": [
+      0.0,
+      23.7
+     ],
+     "b": [
+      -28.5,
+      15.0
+     ],
+     "soft": 2
+    },
+    "target_rgb": [
+     29,
+     42,
+     76
+    ],
+    "detail_gamma": 1.275,
+    "detail_clip": [
+     0.3,
+     2.5
+    ],
+    "why": "proxy L* 0.0..23.7 (quantiles 0..15 % of the visible feather texels, front + side, eyes / yellow / claws out), b* -28.5..15.0 (this band's neutral third; proxy median [26, 37, 76]) -> the sheet's same L* quantile band (front + side masks, L* 6.0..22.8) and same b* third (median [26, 38, 69]), x1.10 for the AO multiply; gamma = the sheet / proxy log-luma spread q10..q90"
+   },
+   {
+    "name": "eye_px_socket_front_to_mask",
+    "spheres": [
+     [
+      [
+       0.3907,
+       -0.8,
+       4.6619
+      ],
+      0.31
+     ]
+    ],
+    "exclude": [
+     [
+      [
+       -0.0093,
+       -0.8,
+       4.2619
+      ],
+      [
+       0.7907,
+       -0.3,
+       5.0619
+      ]
+     ]
+    ],
+    "feather": 0.02,
+    "select": {
+     "L": [
+      8,
+      78
+     ],
+     "a": [
+      -6,
+      14
+     ],
+     "b": [
+      -3,
+      22
+     ],
+     "soft": 3
+    },
+    "target_rgb": [
+     236,
+     187,
+     103
+    ],
+    "detail_gamma": 0.5,
+    "detail_clip": [
+     0.8,
+     1.1
+    ],
+    "why": "UNIT NOTE (3) EYES: the proxy's eye is a black pupil (r ~0.12) in a pale ring (to r 0.195) inside a dull grey SOCKET patch (r 0.2..0.31, median ~100,85,75) the sheet does not draw (the sheet's eye sits directly in the mask yellow in front / below and the blue feathers behind). Socket greys (a* -6..14, b* -3..22) in front of the eye centre (y < -0.800) -> the mask yellow"
+   },
+   {
+    "name": "eye_px_socket_back_to_blue",
+    "spheres": [
+     [
+      [
+       0.3907,
+       -0.8,
+       4.6619
+      ],
+      0.31
+     ]
+    ],
+    "exclude": [
+     [
+      [
+       -0.0093,
+       -1.3,
+       4.2619
+      ],
+      [
+       0.7907,
+       -0.8,
+       5.0619
+      ]
+     ]
+    ],
+    "feather": 0.02,
+    "select": {
+     "L": [
+      8,
+      78
+     ],
+     "a": [
+      -6,
+      14
+     ],
+     "b": [
+      -3,
+      22
+     ],
+     "soft": 3
+    },
+    "target_rgb": [
+     66,
+     108,
+     180
+    ],
+    "detail_gamma": 0.5,
+    "detail_clip": [
+     0.8,
+     1.1
+    ],
+    "why": "socket greys behind the eye centre -> the feather blue around it (sheet chip 72,117,188 lifted for the AO)"
+   },
+   {
+    "name": "eye_px_outline",
+    "spheres": [
+     [
+      [
+       0.3907,
+       -0.8,
+       4.6619
+      ],
+      0.215
+     ]
+    ],
+    "feather": 0.006,
+    "select": {
+     "L": [
+      8,
+      101
+     ],
+     "soft": 2
+    },
+    "target_rgb": [
+     24,
+     28,
+     52
+    ],
+    "detail_gamma": 0.0,
+    "detail_clip": [
+     1,
+     1
+    ],
+    "why": "the thin dark outline the sheet draws round the eye (r 0.195..0.215 survives the cream below)"
+   },
+   {
+    "name": "eye_px_sclera_cream",
+    "spheres": [
+     [
+      [
+       0.3907,
+       -0.8,
+       4.6619
+      ],
+      0.195
+     ]
+    ],
+    "feather": 0.006,
+    "select": {
+     "L": [
+      8,
+      101
+     ],
+     "soft": 2
+    },
+    "target_rgb": [
+     242,
+     222,
+     196
+    ],
+    "detail_gamma": 0.0,
+    "detail_clip": [
+     1,
+     1
+    ],
+    "why": "the cream eye ring (sheet eye cream 238,218,193 sampled from the front / side / head-detail eyes): everything inside the proxy's own eyeball (pale ring outer r p95 0.195) that is not the black pupil"
+   },
+   {
+    "name": "eye_px_iris_navy",
+    "spheres": [
+     [
+      [
+       0.3907,
+       -0.8,
+       4.6619
+      ],
+      0.118
+     ]
+    ],
+    "feather": 0.006,
+    "target_rgb": [
+     34,
+     50,
+     85
+    ],
+    "detail_gamma": 0.0,
+    "detail_clip": [
+     1,
+     1
+    ],
+    "why": "the dark navy iris (sheet 34,50,85) = the proxy's own black pupil disc (fully black to r 0.08, its edge at r ~0.115 where L* p50 crosses 20): a clean disc r 0.118 round the pupil centroid, no colour select (run 1 selected L* < 8 and left the proxy's gold glints as cream streaks in the iris)"
+   },
+   {
+    "name": "eye_px_pupil",
+    "spheres": [
+     [
+      [
+       0.3907,
+       -0.8,
+       4.6619
+      ],
+      0.055
+     ]
+    ],
+    "feather": 0.006,
+    "select": {
+     "b": [
+      -110,
+      -8
+     ],
+     "L": [
+      0,
+      40
+     ],
+     "soft": 2
+    },
+    "target_rgb": [
+     16,
+     22,
+     42
+    ],
+    "detail_gamma": 0.0,
+    "detail_clip": [
+     1,
+     1
+    ],
+    "why": "the darker pupil centre the sheet draws (18,24,45)"
+   },
+   {
+    "name": "eye_px_highlight",
+    "spheres": [
+     [
+      [
+       0.3801,
+       -0.8324,
+       4.7121
+      ],
+      0.026
+     ]
+    ],
+    "feather": 0.004,
+    "target_rgb": [
+     244,
+     240,
+     234
+    ],
+    "detail_gamma": 0.0,
+    "detail_clip": [
+     1,
+     1
+    ],
+    "why": "the small white highlight (sheet 238,234,230) on the upper-front of the iris (0.05 u up, 0.035 u forward of the pupil centre, on the surface)"
+   },
+   {
+    "name": "eye_mx_socket_front_to_mask",
+    "spheres": [
+     [
+      [
+       -0.3278,
+       -0.8045,
+       4.6604
+      ],
+      0.31
+     ]
+    ],
+    "exclude": [
+     [
+      [
+       -0.7278,
+       -0.8045,
+       4.2604
+      ],
+      [
+       0.0722,
+       -0.3045,
+       5.0604
+      ]
+     ]
+    ],
+    "feather": 0.02,
+    "select": {
+     "L": [
+      8,
+      78
+     ],
+     "a": [
+      -6,
+      14
+     ],
+     "b": [
+      -3,
+      22
+     ],
+     "soft": 3
+    },
+    "target_rgb": [
+     236,
+     187,
+     103
+    ],
+    "detail_gamma": 0.5,
+    "detail_clip": [
+     0.8,
+     1.1
+    ],
+    "why": "UNIT NOTE (3) EYES: the proxy's eye is a black pupil (r ~0.12) in a pale ring (to r 0.195) inside a dull grey SOCKET patch (r 0.2..0.31, median ~100,85,75) the sheet does not draw (the sheet's eye sits directly in the mask yellow in front / below and the blue feathers behind). Socket greys (a* -6..14, b* -3..22) in front of the eye centre (y < -0.805) -> the mask yellow"
+   },
+   {
+    "name": "eye_mx_socket_back_to_blue",
+    "spheres": [
+     [
+      [
+       -0.3278,
+       -0.8045,
+       4.6604
+      ],
+      0.31
+     ]
+    ],
+    "exclude": [
+     [
+      [
+       -0.7278,
+       -1.3045,
+       4.2604
+      ],
+      [
+       0.0722,
+       -0.8045,
+       5.0604
+      ]
+     ]
+    ],
+    "feather": 0.02,
+    "select": {
+     "L": [
+      8,
+      78
+     ],
+     "a": [
+      -6,
+      14
+     ],
+     "b": [
+      -3,
+      22
+     ],
+     "soft": 3
+    },
+    "target_rgb": [
+     66,
+     108,
+     180
+    ],
+    "detail_gamma": 0.5,
+    "detail_clip": [
+     0.8,
+     1.1
+    ],
+    "why": "socket greys behind the eye centre -> the feather blue around it (sheet chip 72,117,188 lifted for the AO)"
+   },
+   {
+    "name": "eye_mx_outline",
+    "spheres": [
+     [
+      [
+       -0.3278,
+       -0.8045,
+       4.6604
+      ],
+      0.215
+     ]
+    ],
+    "feather": 0.006,
+    "select": {
+     "L": [
+      8,
+      101
+     ],
+     "soft": 2
+    },
+    "target_rgb": [
+     24,
+     28,
+     52
+    ],
+    "detail_gamma": 0.0,
+    "detail_clip": [
+     1,
+     1
+    ],
+    "why": "the thin dark outline the sheet draws round the eye (r 0.195..0.215 survives the cream below)"
+   },
+   {
+    "name": "eye_mx_sclera_cream",
+    "spheres": [
+     [
+      [
+       -0.3278,
+       -0.8045,
+       4.6604
+      ],
+      0.195
+     ]
+    ],
+    "feather": 0.006,
+    "select": {
+     "L": [
+      8,
+      101
+     ],
+     "soft": 2
+    },
+    "target_rgb": [
+     242,
+     222,
+     196
+    ],
+    "detail_gamma": 0.0,
+    "detail_clip": [
+     1,
+     1
+    ],
+    "why": "the cream eye ring (sheet eye cream 238,218,193 sampled from the front / side / head-detail eyes): everything inside the proxy's own eyeball (pale ring outer r p95 0.195) that is not the black pupil"
+   },
+   {
+    "name": "eye_mx_iris_navy",
+    "spheres": [
+     [
+      [
+       -0.3278,
+       -0.8045,
+       4.6604
+      ],
+      0.118
+     ]
+    ],
+    "feather": 0.006,
+    "target_rgb": [
+     34,
+     50,
+     85
+    ],
+    "detail_gamma": 0.0,
+    "detail_clip": [
+     1,
+     1
+    ],
+    "why": "the dark navy iris (sheet 34,50,85) = the proxy's own black pupil disc (fully black to r 0.08, its edge at r ~0.115 where L* p50 crosses 20): a clean disc r 0.118 round the pupil centroid, no colour select (run 1 selected L* < 8 and left the proxy's gold glints as cream streaks in the iris)"
+   },
+   {
+    "name": "eye_mx_pupil",
+    "spheres": [
+     [
+      [
+       -0.3278,
+       -0.8045,
+       4.6604
+      ],
+      0.055
+     ]
+    ],
+    "feather": 0.006,
+    "select": {
+     "b": [
+      -110,
+      -8
+     ],
+     "L": [
+      0,
+      40
+     ],
+     "soft": 2
+    },
+    "target_rgb": [
+     16,
+     22,
+     42
+    ],
+    "detail_gamma": 0.0,
+    "detail_clip": [
+     1,
+     1
+    ],
+    "why": "the darker pupil centre the sheet draws (18,24,45)"
+   },
+   {
+    "name": "eye_mx_highlight",
+    "spheres": [
+     [
+      [
+       -0.3192,
+       -0.8383,
+       4.7081
+      ],
+      0.026
+     ]
+    ],
+    "feather": 0.004,
+    "target_rgb": [
+     244,
+     240,
+     234
+    ],
+    "detail_gamma": 0.0,
+    "detail_clip": [
+     1,
+     1
+    ],
+    "why": "the small white highlight (sheet 238,234,230) on the upper-front of the iris (0.05 u up, 0.035 u forward of the pupil centre, on the surface)"
+   }
+  ],
+  "ao_from_low": true,
+  "ao_samples": 64,
+  "ao_distance": 0.2,
+  "ao_fill_below": 0.04,
+  "ao_why": "AO baked on the watertight low itself (the proxy's feather flaps are inner shells that black-hole AO rays; spike_beak / vulture lesson); ray length 0.2 u and texels under 0.04 refilled from their neighbours so the basecolor stays near the albedo",
+  "bake_drop_interior": 0.08,
+  "bake_drop_interior_why": "proxy faces with solid on both sides (inner shells under the feather flaps) left out of the bake source so the cage stays tight (spike_beak idiom)",
+  "uv_island_margin": 0.001,
+  "uv_island_margin_why": "the feather-flap low unwraps into thousands of islands; the default margin starves the atlas (storm_bear / vulture_creature idiom)"
+ },
+ "rig": {
+  "spine_names": [
+   "hips",
+   "belly",
+   "chest",
+   "neck",
+   "head"
+  ],
+  "spine": [
+   [
+    0.0,
+    0.55,
+    1.9
+   ],
+   [
+    0.0,
+    0.45,
+    2.8
+   ],
+   [
+    0.0,
+    0.25,
+    3.6
+   ],
+   [
+    0.0,
+    0.05,
+    4.15
+   ],
+   [
+    0.0315,
+    -0.2,
+    4.55
+   ],
+   [
+    0.0377,
+    -1.2,
+    4.65
+   ]
+  ],
+  "spine_why": "the body midline is x 0 (slab mid-x z 0.5..4.0: -0.009..+0.005; back-edge centroid -0.03..+0.03); neck root (0, 0.05, 4.15); the head pivot sits between the eyes (eye midpoint x 0.031) and the head bone runs 1.0 u along the FACE direction (perpendicular to the pupil-centre line, yaw 0.36 deg), so the repose heading turns the face straight ahead",
+  "chains": [
+   {
+    "name": "leg",
+    "kind": "leg",
+    "parent": "hips",
+    "phase": {
+     "L": 0.0,
+     "R": 0.5
+    },
+    "points": [
+     [
+      0.5,
+      0.55,
+      1.9
+     ],
+     [
+      0.6,
+      0.6,
+      1.2
+     ],
+     [
+      0.79,
+      0.38,
+      0.42
+     ],
+     [
+      0.98,
+      -0.45,
+      0.1
+     ]
+    ],
+    "points_R": [
+     [
+      -0.5,
+      0.55,
+      1.9
+     ],
+     [
+      -0.6,
+      0.6,
+      1.2
+     ],
+     [
+      -0.79,
+      0.38,
+      0.42
+     ],
+     [
+      -0.98,
+      -0.45,
+      0.1
+     ]
+    ],
+    "why": "leg slab centroids (yellow texels, stage frame): z 1.38 (+-0.58, 0.62), z 0.98 (+-0.66, 0.57), z 0.59 (+-0.78, 0.42), ankle z 0.42 (+-0.8, 0.38), front toes (y -0.44, z 0.2, x +-0.99); hip inside the body at z 1.9. The pair is mirror-symmetric as generated (centroid differences <= 0.05 u); the +x claws hang 0.070 u above the floor"
+   },
+   {
+    "name": "tail",
+    "kind": "tail",
+    "mirror": false,
+    "parent": "hips",
+    "points": [
+     [
+      0.0,
+      1.35,
+      2.5
+     ],
+     [
+      0.0,
+      1.7,
+      1.9
+     ],
+     [
+      0.0,
+      1.85,
+      1.3
+     ],
+     [
+      0.0,
+      1.92,
+      0.75
+     ]
+    ],
+    "why": "the short layered tail on the midline (back edge |x| < 0.3: y 1.84 at z 2.3 -> 2.0 at z 1.1, tip z ~0.7; x -0.04..0.0): centred as generated, a chain so it can sway / be posed"
+   }
+  ]
+ },
+ "clips": {
+  "idle_frames": 72,
+  "breathe_deg": 1.5,
+  "walk_frames": 32,
+  "walk_bob": 0.015,
+  "walk_roll": 3.0,
+  "leg_swing": 8.0,
+  "why": "PLACEHOLDER (movement + height are the open artist questions): idle = breathe + the kit's tail sway; walk = a stalking bird step (leg swing 8: batch lesson, the kit walk dips the feet below the floor)"
+ },
+ "focus": {
+  "head": [
+   [
+    -1.05,
+    -2.25,
+    3.6
+   ],
+   [
+    1.1,
+    1.0,
+    6.0
+   ]
+  ],
+  "tail": [
+   [
+    -0.9,
+    1.0,
+    0.4
+   ],
+   [
+    0.9,
+    2.2,
+    2.8
+   ]
+  ]
+ },
+ "bake_res": [
+  1024,
+  1024
+ ],
+ "repose": {
+  "targets": [
+   {
+    "symmetric": [
+     "leg"
+    ],
+    "match": "mean",
+    "plant": true,
+    "plant_radius": 0.5,
+    "falloff": 0.03,
+    "radius": [
+     [
+      0.55,
+      0.15
+     ],
+     [
+      0.45,
+      0.2
+     ],
+     [
+      0.65,
+      0.3
+     ]
+    ],
+    "why": "artist 2026-10-17: a symmetric rest pose. The legs are already near-mirror (joint differences <= 0.05 u) but the +x claws hang 0.070 u above the floor: both legs carried onto their mean, both feet planted on z 0"
+   },
+   {
+    "bones": [
+     "neck",
+     "head"
+    ],
+    "heading": "-y",
+    "distribute": true,
+    "why": "the head straight ahead: the face (perpendicular to the pupil-centre line) points 0.36 deg off -y; the neck takes half, the head the rest; the head is RIGID (below)"
+   }
+  ],
+  "rigid": [
+   {
+    "box": [
+     [
+      -1.05,
+      -1.3,
+      4.15
+     ],
+     [
+      1.1,
+      1.0,
+      6.0
+     ]
+    ],
+    "bone": "head",
+    "margin": 0.25,
+    "why": "the head (mask plate, spike, both eyes, crest feathers) moves as ONE rigid body with the head bone: never deformed or re-sculpted; the eye paint rides on the UVs"
+   },
+   {
+    "box": [
+     [
+      -0.45,
+      -2.2,
+      3.65
+     ],
+     [
+      0.5,
+      -1.3,
+      4.95
+     ]
+    ],
+    "bone": "head",
+    "margin": 0.08,
+    "why": "the long beak (tip z 3.78) rides rigidly with the head too"
+   }
+  ]
+ },
+ "_doc": "LIGHT finish of the raw Pixal3D proxy (seed 56, sha 793ce80b) + the unit note (rank-matched tone, one clean yellow mask, crisp large eyes) + the 2026-10-17 symmetric rest pose by repose (legs mean + planted, head straight, rigid face). Points: stage-1 frame (the feet already on the floor, x0.9849 to the sheet front height 5.90), sheet units; -y = front, +x = the unit's left."
+}

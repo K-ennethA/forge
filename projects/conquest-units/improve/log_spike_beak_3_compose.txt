@@ -1,0 +1,6 @@
+﻿WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\spike_beak_3\spike_beak_3_sheet_vs_model.png
+GATE view=front iou=0.912 in_frame=0.904 row_err=3.7% | proxy iou=0.914
+GATE view=side  iou=0.839 in_frame=0.839 row_err=8.6% | proxy iou=0.871
+GATE mean_iou=0.876 flagged=none proxy=reliable
+GATE bake_reference=none (no object.bake call found)
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\spike_beak_3\spike_beak_3_contact.png

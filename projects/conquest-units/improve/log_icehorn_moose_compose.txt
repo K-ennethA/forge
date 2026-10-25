@@ -1,0 +1,6 @@
+﻿WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\icehorn_moose\icehorn_moose_sheet_vs_model.png
+GATE view=front iou=0.771 in_frame=0.770 row_err=8.7% | proxy iou=0.833  FLAG: more than 0.05 below the proxy
+GATE view=side  iou=0.799 in_frame=0.798 row_err=10.4% | proxy iou=0.866  FLAG: more than 0.05 below the proxy
+GATE mean_iou=0.785 flagged=front,side proxy=reliable
+GATE bake_reference=none (no object.bake call found)
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\icehorn_moose\icehorn_moose_contact.png

@@ -1,0 +1,17 @@
+{
+ "digest": {
+  "parts": {
+   "solid_grid": "0463301d9d170b17",
+   "bake_normal": "1929fa3ca2b6db07",
+   "bake_ao": "d3d30aacc5c51488",
+   "bake_albedo": "ca83198b5c973957",
+   "geometry_colour_uv": "1bbfe5960fd5e237",
+   "weights": "278b7b96541dafe6",
+   "keys": "e36163a02a5826ac",
+   "clip_samples": "54e7c2df29ec3c90"
+  },
+  "combined": "914c2a4aa6c671a7"
+ },
+ "tris": 18000,
+ "seconds": 310.4
+}

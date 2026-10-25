@@ -1,0 +1,12 @@
+00:01.359  blend            | Read blend: "C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\rigged\raven_shade.blend"
+00:03.546  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\raven_shade\raven_shade_feather_red_mx.png'
+00:04.093  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\raven_shade\raven_shade_feather_red_px.png'
+00:04.562  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\raven_shade\raven_shade_feet.png'
+00:04.968  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\raven_shade\raven_shade_head.png'
+00:05.343  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\raven_shade\raven_shade_pendant.png'
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\raven_shade\raven_shade_feather_red_mx.png
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\raven_shade\raven_shade_feather_red_px.png
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\raven_shade\raven_shade_feet.png
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\raven_shade\raven_shade_head.png
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\raven_shade\raven_shade_pendant.png
+Blender 5.0.1 (hash a3db93c5b259 built 2025-12-16 01:32:30)

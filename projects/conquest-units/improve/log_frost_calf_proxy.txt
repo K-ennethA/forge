@@ -1,0 +1,1 @@
+PROXY {"sha256": "d239761d4f200cd6", "mean_iou": 0.7487, "iou": {"front": 0.8537, "back": 0.6471, "side": 0.7453}, "row_err_pct": {"front": 8.6, "back": 18.1, "side": 8.7}, "side_len": {"mesh": 0.891, "sheet": 0.8, "rel_err": 0.1136}, "gate": "proxy unreliable, work from the sheet (mean IoU 0.75 < 0.75; side length off by +11.4%)"}

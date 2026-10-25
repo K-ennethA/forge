@@ -1,0 +1,9 @@
+{
+ "unit": "iron_scale_knight",
+ "skin": "default",
+ "description": "iron_scale_knight default look, LIGHT proxy finish: the colour is the Pixal3D proxy's own texture baked onto the low (improved/textures/iron_scale_knight_basecolor.png); proxy_albedo (white) tints it; no glow (the sheet paints the amber eye slit, it does not read lit)",
+ "regions": {
+  "proxy_albedo": {"rgb": [255, 255, 255], "note": "tint over the baked proxy albedo (light mode); white keeps the plates / cloth as baked. Sheet chips for reference: plates 245,233,221 / 195,176,164 / 124,115,114, cloth 70,59,56 / 91,62,54, gold trim 200,149,100"}
+ },
+ "material": {"roughness": 0.85, "emission_strength": 1.0, "alpha": 1.0}
+}

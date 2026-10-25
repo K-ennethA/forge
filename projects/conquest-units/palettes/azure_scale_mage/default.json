@@ -1,0 +1,62 @@
+{
+ "unit": "azure_scale_mage",
+ "skin": "default",
+ "description": "azure_scale_mage default look, LIGHT proxy finish: the colour is the Pixal3D proxy's own texture (tone-mapped to the sheet's white-to-blue gradient; crystals and eyes as generated) baked onto the low (improved/textures/azure_scale_mage_basecolor.png); proxy_albedo (white) tints it; three GLOW regions carry the emission (Glow -> Emission Color): the eyes, the crystal cores, the crystal bodies",
+ "regions": {
+  "proxy_albedo": {
+   "rgb": [
+    255,
+    255,
+    255
+   ],
+   "note": "tint over the baked proxy albedo (light mode); white keeps the texture as baked. Sheet chips for reference: 38,42,63 / 54,72,130 / 117,141,203 / 185,198,230 / 234,222,213 / 110,105,111"
+  },
+  "eye_glow": {
+   "rgb": [
+    255,
+    255,
+    255
+   ],
+   "emission": [
+    100,
+    160,
+    245
+   ],
+   "emission_scale": 1.0,
+   "note": "the narrow intense blue eye (sheet eye pixels: brightest quarter 76..96,109..121,188..192, cores 116..126,207..209,255); rgb white keeps the baked albedo"
+  },
+  "crystal_core": {
+   "rgb": [
+    255,
+    255,
+    255
+   ],
+   "emission": [
+    127,
+    165,
+    249
+   ],
+   "emission_scale": 0.5,
+   "note": "the pale crystal cores (sheet L* > 65, b* < -40 pixels: median 127,165,249)"
+  },
+  "crystal_glow": {
+   "rgb": [
+    255,
+    255,
+    255
+   ],
+   "emission": [
+    63,
+    99,
+    218
+   ],
+   "emission_scale": 0.3,
+   "note": "the crystals' inner glow (sheet b* < -55 pixels: median 63,99,218), low so the faceted albedo still reads"
+  }
+ },
+ "material": {
+  "roughness": 0.85,
+  "emission_strength": 1.0,
+  "alpha": 1.0
+ }
+}

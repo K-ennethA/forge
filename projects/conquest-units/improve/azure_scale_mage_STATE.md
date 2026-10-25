@@ -1,0 +1,27 @@
+# azure_scale_mage STATE (v2, 2026-10-17)
+
+- Version: v1 = the Pixal3D proxy (front + side views, seed 56, sha 2387a65c), LIGHT finish (proxy_finish.py; config improve/azure_scale_mage_finish.json). Geometry kept as generated: no symmetrise, no repose, no cuts, no parts. Digest 277b098aeb76ed5a (twin identical, bakes identical).
+- v2 (2026-10-17, artist: "our characters should be symmetrical head turns are done through posing"): SYMMETRY PASS ONLY. Digest f9a0b5cfd57e25a9 (twin identical, bakes identical; bake pixel shas = v1, so every v1 colour / glow / AO is unchanged).
+  - Face check first (v1 low): head z > 5 best mirror plane -40.5 deg (p99 0.267 u; face slabs -31..-39 deg, hat slabs -43..-48); the two eye-glow clusters are a symmetric pair about that plane (lateral +0.147 / -0.132, z 5.704 / 5.658); snout tip 0.06..0.13 u off the head plane, brim front tip 0.28 u. Verdict: TURNED, not sculpted crooked -> repose, no proxy regeneration.
+  - light.yaw +35 deg about (-0.14, 0): Pixal3D built the whole mage turned (whole-low best plane -35 deg); one rigid root turn. Mirror p99 0.927 -> 0.541.
+  - repose (bones, turned frame): legs match L (the planted +x leg; the -x stride foot was 0.21 u up, ~0.9 u forward, splayed) + plant, falloff 0.06 (joint error 0.88..1.01 -> 0.02..0.04 u, both feet z 0.000); arms mean, falloff 0.06 (joint error 0.35..1.55 -> 0); neck / head heading -y (2.7 / 5.4 deg), whole head (hat + snout + eyes, z > 5.05) RIGID (3454 verts, max dev 0.0); tail CHAIN tail.0..3 through the robe train, heading +y (rests centred; pose it to a side in the rig). Mirror p99 0.541 -> 0.460.
+  - edge stretch p99 1.478 (max 4.91 at the -x armpit / robe, -0.71, -0.04, 2.94); self-intersections 67 -> 524 (robe blades crossing where the -x arm / leg moved).
+  - sheet gate: mean IoU 0.688 (v1 0.751): front 0.633 / side 0.721 / back 0.711 - expected, the sheet front + side are drawn 3/4 and the proxy matched that turn; the straightened train makes the side view deeper (depth 5.71 u vs 4.36).
+- Spec: design/review-log.md "2026-10-16 — NEW UNITS x14" (AZURE SCALE MAGE); sheet design/reference/azure_scale_mage-character-sheet.png; intake design/reference/azure_scale_mage/intake.json (+ intake_proxy.json: the 3/4 front accepted for the proxy).
+- Frame: fit_side_length (Y x0.950, proxy side length +5.3 %); the proxy already stood on its talons (tail tip 0.06 u up), so refloor only rescales x1.0096 to the sheet front height 7.17 u (front 7.17 / side 7.16 agree).
+- What the finish changed:
+  - tone (texture only, light.recolour3d): a 2D quantile map, 6 L* bands x 3 b* thirds, each class to the sheet's colour at the same quantile (front + side masks). Basecolor L* p10/25/50/75/90 12.3/21.5/36.2/57.0/74.2 vs the sheet 14.8/22.9/37.9/58.9/73.4; b* p10/50/90 -37.2/-18.5/0.5 vs -38.9/-19.7/-1.7 (raw proxy L* 7/13/25/41/57). Crystals (b* < -52) and the eye box as generated. The built-in drift fit refused itself (median residual 54.8 RGB); a one-hue-per-band map (run 1) read silver-grey.
+  - glow (light.glow3d -> palette regions): eye_glow 23 faces (eye box, albedo L* >= 45, b* <= -50), crystal_core 45, crystal_glow 433 (albedo b* <= -52, L* >= 38). Glow face share 501 / 18000 = 2.8 % (sheet crystal pixels 2.0 % of the front + side masks).
+  - dense: head box (hat + snout + eyes) 2.5x, share 0.399 of the tris on 0.206 of the area; eye box vg_weight 0.
+  - AO from the low (ao_distance 0.2, fill below 0.04), bake_drop_interior 0.08, uv_island_margin 0.001.
+- LOCKED: nothing yet (awaiting the artist).
+- Knobs that matter (v2): light.yaw deg 35; repose leg match L / falloff 0.06, arm match mean / falloff 0.06; rig leg / arm points_R, tail chain points; rigid head box z > 5.05.
+- Knobs that matter (v1): recolour3d class targets (tone; the "why" of each class cites its sheet source); palette eye_glow / crystal_core / crystal_glow emission + emission_scale (1.0 / 0.5 / 0.3); glow3d selects (crystal b* <= -52, L* >= 38); body_tris 18000; dense density 2.5; clips (idle 72 f breathe 1.2, walk 36 f, leg_swing 8, arm_swing 5).
+- Open for the artist:
+  - movement + in-game height (clips PLACEHOLDER; the kit walk dips the talons 0.159 u below the floor, idle 0.023 u).
+  - v2 rest pose is symmetric by root turn + repose (above). Legs copy the planted +x leg (not the mean: a mean leaves both feet half-lifted); arms are the mean (both hands hang a little forward). Height 7.30 u (v1 7.20).
+  - the straightened robe train now trails 2.86 u behind (side depth 5.71 u vs the sheet's ~4.3 u): pose / shorten is the artist's call.
+  - 524 self-intersecting tri pairs after the repose (v1 67), in the robe around the -x arm / leg.
+  - one detached closed piece kept: a cluster of robe blades behind the -x leg (x -1.82..-0.57, y 0.46..1.63, z 0.24..1.89; 2 % of the solid), skinned with the body.
+  - the eye glow is per-face (23 faces, faceted at close zoom).
+- Unit gates: digest twins, bake gate, contract checks (cell_fit report-only), compose GATE lines (back + side only: intake ortho_views), proxy_finish.py gate + panel.

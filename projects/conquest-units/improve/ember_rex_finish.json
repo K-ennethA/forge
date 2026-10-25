@@ -1,0 +1,753 @@
+{
+ "unit": "ember_rex",
+ "char_id": "ember_rex",
+ "tier": "regular",
+ "tri_budget": [
+  8000,
+  22000
+ ],
+ "body_tris": 18000,
+ "mode": "light",
+ "fit_side_length": true,
+ "fit_side_length_why": "proxy gate (sha cbbd25d9): side length / front height 0.794 vs the sheet's 0.729 (+8.9 %, the body too long front-to-back): Y scaled x 0.918 to the sheet (orchestrator unit note)",
+ "refloor": {
+  "y_windows": [
+   [
+    -0.8,
+    0.7
+   ]
+  ],
+  "x_abs_min": 0.7,
+  "pct": 0.0,
+  "rescale_to_front_height": false,
+  "why": "sheet_proxy floored a TAIL-feather tip (x -1.56, y 2.43, z 0.000, behind the body); the one foot hangs 0.134 u above it (lowest toe x 1.00, y -0.05, z 0.134). Floor moved to the lowest FOOT contact (y -0.8..0.7, |x| >= 0.7: the foot, never the tail). NO rescale to the front height (front-vs-side reconcile): the sheet front is a 3/4 view (6.72 u) and taller than the ortho views (back 6.54, side 6.33); the refloored height 6.56 u sits on the back view. Run 1 with x1.0244 to 6.72: GATE back 0.777 / side 0.809; run 2 without: back 0.815 / side 0.808"
+ },
+ "midline_x": 0.4,
+ "midline_x_why": "sheet_proxy centred the BBOX, which the tail swung to -x skews: the body midline sits at x +0.40 after refloor (eye centres x 0.734 / 0.090 -> 0.402 (unscaled frame); beak x 0.09..0.71; chest front point x 0.40); moved to x 0 so the rig and the mirror test use the body's own plane (frame shift only, geometry untouched)",
+ "light": {
+  "steps_per_height": 300,
+  "dense": [
+   {
+    "box": [
+     [
+      -0.742,
+      -2.558,
+      4.295
+     ],
+     [
+      0.879,
+      -0.098,
+      6.687
+     ]
+    ],
+    "density": 2.5,
+    "vg_weight": 0.3,
+    "why": "the head: phoenix crest (top z 6.72), hooked beak (tip x 0.01, y -2.50, z 4.85) and both eyes (proxy sha cbbd25d9, stage-1 frame after the side-length fit / refloor / midline); vg_weight 0.3 so the eye and gem boxes below sit denser"
+   },
+   {
+    "box": [
+     [
+      0.146,
+      -1.972,
+      5.076
+     ],
+     [
+      0.488,
+      -1.601,
+      5.447
+     ]
+    ],
+    "density": 2.5,
+    "vg_weight": 0.0,
+    "why": "the +x eye (amber iris texels 221,124,63 at x 0.324, y -1.845, z 5.38; dark ring around it): held denser so iris / pupil / lid land on separate faces"
+   },
+   {
+    "box": [
+     [
+      -0.488,
+      -1.972,
+      5.076
+     ],
+     [
+      -0.146,
+      -1.601,
+      5.447
+     ]
+    ],
+    "density": 2.5,
+    "vg_weight": 0.0,
+    "why": "the -x eye (iris texels 231,151,91 at x -0.320, y -1.859, z 5.39): held denser like the +x eye"
+   },
+   {
+    "box": [
+     [
+      -0.156,
+      -1.923,
+      3.553
+     ],
+     [
+      0.137,
+      -1.601,
+      3.924
+     ]
+    ],
+    "density": 2.5,
+    "vg_weight": 0.0,
+    "why": "the chest ember gem (painted, see recolour3d gem_*; glow3d ember_gem): held dense so the small diamond keeps its own faces and the glow does not spread to a whole feather facet (vulture_creature pendant lesson)"
+   }
+  ],
+  "mirror_copy": {
+   "plane_x": 0.0,
+   "boxes": [
+    [
+     [
+      0.38,
+      -0.5,
+      -0.01
+     ],
+     [
+      1.5,
+      0.72,
+      0.42
+     ]
+    ],
+    [
+     [
+      0.38,
+      0.28,
+      0.38
+     ],
+     [
+      0.92,
+      0.78,
+      1.75
+     ]
+    ]
+   ],
+   "why": "v1.1 (orchestrator): the proxy has ONE leg (+x; leg texels only at x 0.25..1.44) because the sheet back + side views draw one; forced 3-view and seeds 7 / 101 also gave one leg. The +x leg is copied to -x across the body midline (x 0 after midline_x 0.40): box 1 = the foot and talons (x 0.38..1.5, y -0.5..0.72, z 0..0.42: 40184 dark leg + 4557 talon samples, 394 other), box 2 = the scaly tarsus up into the thigh feathers (x 0.38..0.92, y 0.28..0.78, z 0.38..1.75; the top reaches the -x feather mass at z 1.75..1.85 so the cap is hidden); the tail feathers (y > 1.5) are outside both boxes. Rest pose = mirror-symmetric copy (the sheet side view stagger is pose)"
+  },
+  "floor_lift": {
+   "ramps": [
+    [
+     "y",
+     1.5,
+     2.0
+    ]
+   ],
+   "band": 0.45,
+   "why": "after the refloor to the foot the trailing tail-feather tips behind the body (x -2.6..-1.5, y 2.07..2.50) hang 0.137 u below the floor (the sheet draws them past the floor line); squashed up onto z 0 within the bottom 0.45 u; the foot (y < 0.75) keeps weight 0"
+  },
+  "ao_from_low": true,
+  "ao_samples": 64,
+  "ao_why": "AO baked on the watertight low itself: the layered-feather soup has inner shells that black-hole AO rays (crystal_canine / vulture_creature lesson)",
+  "ao_distance": 0.2,
+  "ao_distance_why": "about one feather-blade width: real crevices darken, the broad feather mass does not (batch lesson: AO darkens the basecolor below the sheet)",
+  "ao_fill_below": 0.04,
+  "ao_fill_below_why": "AO texels < 0.04 (bake origins between fused feather blades where every ray is occluded) refilled from their valid neighbours",
+  "bake_drop_interior": 0.08,
+  "bake_drop_interior_why": "proxy faces with solid on both sides (inner shells under the layered feathers) left out of the bake source so the cage stays tight",
+  "uv_island_margin": 0.001,
+  "uv_island_margin_why": "the feather low unwraps into thousands of islands; margin 0.001 keeps the atlas texel coverage up (vulture_creature lesson)",
+  "recolour3d": [
+   {
+    "name": "legs_scaled_brown",
+    "boxes": [
+     [
+      [
+       0.146,
+       -0.927,
+       -0.049
+      ],
+      [
+       1.562,
+       0.879,
+       1.513
+      ]
+     ]
+    ],
+    "feather": 0.06,
+    "select": {
+     "L": [
+      0,
+      32
+     ],
+     "soft": 3
+    },
+    "target_rgb": [
+     74,
+     54,
+     54
+    ],
+    "detail_gamma": 0.8,
+    "detail_clip": [
+     0.45,
+     1.6
+    ],
+    "why": "UNIT NOTE: the leg reads near-black (proxy leg texels median 45,20,21, L* 10.1) where the sheet draws scaled brown (chip 70,52,54; sheet side-view foot 67,45,42, L* 21). Dark texels (L* <= 32) of the leg / foot (x 0.15..1.6 after the midline shift, z < 1.55) to 74,54,54 (the chip +~5 % for AO), the proxy's scale shading kept (gamma 0.8); the bright wing-feather tips that hang past the leg are not selected"
+   },
+   {
+    "name": "feather_tips_orange",
+    "boxes": [
+     [
+      [
+       -2.733,
+       -2.636,
+       -0.195
+      ],
+      [
+       2.733,
+       2.636,
+       6.736
+      ]
+     ]
+    ],
+    "exclude": [
+     [
+      [
+       -0.742,
+       -2.636,
+       4.295
+      ],
+      [
+       0.879,
+       -0.049,
+       6.736
+      ]
+     ],
+     [
+      [
+       -0.205,
+       -1.933,
+       3.534
+      ],
+      [
+       0.185,
+       -1.581,
+       3.944
+      ]
+     ]
+    ],
+    "feather": 0.1,
+    "select": {
+     "L": [
+      38,
+      101
+     ],
+     "b": [
+      30,
+      100
+     ],
+     "soft": 3
+    },
+    "target_rgb": [
+     236,
+     122,
+     72
+    ],
+    "detail_gamma": 0.85,
+    "detail_clip": [
+     0.6,
+     1.5
+    ],
+    "why": "UNIT NOTE (tone): the proxy is darker than the sheet at every quantile (proxy surface L* p10/50/90 6.1 / 21.0 / 47.0 vs the sheet back+side masks 15.1 / 33.0 / 65.6; matched quantiles q85-95 proxy 196,67,39 vs sheet 244,131,79, q95-100 231,117,72 vs 252,192,113). The flame-tip texels (L* >= 38, b* >= 30) to the sheet orange chip region (236,122,72 = chip 248,127,74 x0.95), the proxy's root-to-tip gradient kept (gamma 0.85, clip to 1.5: the brightest tips land on 255,183,108 = the sheet's yellow chip 253,197,109). The HEAD (crest / beak / eyes as generated, brief) and the gem box are excluded"
+   },
+   {
+    "name": "feathers_red",
+    "boxes": [
+     [
+      [
+       -2.733,
+       -2.636,
+       -0.195
+      ],
+      [
+       2.733,
+       2.636,
+       6.736
+      ]
+     ]
+    ],
+    "exclude": [
+     [
+      [
+       -0.742,
+       -2.636,
+       4.295
+      ],
+      [
+       0.879,
+       -0.049,
+       6.736
+      ]
+     ],
+     [
+      [
+       -0.205,
+       -1.933,
+       3.534
+      ],
+      [
+       0.185,
+       -1.581,
+       3.944
+      ]
+     ]
+    ],
+    "feather": 0.1,
+    "select": {
+     "L": [
+      0,
+      40
+     ],
+     "a": [
+      16,
+      100
+     ],
+     "soft": 3
+    },
+    "target_rgb": [
+     138,
+     50,
+     40
+    ],
+    "detail_gamma": 0.7,
+    "detail_clip": [
+     0.25,
+     1.55
+    ],
+    "why": "UNIT NOTE (tone): the red feathers read dark red-brown: proxy body texels (z 1.5..4.45) L* p10/50/90 5.7 / 17.9 / 38.5 (median 90,12,11) vs the sheet side body 17.8 / 34.1 / 65.3 (median 136,51,48); quantile-matched proxy 99,12,11 -> sheet 132,44,44 (q40-55), 154,32,21 -> 198,76,60 (q70-85). Red texels (a* >= 16, L* <= 40) to 138,50,40 (between the chips 127,45,46 / 157,66,60), the proxy's feather shading kept (gamma 0.7, clip 0.25..1.55: the darkest stay deep red 35..50,12..18; the brightest land near 214,78,62). Simulated on the proxy surface samples: body L* p10/50/90 -> 16.4 / 33.7 / 56.4. Head and gem excluded"
+   },
+   {
+    "name": "neck_feathers_brown",
+    "boxes": [
+     [
+      [
+       -2.733,
+       -2.636,
+       -0.195
+      ],
+      [
+       2.733,
+       2.636,
+       6.736
+      ]
+     ]
+    ],
+    "exclude": [
+     [
+      [
+       -0.742,
+       -2.636,
+       4.295
+      ],
+      [
+       0.879,
+       -0.049,
+       6.736
+      ]
+     ],
+     [
+      [
+       -0.205,
+       -1.933,
+       3.534
+      ],
+      [
+       0.185,
+       -1.581,
+       3.944
+      ]
+     ]
+    ],
+    "feather": 0.1,
+    "select": {
+     "L": [
+      6,
+      40
+     ],
+     "a": [
+      -100,
+      16
+     ],
+     "soft": 3
+    },
+    "target_rgb": [
+     76,
+     56,
+     58
+    ],
+    "detail_gamma": 0.8,
+    "detail_clip": [
+     0.45,
+     1.6
+    ],
+    "why": "the layered dark neck / shoulder feathers (the sheet's dark chip 70,52,54; proxy texels a* < 16 median 70,51,51 -> 76,56,58, +~8 % for AO); runs after the red lift (lifted reds keep a* > 30, so they are not reselected)"
+   },
+   {
+    "name": "gem_rim",
+    "spheres": [
+     [
+      [
+       -0.01,
+       -1.767,
+       3.739
+      ],
+      0.0439
+     ],
+     [
+      [
+       -0.01,
+       -1.762,
+       3.792
+      ],
+      0.0293
+     ],
+     [
+      [
+       -0.01,
+       -1.772,
+       3.685
+      ],
+      0.0293
+     ],
+     [
+      [
+       -0.01,
+       -1.757,
+       3.832
+      ],
+      0.0146
+     ],
+     [
+      [
+       -0.01,
+       -1.777,
+       3.646
+      ],
+      0.0146
+     ]
+    ],
+    "feather": 0.012,
+    "target_rgb": [
+     238,
+     108,
+     56
+    ],
+    "detail_gamma": 0.2,
+    "detail_clip": [
+     0.9,
+     1.1
+    ],
+    "why": "spec: a small glowing ember GEM on the chest; the proxy has none (chest front at z 3.6..4.2 is the dark neck-feather V, 70..88,32..46,30..50). Painted where the sheet draws it: front view px (105, 412) -> z 3.83, 11 x 22 px = a 0.11 x 0.22 u diamond at the bottom tip of the dark V, on the chest midline (front surface y -1.81). A vertical chain of spheres (r 0.045 / 0.03 / 0.015) approximates the diamond; rim colour = the sheet gem's outer pixels (median 240,118,66)"
+   },
+   {
+    "name": "gem_core",
+    "spheres": [
+     [
+      [
+       -0.01,
+       -1.767,
+       3.739
+      ],
+      0.0215
+     ],
+     [
+      [
+       -0.01,
+       -1.765,
+       3.773
+      ],
+      0.0117
+     ],
+     [
+      [
+       -0.01,
+       -1.769,
+       3.705
+      ],
+      0.0117
+     ]
+    ],
+    "feather": 0.01,
+    "target_rgb": [
+     255,
+     201,
+     108
+    ],
+    "detail_gamma": 0.2,
+    "detail_clip": [
+     0.95,
+     1.05
+    ],
+    "why": "the gem's hot yellow core (the sheet gem's brightest pixels 255,201,108)"
+   }
+  ],
+  "glow3d": [
+   {
+    "name": "ember_gem",
+    "spheres": [
+     [
+      [
+       -0.01,
+       -1.767,
+       3.739
+      ],
+      0.0439
+     ],
+     [
+      [
+       -0.01,
+       -1.762,
+       3.792
+      ],
+      0.0293
+     ],
+     [
+      [
+       -0.01,
+       -1.772,
+       3.685
+      ],
+      0.0293
+     ]
+    ],
+    "feather": 0.012,
+    "levels": [
+     [
+      0.5,
+      "ember_gem"
+     ]
+    ],
+    "why": "glow ONLY on the chest gem (brief: the sheet draws it lit): the gem's faces -> palette region ember_gem (emission 248,127,74); nothing else is emissive"
+   }
+  ]
+ },
+ "rig": {
+  "spine_names": [
+   "hips",
+   "spine",
+   "chest",
+   "neck",
+   "head"
+  ],
+  "spine": [
+   [
+    0.0,
+    0.537,
+    2.148
+   ],
+   [
+    0.0,
+    0.244,
+    2.831
+   ],
+   [
+    0.0,
+    -0.439,
+    3.514
+   ],
+   [
+    0.0,
+    -1.123,
+    4.246
+   ],
+   [
+    0.0,
+    -1.318,
+    4.979
+   ],
+   [
+    0.0,
+    -2.294,
+    5.076
+   ]
+  ],
+  "chains": [
+   {
+    "name": "wing",
+    "kind": "wing",
+    "parent": "chest",
+    "phase": {
+     "L": 0.0,
+     "R": 0.0
+    },
+    "points": [
+     [
+      0.586,
+      -0.488,
+      3.807
+     ],
+     [
+      1.074,
+      -0.098,
+      2.929
+     ],
+     [
+      1.269,
+      0.342,
+      1.757
+     ],
+     [
+      1.367,
+      0.781,
+      0.586
+     ]
+    ],
+    "why": "the hanging razor wings: shoulder (x 0.6, z 3.9) down the outer feather mass (proxy |x| 1.1..1.6 at z 1..3) to the flame tips near the floor; 3 bones per side"
+   },
+   {
+    "name": "leg",
+    "kind": "leg",
+    "parent": "hips",
+    "phase": {
+     "L": 0.0,
+     "R": 0.5
+    },
+    "points": [
+     [
+      0.342,
+      0.293,
+      2.196
+     ],
+     [
+      0.586,
+      0.488,
+      1.513
+     ],
+     [
+      0.625,
+      0.556,
+      0.439
+     ],
+     [
+      0.83,
+      -0.293,
+      0.098
+     ]
+    ],
+    "why": "hip (inside the feathers), knee / ankle (the scaly tarsus column x 0.47..0.6, y 0.54..0.59 at z 0.65..1.45), foot to the middle talon (toe texels z 0.05..0.25, y -0.4..0.6); the -x chain follows the mirror_copy leg (exact mirror of the +x leg)"
+   },
+   {
+    "name": "tail",
+    "kind": "tail",
+    "mirror": false,
+    "parent": "hips",
+    "points": [
+     [
+      -0.3,
+      1.0,
+      1.7
+     ],
+     [
+      -0.724,
+      1.265,
+      1.2
+     ],
+     [
+      -1.148,
+      1.5299,
+      0.75
+     ],
+     [
+      -1.5721,
+      1.7949,
+      0.35
+     ],
+     [
+      -1.9961,
+      2.0598,
+      0.03
+     ]
+    ],
+    "why": "v2 (artist 2026-10-17: 'ember rex tail is moved to one side, can we rig it so we can position it in the center or the side'): a 4-bone TAIL CHAIN (tail.0..tail.3) through the trailing feather fan, the part of the proxy that is NOT mirror-symmetric (vertex mirror distance > 0.25 u: 655 verts, x -2.54..-0.17, y 0.71..2.44, z 0..1.8). The fan hangs from the -x hip (its root x -0.3, y 1.0, z 1.7) and trails back + to -x along heading 58 deg from +y; the joints lie in ONE vertical plane along that heading (horizontal 0.5 u steps, the fan's side-view droop z 1.7 -> 1.2 -> 0.75 -> 0.35 -> 0.03), so repose heading +y turns every bone by the same yaw: the fan moves as one rigid body (shape and length kept) and rests centred; the chain poses it to either side"
+   }
+  ]
+ },
+ "clips": {
+  "idle_frames": 72,
+  "breathe_deg": 1.5,
+  "walk_frames": 32,
+  "walk_bob": 0.015,
+  "walk_roll": 3.0,
+  "leg_swing": 8.0,
+  "why": "PLACEHOLDER (movement + height are the open artist questions): idle = breathe 1.5 deg + the kit's wing / tail sway; walk = a short raptor stalk-step (leg_swing 8: the kit's foot bend dips the toes below the floor at larger swings)"
+ },
+ "focus": {
+  "head": [
+   [
+    -0.781,
+    -2.558,
+    4.246
+   ],
+   [
+    0.927,
+    -0.098,
+    6.687
+   ]
+  ],
+  "gem": [
+   [
+    -0.244,
+    -1.952,
+    3.465
+   ],
+   [
+    0.244,
+    -1.513,
+    4.002
+   ]
+  ]
+ },
+ "bake_res": [
+  1024,
+  1024
+ ],
+ "_doc": "LIGHT finish of the raw Pixal3D proxy (seed 56, back + side generation, sha cbbd25d9). Points: stage-1 frame (Y x 0.918 side-length fit, refloored to the foot, no rescale, midline x -0.40), sheet units. v2: + repose (tail centred by a rigid yaw of the tail chain; legs / head identity; head rigid).",
+ "repose": {
+  "targets": [
+   {
+    "symmetric": [
+     "leg"
+    ],
+    "match": "mean",
+    "plant": true,
+    "plant_radius": 0.45,
+    "why": "artist 2026-10-17: symmetric rest pose. The -x leg is the v1.1 light.mirror_copy of the +x leg (joints exact mirrors), so the pair is already mirror-symmetric: an identity stated here (joint mirror error 0), both feet planted on z 0"
+   },
+   {
+    "bones": [
+     "neck",
+     "head"
+    ],
+    "heading": "-y",
+    "distribute": true,
+    "why": "the head straight ahead: already straight (beak tip x -0.005; face (y < -1.3) mirror mean is lowest at 0 deg in a -4..+4 deg yaw sweep about the neck joint: 0.036 / 0.029 / 0.025 / 0.024 / 0.027 / 0.031 / 0.040 u), so the neck / head yaw is 0 (an identity, stated); the head is RIGID (below)"
+   },
+   {
+    "chain": "tail",
+    "heading": "+y",
+    "why": "the tail on the midline (heading +y = every bone yawed 58 deg about the tail root's vertical axis: one rigid turn, no feather bent or squashed). Root / heading picked on the v1 pre-repose low by a sweep (root x 0 / -0.15 / -0.3 / -0.4, z 1.5 / 1.7, heading 50..66 deg): root (-0.3, 1.0, 1.7), 58 deg = the lowest vertex mirror p99 with the least stretch (offline: mirror p99 1.026 -> 0.365, edge stretch p99 1.81; a midline pivot doubled the stretched edges and centred worse, 0.41). Default falloff, no reach: a reach left the outer fan tips behind, sharper falloffs tore more"
+   }
+  ],
+  "rigid": [
+   {
+    "box": [
+     [
+      -0.742,
+      -2.558,
+      4.295
+     ],
+     [
+      0.879,
+      -0.098,
+      6.687
+     ]
+    ],
+    "bone": "head",
+    "margin": 0.3,
+    "why": "the head / face (crest, beak, both eyes; the v1 dense head box) moves as ONE rigid body with the head bone: never deformed or re-sculpted (face as generated)"
+   }
+  ],
+  "why": "v2 (artist 2026-10-17, 'our characters should be symmetrical head turns are done through posing so our models remain flexible'): the proxy's swung tail is undone with BONES (proxy_finish_repose), never by mirror-averaging geometry; legs (mirror copy) and head were already symmetric / straight"
+ }
+}

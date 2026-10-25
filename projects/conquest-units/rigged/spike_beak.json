@@ -1,0 +1,319 @@
+{
+ "unit": "spike_beak",
+ "source": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\improved\\spike_beak.blend",
+ "fps": 24,
+ "finish": {
+  "open_edges": 0,
+  "tris": 18000,
+  "mirror": {
+   "plane_x_u": 0.0,
+   "max_u": 0.18192,
+   "p99_u": 0.04321,
+   "p90_u": 0.01783,
+   "mean_u": 0.0094,
+   "rule": "every vertex mirrored in X about the plane -> distance to the nearest surface (0 = exactly symmetric)"
+  },
+  "tri_budget": [
+   8000,
+   22000
+  ],
+  "in_budget": true,
+  "mode": "light"
+ },
+ "weights": {
+  "max_influences": 4,
+  "unweighted": 0,
+  "sum_dev_max": 3.3306690738754696e-16,
+  "per_bone_dominant": {
+   "hips": 97,
+   "belly": 73,
+   "chest": 443,
+   "neck": 2124,
+   "head": 3949,
+   "leg.L.0": 370,
+   "leg.L.1": 88,
+   "leg.L.2": 65,
+   "leg.R.0": 413,
+   "leg.R.1": 80,
+   "leg.R.2": 57,
+   "tail.0": 1097,
+   "tail.1": 82
+  },
+  "parts": {},
+  "rule": "shell: exp(-((d - d_min) / (0.06 H))^2) over bone-segment distances, side-aware, <= 4, normalised; parts rigid on their bone"
+ },
+ "clips": {
+  "idle": {
+   "frames": [
+    1,
+    73
+   ],
+   "seconds": 3.0,
+   "cyclic": true,
+   "seam_mm": 0.0,
+   "clearance_min_z": -0.0214
+  },
+  "walk": {
+   "frames": [
+    1,
+    29
+   ],
+   "seconds": 1.167,
+   "cyclic": true,
+   "seam_mm": 0.0,
+   "clearance_min_z": -0.2632
+  }
+ },
+ "bones": [
+  {
+   "name": "root",
+   "parent": null,
+   "deform": false,
+   "head": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "tail": [
+    0.0,
+    0.0,
+    0.4
+   ]
+  },
+  {
+   "name": "hips",
+   "parent": "root",
+   "deform": true,
+   "head": [
+    0.0073,
+    0.4385,
+    0.85
+   ],
+   "tail": [
+    0.0073,
+    0.3385,
+    1.4
+   ]
+  },
+  {
+   "name": "belly",
+   "parent": "hips",
+   "deform": true,
+   "head": [
+    0.0073,
+    0.3385,
+    1.4
+   ],
+   "tail": [
+    0.0073,
+    0.1385,
+    1.95
+   ]
+  },
+  {
+   "name": "chest",
+   "parent": "belly",
+   "deform": true,
+   "head": [
+    0.0073,
+    0.1385,
+    1.95
+   ],
+   "tail": [
+    0.0073,
+    -0.0615,
+    2.35
+   ]
+  },
+  {
+   "name": "neck",
+   "parent": "chest",
+   "deform": true,
+   "head": [
+    0.0073,
+    -0.0615,
+    2.35
+   ],
+   "tail": [
+    0.0094,
+    -0.2115,
+    2.65
+   ]
+  },
+  {
+   "name": "head",
+   "parent": "neck",
+   "deform": true,
+   "head": [
+    0.0094,
+    -0.2115,
+    2.65
+   ],
+   "tail": [
+    0.0094,
+    -0.3115,
+    3.4
+   ]
+  },
+  {
+   "name": "leg.L.0",
+   "parent": "hips",
+   "deform": true,
+   "head": [
+    0.4573,
+    0.3385,
+    0.95
+   ],
+   "tail": [
+    0.5953,
+    0.3735,
+    0.3822
+   ]
+  },
+  {
+   "name": "leg.L.1",
+   "parent": "leg.L.0",
+   "deform": true,
+   "head": [
+    0.5953,
+    0.3735,
+    0.3822
+   ],
+   "tail": [
+    0.7523,
+    0.055,
+    0.0845
+   ]
+  },
+  {
+   "name": "leg.L.2",
+   "parent": "leg.L.1",
+   "deform": true,
+   "head": [
+    0.7523,
+    0.055,
+    0.0845
+   ],
+   "tail": [
+    0.8848,
+    -0.387,
+    -0.0055
+   ]
+  },
+  {
+   "name": "leg.R.0",
+   "parent": "hips",
+   "deform": true,
+   "head": [
+    -0.4573,
+    0.3385,
+    0.95
+   ],
+   "tail": [
+    -0.5953,
+    0.3735,
+    0.3822
+   ]
+  },
+  {
+   "name": "leg.R.1",
+   "parent": "leg.R.0",
+   "deform": true,
+   "head": [
+    -0.5953,
+    0.3735,
+    0.3822
+   ],
+   "tail": [
+    -0.7523,
+    0.055,
+    0.0845
+   ]
+  },
+  {
+   "name": "leg.R.2",
+   "parent": "leg.R.1",
+   "deform": true,
+   "head": [
+    -0.7523,
+    0.055,
+    0.0845
+   ],
+   "tail": [
+    -0.8848,
+    -0.387,
+    -0.0055
+   ]
+  },
+  {
+   "name": "tail.0",
+   "parent": "hips",
+   "deform": true,
+   "head": [
+    0.0073,
+    1.4385,
+    1.35
+   ],
+   "tail": [
+    0.0073,
+    1.7885,
+    1.2
+   ]
+  },
+  {
+   "name": "tail.1",
+   "parent": "tail.0",
+   "deform": true,
+   "head": [
+    0.0073,
+    1.7885,
+    1.2
+   ],
+   "tail": [
+    0.0073,
+    2.1385,
+    1.15
+   ]
+  }
+ ],
+ "bone_count": 14,
+ "digest": {
+  "parts": {
+   "solid_grid": "a91050cd625ee66f",
+   "bake_normal": "e878741643c06b26",
+   "bake_ao": "f53b8426698ae13d",
+   "bake_albedo": "88fe76a040325330",
+   "repose": "f5c70328305ab43f",
+   "geometry_colour_uv": "766a70a7d131d160",
+   "weights": "09246de7931d6f53",
+   "keys": "977f88e373ee5931",
+   "clip_samples": "0c04f7d9d2320025"
+  },
+  "combined": "2a5e450ac3875e6b"
+ },
+ "glb": {
+  "path": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\rigged\\spike_beak.glb",
+  "bytes": 12186208,
+  "seconds": 0.9
+ },
+ "skins": {
+  "default": {
+   "file": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\rigged\\spike_beak.blend",
+   "palette": {
+    "proxy_albedo": {
+     "rgb": [
+      255,
+      255,
+      255
+     ]
+    }
+   }
+  },
+  "repaint_proof": {
+   "default_digest_before": "766a70a7d131d160",
+   "after_repaint": "766a70a7d131d160"
+  }
+ },
+ "improved_report": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\improved\\spike_beak.json",
+ "seconds": 346.6
+}

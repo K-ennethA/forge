@@ -1,0 +1,6 @@
+﻿WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\frost_giant_child\frost_giant_child_sheet_vs_model.png
+GATE view=front iou=0.810 in_frame=0.800 row_err=8.3% | proxy iou=0.914  FLAG: more than 0.05 below the proxy
+GATE view=side  iou=0.719 in_frame=0.718 row_err=14.4% | proxy iou=0.892  FLAG: more than 0.05 below the proxy
+GATE mean_iou=0.764 flagged=front,side proxy=reliable
+GATE bake_reference=none (no object.bake call found)
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\frost_giant_child\frost_giant_child_contact.png

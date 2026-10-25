@@ -1,0 +1,33 @@
+# ember_rex STATE (v2, 2026-10-17)
+
+- Version: v2 = v1.1 + the artist's v1 verdict (design/review-log.md "2026-10-17 — Batch x15 v1 verdict": "ember rex tail is moved to one side, can we rig it so we can position it in the center or the side"), i.e. the SYMMETRIC REST POSE by repose with a posable TAIL CHAIN. DIGEST b98af634990613f5 (twin identical, bake diff 0 texels; v1.1 was 7aa00c65a2abea88).
+- Base (unchanged from v1.1): LIGHT finish (proxy_finish.py; config improve/ember_rex_finish.json) of the raw Pixal3D proxy (seed 56, back + side generation, sha cbbd25d9). fit_side_length (Y x 0.918), refloor to the foot, midline_x 0.40, floor_lift on the tail tips, recolour3d tone (tips / reds / neck / legs), the painted chest gem (the only glow), light.mirror_copy second leg, dense head / eye / gem boxes, 18000 tris. v1 / v1.1 details: the v1.1 STATE in git history / the review log.
+- v2 repose (proxy_finish_repose; geometry never symmetrised or mirror-averaged, the face never re-sculpted):
+  - TAIL CHAIN tail.0..tail.3 (4 bones, parent hips, kind tail). It runs through the trailing feather fan, i.e. the part of the proxy that is NOT mirror-symmetric (vertex mirror distance > 0.25 u: 655 verts, x -2.54..-0.17, y 0.71..2.44, z 0..1.8).
+    - Joints (stage-1 frame, before the repose): root (-0.3, 1.0, 1.7), the fan's attachment at the -x hip. The rest lie in ONE vertical plane at heading 58 deg from +y toward -x, in 0.5 u horizontal steps, following the fan's droop z 1.7 -> 1.2 -> 0.75 -> 0.35 -> 0.03.
+    - Repose `{"chain": "tail", "heading": "+y"}`: every tail bone yaws -58.0 deg, so the fan turns as ONE rigid body (its shape and length are kept, nothing is squashed) and rests centred.
+    - Picked by an offline sweep on the v1 pre-repose low: root x 0 / -0.15 / -0.3 / -0.4, z 1.5 / 1.7, heading 50..66 deg, tail / wing / leg falloff and reach. A midline pivot doubled the stretched edges and centred worse (mirror p99 0.41). A tail reach left the outer fan tips behind. Sharper falloffs tore more.
+    - The rest-pose chain sits at x -0.33 in the rigged frame (the fan's own root). The fan tips are centred: tail-dominant verts at z < 0.4 have mean x -0.03.
+  - legs: symmetric mean + plant. This is an identity, because the -x leg is the mirror copy (joint error 0 -> 0 / 0.006 / 0.011 / 0.011 u after the plant). Foot min z: +x -0.012 -> 0.0, -x -0.0003 -> 0.0.
+  - neck / head: heading -y distribute = yaw 0 / 0, an identity. The head is already straight: beak tip x -0.005, and in a -4..+4 deg yaw sweep the face (y < -1.3) mirror mean is lowest at 0 deg (0.024 u). The head is a RIGID box (the v1 dense head box, margin 0.3): 2362 verts, max deviation from rigid 0.0.
+- Repose numbers (improved/ember_rex.json "repose"):
+  - mirror p99 (vertex to surface, plane x 0): 1.025 -> 0.364 u (p90 0.242 -> 0.162, max 1.83 -> 0.98). The body-only floor (y < 0.9 or z > 2.2) is 0.283 and the head is 0.246 (the crest as generated).
+  - edge stretch, all moved edges: p99 1.81, p999 3.32, max 4.68 at (-1.31, 1.00, 2.30), 421 edges > 1.25 (of 12557 moved), 136 < 0.8. Tail-region edges: p99 2.31.
+  - self-intersections 117 -> 228 (moved region 39 -> 128).
+  - max displacement 2.39 u (the outer fan tips).
+- Run: build + twin identical; check_improved 7 / 1 failed and check_rigged 11 / 1 failed, both cell_fit (report-only; depth is now 5.90 u, up from 4.90, because the centred tail trails straight back). 0 open edges, 18000 tris (in [8000, 22000]). GATE back 0.756 / side 0.789 (both FLAG vs proxy 0.827 / 0.856; v1.1 0.806 / 0.808), mean 0.772. Finish gate mean 0.700 (pre-repose 0.722), vs picked 0.847.
+- Why the gate dropped: the SHEET draws the swung pose. Its back view hangs the tail feathers to image-right (-x) down to x -2.1, and its side view is the foreshortened swung tail. Centred, the fan leaves the back silhouette's lower right and trails 1.0 u further back in side view (bbox +y 2.45 -> 3.45 in the stage frame). This is the requested rest pose, not a defect. Posing tail.0..3 back to -x recovers the sheet's look.
+- Evidence renders:
+  - renders/ember_rex/ember_rex_v2_symmetry.png (front + back ortho, v1.1 vs v2, midline drawn);
+  - renders/ember_rex/ember_rex_v2_tail_centred.png (back + top ortho, v1.1 vs v2);
+  - renders/ember_rex/ember_rex_v2_tail_pose_test.png (rest / posed -x / posed +x: top ortho + back 3/4). This is a posed rig with the final skin weights, not baked. It applies a world-Z yaw at each tail bone head: +-30 / 12 / 10 / 8 deg.
+  - renders/ember_rex/ember_rex_tail.png (kit tail close-up);
+  - renders/ember_rex/ember_rex_finish_panel.png.
+- LOCKED: nothing yet (awaiting the artist).
+- Knobs that matter: the tail chain root / heading (58 deg) / droop profile (the rest centring); repose falloff (default 0.06); the v1 knobs (recolour3d targets, gem radii / emission, body_tris 18000, mirror_copy boxes, clips leg_swing 8).
+- Open for the artist:
+  - Seam on the -x side. The fan is fused (watertight remesh) to the -x wing / thigh feathers where it overlapped them. Turning it 58 deg stretches that band: the diagonal feather streak mid-height on the -x side in the back view (stretch max 4.7, 421 edges > 1.25). Only a re-generation with the tail centred (or a hand split of the fan from the wing) removes it. Bones cannot.
+  - The centred tail is long in side view (it trails to the floor 1 u behind where the sheet's foreshortened swung tail ends). The alternative is repose to_points on the sheet's side-view curve, which would SQUASH the fan to the drawn length. Not done: say if you want it shorter.
+  - Clips are PLACEHOLDER (movement + height open). Idle dips to min z -0.065 and walk to -0.094 (the floor-level tail sways).
+  - v1 items still open: the beak is orange-red where the sheet draws yellow, the head reads a little dark, and the gem glow is per-face.
+- Unit gates: digest twins, bake gate, contract checks (cell_fit report-only), compose GATE lines, proxy_finish.py gate + panel.

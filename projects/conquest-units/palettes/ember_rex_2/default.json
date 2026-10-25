@@ -1,0 +1,76 @@
+{
+ "unit": "ember_rex_2",
+ "skin": "default",
+ "description": "ember_rex_2 default look (v2b), LIGHT proxy finish: the colour is the regenerated Pixal3D proxy's own texture (body darkened to a muted red, fire pushed to bright saturated orange -> yellow -> pale-yellow cores, cream neck, crisp yellow-orange eyes) baked onto the low (improved/textures/ember_rex_2_basecolor.png); proxy_albedo (white) tints it; four GLOW regions carry the emission (Glow -> Emission Color): the three flame bands (base / tips / hot cores) and the leg cracks. The body is unlit",
+ "regions": {
+  "proxy_albedo": {
+   "rgb": [
+    255,
+    255,
+    255
+   ],
+   "note": "tint over the baked proxy albedo (light mode); white keeps the texture as baked. Sheet chips for reference: 68,38,42 / 161,42,48 / 225,76,58 / 253,124,67 / 253,201,100 / 246,214,182"
+  },
+  "flame_core": {
+   "rgb": [
+    255,
+    255,
+    255
+   ],
+   "emission": [
+    255,
+    232,
+    160
+   ],
+   "emission_scale": 0.85,
+   "note": "UNIT V2 NOTE 2: the hot pale-yellow flame cores (baked L* >= 87), the brightest glow; rgb white keeps the baked albedo"
+  },
+  "flame_tips": {
+   "rgb": [
+    255,
+    255,
+    255
+   ],
+   "emission": [
+    255,
+    190,
+    80
+   ],
+   "emission_scale": 0.55,
+   "note": "the yellow flame tips (baked L* >= 76, b* >= 45; sheet chip 253,201,100); v1's single flame region was 253,150,70 x 0.35"
+  },
+  "flame_base": {
+   "rgb": [
+    255,
+    255,
+    255
+   ],
+   "emission": [
+    253,
+    124,
+    50
+   ],
+   "emission_scale": 0.3,
+   "note": "the orange flame body incl. the collar band / crest / chest flame (baked L* >= 56, b* >= 45; sheet chip 253,124,67); scale 0.3 (run 1 at 0.6 flattened the per-face glow into uniform shards)"
+  },
+  "leg_cracks": {
+   "rgb": [
+    255,
+    255,
+    255
+   ],
+   "emission": [
+    255,
+    130,
+    50
+   ],
+   "emission_scale": 0.7,
+   "note": "the glowing leg cracks (sheet 'glowing, flame-lit texture'); v1 244,130,85 x 0.6"
+  }
+ },
+ "material": {
+  "roughness": 0.85,
+  "emission_strength": 1.0,
+  "alpha": 1.0
+ }
+}

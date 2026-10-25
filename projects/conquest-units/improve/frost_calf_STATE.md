@@ -1,0 +1,38 @@
+# frost_calf STATE (v2, 2026-10-17; v1 draft 2026-10-16)
+
+- Version: v1 = the Pixal3D proxy (seed 56, sha d239761d), LIGHT finish (proxy_finish.py; config improve/frost_calf_finish.json). Geometry kept as generated: no symmetrise, no repose, no cuts, no glow. DIGEST 362f5f93d32ac747 (twin identical).
+- v2 (2026-10-17, artist: "our characters should be symmetrical head turns are done through posing"; orchestrator option 1 for the 6 legs): the two EXTRA legs are cut and the rest pose is made symmetric. Every v1 colour, recolour and bake setting and the side-length fit are kept. The v1 config is the regression reference (v1 DIGEST 362f5f93d32ac747). v2 DIGEST d6a849d06e2e94a3 (twin identical).
+  - Measured on the v1 low: the FACE is NOT sculpted crooked and NOT turned. Face core mirror p99 0.041 u about its own plane (x -0.16, yaw 0.0 deg), snout 0.035 (yaw 1.0). Eye centres (texture) +x (0.20, -1.99, 4.79) / -x (-0.62, -1.97, 4.80): heights differ by 0.01 u. Muzzle tip x -0.15. Torso plane x 0.01..0.02, yaw 0..1 deg (not turned).
+  - Proxy defect: it built SIX legs, reading the sheet's staggered far legs as extra legs (as on drakescale_cub). Front row: +x 0.68 / an extra +x at 0.19 near the midline / -x -0.41. Hind row: +x 0.36 / -x -0.38 at y 2.0 / an extra -x -0.41 at y 1.33.
+  - light.cuts: 81 boxes cut the +x inner front leg and the forward -x hind leg, from the floor up to the body. The boxes were tracked per 0.066 u z band on the stage-1 occupancy (bbox + one voxel; two hoof bands were shaved where a neighbour's voxels fell inside). 28039 proxy faces also leave the bake source.
+  - light.adds: 18 capsules rebuild the skin over the leg openings. The light remesh is a hollow skin (occupancy 2.9 %), the spike_beak v1.1 idiom. Hole test on the shipped mesh: every column under the removed legs' tops first hits skin at z <= 2.88 (front) / 2.98 (hind), with no openings into the body. The patches bake to the fur colour (median 167,192,216 front / 165,188,220 vs nearby underside 161..178,185..205,208..230). Run 2's wider patch stuck out as a ledge under the chest; it was trimmed in run 3.
+  - light.yaw deg 0, about (0.017, 0): one rigid shift puts the torso plane on x 0.
+  - repose (bones): both kept leg pairs are mirror-symmetric at the mean, with every hoof planted.
+    - Front joint error went from 0.26 / 0.35 / 0.29 / 0.22 u to 0 / 0.06 / 0.13 / 0.13. The residual is z only: the +x front hoof floated 0.128 u and was planted.
+    - Hind joint error went from 0.08 / 0.13 / 0.23 / 0.22 to 0 / 0.03 / 0.05 / 0.05.
+    - The neck yaws 17.7 deg so the head TRANSLATES 0.175 u onto x 0, unturned. Two rigid boxes hold the face and the crown + ears (rigid max deviation 0.0).
+    - The tail tuft (it leaned 14 deg to -x) is carried onto x 0 with to_points. The tail chain stays in the rig for posing.
+  - Result: whole-mesh mirror p99 0.713 -> 0.412 u (p90 0.379 -> 0.148, mean 0.160 -> 0.060).
+    - Regions: face core 0.31 -> 0.07, head 0.37 -> 0.12, tail 0.44 -> 0.10, front legs 0.41 -> 0.15, hind legs 0.87 -> 0.11, torso 0.34 -> 0.15, ears 0.70 -> 0.55. The ears now dominate the p99.
+    - Mesh: edge stretch p99 1.23, max 2.0 (-x front shoulder, z 2.82). Self-intersections 4 -> 4. Tris 18000, open edges 0.
+    - Evidence: renders/frost_calf/frost_calf_v2_symmetry.png (front + side).
+  - Gate (compose): front 0.670 (FLAGGED) / side 0.727 / mean 0.699 (v1 0.847 / 0.818 / 0.832). proxy_finish gate: front 0.670 / back 0.724 (v1 0.644) / side 0.726 / mean 0.707.
+    - The drop is the sheet's own pose: its side view draws the far legs staggered (the source of the extra legs; the cuts alone, pre-repose, gave side 0.721). Its front view draws the head about 0.13 u off its feet axis and the legs splayed.
+  - Left as generated: the EARS are asymmetric (mirror plane yaw 14 deg; ear mirror p99 0.55). They ride the head rigidly, and the kit has no ear target. Making them symmetric needs ear chains or an artist call.
+- Spec: design/review-log.md "2026-10-16 — NEW UNITS x14" (FROST CALF); sheet design/reference/frost_calf-character-sheet.png; intake design/reference/frost_calf/intake.json (proxy gate failed narrowly: mean IoU 0.749, side length +11.4 %).
+- What the finish changed:
+  - frame: `fit_side_length` (Y x 0.898: side length / front height 0.891 -> the sheet's 0.800). No refloor (the lowest point is already a hoof; height 6.579 u = sheet 6.59 within 0.2 %).
+  - decimation: 18000 tris, the head / ears box held 2.5x dense (share 0.43).
+  - colour (texture only, light.recolour3d): fur lifted to the sheet's light blue (target 184,212,238, half contrast; basecolor fur median 171,196,221 vs sheet 176,207,233); the tail-colour streak on the belly underside and down the rump below the tail repainted as fur (150,186,224); tail tuft from near-navy 42,62,94 to the sheet's 57,103,158; hooves from 22,36,76 to slate 62,84,116.
+  - bakes: ao_from_low (64 samples, ao_distance 0.45), bake_drop_interior 0.08, flat reference.
+- Rig: spine hips / belly / chest / neck / head; front legs `arm` and hind legs `leg` (kind leg). v2: each chain is given the proxy's own +x / -x joints (points / points_R) and the repose makes them one mirror pair; the tail chain (3 joints, unmirrored) rests centred.
+- LOCKED: nothing yet (awaiting the artist).
+- Knobs that matter: light.recolour3d targets (fur 184,212,238 + detail_gamma 0.5; tail 57,103,158; hooves 62,84,116; belly / rump 150,186,224); ao_distance 0.45; body_tris 18000; dense box density 2.5; palettes/frost_calf/default.json proxy_albedo tint (white); clips (idle 72 f, breathe 1.2, walk 32 f, leg_swing 14).
+- Open for the artist:
+  - movement + in-game height: clips are PLACEHOLDERS.
+  - (v1) as generated, asymmetric: mirror p99 0.713 u (v2: extra legs cut; head / tail / both leg pairs resolved by repose). The head and tail sit about 0.18 u to the creature's right (-x), and the legs are staggered (front pair 0.34 u apart in y, hind pair 0.6 u). The hind +x hoof is 0.09 u off the floor.
+  - proxy artefacts kept (light flow): pale fur-flap shards on the chest / neck and a small flap on the left shoulder (the sheet draws a soft neck tuft); fringed leg bottoms above the hooves; ear insides teal-grey (sheet 127,167,210), left as generated per the unit note; a reddish mouth crease under the muzzle.
+  - the scaffold's renders light the fur darker than the basecolor (ortho side fur median L* 57 vs basecolor 78).
+  - v2: the ears stay asymmetric (mirror plane yaw 14 deg). The sheet gate drops (mean 0.832 -> 0.699) because the sheet draws a staggered, splayed 3/4 stance and the rest pose is symmetric.
+- Unit gates: digest twins, bake gate, contract checks (cell_fit report-only), compose GATE lines, proxy_finish.py gate + panel (renders/frost_calf/frost_calf_finish_panel.png).
+- Open artist questions: design/OPEN-QUESTIONS.md section 'frost_calf'.

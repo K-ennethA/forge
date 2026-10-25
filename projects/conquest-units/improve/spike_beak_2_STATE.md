@@ -1,0 +1,44 @@
+# spike_beak_2 STATE (v1, 2026-10-17)
+
+- Version: v1 = Pixal3D proxy (3-view, seed 56, sha 793ce80b, gate reliable, mean IoU 0.918). It gets the LIGHT finish (proxy_finish.py; config improve/spike_beak_2_finish.json, generated from measurements) plus the unit note: rank-matched tone, one clean yellow mask, crisp large eyes, and a symmetric rest pose by repose. No symmetrise, no cuts, no geometry reshape, no glow (the sheet draws none). DIGEST fdd2b1065628977e (twin identical, bake diff 0 texels).
+- Spec: design/review-log.md "2026-10-17 — NEW UNIT: Spike Beak 2". The Spike Beak 3 v1 notes apply in spirit (readable eyes, a clean mask/spike). Sheet: design/reference/spike_beak_2-character-sheet.png. Intake: design/reference/spike_beak_2/intake.json.
+- Face measured first: it is NOT sculpted asymmetric.
+  - Proxy head mirror p99 is 0.064 u about x 0 (0.048 at the best plane x +0.01).
+  - Pupil centroids sit at z 4.7335 / 4.7321 (dz 0.0014 u) and y -0.812 / -0.817.
+  - The beak tip is at x +0.031 and the spike top at x +0.041. The face sits about 0.03 u to +x and is not turned (face yaw 0.36 deg).
+  - Whole-body mirror p99 is 0.046 u. Legs are mirror-paired within 0.05 u.
+- Finish changes (each config entry has its why):
+  - Frame: the -x front claw was already on the floor. The window only confirms the foot contact, then scales x0.9849 to the sheet front height of 5.90 u.
+  - TONE: a 2D quantile map (azure_scale_mage method) of 6 L* bands x 3 b* thirds onto the sheet's front + side colours, x1.10 for the AO. Basecolor feather L* p5/25/50/75/95 is 15.2/28.3/40.9/57.2/89.7 vs the sheet's 17.1/26.2/38.6/56.2/86.1, and b* p10 is -47.0 vs -44.1. Basecolor whites are 202,207,224 vs the chip 205,210,222.
+  - MASK/BEAK/SPIKE: the head yellow is moved to the chip lifted for the AO, at low contrast (gamma 0.35). Basecolor head yellow is 231,183,101 vs the sheet's 234,197,130 front / 204,167,109 side (chip 215,170,94). Legs are untouched; they already matched at 196,149,86.
+  - EYES: crisp paint inside the proxy's own eyeball, from outside in:
+    - grey socket: the front half to mask yellow, the back half to feather blue;
+    - dark outline at r 0.195..0.215;
+    - cream sclera, 239,217,192 in the basecolor;
+    - navy iris disc, r 0.118 = the proxy's black pupil edge;
+    - darker pupil and a small highlight.
+  - REPOSE: both legs at their mean, with both feet planted (the +x claws were 0.070 u up). Head straight: neck -0.18 deg, head -0.36 deg, rigid head + beak boxes, max deviation from rigid 0.0. Mirror p99 is 0.058 -> 0.055 u. Edge stretch p99 1.03, max 1.50 (one toe edge). Self-intersections 16 -> 15.
+  - Decimation: 18000 tris. Dense boxes on the head, both eyes, the spike tip and the beak tip. ao_from_low, ao_distance 0.2, ao_fill_below 0.04, bake_drop_interior 0.08.
+- Gates:
+  - Contract checks: 7 / 1 failed and 11 / 1 failed (cell_fit only, report-only). Open edges 0.
+  - Sheet gate: front 0.921, side 0.901, mean 0.911, nothing flagged.
+  - Finish gate: mean 0.914 vs the raw proxy's 0.918.
+  - GATE bake_reference=none is a known kit gap.
+- Renders: renders/spike_beak_2/spike_beak_2_finish_panel.png, spike_beak_2_head_closeup.png (sheet vs v1, head front + side), spike_beak_2_sheet_vs_model.png, and the usual views and clips.
+- Knobs that matter:
+  - aof x1.10 (overall brightness of the blues/whites);
+  - the yellow target 236,187,103 and its gamma 0.35;
+  - the eye radii [socket 0.31, outline 0.215, sclera 0.195, iris 0.118];
+  - eye colours: cream 242,222,196 / navy 34,50,85 / pupil 16,22,42;
+  - body_tris 18000;
+  - clips: idle 72 f, breathe 1.5; walk 32 f, leg_swing 8.
+- Open for the artist:
+  - Movement + in-game height: the clips are PLACEHOLDERS. Build height is 5.91 u. In walk the toes dip 0.247 u below the floor (kit foot bend).
+  - The beak hooks down more than the sheet's straight beak. The tip is about 0.15-0.2 u lower and about 0.1 u shorter (side view). It was recoloured only, not reshaped.
+  - The eyes are round, with no angry brow notch, and from the front they sit partly behind the mask edge (proxy geometry). They are painted cream/navy and read in the front, side and 3/4 views.
+  - The mask has no separate brow plates over the eyes (the sheet's V mask edge). There are faint darker smudges on the forehead plate (proxy shading).
+  - The side view shows mostly blue where the sheet draws a large white chest/belly from the side. The front white V is mottled blue/white rather than a clean V (proxy texture pattern).
+  - The face sits 0.03 u to +x (a translation; bones do not move it). Not turned.
+  - No wing chain (tucked wings ride the spine).
+- LOCKED: nothing yet (awaiting the artist).
+- Open artist questions: design/OPEN-QUESTIONS.md section 'spike_beak_2'.

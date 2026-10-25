@@ -1,0 +1,398 @@
+{
+ "unit": "frost_giant_child",
+ "source": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\improved\\frost_giant_child.blend",
+ "fps": 24,
+ "finish": {
+  "open_edges": 0,
+  "tris": 18000,
+  "mirror": {
+   "plane_x_u": 0.0,
+   "max_u": 0.5429,
+   "p99_u": 0.28215,
+   "p90_u": 0.1294,
+   "mean_u": 0.06393,
+   "rule": "every vertex mirrored in X about the plane -> distance to the nearest surface (0 = exactly symmetric)"
+  },
+  "tri_budget": [
+   8000,
+   22000
+  ],
+  "in_budget": true,
+  "mode": "light"
+ },
+ "weights": {
+  "max_influences": 4,
+  "unweighted": 0,
+  "sum_dev_max": 2.220446049250313e-16,
+  "per_bone_dominant": {
+   "hips": 92,
+   "spine": 216,
+   "chest": 274,
+   "neck": 334,
+   "head": 4924,
+   "arm.L.0": 460,
+   "arm.L.1": 242,
+   "arm.L.2": 98,
+   "arm.R.0": 361,
+   "arm.R.1": 220,
+   "arm.R.2": 123,
+   "leg.L.0": 380,
+   "leg.L.1": 335,
+   "leg.L.2": 173,
+   "leg.R.0": 325,
+   "leg.R.1": 299,
+   "leg.R.2": 142
+  },
+  "parts": {},
+  "rule": "shell: exp(-((d - d_min) / (0.06 H))^2) over bone-segment distances, side-aware, <= 4, normalised; parts rigid on their bone"
+ },
+ "clips": {
+  "idle": {
+   "frames": [
+    1,
+    73
+   ],
+   "seconds": 3.0,
+   "cyclic": true,
+   "seam_mm": 0.0,
+   "clearance_min_z": -0.0093
+  },
+  "walk": {
+   "frames": [
+    1,
+    33
+   ],
+   "seconds": 1.333,
+   "cyclic": true,
+   "seam_mm": 0.0,
+   "clearance_min_z": -0.0094
+  }
+ },
+ "bones": [
+  {
+   "name": "root",
+   "parent": null,
+   "deform": false,
+   "head": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "tail": [
+    0.0,
+    0.0,
+    0.4
+   ]
+  },
+  {
+   "name": "hips",
+   "parent": "root",
+   "deform": true,
+   "head": [
+    0.0443,
+    -0.0158,
+    2.9123
+   ],
+   "tail": [
+    0.0443,
+    0.0342,
+    3.4623
+   ]
+  },
+  {
+   "name": "spine",
+   "parent": "hips",
+   "deform": true,
+   "head": [
+    0.0443,
+    0.0342,
+    3.4623
+   ],
+   "tail": [
+    0.0443,
+    0.0842,
+    4.0123
+   ]
+  },
+  {
+   "name": "chest",
+   "parent": "spine",
+   "deform": true,
+   "head": [
+    0.0443,
+    0.0842,
+    4.0123
+   ],
+   "tail": [
+    0.0443,
+    0.0342,
+    4.4123
+   ]
+  },
+  {
+   "name": "neck",
+   "parent": "chest",
+   "deform": true,
+   "head": [
+    0.0443,
+    0.0342,
+    4.4123
+   ],
+   "tail": [
+    0.0479,
+    -0.0658,
+    4.7623
+   ]
+  },
+  {
+   "name": "head",
+   "parent": "neck",
+   "deform": true,
+   "head": [
+    0.0479,
+    -0.0658,
+    4.7623
+   ],
+   "tail": [
+    0.0479,
+    -0.9658,
+    5.6123
+   ]
+  },
+  {
+   "name": "arm.L.0",
+   "parent": "chest",
+   "deform": true,
+   "head": [
+    0.8943,
+    0.0442,
+    3.9123
+   ],
+   "tail": [
+    1.4343,
+    0.1542,
+    3.0123
+   ]
+  },
+  {
+   "name": "arm.L.1",
+   "parent": "arm.L.0",
+   "deform": true,
+   "head": [
+    1.4343,
+    0.1542,
+    3.0123
+   ],
+   "tail": [
+    1.6743,
+    0.1992,
+    2.2123
+   ]
+  },
+  {
+   "name": "arm.L.2",
+   "parent": "arm.L.1",
+   "deform": true,
+   "head": [
+    1.6743,
+    0.1992,
+    2.2123
+   ],
+   "tail": [
+    1.7193,
+    0.2092,
+    1.5373
+   ]
+  },
+  {
+   "name": "arm.R.0",
+   "parent": "chest",
+   "deform": true,
+   "head": [
+    -0.8943,
+    0.0442,
+    3.9123
+   ],
+   "tail": [
+    -1.4343,
+    0.1542,
+    3.0123
+   ]
+  },
+  {
+   "name": "arm.R.1",
+   "parent": "arm.R.0",
+   "deform": true,
+   "head": [
+    -1.4343,
+    0.1542,
+    3.0123
+   ],
+   "tail": [
+    -1.6743,
+    0.1992,
+    2.2123
+   ]
+  },
+  {
+   "name": "arm.R.2",
+   "parent": "arm.R.1",
+   "deform": true,
+   "head": [
+    -1.6743,
+    0.1992,
+    2.2123
+   ],
+   "tail": [
+    -1.7193,
+    0.2092,
+    1.5373
+   ]
+  },
+  {
+   "name": "leg.L.0",
+   "parent": "hips",
+   "deform": true,
+   "head": [
+    0.4843,
+    -0.0658,
+    2.6123
+   ],
+   "tail": [
+    0.6143,
+    -0.0008,
+    1.3952
+   ]
+  },
+  {
+   "name": "leg.L.1",
+   "parent": "leg.L.0",
+   "deform": true,
+   "head": [
+    0.6143,
+    -0.0008,
+    1.3952
+   ],
+   "tail": [
+    0.8643,
+    -0.0208,
+    0.4782
+   ]
+  },
+  {
+   "name": "leg.L.2",
+   "parent": "leg.L.1",
+   "deform": true,
+   "head": [
+    0.8643,
+    -0.0208,
+    0.4782
+   ],
+   "tail": [
+    0.9043,
+    -0.5658,
+    0.1082
+   ]
+  },
+  {
+   "name": "leg.R.0",
+   "parent": "hips",
+   "deform": true,
+   "head": [
+    -0.4843,
+    -0.0658,
+    2.6123
+   ],
+   "tail": [
+    -0.6143,
+    -0.0008,
+    1.3952
+   ]
+  },
+  {
+   "name": "leg.R.1",
+   "parent": "leg.R.0",
+   "deform": true,
+   "head": [
+    -0.6143,
+    -0.0008,
+    1.3952
+   ],
+   "tail": [
+    -0.8643,
+    -0.0208,
+    0.4782
+   ]
+  },
+  {
+   "name": "leg.R.2",
+   "parent": "leg.R.1",
+   "deform": true,
+   "head": [
+    -0.8643,
+    -0.0208,
+    0.4782
+   ],
+   "tail": [
+    -0.9043,
+    -0.5658,
+    0.1082
+   ]
+  }
+ ],
+ "bone_count": 18,
+ "digest": {
+  "parts": {
+   "solid_grid": "57d74035640d33b5",
+   "bake_normal": "f6b24def255ae00c",
+   "bake_ao": "f745b85f7dbd5a38",
+   "bake_albedo": "e8333366589028c9",
+   "glow3d": "167d9220810d2b7e",
+   "yaw": "de15cf080f9a41fe",
+   "repose": "17d679e4eeb0bf81",
+   "geometry_colour_uv": "987e63b94ea7d1d3",
+   "weights": "708e7a981bbfd43b",
+   "keys": "2530b4d3b0a6c939",
+   "clip_samples": "64f108f6a00cf29d"
+  },
+  "combined": "9d3b0787ba9eaed3"
+ },
+ "glb": {
+  "path": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\rigged\\frost_giant_child.glb",
+  "bytes": 12645568,
+  "seconds": 0.8
+ },
+ "skins": {
+  "default": {
+   "file": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\rigged\\frost_giant_child.blend",
+   "palette": {
+    "proxy_albedo": {
+     "rgb": [
+      255,
+      255,
+      255
+     ]
+    },
+    "eye_glow": {
+     "rgb": [
+      255,
+      255,
+      255
+     ],
+     "emission": [
+      194,
+      233,
+      243
+     ],
+     "emission_scale": 0.7
+    }
+   }
+  },
+  "repaint_proof": {
+   "default_digest_before": "987e63b94ea7d1d3",
+   "after_repaint": "987e63b94ea7d1d3"
+  }
+ },
+ "improved_report": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\improved\\frost_giant_child.json",
+ "seconds": 114.6
+}

@@ -1,0 +1,28 @@
+# drakescale_cub STATE (v1.1, 2026-10-17)
+
+- Version: v1 = Pixal3D proxy (front + side views, seed 56, sha 57ad4b2d), LIGHT finish (proxy_finish.py; config improve/drakescale_cub_finish.json). Symmetric rest pose by repose (bones). No symmetrise, no glow, no head graft, no added geometry.
+- Spec: design/review-log.md "2026-10-16 — NEW UNITS x14" (DRAKESCALE CUB); artist 2026-10-17 symmetric rest pose; "Drakescale Beast v2 tail note" (no capsule tails).
+- Head (measured first, kept as generated):
+  - Raw proxy: head mirror p99 0.028 u about its own plane x 0.250, eye heights z 4.668 / 4.651 (diff 0.017 u), snout tip x 0.243 (plane 0.250).
+  - Not crushed: eye-to-snout-tip 0.69 u x1.036 = 0.715 u = the sheet side view's 64 px at its 0.9 scale. Evidence: renders/drakescale_cub/drakescale_cub_v1_head_vs_sheet.png.
+- v1.1 (orchestrator V1.1; everything below still applies except the tail repose):
+  - Tail: the proxy tail below z 1.45 / behind y 1.5 cut (light.cuts +1 box); its own root segment (box x -1.0..0.95, y 1.3..2.65, z 1.45..2.05, axis (-0.1, 1.55, 2.05) -> (-0.1, 1.75, 1.45), 0.63 u) duplicated by light.segment_array: 9 copies along the sheet side-view tail curve on x = 0 (down behind the rump, then the forward floor curl lifted onto the floor), scale 0.95 x 0.88^(i-1) (0.95 .. 0.34), overlap 20 %, last copy 2x long ramped to a point. Tip (0, 0.68, 0.10) (sheet tip y 0.76). Array 3.0 u + kept root ~1.3 u = ~4.3 u (sheet ~4.6 u; v1 chain 3.15 u). Faces appended 41157; buried bake faces dropped 5946 copy / 1746 proxy.
+  - Tail repose target removed (copies are built on x = 0); tail chain re-pointed onto the copies: 7 bones on x = 0, mirror false (bone count 25).
+  - Eye: light.recolour3d eye_{px,mx}_{rim,iris,pupil,hl} (8 specs, 634 spheres) painted after the tone specs. ONE design ellipse fitted to the proxy's own dark socket almond (centre y -2.636, z 4.761; semi axes 0.087 x 0.042 u; 53 deg), same (y, z) on both eyes, each sphere on that side's front-most socket surface: rim 140,66,24 (0.88 scale), iris 230,140,50 (0.66), vertical pupil 30,18,14 (0.022 x 0.052 u), catch-light 248,236,214 (r 0.008). No bleed onto the scales in the close-ups. Stage 1 now ~140 s (sphere masks).
+  - Numbers: DIGEST 8e9e661b73814974 (twin identical, bake diff 0). GATE front 0.883, side 0.736 (FLAG, proxy 0.825), mean 0.809. FINISH_GATE side 0.725 (v1 0.745), mean 0.778 (v1 0.786). Mirror p99 0.169 -> 0.153 u (glb 0.188). Edge stretch p99 1.08, max 1.49 (v1 1.34 / 4.87: the tail-root stretch is gone). Self-intersections 169 -> 177. 18000 tris, 0 open edges. Checks 7/1 and 11/1 failed (cell_fit only).
+  - Known limits: segment_array turns copies only by shortest arc (no twist about the axis), so on the forward floor curl the root's dorsal side faces the floor (the in-plane curl the sheet draws); the floor run is partly hidden behind the near hind leg in the side view (the sheet's tip sits beside the hind paw). Side IoU drop = the longer tail vs the sheet side view drawn at ~0.9x.
+  - Evidence: renders/drakescale_cub/drakescale_cub_v11_{head_side_L,head_side_R,head_front,tail_side,tail_back34,tail_top}.png.
+- What the finish changed:
+  - Frame: refloor at the hind paws (proxy floored its own ground-shadow plate; paws stood 0.18 u up), x1.0359 to the sheet front height 5.87; midline_x 0.259.
+  - fit_side_length NOT applied (deviation from the unit note): the sheet side view is drawn ~0.9x the front (eye 13 px vs 14-15 px; side mask registration peaks at 92-95 px/u). The proxy's side length / height (1.063) already equals the sheet's (1.069); fitting would squash Y 7.7 % incl. the snout.
+  - light.cuts: the EXTRA front-leg pair (Pixal3D built 6 legs: the sheet's staggered near / far front legs on both sides; rear pair removed below z 1.25, the front pair kept); the modelled ground-shadow plate (thin dark sheets under the whole body) removed by 185 tiled boxes outside the kept paws' planform plus one box behind the hind legs; one plate hook beside the -x hind paw.
+  - light.recolour3d tone (tint only): warm brown curve, copper tips, cream held, dark scales de-olived. Basecolor L* p50 24.8 -> 34.6 (sheet 34-37.5); bands 0.25 / 0.43 / 0.22 / 0.10 (sheet 0.21-0.23 / 0.42-0.50 / 0.20-0.23 / 0.07-0.14).
+  - Repose: arm + leg pairs mirror-symmetric at the mean with paws planted; the proxy's OWN tail carried onto the sheet side-view curve on x = 0 (down to the floor, tip curling forward) by to_points; neck / head heading -y (identity: 0.0 deg); head rigid (max dev 0.0).
+- Numbers: mirror p99 0.481 -> 0.152 u (glb 0.192); edge stretch p99 1.336, max 4.87 (one edge at the tail root / hind heel, (-0.10, 1.46, 0.36)); self-intersections 45 -> 81; 18000 tris; 0 open edges.
+- Rig: spine hips -> snout (0, -3.22, 4.39); arm / leg chains; tail 6 bones on x = 0 (mirror false) so the tail can be posed to the side.
+- LOCKED: nothing yet (awaiting the artist).
+- Knobs that matter: repose radius / plant_radius per pair; tail to_points (the sheet curve) and where the floor curl stops (y 1.8); the B-leg cut boxes (z 1.25 top); recolour3d tone targets; refloor window; body_tris 18000; dense head / face boxes.
+- Open for the artist:
+  - Movement + in-game height (clips are PLACEHOLDER).
+  - Stance: front paws at the sheet's NEAR front leg (y -1.9); the sheet's symmetric mean would be ~0.45 u further back.
+- Unit gates: digest twins, bake gate, contract checks (cell_fit report-only), compose GATE lines (bake_reference=none: known kit gap), proxy_finish.py gate + panel (renders/drakescale_cub/drakescale_cub_finish_panel.png).

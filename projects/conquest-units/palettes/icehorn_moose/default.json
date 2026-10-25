@@ -1,0 +1,34 @@
+{
+ "unit": "icehorn_moose",
+ "skin": "default",
+ "description": "icehorn_moose default look, LIGHT proxy finish: the colour is the Pixal3D proxy's own texture (light-blue fur, white neck coat, slate hooves) baked onto the low (improved/textures/icehorn_moose_basecolor.png); proxy_albedo (white) tints it; the rebuilt ice antlers are the GLOW region antler_ice (tint toward the sheet's icy blue chip + a subtle frosty emission)",
+ "regions": {
+  "proxy_albedo": {
+   "rgb": [
+    255,
+    255,
+    255
+   ],
+   "note": "tint over the baked proxy albedo (light mode; white = as generated)"
+  },
+  "antler_ice": {
+   "rgb": [
+    160,
+    230,
+    255
+   ],
+   "emission": [
+    129,
+    217,
+    251
+   ],
+   "emission_scale": 0.35,
+   "note": "the rebuilt ice antlers: rgb tints the baked fill toward the sheet chip ICE ANTLERS (icy blue 129,217,251); emission = the same chip x 0.35 (sheet: 'subtle frosty glow')"
+  }
+ },
+ "material": {
+  "roughness": 0.85,
+  "emission_strength": 1.0,
+  "alpha": 1.0
+ }
+}

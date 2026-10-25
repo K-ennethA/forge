@@ -1,0 +1,9 @@
+{
+ "unit": "frost_calf",
+ "skin": "default",
+ "description": "frost_calf default look, LIGHT proxy finish: the colour is the Pixal3D proxy's own texture (fur lifted to the sheet's light blue, tail / hooves to the sheet's blues, the tail-colour streak on the belly / rump repainted as fur) baked onto the low (improved/textures/frost_calf_basecolor.png); this one white region tints it (white = as baked). No glow (the sheet draws none)",
+ "regions": {
+  "proxy_albedo": {"rgb": [255, 255, 255], "note": "tint over the baked proxy albedo (light mode); white keeps the light-blue fur / blue tail / slate hooves as baked. Sheet chips for reference: 196,216,234 / 156,187,223 / 80,126,183 / 66,84,112 / 50,61,78"}
+ },
+ "material": {"roughness": 0.85, "emission_strength": 1.0, "alpha": 1.0}
+}

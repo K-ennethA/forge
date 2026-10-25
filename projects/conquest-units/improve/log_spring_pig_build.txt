@@ -1,0 +1,23 @@
+MOVE_REGION {"grid_nodes_resampled": 1373366, "inverse_residual_max_u": 0.0, "proxy_verts_moved": 22750, "proxy_max_move_u": 0.3578, "landmarks": {"glass_R": {"from": [1.041, -0.764, 4.581], "to": [0.8621, -1.0146, 4.581]}, "glass_L": {"from": [-1.03, -0.772, 4.587], "to": [-0.8494, -1.0194, 4.587]}}}
+CYLINDERS [{"nodes_inside": 28797, "grid_nodes_added_inside": 24244, "clipped_by_grid": false}]
+STAGE1 56.4 s grid (193, 205, 317) step 0.0206
+HIGH {"tris": 2283016, "verts": 1141500, "specks_dropped": {"pieces": 2, "kept": 1, "dropped_verts": 78}, "open_edges": 0, "nonmanifold_edges": 0, "rule": "marching tets of the whole remesh grid (no mirror)", "seconds": 9.6}
+SMOOTH_REGION {"verts_weighted": 618, "max_move_u": 0.057, "mean_move_u_weighted": 0.01949}
+LOW {"method": "collapse decimation: uniform to 300000, then 20000 with the dense boxes calibrated", "pre_tris": 300000, "tris": 20000, "verts": 9992, "specks": {"pieces": 1, "kept": 1, "dropped_verts": 0}, "open_edges": 0, "nonmanifold_edges": 0, "dense": {"density": 2.5, "box_area_frac": 0.5158, "target_tri_share": 0.727, "got_tri_share": 0.7271, "factor_log10": -0.641, "trials": [[-7.0, 0.5188], [-3.0, 0.52], [-1.0, 0.6558], [0.0, 0.8347], [-0.5, 0.7528], [-0.75, 0.7053], [-0.625, 0.7312], [-0.688, 0.719], [-0.656, 0.725], [-0.641, 0.7271]], "rule": "dense boxes weighted 0.02 (vs 1) in the collapse decimation; the factor bisected until the boxes hold density x the rest's triangles per area"}, "low_to_proxy": {"mean": 0.11413, "p99": 1.19885, "max": 1.41995}, "proxy_to_low_sampled": {"mean": 0.01389, "p99": 0.04605, "max": 0.10916}, "p99_over_height": 0.00745, "seconds": 52.5}
+Info: Baking map saved to internal image, save it externally or pack it
+Info: Baking map saved to internal image, save it externally or pack it
+Info: Baking map saved to internal image, save it externally or pack it
+ALBEDO_BLEND {"texels_in_region": 110511, "texels_selected": 67614, "texels_blended": 51220, "radius_u": 0.06}
+BAKE {"cage_extrusion": 0.1381, "normal_coverage_pct": 96.52, "albedo_coverage_pct": 92.5, "pixel_sha": {"normal": "c3e09fc1366f35b7", "ao": "7f5704c3a86a5757", "albedo": "010ebaf8a322930b"}, "seconds": 142.2}
+FINISH {"open_edges": 0, "tris": 20000, "mirror": {"plane_x_u": 0.0, "max_u": 0.20294, "p99_u": 0.10945, "p90_u": 0.03118, "mean_u": 0.01275, "rule": "every vertex mirrored in X about the plane -> distance to the nearest surface (0 = exactly symmetric)"}, "tri_budget": [8000, 22000], "in_budget": true, "mode": "light"}
+Info: Saved copy as "spring_pig.blend"
+IMPROVED_SAVED C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\improved\spring_pig.blend 265.5
+Info: Saved copy as "spring_pig.blend"
+INFO Draco mesh compression is available, use library at C:\Program Files\Blender Foundation\Blender 5.0\5.0\scripts\addons_core\io_scene_gltf2\extern_draco.dll
+14:48:41 | INFO: Starting glTF 2.0 export
+14:48:41 | INFO: Extracting primitive: spring_pig
+14:48:41 | INFO: Primitives created: 1
+14:48:42 | INFO: Finished glTF 2.0 export in 0.566807746887207 s
+
+RIG_DONE {"bone_count": 22, "weights": {"max_influences": 4, "unweighted": 0, "sum_dev_max": 2.220446049250313e-16, "per_bone_dominant": {"hips": 190, "belly": 86, "chest": 187, "neck": 371, "head": 4319, "arm.L.0": 735, "arm.L.1": 106, "arm.L.2": 134, "arm.R.0": 685, "arm.R.1": 87, "arm.R.2": 148, "leg.L.0": 272, "leg.L.1": 111, "leg.L.2": 114, "leg.R.0": 308, "leg.R.1": 109, "leg.R.2": 111, "tail.0": 906, "tail.1": 469, "tail.2": 311, "tail.3": 233}, "parts": {}, "rule": "shell: exp(-((d - d_min) / (0.06 H))^2) over bone-segment distances, side-aware, <= 4, normalised; parts rigid on their bone"}, "digest": {"parts": {"solid_grid": "3f1ee10eb581a8c9", "move_region_grid": "500bf34c94730317", "cylinders_grid": "a6d741226bfcd2b4", "bake_normal": "c3e09fc1366f35b7", "bake_ao": "7f5704c3a86a5757", "bake_albedo": "010ebaf8a322930b", "geometry_colour_uv": "898e37d411490bd5", "weights": "758dde77f2ff3029", "keys": "460f3c29da819a21", "clip_samples": "15ddf9aff3833c46"}, "combined": "e91be944ce0d1fb2"}, "seconds": 267.8, "clips": {"idle": {"frames": [1, 73], "seconds": 3.0, "cyclic": true, "seam_mm": 0.0, "clearance_min_z": -0.0161}, "walk": {"frames": [1, 33], "seconds": 1.333, "cyclic": true, "seam_mm": 0.0, "clearance_min_z": -0.1369}}}
+Blender 5.0.1 (hash a3db93c5b259 built 2025-12-16 01:32:30)

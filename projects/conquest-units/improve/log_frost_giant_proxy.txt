@@ -1,0 +1,1 @@
+PROXY {"sha256": "0a7d865069659475", "mean_iou": 0.8788, "iou": {"front": 0.902, "back": 0.8981, "side": 0.8363}, "row_err_pct": {"front": 1.8, "back": 2.5, "side": 5.9}, "side_len": {"mesh": 0.392, "sheet": 0.409, "rel_err": -0.0416}, "gate": "reliable"}

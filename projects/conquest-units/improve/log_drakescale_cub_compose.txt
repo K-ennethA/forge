@@ -1,0 +1,6 @@
+﻿WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\drakescale_cub\drakescale_cub_sheet_vs_model.png
+GATE view=front iou=0.883 in_frame=0.881 row_err=8.2% | proxy iou=0.898
+GATE view=side  iou=0.736 in_frame=0.705 row_err=9.5% | proxy iou=0.825  FLAG: more than 0.05 below the proxy
+GATE mean_iou=0.809 flagged=side proxy=proxy unreliable, work from the sheet (side length off by +8.4%)
+GATE bake_reference=none (no object.bake call found)
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\drakescale_cub\drakescale_cub_contact.png

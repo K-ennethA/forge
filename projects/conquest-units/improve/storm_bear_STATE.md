@@ -1,0 +1,20 @@
+# storm_bear STATE (v2, 2026-10-17)
+
+- Version: v2 = the Pixal3D proxy (seed 56, sha 4b3d3ed2), LIGHT finish + bone repose to a symmetric rest pose + light.belly (config improve/storm_bear_finish.json). DIGEST 12c689d0273cdf5b (twin identical, bake diff 0 texels). v1 was DIGEST 3bfbcd371c80c418.
+- Spec: design/review-log.md "2026-10-17 — Batch x15 v1 verdict" (symmetric rest pose for all units; Storm Bear: "fatter, bigger belly"), on top of "2026-10-16 — NEW UNITS x14" (STORM BEAR). Sheet design/reference/storm_bear-character-sheet.png.
+- v2 changes:
+  - SYMMETRIC REST POSE (repose, bones; geometry never mirror-averaged). The arms are mirror-symmetric at the mean: the -x arm hung 0.30..0.46 u further forward, and the joint error is now 0. The hands are not planted. The legs are mirror-symmetric at the mean (the -x leg was about 0.2 u forward) and both feet are planted (foot min z 0.0 / 0.0). The head and neck turn to face -y with distribute: neck -2.5 deg, head -5.1 deg, so the snout mid-x goes from +0.117 to +0.011. The head is a rigid box (2762 verts, max deviation from rigid 0.0). New chain `mantle`: the dark back coat's lower half hung 0.25..0.32 u to -x, so to_points puts it on x 0. It is a rig chain, so it can be posed.
+  - Mirror p99 0.318 -> 0.199 u after the repose and 0.211 final. The rest is fur-shard detail as generated (p90 0.07..0.13 everywhere below the head; head p90 0.05).
+  - Edge stretch p99 1.31 (max 9.2: one calf edge). Self-intersections 86 -> 342 (crystal_canine shipped at 26 -> 555).
+  - BELLY: new opt-in light.belly (proxy_finish_light.belly_push). It runs on the finished low after the bake and the repose, so the texture rides on the UVs. The push peaks at navel z 2.8: front 0.38 u, sides 0.17 u. It fades out by z 2.05 / 3.6, the coat behind y 1.2 is not widened, and the legs are excluded. The arms swing out rigidly 5.9 deg at the shoulder so they keep their gap to the belly (arm-torso min gap 0.018 -> 0.033 u). At the navel the width goes 2.00 -> 2.34 u (+16.8 %) and the depth 2.24 -> 2.62 u (+16.7 %). The belly front moves y -0.61 -> -0.98. At z 2.55: +12 / +11 %; at z 3.05: +9 / +14 %. Belly stretch p99 1.27, max 2.24; no new self-intersections (342 -> 336).
+  - Evidence: renders/storm_bear/storm_bear_v2_symmetry.png (front ortho before / after), renders/storm_bear/storm_bear_v2_belly.png (front + side before / after).
+- Unchanged from v1: frame / refloor, decimation (18000 tris, dense head + eye boxes), recolour3d (fur + crystals), glow3d (eyes, crystal core, crystal body), bakes, palette, clips. Face as generated.
+- Gates: contract checks 7 / 1 failed and 11 / 1 failed (cell_fit only, report-only). Open edges 0. Sheet gate front 0.889, side 0.915, mean 0.902 (v1 0.916 / 0.911). The front loss is the fuller belly and the arms swung out (the sheet draws a slimmer bear). finish gate mean 0.874 vs the picked 0.910. GATE bake_reference=none is a known kit gap.
+- Knobs that matter: light.belly push_front 0.38 / push_side 0.17 (how fat), centre z 2.8 + z_radius [0.75, 0.80] (where / how tall the belly is), front_x_radius 1.6 (roundness), swing_gain 1.0 (how far the arms swing out). The v1 knobs still apply: recolour3d fur 134,136,145 gamma 0.743, crystals 116,146,222, glow emissions, ao_distance 0.2, body_tris 18000, clips.
+- Open for the artist:
+  - movement + in-game height: clips are PLACEHOLDERS. In walk the toes dip 0.25 u below the floor (clip_loops min_z -0.253; kit foot bend).
+  - in the side view the hanging arm hides most of the belly bulge; it reads in the front and 3/4 views.
+  - the hands now hang at the mean of the two generated arms: less far forward than the sheet's side view draws them.
+  - v1 items still open: the chest V is one solid stripe (the sheet draws faceted plates), the eyes are proxy cyan with sheet-colour emission, the face fur is mottled, the glow is per face, and the basecolor white fur is about 9 L* under the sheet.
+- LOCKED: nothing yet (awaiting the artist).
+- Open artist questions: design/OPEN-QUESTIONS.md section 'storm_bear'.

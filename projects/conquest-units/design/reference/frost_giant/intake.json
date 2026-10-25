@@ -1,0 +1,756 @@
+{
+ "unit": "frost_giant",
+ "sheet": "design/reference/frost_giant-character-sheet.png",
+ "size_px": [
+  1672,
+  941
+ ],
+ "background_rgb": [
+  46,
+  49,
+  55
+ ],
+ "bg_tol": 26.0,
+ "views": {
+  "front": {
+   "bbox_px": [
+    26,
+    74,
+    404,
+    851
+   ],
+   "axis_x_px": 224.0,
+   "floor_y_px": 850,
+   "height_px": 777,
+   "height_units": 7.77,
+   "width_units": 3.78,
+   "half_width_profile": {
+    "0.00": {
+     "y_px": 850,
+     "half_w_units": 0.42
+    },
+    "0.10": {
+     "y_px": 772,
+     "half_w_units": 0.46
+    },
+    "0.25": {
+     "y_px": 656,
+     "half_w_units": 1.98
+    },
+    "0.50": {
+     "y_px": 462,
+     "half_w_units": 1.46
+    },
+    "0.75": {
+     "y_px": 268,
+     "half_w_units": 0.78
+    },
+    "0.90": {
+     "y_px": 152,
+     "half_w_units": 0.56
+    }
+   },
+   "transform": "z = (850 - y_px) / 100 ; x = (x_px - 224.0) / 100"
+  },
+  "back": {
+   "bbox_px": [
+    426,
+    72,
+    792,
+    852
+   ],
+   "axis_x_px": 607.0,
+   "floor_y_px": 851,
+   "height_px": 780,
+   "height_units": 7.8,
+   "width_units": 3.66,
+   "half_width_profile": {
+    "0.00": {
+     "y_px": 851,
+     "half_w_units": 0.43
+    },
+    "0.10": {
+     "y_px": 773,
+     "half_w_units": 0.45
+    },
+    "0.25": {
+     "y_px": 656,
+     "half_w_units": 1.84
+    },
+    "0.50": {
+     "y_px": 462,
+     "half_w_units": 1.43
+    },
+    "0.75": {
+     "y_px": 267,
+     "half_w_units": 0.79
+    },
+    "0.90": {
+     "y_px": 150,
+     "half_w_units": 0.51
+    }
+   },
+   "transform": "z = (851 - y_px) / 100 ; x = (x_px - 607.0) / 100"
+  },
+  "side": {
+   "bbox_px": [
+    810,
+    68,
+    1128,
+    867
+   ],
+   "axis_x_px": 1011.5,
+   "floor_y_px": 866,
+   "height_px": 799,
+   "height_units": 7.99,
+   "width_units": 3.18,
+   "half_width_profile": {
+    "0.00": {
+     "y_px": 866,
+     "half_w_units": 0.995
+    },
+    "0.10": {
+     "y_px": 786,
+     "half_w_units": 0.165
+    },
+    "0.25": {
+     "y_px": 666,
+     "half_w_units": 1.415
+    },
+    "0.50": {
+     "y_px": 467,
+     "half_w_units": 0.455
+    },
+    "0.75": {
+     "y_px": 268,
+     "half_w_units": 1.315
+    },
+    "0.90": {
+     "y_px": 148,
+     "half_w_units": 1.075
+    }
+   },
+   "transform": "z = (866 - y_px) / 100 ; x = (x_px - 1011.5) / 100"
+  }
+ },
+ "ortho_frame": {
+  "views": [
+   "front",
+   "side"
+  ],
+  "width_px": 450,
+  "height_px": 860,
+  "below_floor_px": 20,
+  "crops": {
+   "front": [
+    -1,
+    10,
+    449,
+    870
+   ],
+   "back": [
+    382,
+    11,
+    832,
+    871
+   ],
+   "side": [
+    786,
+    26,
+    1236,
+    886
+   ]
+  }
+ },
+ "unnamed_extra_segments_px": [],
+ "swatches": [
+  {
+   "centre_px": [
+    1204.7,
+    882.0
+   ],
+   "rgb": [
+    212,
+    234,
+    250
+   ],
+   "diameter_px": 56
+  },
+  {
+   "centre_px": [
+    1277.0,
+    882.0
+   ],
+   "rgb": [
+    167,
+    213,
+    243
+   ],
+   "diameter_px": 56
+  },
+  {
+   "centre_px": [
+    1351.0,
+    880.5
+   ],
+   "rgb": [
+    128,
+    190,
+    238
+   ],
+   "diameter_px": 56
+  },
+  {
+   "centre_px": [
+    1421.6,
+    882.0
+   ],
+   "rgb": [
+    50,
+    120,
+    183
+   ],
+   "diameter_px": 56
+  },
+  {
+   "centre_px": [
+    1495.0,
+    880.4
+   ],
+   "rgb": [
+    96,
+    210,
+    251
+   ],
+   "diameter_px": 56
+  },
+  {
+   "centre_px": [
+    1567.8,
+    882.0
+   ],
+   "rgb": [
+    48,
+    56,
+    67
+   ],
+   "diameter_px": 56,
+   "inferred_by_spacing": true
+  }
+ ],
+ "swatch_rejects_off_column": [
+  {
+   "centre_px": [
+    1449.0,
+    259.9
+   ],
+   "rgb": [
+    48,
+    49,
+    60
+   ],
+   "diameter_px": 14
+  }
+ ],
+ "base_frac": 0.06,
+ "axis_overrides": {},
+ "units_rule": "1 sheet unit = 100 px; per view z = (floor_y - y) / 100, x = (x - axis_x) / 100",
+ "caveat": "automatic split: VERIFY intake_overlay.png before dispatch (overlapping views or a floor shadow fuse / extend a view; rerun with --views or --bg-tol). A DARK subject on a dark sheet (shadowbun) loses its outline into the background: the floor line can sit high by ~15 px - check the soles",
+ "smart": true,
+ "auto_flags": {
+  "axis": {
+   "front": 224.0,
+   "back": 607.0,
+   "side": 1011.5
+  },
+  "floor": {
+   "side": 866
+  },
+  "ortho_views": [
+   "front",
+   "side"
+  ]
+ },
+ "auto_flags_cli": "--floor side=866 --axis front=224,back=607,side=1011.5 --ortho-views front,side",
+ "side_facing": {
+  "facing": "left",
+  "source": "auto",
+  "guess": "left",
+  "score": -0.075,
+  "confidence": 0.25,
+  "cue": "colour",
+  "front_back_separation": 0.12,
+  "rule": "score > 0 = face toward image-right; 'right' needs >= 0.14, else the house default (left)",
+  "meshgen_camera": "left"
+ },
+ "view_checks": {
+  "front": {
+   "floating_parts": [],
+   "mass_centroid_px": 219.3,
+   "core_width_px": 329,
+   "mass_axis_px": 224.0,
+   "mirror_iou": 0.822,
+   "mirror_iou_core": 0.705,
+   "tone_asym": 0.204,
+   "half_area_ratio": 0.942,
+   "contact_x_px": [
+    180,
+    269
+   ],
+   "floor_candidates": {
+    "raw_lowest_px": 850,
+    "body_lowest_px": 850,
+    "contact_px": 850,
+    "shadow_px": 0,
+    "support_run_min_px": 77,
+    "skipped": []
+   },
+   "floor_px": 850,
+   "feet_axis_px": 223.5,
+   "threshold_holes_frac": 0.011,
+   "near_bg_frac": 0.027,
+   "dark_subject": false,
+   "three_quarter_suspect": false,
+   "three_quarter_why": []
+  },
+  "back": {
+   "floating_parts": [],
+   "mass_centroid_px": 607.1,
+   "core_width_px": 320,
+   "mass_axis_px": 607.0,
+   "mirror_iou": 0.918,
+   "mirror_iou_core": 0.867,
+   "tone_asym": 0.142,
+   "half_area_ratio": 0.992,
+   "contact_x_px": [
+    562,
+    652
+   ],
+   "floor_candidates": {
+    "raw_lowest_px": 851,
+    "body_lowest_px": 851,
+    "contact_px": 851,
+    "shadow_px": 0,
+    "support_run_min_px": 78,
+    "skipped": []
+   },
+   "floor_px": 851,
+   "feet_axis_px": 606.5,
+   "threshold_holes_frac": 0.009,
+   "near_bg_frac": 0.027,
+   "dark_subject": false,
+   "three_quarter_suspect": false,
+   "three_quarter_why": []
+  },
+  "side": {
+   "floating_parts": [],
+   "mass_centroid_px": 983.7,
+   "core_width_px": 149,
+   "mass_axis_px": 1011.5,
+   "contact_x_px": [
+    1004,
+    1019
+   ],
+   "floor_candidates": {
+    "raw_lowest_px": 868,
+    "body_lowest_px": 868,
+    "contact_px": 866,
+    "shadow_px": 0,
+    "support_run_min_px": 80,
+    "skipped": []
+   },
+   "floor_px": 866,
+   "feet_axis_px": 968.5,
+   "threshold_holes_frac": 0.024,
+   "near_bg_frac": 0.054,
+   "dark_subject": false
+  }
+ },
+ "front_back_width_ratio": 0.973,
+ "height_check": {
+  "heights_units": {
+   "front": 7.77,
+   "back": 7.8,
+   "side": 7.99
+  },
+  "pairs": [
+   {
+    "views": [
+     "front",
+     "back"
+    ],
+    "diff_pct": 0.4
+   },
+   {
+    "views": [
+     "front",
+     "side"
+    ],
+    "diff_pct": 2.8
+   },
+   {
+    "views": [
+     "back",
+     "side"
+    ],
+    "diff_pct": 2.4
+   }
+  ],
+  "worst": {
+   "views": [
+    "front",
+    "side"
+   ],
+   "diff_pct": 2.8
+  }
+ },
+ "clutter_removed": {
+  "panels": [
+   [
+    1167,
+    229,
+    1413,
+    408
+   ]
+  ],
+  "panel_column": null,
+  "rules": 94,
+  "title_blobs": 127
+ },
+ "matte_strips_px": [],
+ "dark_strips": [],
+ "palette_fallback": null,
+ "view_masks": {
+  "path": "view_masks.png",
+  "labels": {
+   "front": 1,
+   "back": 2,
+   "side": 3
+  },
+  "rule": "label image at sheet px: the silhouette each view was measured on"
+ },
+ "intake_notes": [
+  "removed 1 framed panel(s), 127 title blob(s) and 94 rule line(s) before the split (was --region)",
+  "dropped 1 non-view segment(s) (detail panels / labels: short, or standing above the views' floor band): x 1168-1411",
+  "side floor 866 px = the lowest body contact; ignored a part with no leg-like support hanging 2 px lower (tail curl / pool / unpaired tail) (raw lowest row 868)",
+  "side axis 1011.5 px (centre of the floor contact span); the feet-base rule says 968.5",
+  "side view faces image-left (auto, colour score -0.07) -> meshgen view 'left'",
+  "front-vs-side height: front 7.77 u, side 7.99 u (+2.8%)"
+ ],
+ "proxy": {
+  "glb": "proxy/frost_giant_proxy.glb",
+  "sha256": "0a7d865069659475df1b4a72b2d251ee7949851e9c6b4a229837b59561281b96",
+  "seed": 56,
+  "model": "Pixal3D multi-view (meshgen, shared_frame)",
+  "views_sent": {
+   "front": "proxy/view_front.png",
+   "back": "proxy/view_back.png",
+   "left": "proxy/view_side.png"
+  },
+  "side_facing": "left",
+  "frame": {
+   "above_floor_px": 798,
+   "below_floor_px": 2,
+   "pad_px": 20,
+   "height_px": 841,
+   "views": {
+    "front": {
+     "crop_origin_px": [
+      6,
+      32
+     ],
+     "floor_row": 818,
+     "mask_bbox_px": [
+      26,
+      74,
+      404,
+      851
+     ]
+    },
+    "back": {
+     "crop_origin_px": [
+      406,
+      33
+     ],
+     "floor_row": 818,
+     "mask_bbox_px": [
+      426,
+      72,
+      792,
+      852
+     ]
+    },
+    "side": {
+     "crop_origin_px": [
+      790,
+      48
+     ],
+     "floor_row": 818,
+     "mask_bbox_px": [
+      810,
+      68,
+      1128,
+      869
+     ]
+    }
+   }
+  },
+  "generated": {
+   "via": "service",
+   "seed": null,
+   "duration_ms": null,
+   "wall_s": 105.4,
+   "vram": null,
+   "stats": null,
+   "framing": null,
+   "warnings": null,
+   "free_vram_gb_before": 9.35
+  },
+  "transform": {
+   "rotation": [
+    [
+     1.0,
+     0.0,
+     0.0
+    ],
+    [
+     0.0,
+     1.0,
+     0.0
+    ],
+    [
+     0.0,
+     0.0,
+     1.0
+    ]
+   ],
+   "offset": [
+    0.000549808144569397,
+    -0.011446759104728699,
+    -0.4958614110946655
+   ],
+   "scale": 8.010309278350515,
+   "rule": "v_sheet = scale * (R @ v_zup - offset); glTF (x, y, z) -> z-up (x, -z, y)",
+   "orientation_identity_iou": 0.766,
+   "orientation_best_iou": 0.766
+  },
+  "clipped_below_floor_px": {},
+  "scores": {
+   "front": {
+    "iou": 0.902,
+    "iou_shape": 0.8745,
+    "aspect_rel": 0.0186,
+    "row_err_u": 0.051,
+    "row_err_pct": 1.8,
+    "w_u": 3.7,
+    "h_u": 7.75,
+    "ref_w_u": 3.78,
+    "ref_h_u": 7.77,
+    "scored": true
+   },
+   "back": {
+    "iou": 0.8981,
+    "iou_shape": 0.8682,
+    "aspect_rel": 0.0172,
+    "row_err_u": 0.066,
+    "row_err_pct": 2.5,
+    "w_u": 3.7,
+    "h_u": 7.75,
+    "ref_w_u": 3.66,
+    "ref_h_u": 7.8,
+    "scored": true
+   },
+   "side": {
+    "iou": 0.8363,
+    "iou_shape": 0.7436,
+    "aspect_rel": 0.012,
+    "row_err_u": 0.126,
+    "row_err_pct": 5.9,
+    "w_u": 3.04,
+    "h_u": 7.75,
+    "ref_w_u": 3.18,
+    "ref_h_u": 8.01,
+    "scored": true
+   }
+  },
+  "mean_iou": 0.8788,
+  "side_len_over_front_h": {
+   "mesh": 0.392,
+   "sheet": 0.409,
+   "rel_err": -0.0416
+  },
+  "front_w_over_h": {
+   "mesh": 0.477,
+   "sheet": 0.486
+  },
+  "gate": {
+   "pass": true,
+   "verdict": "reliable",
+   "rule": "mean IoU >= 0.75 and side length within 5%"
+  },
+  "sections": [
+   {
+    "z_frac": 0.06,
+    "z_u": 0.465,
+    "x_min_u": -0.407,
+    "x_max_u": 0.524,
+    "width_x_u": 0.931,
+    "y_front_u": 0.323,
+    "y_back_u": 0.694,
+    "depth_y_u": 0.371,
+    "y_centre_u": 0.508,
+    "points": 444
+   },
+   {
+    "z_frac": 0.18,
+    "z_u": 1.394,
+    "x_min_u": -1.486,
+    "x_max_u": 1.529,
+    "width_x_u": 3.015,
+    "y_front_u": -0.605,
+    "y_back_u": 0.758,
+    "depth_y_u": 1.363,
+    "y_centre_u": 0.077,
+    "points": 1400
+   },
+   {
+    "z_frac": 0.3,
+    "z_u": 2.323,
+    "x_min_u": -1.805,
+    "x_max_u": 1.799,
+    "width_x_u": 3.604,
+    "y_front_u": -0.753,
+    "y_back_u": 0.586,
+    "depth_y_u": 1.338,
+    "y_centre_u": -0.084,
+    "points": 3256
+   },
+   {
+    "z_frac": 0.42,
+    "z_u": 3.252,
+    "x_min_u": -1.508,
+    "x_max_u": 1.605,
+    "width_x_u": 3.113,
+    "y_front_u": -0.065,
+    "y_back_u": 0.877,
+    "depth_y_u": 0.942,
+    "y_centre_u": 0.406,
+    "points": 2420
+   },
+   {
+    "z_frac": 0.54,
+    "z_u": 4.181,
+    "x_min_u": -1.264,
+    "x_max_u": 1.367,
+    "width_x_u": 2.632,
+    "y_front_u": 0.027,
+    "y_back_u": 0.881,
+    "depth_y_u": 0.854,
+    "y_centre_u": 0.454,
+    "points": 1514
+   },
+   {
+    "z_frac": 0.66,
+    "z_u": 5.11,
+    "x_min_u": -1.068,
+    "x_max_u": 1.12,
+    "width_x_u": 2.188,
+    "y_front_u": -0.144,
+    "y_back_u": 1.295,
+    "depth_y_u": 1.439,
+    "y_centre_u": 0.576,
+    "points": 1538
+   },
+   {
+    "z_frac": 0.78,
+    "z_u": 6.039,
+    "x_min_u": -0.668,
+    "x_max_u": 0.771,
+    "width_x_u": 1.44,
+    "y_front_u": -0.73,
+    "y_back_u": 0.837,
+    "depth_y_u": 1.567,
+    "y_centre_u": 0.054,
+    "points": 3656
+   },
+   {
+    "z_frac": 0.9,
+    "z_u": 6.968,
+    "x_min_u": -0.397,
+    "x_max_u": 0.512,
+    "width_x_u": 0.909,
+    "y_front_u": -0.591,
+    "y_back_u": 0.42,
+    "depth_y_u": 1.011,
+    "y_centre_u": -0.086,
+    "points": 998
+   }
+  ],
+  "landmarks": {
+   "height_u": 7.742,
+   "top": {
+    "z_u": 7.742,
+    "x_u": 0.305,
+    "y_u": -0.007
+   },
+   "front_most": {
+    "y_u": -1.516,
+    "z_u": 0.325,
+    "note": "the most -Y point (snout / chest / beak tip)"
+   },
+   "rear_most": {
+    "y_u": 1.516,
+    "z_u": 0.344,
+    "note": "the most +Y point (tail)"
+   },
+   "length_y_u": 3.032,
+   "width_x_u": 3.697,
+   "widest_band": {
+    "z_u": 2.323,
+    "width_x_u": 3.604
+   },
+   "depth_at_intake_rows": {
+    "0.00": {
+     "z_u": 0.155,
+     "depth_y_u": 1.894,
+     "half_w_x_u": 0.511,
+     "sheet_half_w_u": 0.42
+    },
+    "0.10": {
+     "z_u": 0.774,
+     "depth_y_u": 0.26,
+     "half_w_x_u": 0.506,
+     "sheet_half_w_u": 0.46
+    },
+    "0.25": {
+     "z_u": 1.936,
+     "depth_y_u": 1.488,
+     "half_w_x_u": 1.8,
+     "sheet_half_w_u": 1.98
+    },
+    "0.50": {
+     "z_u": 3.871,
+     "depth_y_u": 0.732,
+     "half_w_x_u": 1.462,
+     "sheet_half_w_u": 1.46
+    },
+    "0.75": {
+     "z_u": 5.807,
+     "depth_y_u": 1.751,
+     "half_w_x_u": 0.787,
+     "sheet_half_w_u": 0.78
+    },
+    "0.90": {
+     "z_u": 6.968,
+     "depth_y_u": 1.011,
+     "half_w_x_u": 0.512,
+     "sheet_half_w_u": 0.56
+    }
+   }
+  },
+  "render": "proxy/frost_giant_proxy_vs_sheet.png",
+  "notes": [],
+  "use": "3D REFERENCE ONLY: cite sections / landmark depths in the build's constants; the sheet is the spec and the rest pose stays symmetric (the proxy copies the sheet's pose)",
+  "units": "sheet units (1 u = 100 sheet px); z up from the floor, x = the creature's left/right (bbox centred), y = depth, front = -y"
+ }
+}

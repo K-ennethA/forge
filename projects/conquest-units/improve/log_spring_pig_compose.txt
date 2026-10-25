@@ -1,0 +1,6 @@
+﻿WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\spring_pig\spring_pig_sheet_vs_model.png
+GATE view=front iou=0.880 in_frame=0.875 row_err=6.8% | proxy iou=0.893
+GATE view=side  iou=0.892 in_frame=0.849 row_err=4.8% | proxy iou=0.922
+GATE mean_iou=0.886 flagged=none proxy=reliable
+GATE bake_reference=none (no object.bake call found)
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\spring_pig\spring_pig_contact.png

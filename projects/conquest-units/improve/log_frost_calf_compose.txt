@@ -1,0 +1,6 @@
+﻿WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\frost_calf\frost_calf_sheet_vs_model.png
+GATE view=front iou=0.670 in_frame=0.650 row_err=5.7% | proxy iou=0.854  FLAG: more than 0.05 below the proxy
+GATE view=side  iou=0.727 in_frame=0.706 row_err=9.5% | proxy iou=0.745
+GATE mean_iou=0.699 flagged=front proxy=proxy unreliable, work from the sheet (mean IoU 0.75 < 0.75; side length off by +11.4%)
+GATE bake_reference=none (no object.bake call found)
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\frost_calf\frost_calf_contact.png

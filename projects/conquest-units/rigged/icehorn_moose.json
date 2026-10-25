@@ -1,0 +1,398 @@
+{
+ "unit": "icehorn_moose",
+ "source": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\improved\\icehorn_moose.blend",
+ "fps": 24,
+ "finish": {
+  "open_edges": 0,
+  "tris": 18000,
+  "mirror": {
+   "plane_x_u": 0.0,
+   "max_u": 0.25101,
+   "p99_u": 0.10528,
+   "p90_u": 0.04476,
+   "mean_u": 0.02055,
+   "rule": "every vertex mirrored in X about the plane -> distance to the nearest surface (0 = exactly symmetric)"
+  },
+  "tri_budget": [
+   8000,
+   22000
+  ],
+  "in_budget": true,
+  "mode": "light"
+ },
+ "weights": {
+  "max_influences": 4,
+  "unweighted": 0,
+  "sum_dev_max": 3.3306690738754696e-16,
+  "per_bone_dominant": {
+   "hips": 345,
+   "belly": 764,
+   "chest": 898,
+   "neck": 1820,
+   "head": 706,
+   "arm.L.0": 802,
+   "arm.L.1": 290,
+   "arm.L.2": 304,
+   "arm.R.0": 851,
+   "arm.R.1": 291,
+   "arm.R.2": 294,
+   "leg.L.0": 541,
+   "leg.L.1": 158,
+   "leg.L.2": 134,
+   "leg.R.0": 485,
+   "leg.R.1": 150,
+   "leg.R.2": 121
+  },
+  "parts": {},
+  "rule": "shell: exp(-((d - d_min) / (0.06 H))^2) over bone-segment distances, side-aware, <= 4, normalised; parts rigid on their bone"
+ },
+ "clips": {
+  "idle": {
+   "frames": [
+    1,
+    49
+   ],
+   "seconds": 2.0,
+   "cyclic": true,
+   "seam_mm": 0.0,
+   "clearance_min_z": -0.0627
+  },
+  "walk": {
+   "frames": [
+    1,
+    25
+   ],
+   "seconds": 1.0,
+   "cyclic": true,
+   "seam_mm": 0.0,
+   "clearance_min_z": -0.1083
+  }
+ },
+ "bones": [
+  {
+   "name": "root",
+   "parent": null,
+   "deform": false,
+   "head": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "tail": [
+    0.0,
+    0.0,
+    0.4
+   ]
+  },
+  {
+   "name": "hips",
+   "parent": "root",
+   "deform": true,
+   "head": [
+    0.0022,
+    1.563,
+    3.6
+   ],
+   "tail": [
+    0.0022,
+    0.613,
+    3.7
+   ]
+  },
+  {
+   "name": "belly",
+   "parent": "hips",
+   "deform": true,
+   "head": [
+    0.0022,
+    0.613,
+    3.7
+   ],
+   "tail": [
+    0.0022,
+    -0.287,
+    3.8
+   ]
+  },
+  {
+   "name": "chest",
+   "parent": "belly",
+   "deform": true,
+   "head": [
+    0.0022,
+    -0.287,
+    3.8
+   ],
+   "tail": [
+    0.0022,
+    -0.487,
+    4.3
+   ]
+  },
+  {
+   "name": "neck",
+   "parent": "chest",
+   "deform": true,
+   "head": [
+    0.0022,
+    -0.487,
+    4.3
+   ],
+   "tail": [
+    0.0022,
+    -1.0393,
+    4.7
+   ]
+  },
+  {
+   "name": "head",
+   "parent": "neck",
+   "deform": true,
+   "head": [
+    0.0022,
+    -1.0393,
+    4.7
+   ],
+   "tail": [
+    0.0022,
+    -1.6893,
+    3.95
+   ]
+  },
+  {
+   "name": "arm.L.0",
+   "parent": "chest",
+   "deform": true,
+   "head": [
+    0.3872,
+    0.013,
+    3.0
+   ],
+   "tail": [
+    0.6082,
+    -0.063,
+    1.7195
+   ]
+  },
+  {
+   "name": "arm.L.1",
+   "parent": "arm.L.0",
+   "deform": true,
+   "head": [
+    0.6082,
+    -0.063,
+    1.7195
+   ],
+   "tail": [
+    0.6657,
+    -0.209,
+    0.639
+   ]
+  },
+  {
+   "name": "arm.L.2",
+   "parent": "arm.L.1",
+   "deform": true,
+   "head": [
+    0.6657,
+    -0.209,
+    0.639
+   ],
+   "tail": [
+    0.7422,
+    -0.267,
+    0.089
+   ]
+  },
+  {
+   "name": "arm.R.0",
+   "parent": "chest",
+   "deform": true,
+   "head": [
+    -0.3872,
+    0.013,
+    3.0
+   ],
+   "tail": [
+    -0.6082,
+    -0.063,
+    1.7195
+   ]
+  },
+  {
+   "name": "arm.R.1",
+   "parent": "arm.R.0",
+   "deform": true,
+   "head": [
+    -0.6082,
+    -0.063,
+    1.7195
+   ],
+   "tail": [
+    -0.6657,
+    -0.209,
+    0.639
+   ]
+  },
+  {
+   "name": "arm.R.2",
+   "parent": "arm.R.1",
+   "deform": true,
+   "head": [
+    -0.6657,
+    -0.209,
+    0.639
+   ],
+   "tail": [
+    -0.7422,
+    -0.267,
+    0.089
+   ]
+  },
+  {
+   "name": "leg.L.0",
+   "parent": "hips",
+   "deform": true,
+   "head": [
+    0.4522,
+    1.563,
+    3.1
+   ],
+   "tail": [
+    0.6187,
+    1.7655,
+    1.6951
+   ]
+  },
+  {
+   "name": "leg.L.1",
+   "parent": "leg.L.0",
+   "deform": true,
+   "head": [
+    0.6187,
+    1.7655,
+    1.6951
+   ],
+   "tail": [
+    0.6947,
+    1.727,
+    0.5902
+   ]
+  },
+  {
+   "name": "leg.L.2",
+   "parent": "leg.L.1",
+   "deform": true,
+   "head": [
+    0.6947,
+    1.727,
+    0.5902
+   ],
+   "tail": [
+    0.7572,
+    1.548,
+    0.0402
+   ]
+  },
+  {
+   "name": "leg.R.0",
+   "parent": "hips",
+   "deform": true,
+   "head": [
+    -0.4522,
+    1.563,
+    3.1
+   ],
+   "tail": [
+    -0.6187,
+    1.7655,
+    1.6951
+   ]
+  },
+  {
+   "name": "leg.R.1",
+   "parent": "leg.R.0",
+   "deform": true,
+   "head": [
+    -0.6187,
+    1.7655,
+    1.6951
+   ],
+   "tail": [
+    -0.6947,
+    1.727,
+    0.5902
+   ]
+  },
+  {
+   "name": "leg.R.2",
+   "parent": "leg.R.1",
+   "deform": true,
+   "head": [
+    -0.6947,
+    1.727,
+    0.5902
+   ],
+   "tail": [
+    -0.7572,
+    1.548,
+    0.0402
+   ]
+  }
+ ],
+ "bone_count": 18,
+ "digest": {
+  "parts": {
+   "solid_grid": "2bf489496452eb60",
+   "bake_normal": "4a2f44ee82a94343",
+   "bake_ao": "a13fd427ad080492",
+   "bake_albedo": "c1b7243f09b185c3",
+   "glow3d": "498b4b6016520176",
+   "yaw": "100f40193cdffc9f",
+   "repose": "01a10f64b1fdb298",
+   "geometry_colour_uv": "c4fb29bb81fdbdcf",
+   "weights": "7a5e391582dc71ba",
+   "keys": "81e7979fff4b6477",
+   "clip_samples": "fa38f81a83bcbf89"
+  },
+  "combined": "2e897e2889574114"
+ },
+ "glb": {
+  "path": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\rigged\\icehorn_moose.glb",
+  "bytes": 11802128,
+  "seconds": 0.6
+ },
+ "skins": {
+  "default": {
+   "file": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\rigged\\icehorn_moose.blend",
+   "palette": {
+    "proxy_albedo": {
+     "rgb": [
+      255,
+      255,
+      255
+     ]
+    },
+    "antler_ice": {
+     "rgb": [
+      160,
+      230,
+      255
+     ],
+     "emission": [
+      129,
+      217,
+      251
+     ],
+     "emission_scale": 0.35
+    }
+   }
+  },
+  "repaint_proof": {
+   "default_digest_before": "c4fb29bb81fdbdcf",
+   "after_repaint": "c4fb29bb81fdbdcf"
+  }
+ },
+ "improved_report": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\improved\\icehorn_moose.json",
+ "seconds": 65.4
+}

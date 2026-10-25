@@ -1,0 +1,8 @@
+00:02.063  blend            | Read blend: "C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\rigged\iron_scale_knight.blend"
+00:06.625  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\iron_scale_knight\iron_scale_knight_feet.png'
+00:07.266  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\iron_scale_knight\iron_scale_knight_head.png'
+00:07.875  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\iron_scale_knight\iron_scale_knight_tabard.png'
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\iron_scale_knight\iron_scale_knight_feet.png
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\iron_scale_knight\iron_scale_knight_head.png
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\iron_scale_knight\iron_scale_knight_tabard.png
+Blender 5.0.1 (hash a3db93c5b259 built 2025-12-16 01:32:30)

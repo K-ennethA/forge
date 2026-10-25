@@ -1,0 +1,309 @@
+{
+ "glb": "../../../../../../../../../AppData/Local/Temp/claude/C--Users-kenne-OneDrive-Desktop-git-forge/5eaeb76f-be56-497f-8b1e-0a29f5e6168b/scratchpad/pig_regen/norm_b/spring_pig_proxy.glb",
+ "sha256": "cae2eed932a643989ab85c3fb136f39db217f5b956fc36382438787ad2cac6bf",
+ "seed": 56,
+ "model": "Pixal3D multi-view (meshgen, shared_frame)",
+ "views_sent": {
+  "front": "../../../../../../../../../AppData/Local/Temp/claude/C--Users-kenne-OneDrive-Desktop-git-forge/5eaeb76f-be56-497f-8b1e-0a29f5e6168b/scratchpad/pig_regen/norm_b/view_front.png",
+  "back": "../../../../../../../../../AppData/Local/Temp/claude/C--Users-kenne-OneDrive-Desktop-git-forge/5eaeb76f-be56-497f-8b1e-0a29f5e6168b/scratchpad/pig_regen/norm_b/view_back.png",
+  "left": "../../../../../../../../../AppData/Local/Temp/claude/C--Users-kenne-OneDrive-Desktop-git-forge/5eaeb76f-be56-497f-8b1e-0a29f5e6168b/scratchpad/pig_regen/norm_b/view_side.png"
+ },
+ "side_facing": "left",
+ "frame": {
+  "above_floor_px": 632,
+  "below_floor_px": 0,
+  "pad_px": 20,
+  "height_px": 673,
+  "views": {
+   "front": {
+    "crop_origin_px": [
+     6,
+     134
+    ],
+    "floor_row": 652,
+    "mask_bbox_px": [
+     26,
+     180,
+     378,
+     787
+    ]
+   },
+   "back": {
+    "crop_origin_px": [
+     392,
+     149
+    ],
+    "floor_row": 652,
+    "mask_bbox_px": [
+     412,
+     184,
+     776,
+     802
+    ]
+   },
+   "side": {
+    "crop_origin_px": [
+     768,
+     142
+    ],
+    "floor_row": 652,
+    "mask_bbox_px": [
+     788,
+     162,
+     1176,
+     795
+    ]
+   }
+  }
+ },
+ "generated": {
+  "via": "reused",
+  "source": "C:\\Users\\kenne\\AppData\\Local\\Temp\\claude\\C--Users-kenne-OneDrive-Desktop-git-forge\\5eaeb76f-be56-497f-8b1e-0a29f5e6168b\\scratchpad\\pig_regen\\pig_sym_b.glb"
+ },
+ "transform": {
+  "rotation": [
+   [
+    1.0,
+    0.0,
+    0.0
+   ],
+   [
+    0.0,
+    1.0,
+    0.0
+   ],
+   [
+    0.0,
+    0.0,
+    1.0
+   ]
+  ],
+  "offset": [
+   -0.000619545578956604,
+   0.004912763833999634,
+   -0.4875572621822357
+  ],
+  "scale": 6.257731958762887,
+  "rule": "v_sheet = scale * (R @ v_zup - offset); glTF (x, y, z) -> z-up (x, -z, y)",
+  "orientation_identity_iou": 0.8759,
+  "orientation_best_iou": 0.8759
+ },
+ "clipped_below_floor_px": {},
+ "scores": {
+  "front": {
+   "iou": 0.8927,
+   "iou_shape": 0.8876,
+   "aspect_rel": 0.0082,
+   "row_err_u": 0.168,
+   "row_err_pct": 4.8,
+   "w_u": 3.52,
+   "h_u": 6.02,
+   "ref_w_u": 3.52,
+   "ref_h_u": 6.07,
+   "scored": true
+  },
+  "back": {
+   "iou": 0.9278,
+   "iou_shape": 0.9078,
+   "aspect_rel": 0.0073,
+   "row_err_u": 0.124,
+   "row_err_pct": 3.4,
+   "w_u": 3.52,
+   "h_u": 6.02,
+   "ref_w_u": 3.64,
+   "ref_h_u": 6.18,
+   "scored": true
+  },
+  "side": {
+   "iou": 0.9224,
+   "iou_shape": 0.9022,
+   "aspect_rel": 0.0212,
+   "row_err_u": 0.116,
+   "row_err_pct": 3.8,
+   "w_u": 3.77,
+   "h_u": 6.02,
+   "ref_w_u": 3.88,
+   "ref_h_u": 6.33,
+   "scored": true
+  }
+ },
+ "mean_iou": 0.9143,
+ "side_len_over_front_h": {
+  "mesh": 0.626,
+  "sheet": 0.639,
+  "rel_err": -0.0203
+ },
+ "front_w_over_h": {
+  "mesh": 0.585,
+  "sheet": 0.58
+ },
+ "gate": {
+  "pass": true,
+  "verdict": "reliable",
+  "rule": "mean IoU >= 0.75 and side length within 5%"
+ },
+ "sections": [
+  {
+   "z_frac": 0.06,
+   "z_u": 0.361,
+   "x_min_u": -1.258,
+   "x_max_u": 1.26,
+   "width_x_u": 2.519,
+   "y_front_u": -0.693,
+   "y_back_u": 1.606,
+   "depth_y_u": 2.3,
+   "y_centre_u": 0.456,
+   "points": 2726
+  },
+  {
+   "z_frac": 0.18,
+   "z_u": 1.083,
+   "x_min_u": -0.986,
+   "x_max_u": 0.982,
+   "width_x_u": 1.968,
+   "y_front_u": -0.415,
+   "y_back_u": 1.832,
+   "depth_y_u": 2.247,
+   "y_centre_u": 0.709,
+   "points": 2610
+  },
+  {
+   "z_frac": 0.3,
+   "z_u": 1.805,
+   "x_min_u": -1.514,
+   "x_max_u": 1.524,
+   "width_x_u": 3.038,
+   "y_front_u": -1.026,
+   "y_back_u": 1.371,
+   "depth_y_u": 2.398,
+   "y_centre_u": 0.173,
+   "points": 2734
+  },
+  {
+   "z_frac": 0.42,
+   "z_u": 2.528,
+   "x_min_u": -1.455,
+   "x_max_u": 1.457,
+   "width_x_u": 2.913,
+   "y_front_u": -0.886,
+   "y_back_u": 0.84,
+   "depth_y_u": 1.726,
+   "y_centre_u": -0.023,
+   "points": 2256
+  },
+  {
+   "z_frac": 0.54,
+   "z_u": 3.25,
+   "x_min_u": -0.954,
+   "x_max_u": 0.952,
+   "width_x_u": 1.906,
+   "y_front_u": -1.27,
+   "y_back_u": 0.651,
+   "depth_y_u": 1.922,
+   "y_centre_u": -0.31,
+   "points": 1140
+  },
+  {
+   "z_frac": 0.66,
+   "z_u": 3.972,
+   "x_min_u": -1.298,
+   "x_max_u": 1.299,
+   "width_x_u": 2.598,
+   "y_front_u": -1.858,
+   "y_back_u": 1.032,
+   "depth_y_u": 2.891,
+   "y_centre_u": -0.413,
+   "points": 1890
+  },
+  {
+   "z_frac": 0.78,
+   "z_u": 4.694,
+   "x_min_u": -1.079,
+   "x_max_u": 1.082,
+   "width_x_u": 2.162,
+   "y_front_u": -1.222,
+   "y_back_u": 0.861,
+   "depth_y_u": 2.083,
+   "y_centre_u": -0.181,
+   "points": 1910
+  },
+  {
+   "z_frac": 0.9,
+   "z_u": 5.416,
+   "x_min_u": -1.116,
+   "x_max_u": 1.096,
+   "width_x_u": 2.212,
+   "y_front_u": -0.331,
+   "y_back_u": 0.61,
+   "depth_y_u": 0.941,
+   "y_centre_u": 0.139,
+   "points": 1402
+  }
+ ],
+ "landmarks": {
+  "height_u": 6.018,
+  "top": {
+   "z_u": 6.018,
+   "x_u": 1.029,
+   "y_u": 0.47
+  },
+  "front_most": {
+   "y_u": -1.881,
+   "z_u": 4.425,
+   "note": "the most -Y point (snout / chest / beak tip)"
+  },
+  "rear_most": {
+   "y_u": 1.881,
+   "z_u": 0.643,
+   "note": "the most +Y point (tail)"
+  },
+  "length_y_u": 3.761,
+  "width_x_u": 3.514,
+  "widest_band": {
+   "z_u": 1.805,
+   "width_x_u": 3.038
+  },
+  "depth_at_intake_rows": {
+   "0.00": {
+    "z_u": 0.12,
+    "depth_y_u": 1.332,
+    "half_w_x_u": 1.064,
+    "sheet_half_w_u": 1.01
+   },
+   "0.10": {
+    "z_u": 0.602,
+    "depth_y_u": 2.417,
+    "half_w_x_u": 1.181,
+    "sheet_half_w_u": 1.2
+   },
+   "0.25": {
+    "z_u": 1.505,
+    "depth_y_u": 2.569,
+    "half_w_x_u": 0.997,
+    "sheet_half_w_u": 1.03
+   },
+   "0.50": {
+    "z_u": 3.009,
+    "depth_y_u": 1.389,
+    "half_w_x_u": 0.897,
+    "sheet_half_w_u": 1.0
+   },
+   "0.75": {
+    "z_u": 4.514,
+    "depth_y_u": 2.245,
+    "half_w_x_u": 1.191,
+    "sheet_half_w_u": 1.18
+   },
+   "0.90": {
+    "z_u": 5.416,
+    "depth_y_u": 0.941,
+    "half_w_x_u": 1.116,
+    "sheet_half_w_u": 1.13
+   }
+  }
+ },
+ "render": "../../../../../../../../../AppData/Local/Temp/claude/C--Users-kenne-OneDrive-Desktop-git-forge/5eaeb76f-be56-497f-8b1e-0a29f5e6168b/scratchpad/pig_regen/norm_b/spring_pig_proxy_vs_sheet.png",
+ "notes": [],
+ "use": "3D REFERENCE ONLY: cite sections / landmark depths in the build's constants; the sheet is the spec and the rest pose stays symmetric (the proxy copies the sheet's pose)",
+ "units": "sheet units (1 u = 100 sheet px); z up from the floor, x = the creature's left/right (bbox centred), y = depth, front = -y"
+}
