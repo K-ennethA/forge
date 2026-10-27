@@ -45,8 +45,25 @@ The pipeline review is design/plan-review-2026-10-26.md:
 
 ## In flight when context was refreshed
 
-1. **Session "Forge kit: bake, shading, contract, rig modes"** (local_84d1d55d-d67a-4518-bc18-b19300e79d4e, branch
-   claude/kit-head-path-774826, own worktree). Kit items, all opt-in:
+1. **WRAPPED UP at b72dfeb on branch claude/kit-head-path-774826** (local, NOT pushed / merged). The full per-item
+   status is on the branch: projects/conquest-units/design/kit-head-path-STATUS.md. Evidence:
+   renders/vampwarrior/kit_head_path/.
+   - Items 2-7: DONE. The 3 pins verified after 4c56678 and a5ec386.
+   - Item 1: PARTIAL. The head part works (head7 drift p50 0.00027, neck blend weights, contract v2 passes). Two bugs
+     are fixed in code but NOT rebuilt: (a) the mirrored-half winding (rendered black), (b) light.uv dropping the head
+     uv_density (uv_health fail).
+   - The 3 regression pins are NOT re-verified after those 2 last changes (they act only in mode "mesh").
+   - Found: head7 is a thin double wall (half its faces are an inner surface): add an inner-wall drop or raise
+     head_tris.
+   - TO FINISH:
+     1. re-run the 3 pins;
+     2. one H rebuild (overlay_H.json, --retexture --solid): head renders both sides, uv_health passes, coverage
+        recovers;
+     3. measure the eye opening (>= 95 %);
+     4. Codex review;
+     5. ask the artist about the merge.
+   Original brief: session "Forge kit: bake, shading, contract, rig modes" (local_84d1d55d-d67a-4518-bc18-b19300e79d4e,
+   own worktree). Kit items, all opt-in:
    - 1: `head_graft.mode: "mesh"` (the head as its own decimated part, or a pre-built head part);
    - 2: a per-part bake cage;
    - 3: a smooth-reference normal bake (no smooth_texels neutralising);
