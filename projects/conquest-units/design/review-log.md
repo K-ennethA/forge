@@ -3451,3 +3451,25 @@ loops, eyeballs, mouth interior, fangs, jaw weights, blink / talk shapes). Earli
 believe your 2-4 day estimate why so long ... if it will improve our work why havent we started it"; the
 finish-independent kit items started in parallel (session kit-head-path). The kit speed-up branch was merged on
 the artist's "if its good why havent we merged it" (b151e0f).
+
+## 2026-10-27 — Vampire Warrior: quality bar, route, animation scope (artist verbatim)
+Session 6cf4305c. Handoff: design/handoff-2026-10-27b-quality-bar-and-route.md. Codex session review:
+design/review-2026-10-27-codex-session-review.md.
+- On the H2 head build: "this is clearly not acceptable and there was issues on the body now, did the previous agent
+  not document properly or did you not read the handoff doc" / "didnt the handoff doc have improvements to the
+  pipeline so this doesnt happen".
+- "would a full regen of head and body be better at this point, with the bald references then the hair later ... seems
+  we left the previous chin shouldnt we just remove the entire head if we're doing transplants".
+- "to me it seems we are still trying to graft the face on to the previous body with issues, and the cape on the body
+  stretches to the sword, I thought we had said we werent going to do that anymore" -> option 1: the cape as its own
+  part (approved).
+- "our work seems to be getting worse or only improving one area, while regressing in the rest" -> a Codex review of
+  the session (requested).
+- Goal: "we want models at the level of league of leggends or marvel rivals"; "for now the gameready ones are fine,
+  but Id like to do in game animations we these and mini animated shorts as well".
+- "dont need full facial rig for gameplay - if thats the hard part can leave it out for now"; "animation is more
+  movement animations like swinging a sword"; "yes animation like attack moves or spells in the ggames".
+- On estimates: "i also dont believe your 1-2 day estimate"; on a proposed timeboxed spike: "no thats a method to
+  success we want models at the level of league of leggends or marvel rivals".
+Open (ask): the bar confirmation, the route for the art-heavy parts (A artist / B researched tools / C both), the
+motion source, the look of the shorts, the first hero.

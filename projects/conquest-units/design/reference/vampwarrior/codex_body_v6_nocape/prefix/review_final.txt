@@ -1,0 +1,66 @@
+codex
+I’ll compare the edited views with the originals and costume sheet, using pixel coordinates measured from the top-left corner.
+codex
+Coordinates below are approximate inclusive ranges on the 1024 × 1536 images: **x = column from left; y = row from top**. Small artifacts need inspection at native resolution; these ranges identify the visible defects.
+
+**A. CAPE FULLY GONE — FAIL**
+
+- **Front — PASS visually.** The long cape, lining and hanging strips are removed. The burgundy standing collar is intentional and should remain.
+- **Side_left — FAIL.**
+  - **x525–538, y1124–1145:** a narrow burgundy triangular sliver remains along the rear calf outline.
+  - **x398–406, y929–940; x547–556, y1296–1307:** isolated dark background specks remain.
+- **Back — FAIL.**
+  - **x554–576, y1094–1176:** a burgundy/pale vertical fragment cuts into the right calf silhouette. This reads as leftover cape material or an incompletely repaired removal boundary.
+  - **x397–450, y1139–1209; x568–620, y1150–1210:** jagged boundaries and abrupt material changes remain across both lower legs, approximately where the old torn cape hem crossed them. These are removal ghosts.
+  - **x349–357, y1280–1290:** isolated dark background speck.
+
+**B. COLLAR KEPT — PASS in all three views**
+
+The standing collar, burgundy lining and principal collar outlines appear preserved. I see no definite collar defect. The dark material immediately below the back collar belongs to the reconstructed torso and should not be mistaken for retained cape.
+
+**C. COSTUME UNCHANGED ELSEWHERE — FAIL**
+
+- **Front — FAIL: exposed thighs have been repainted.**
+  - **x396–485, y573–766; x535–628, y574–766:** the edits introduce long pale/pink contour bands, additional seams and uneven tonal strips. Parts of these areas were already visible in the original, so this exceeds filling the cape-covered regions.
+  - **x465–491, y621–748; x532–552, y624–746:** particularly conspicuous doubled inner-thigh contours.
+  - The head, gem, central bodice, belt hardware, gloves, knees and boots appear substantially preserved.
+- **Side_left — FAIL: the removal repair damages the lower-leg finish.**
+  - **x503–549, y877–1214:** the rear knee/calf region has an irregular, patched contour and inconsistent surface treatment. Some reconstruction was necessary here, but the result does not continue the original armour cleanly.
+  - The visible head, collar, breastplate, shoulder plate, front arm details and toe/sole appear substantially preserved.
+- **Back — FAIL: visible boot areas do not retain a clean continuation.**
+  - **x397–450, y1139–1300; x563–622, y1150–1300:** the old hem boundary leaves abrupt changes between upper and lower boot rendering. Portions below the original cape edge were already visible and should have provided an exact anchor.
+  - The head, collar, shoulder plates and most visible forearm armour remain recognizably preserved.
+
+**D. INVENTED PARTS — FAIL**
+
+- **Front**
+  - **x387–492, y555–773; x532–639, y555–773:** the thigh repairs look traced and patched. The pale bands are neither clean anatomical shading nor a clearly designed costume seam. Remove the doubled contours and establish one continuous thigh surface.
+- **Side_left**
+  - **x520–543, y359–511:** the exposed rear upper-arm edge is uneven and notched.
+  - **x488–558, y574–768:** the hip/buttock reconstruction leaves a large exposed rounded buttock without a clearly resolved garment edge. The front establishes a pelvic armour/garment assembly; this side view does not explain how that assembly wraps around the pelvis.
+  - **x502–548, y763–1018:** the rear thigh-to-knee armour outline becomes irregular and changes direction abruptly.
+  - **x507–551, y1006–1214:** the rear calf has a bulging, patched silhouette and residual red detail. It needs a continuous armour contour and coherent panel construction.
+- **Back**
+  - **x414–607, y267–439:** the invented broad back plate is plausible in isolation, but its lower zigzag trim and central diamond are unsupported design additions. They need a consistent continuation into the side view.
+  - **x397–625, y553–746:** the rear pelvic panel and exposed buttocks are unresolved. A narrow pointed central flap does not clearly explain the garment coverage or its connection to the side hip panels. The sheet does not establish this exposed rear design.
+  - **x387–492, y720–1178; x539–638, y720–1209:** the invented rear boots have weak, inconsistent construction: broad smooth areas, wandering vertical seams and abrupt transitions into the surviving lower boot armour.
+  - **x397–450, y1139–1209; x554–620, y1094–1210:** obvious patch boundaries and retained fragments must be rebuilt, not blended over.
+- **Between side and back**
+  - The side’s rear hip exposure and the back’s pelvic flap do not describe a clearly shared garment.
+  - The side’s projecting calf contour and the back’s calf widths/panel transitions do not convincingly describe the same boot.
+
+**E. SAME FIGURE — FAIL**
+
+The major registration is mostly retained: crown around **y54**, shoulders around **y285–300**, waist around **y480–520**, soles around **y1465–1477**. There is no obvious whole-image scale or canvas shift.
+
+The remaining problems are local geometry:
+
+- **Knees:** front knee plates occupy roughly **y912–1047**; the side knee construction occupies roughly **y924–1055**. The back gives no equally clear corresponding joint and introduces unrelated jagged transitions much lower, around **y1140–1210**.
+- **Calves:** **side x507–551, y1006–1214** versus **back x387–469 and x552–635, y1000–1210** do not read as clean rotations of a consistent armour volume.
+- **Arm/body clearance:** the front and back establish distinct gaps, but **side x478–539, y389–610** has an ambiguously reconstructed arm/torso boundary. A profile can legitimately overlap these forms, but the visible boundaries still need to explain their separation.
+- **Pelvis:** the side buttock projection and back garment coverage remain insufficiently coordinated for reliable multi-view reconstruction.
+
+front: FIX - remove doubled thigh contours and repaint only the cape-covered hip margins.
+side_left: FIX - remove calf sliver and specks; rebuild rear arm, pelvic garment and calf contours consistently.
+back: FIX - remove calf fragments and old hem ghosts; resolve rear pelvic coverage and reconstruct coherent matching boots.
+tokens used

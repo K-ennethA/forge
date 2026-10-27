@@ -1,0 +1,3 @@
+Saved: `C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\design\reference\vampwarrior\codex_body_v6_bald\edited_front.png` (1024 × 1536).
+
+Used built-in image generation with the prompt to remove all hair and preserve everything else. Exact pixel preservation is not guaranteed.

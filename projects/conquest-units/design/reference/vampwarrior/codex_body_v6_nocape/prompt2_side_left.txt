@@ -1,0 +1,17 @@
+Use your image generation tool to EDIT an existing image. This is a local edit of a few areas only.
+
+Attached:
+- r1_side_left.png: THE BASE IMAGE to edit - the LEFT PROFILE view of a bald full-body game character, 1024 x 1536 (its cape was removed and the back of the costume was painted in).
+- r1_back.png: the BACK view of the same character (same canvas and scale).
+- r1_front.png: the FRONT view of the same character.
+- sheet.png: the artist's costume sheet (ignore hair and sword).
+
+FIX ONLY THESE AREAS:
+1. Remove the two leftover BURGUNDY slivers: the dark-red wedge in the gap between the back of the upper arm and the waist (around columns 475-496, rows 439-510) and the dark-red sliver behind the front hip panel (around columns 403-416, rows 611-655). Show the plain grey background there (or the bodice, where the bodice continues).
+2. REAR HIP (columns about 520-560, rows 585-770): the high-cut bodice crosses the hip cleanly - a clean diagonal lower edge of the bodice with silver edging going up over the hip to a narrow pointed central back panel (as in r1_back.png), the bare buttock below it, smooth; the top of the thigh-high boot a clean edge.
+3. FAR LEG (columns about 500-560, rows 765-1150): the far leg mostly hidden behind the near leg, with one clean outline; the back of the far boot plain and smooth, no stepped or layered plates.
+4. The back of the near boot (behind the knee and calf) plain and smooth with one vertical seam, no knee cap on the back.
+
+EVERYTHING ELSE STAYS EXACTLY AS IT IS, pixel for pixel: the head, the collar, the bodice front, the arm, the glove, the front of the legs and boots, the feet, the background, the canvas and the figure's position and scale. Do not move or rescale anything.
+
+Save the result in the current working directory as edited2_side_left.png (1024 x 1536). Then print its path.

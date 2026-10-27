@@ -1,0 +1,14 @@
+Use your image generation tool to EDIT an existing image. This is a minimal, local edit of the HEAD ONLY.
+
+Attached:
+- base2_back.png: THE BASE IMAGE to edit - the straight BACK view of a bald full-body game character, 1024 x 1536.
+- ref_front_bald.png: the FRONT view of the same character on the same canvas and scale. Its bald head is the correct size and height.
+- scalp_back.png: the shape of this character's bald head seen from behind, with small pointed ears.
+
+THE PROBLEM: in base2_back.png the bald head is drawn too SMALL and too LOW. In the front view the top of the head is at pixel row 54, the skull is about 105 px wide at rows 100-120, the ears are at rows 125-150, and the head joins the neck above the collar at about row 195.
+
+THE ONLY CHANGE: redraw the back of the bald head (and the back of the neck down to the collar) so it has EXACTLY the front view's size and rows: the top of the smooth bald scalp at row 54, the skull about 105 px wide at rows 100-120, both small POINTED ears at rows 125-150 at the sides of the skull, a bare neck about 60 px wide going down into the collar. Keep it horizontally centred on the same column as now. Smooth, completely bald, no hair.
+
+EVERYTHING BELOW THE TOP OF THE COLLAR STAYS EXACTLY AS IT IS, pixel for pixel: the collar, the cape, the arms, the legs, the background, the canvas size and the position of the figure. Do not redraw, restyle, move or rescale anything else.
+
+Save the result in the current working directory as edited2_back.png (1024 x 1536). Then print its path and the pixel rows of the top of the head and of the ears.

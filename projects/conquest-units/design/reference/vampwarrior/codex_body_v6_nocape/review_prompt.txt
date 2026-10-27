@@ -1,0 +1,16 @@
+You are reviewing cape-removal edits of 3D-modelling reference images before they go to a multi-view image-to-3D generator. Be strict and concrete; do not soften defects. Do not write any files; answer in text only.
+
+Attached, in order:
+1. base_front.png, 2. base_side_left.png, 3. base_back.png - the ORIGINAL references (bald character WITH a long black cape with burgundy lining).
+4. body_front.png, 5. aligned_body_side_left.png, 6. aligned_body_back.png - the EDITED references. Intended change ONLY: the whole cape removed (outer cloth, burgundy lining, torn hem strips, panels beside the arms and legs, the cape behind the body); the costume painted continuing where the cape covered it; KEEP the high standing collar with its red lining, the shoulder armour, the head and everything else; same pose, canvas, rows and background.
+7. sheet.png - the artist's costume sheet (ignore its hair and sword).
+All references are 1024 x 1536 on the same canvas.
+
+Check each and give PASS or FAIL with the view and the location (pixel rows/columns) of every problem:
+A. CAPE FULLY GONE: no cape cloth, lining, hem strips, slivers, specks or ghost outlines anywhere (beside the arms, between and behind the legs, at the shoulders, behind the body, in the background).
+B. COLLAR KEPT: the high standing collar with its red lining is intact and unchanged in all three views.
+C. COSTUME UNCHANGED ELSEWHERE: compare each edited view with its original - head, collar, bodice, gem, shoulder armour, arms, gloves, belt, hips, legs, boots; list anything that changed that the cape did not cover.
+D. INVENTED PARTS: where the cape used to cover the body (the whole back in the back view; the back of the bodice, arm, hips, thighs and boots in the side view; the hip sides in the front), is the painted costume plausible, consistent with the front view and the sheet, and consistent between the side and back views? Any seams, smears, halos, tone patches, mismatched outlines?
+E. SAME FIGURE: the three views still read as rigid rotations of one figure (rows of crown, chin, shoulders, waist, knees, soles; arm and leg widths; the gap between the arms and the body).
+
+End with one line per view: "front: OK" or "front: FIX - <reason>", the same for side_left and back.

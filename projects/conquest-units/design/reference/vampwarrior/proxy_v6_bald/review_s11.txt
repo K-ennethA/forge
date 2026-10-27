@@ -1,0 +1,46 @@
+codex
+**B is the better body donor, but its neck/collar junction is defective and requires reconstruction before the replacement head can be fitted.** Removing the hair exposes useful costume geometry; it does not produce a clean neck socket.
+
+| Region | Judgment | Concrete reason |
+|---|---|---|
+| 1. Neck | **B better** | B removes A’s long hair crossing the neck and collar. However, B’s neck is hollow, fused into the collar, and accompanied by a floating throat blob. It is not a clean attachment surface. |
+| 2. Collar | **B better** | B has a more exposed, readable flared collar, especially at the back. A’s hair buries substantial portions. B still has uneven, thick edges and a malformed throat closure; its raised sides overlap the chin’s height. |
+| 3. Bodice/chest | **A better** | A has smoother breast volumes and a clearer, more coherent sequence of abdominal plates. B’s breast surfaces are visibly faceted and dented, with a pinched, irregular under-bust junction and less orderly abdominal relief. |
+| 4. Shoulders | **B better** | B exposes the shoulder-to-cape transitions without hair draped over them. The angular shoulder caps read more completely, although their surfaces remain lumpy and their borders poorly separated from the cape. |
+| 5. Arms | **A better** | A’s sleeves and forearm armor have cleaner longitudinal shapes. B has more crumpled, diagonal surface breaks and muddled transitions between upper arm, elbow and gauntlet. |
+| 6. Hands | **Same** | Both have crude, partly merged fingers and weak knuckle/thumb definition. B does not deliver a meaningful improvement; neither has clean, usable finger anatomy. |
+| 7. Belt | **A better** | A’s circular fittings and connecting waist structure are more distinct. B’s fittings look compressed and uneven, with their surrounds blending into the abdominal and pelvic armor. |
+| 8. Hips/pelvic panels | **A better** | A has a clearer central pointed panel and better separation of the surrounding hip pieces. B piles up overlapping pointed forms at the pelvis; the long front strip has blunt, irregular transitions and weak separation from adjacent panels. |
+| 9. Legs | **Same** | Both preserve the basic leg silhouette but have thin, elongated proportions, angular thigh transitions and crumpled knee forms. B changes the pattern of defects without clearly improving the legs. |
+| 10. Boots | **A better** | A’s shin-to-foot transitions are more continuous. B has harsher pinching around the ankles and more abrupt, faceted flares at the feet; its knee/shin ornament also breaks into irregular ridges. |
+| 11a. Cape—front | **B better** | B’s hanging panels are more exposed and easier to distinguish without hair crossing the chest and sides. The narrow strips are still ragged and partly merged. |
+| 11b. Cape—sides | **B better** | B has a more continuous shoulder-to-hem drape. A’s hair adds a large tangled mass over the upper cape and interferes with its silhouette. B still has blade-like edges and abrupt triangular projections. |
+| 11c. Cape—back | **B better** | B supplies a complete visible upper back and a coherent central drape with long folds. A’s hair obscures and occupies much of this region. B’s folds are excessively sharp and converge into a pinched, poorly resolved shoulder/yoke area. |
+| 11d. Cape—hem | **Same** | Both have an uncontrolled mixture of broad points, narrow dangling slivers and ragged notches. B’s more regular central points do not fix the shredded side strips or uneven thickness. |
+
+**B — SCALP: PASS for visible hair remnants.** The scalp and rear skull show broad surface lumpiness, but no identifiable surviving locks, strands or hair ridges. No identifiable hair remains on the shoulders, collar or cape. The cape’s long ridges follow its drape; they are not evidence of retained hair. This pass concerns hair removal only, not surface quality.
+
+**B — NECK / COLLAR: FAIL.** A short bare neck is visible beneath the jaw, particularly in profile and from behind, but there is **no clean, separated neck inside the collar**. The supplied sections establish that the outer neck merges into the collar below approximately y 0.385. The front also has a malformed bridge/closure across the throat area and the measured separate floating blob beneath the chin.
+
+The collar sides rise above the chin bottom, so a horizontal cut inside the collar cannot be treated as an unobstructed neck cut. It intersects a fused ring around a hollow core. The double shell continues through the upper neck and head; closure of the mesh does not make this a solid neck. No additional through-hole can be established from these renders.
+
+**B’s remaining defects below the chin:**
+
+- Double-walled upper neck with a hollow core instead of a solid, straightforward attachment section.
+- Outer neck fused into the collar, eliminating the intended air gap and clean neck boundary.
+- Separate closed blob floating in front of the throat immediately beneath the chin.
+- Malformed front throat closure with thick, irregular bridging geometry.
+- Collar side points extending above the chin bottom and obstructing access to the intended cut region.
+- Uneven collar rim and poorly resolved collar-to-shoulder transitions.
+- Faceted, dented breast armor and a pinched under-bust junction.
+- Irregular abdominal plates and weak separation around the waist fittings.
+- Crumpled sleeve and gauntlet surfaces.
+- Partly merged fingers with poorly defined joints and thumbs.
+- Congested, overlapping pelvic panels with indistinct boundaries.
+- Angular thigh transitions and distorted knee ornament.
+- Pinched ankles and abruptly flared, faceted boot feet.
+- Pinched cape attachment folds and excessively sharp longitudinal ridges.
+- Thin hanging cape slivers, jagged notches and irregular pointed hem geometry.
+
+VERDICT: USE B — Its hair-free shoulders and complete exposed cape make it the more useful donor, despite worse chest and limb surfaces and a neck/collar junction that must be rebuilt.
+tokens used

@@ -1,0 +1,42 @@
+axis x 0.0002 y -0.0407
+z 0.4300  loops 2  innermost-enclosing w 0.0529 d 0.0850 (x -0.0266..0.0264, y -0.0798..0.0053)  | others: E w0.075 d0.098
+z 0.4275  loops 2  innermost-enclosing w 0.0507 d 0.0819 (x -0.0253..0.0254, y -0.0787..0.0032)  | others: E w0.073 d0.098
+z 0.4250  loops 2  innermost-enclosing w 0.0486 d 0.0788 (x -0.0243..0.0244, y -0.0779..0.0009)  | others: E w0.071 d0.097
+z 0.4225  loops 3  innermost-enclosing w 0.0468 d 0.0761 (x -0.0234..0.0234, y -0.0775..-0.0014)  | others: E w0.069 d0.094; - w0.006 d0.009
+z 0.4200  loops 3  innermost-enclosing w 0.0458 d 0.0732 (x -0.0228..0.0230, y -0.0766..-0.0035)  | others: - w0.016 d0.020; E w0.065 d0.084
+z 0.4175  loops 2  innermost-enclosing w 0.0448 d 0.0665 (x -0.0223..0.0225, y -0.0716..-0.0051)  | others: E w0.053 d0.080
+z 0.4150  loops 2  innermost-enclosing w 0.0443 d 0.0647 (x -0.0220..0.0223, y -0.0710..-0.0064)  | others: E w0.052 d0.079
+z 0.4125  loops 2  innermost-enclosing w 0.0439 d 0.0635 (x -0.0218..0.0221, y -0.0705..-0.0069)  | others: E w0.052 d0.079
+z 0.4100  loops 2  innermost-enclosing w 0.0429 d 0.0611 (x -0.0216..0.0214, y -0.0684..-0.0074)  | others: E w0.051 d0.078
+z 0.4075  loops 5  innermost-enclosing w 0.0506 d 0.0768 (x -0.0252..0.0254, y -0.0804..-0.0036)  | others: - w0.041 d0.048; - w0.001 d0.002; - w0.000 d0.002; - w0.001 d0.002
+z 0.4050  loops 3  innermost-enclosing w 0.0485 d 0.0761 (x -0.0241..0.0243, y -0.0799..-0.0038)  | others: - w0.037 d0.044; - w0.000 d0.000
+z 0.4025  loops 2  innermost-enclosing w 0.0449 d 0.0739 (x -0.0222..0.0227, y -0.0776..-0.0037)  | others: - w0.035 d0.048
+z 0.4000  loops 7  innermost-enclosing w 0.0428 d 0.0727 (x -0.0216..0.0212, y -0.0764..-0.0036)  | others: - w0.035 d0.041; - w0.004 d0.011; - w0.002 d0.002; - w0.003 d0.009; - w0.001 d0.003
+z 0.3975  loops 5  innermost-enclosing w 0.0345 d 0.0646 (x -0.0175..0.0171, y -0.0721..-0.0075)  | others: - w0.027 d0.012; E w0.043 d0.073; - w0.027 d0.012; - w0.003 d0.003
+z 0.3950  loops 5  innermost-enclosing w 0.0346 d 0.0435 (x -0.0175..0.0170, y -0.0508..-0.0073)  | others: - w0.040 d0.019; E w0.043 d0.073; - w0.015 d0.016; - w0.041 d0.018
+z 0.3925  loops 5  innermost-enclosing w 0.0340 d 0.0395 (x -0.0171..0.0169, y -0.0466..-0.0072)  | others: - w0.052 d0.025; E w0.043 d0.073; - w0.054 d0.025; - w0.007 d0.005
+z 0.3900  loops 5  innermost-enclosing w 0.0335 d 0.0366 (x -0.0168..0.0167, y -0.0436..-0.0070)  | others: - w0.069 d0.034; E w0.043 d0.047; - w0.072 d0.034; - w0.015 d0.014
+z 0.3875  loops 3  innermost-enclosing w 0.1569 d 0.0569 (x -0.0782..0.0788, y -0.0469..0.0100)  | others: - w0.029 d0.010; - w0.033 d0.035
+z 0.3850  loops 3  innermost-enclosing w 0.1673 d 0.0526 (x -0.0833..0.0839, y -0.0446..0.0080)  | others: - w0.033 d0.033; - w0.018 d0.005
+z 0.3825  loops 2
+z 0.3800  loops 2
+z 0.3775  loops 4
+z 0.3750  loops 3  innermost-enclosing w 0.1341 d 0.0465 (x -0.0672..0.0669, y -0.0455..0.0010)  | others: - w0.037 d0.034; - w0.002 d0.001
+z 0.3725  loops 5  innermost-enclosing w 0.1256 d 0.0468 (x -0.0629..0.0627, y -0.0459..0.0009)  | others: - w0.039 d0.034; - w0.005 d0.002; - w0.003 d0.001; - w0.004 d0.002
+z 0.3700  loops 5  innermost-enclosing w 0.1234 d 0.0472 (x -0.0618..0.0616, y -0.0463..0.0009)  | others: - w0.039 d0.035; - w0.019 d0.006; - w0.007 d0.003; - w0.004 d0.001
+z 0.3675  loops 4  innermost-enclosing w 0.1221 d 0.0478 (x -0.0609..0.0612, y -0.0469..0.0009)  | others: - w0.022 d0.009; - w0.040 d0.036; - w0.022 d0.009
+z 0.3650  loops 4  innermost-enclosing w 0.1200 d 0.0488 (x -0.0599..0.0601, y -0.0478..0.0010)  | others: - w0.022 d0.011; - w0.042 d0.036; - w0.023 d0.011
+z 0.3625  loops 5  innermost-enclosing w 0.1185 d 0.0502 (x -0.0592..0.0593, y -0.0488..0.0014)  | others: - w0.024 d0.014; - w0.044 d0.036; - w0.026 d0.014; - w0.001 d0.002
+z 0.3600  loops 3  innermost-enclosing w 0.1175 d 0.0520 (x -0.0587..0.0588, y -0.0493..0.0026)  | others: - w0.069 d0.039; - w0.012 d0.005
+z 0.3575  loops 2  innermost-enclosing w 0.1182 d 0.0539 (x -0.0592..0.0590, y -0.0500..0.0040)  | others: - w0.000 d0.000
+z 0.3550  loops 3  innermost-enclosing w 0.0664 d 0.0439 (x -0.0332..0.0332, y -0.0433..0.0006)  | others: E w0.120 d0.056; - w0.002 d0.002
+z 0.3525  loops 2  innermost-enclosing w 0.0724 d 0.0455 (x -0.0364..0.0359, y -0.0438..0.0017)  | others: E w0.122 d0.059
+z 0.3500  loops 2  innermost-enclosing w 0.0897 d 0.0484 (x -0.0441..0.0457, y -0.0444..0.0039)  | others: E w0.125 d0.064
+z 0.3475  loops 2  innermost-enclosing w 0.1047 d 0.0525 (x -0.0511..0.0536, y -0.0457..0.0068)  | others: E w0.136 d0.068
+z 0.3450  loops 2  innermost-enclosing w 0.1201 d 0.0564 (x -0.0595..0.0606, y -0.0472..0.0093)  | others: E w0.150 d0.072
+z 0.3425  loops 2  innermost-enclosing w 0.1344 d 0.0609 (x -0.0670..0.0675, y -0.0492..0.0117)  | others: E w0.164 d0.075
+z 0.3400  loops 2  innermost-enclosing w 0.1491 d 0.0649 (x -0.0740..0.0751, y -0.0506..0.0143)  | others: E w0.182 d0.079
+z 0.3375  loops 2  innermost-enclosing w 0.1653 d 0.0687 (x -0.0821..0.0832, y -0.0517..0.0170)  | others: E w0.203 d0.083
+z 0.3350  loops 4  innermost-enclosing w 0.1833 d 0.0726 (x -0.0913..0.0921, y -0.0529..0.0197)  | others: E w0.219 d0.086; - w0.002 d0.002; - w0.002 d0.001
+z 0.3325  loops 2  innermost-enclosing w 0.2063 d 0.0748 (x -0.1033..0.1030, y -0.0545..0.0203)  | others: E w0.219 d0.087
+z 0.3300  loops 2  innermost-enclosing w 0.2091 d 0.0760 (x -0.1047..0.1044, y -0.0562..0.0199)  | others: E w0.218 d0.088

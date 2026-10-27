@@ -1,0 +1,44 @@
+codex
+Judging below the chin, B is the better body base, but its neck/collar junction is defective and requires reconstruction for the head swap.
+
+| Region | Result | Concrete reason |
+|---|---|---|
+| 1. Neck | **B better** | B exposes the neck without A’s descending hair masses. However, the measured double wall and fusion into the collar make B’s neck unsuitable for a simple clean cut. |
+| 2. Collar | **B better** | B has a more readable, continuous flared collar. A’s hair buries its junctions with the neck and shoulders. B still has an obstructed throat and fused neck/collar geometry. |
+| 3. Bodice/chest | **A better** | A has more coherent breast volumes and a clearer, more regular stack of abdominal plates. B’s upper chest has crowded overlapping wedges, and its breast-to-underbust transitions are pinched and uneven. |
+| 4. Shoulders | **B better** | B exposes the angular shoulder caps and their connection to the cape. A’s hair crosses and obscures those surfaces. B’s layered shoulder folds remain thick and partly merged. |
+| 5. Arms | **A better** | A’s upper-arm, elbow and forearm divisions read more consistently. B has irregular diagonal ridges and compressed transitions, especially around the elbows and wrists. |
+| 6. Hands | **Same** | Both have blunt, poorly separated fingers and weak knuckle definition. B does not provide a meaningful improvement; its fingers still read as partially joined strips. |
+| 7. Belt | **A better** | A’s circular hip fittings and waist band are more substantial and readable. B’s rings are thinner and uneven, with narrow hanging elements merging into adjacent panels. |
+| 8. Hips/pelvic panels | **A better** | A’s broad central panel has a clearer silhouette. B’s pelvis is crowded with nested pointed plates, thin dangling strips and ambiguous overlaps at the groin. |
+| 9. Legs | **Same** | Both have usable overall proportions but crude plate transitions. A has swollen, rounded knee forms; B substitutes sharper, uneven zigzag ridges and pinched knee transitions. |
+| 10. Boots | **Same** | Both have long, narrow shins and crude wedge feet. B’s sharper shin ornament does not resolve the compressed ankles or weak separation of toe, sole and heel. |
+| 11. Cape—front | **B better** | B separates the torso from the long cape strips more clearly. A’s hair adds unrelated ropes and bulges around the upper front silhouette. |
+| Cape—sides | **B better** | B has a cleaner shoulder-to-hem fall. A carries a large hair mass over the upper cape. B still has thin, jagged side fins and crowded overlapping strips. |
+| Cape—back | **B better** | B exposes a continuous cape with long vertical folds. A’s upper back is dominated by hair geometry, leaving the underlying cape obscured and potentially entangled with it. |
+| Cape—hem | **Same** | Both have excessively shredded, uneven hems with narrow spikes and dangling slivers. B’s cleaner upper cape does not fix the bottom edge. |
+
+**B — SCALP: PASS for visible hair removal.** No identifiable hair locks, strand ridges or residual hair masses are visible on the scalp, rear head, shoulders, collar or cape. The scalp has mild surface unevenness, but nothing clearly identifiable as retained hair. This is a visual assessment, not proof of a smooth mesh.
+
+**B — NECK / COLLAR: FAIL.** A short bare neck surface is visible, especially from the side and rear, but there is no clean, separated neck continuing inside the collar. Your cross-sections establish that the outer neck merges into the collar below approximately y 0.385. The intended cut therefore crosses a fused annulus with a hollow core.
+
+The collar points extend above the chin bottom, reducing clearance around a replacement head. The separate closed throat blob is another obstruction. The renders do not establish additional holes or throat webbing; the measured fusion is sufficient to reject this junction as clean.
+
+B’s remaining defects below the chin:
+
+- Double-walled neck with an internal cavity immediately below the chin.
+- Outer neck fused into the collar at the intended head-replacement region.
+- Separate floating closed blob in front of the throat, approximately 0.015–0.019 units wide.
+- Collar side points rise above the chin bottom and constrain replacement-head clearance.
+- Thick, merged folds at the collar, shoulder and upper-cape junctions.
+- Crowded upper-chest wedges and pinched underbust transitions.
+- Uneven arm ridges and compressed elbow/wrist transitions.
+- Blunt, partially joined fingers with poor knuckle definition.
+- Uneven belt rings and thin hanging elements merging into pelvic panels.
+- Congested groin panels with ambiguous overlaps and narrow strips.
+- Irregular knee ridges and pinched leg-armor transitions.
+- Compressed ankles and crude wedge-shaped feet.
+- Thin cape fins, crowded side strips and a heavily shredded, spike-filled hem.
+
+VERDICT: USE B — Removing the extensive body-level hair contamination makes B the better base, but its fused, hollow neck/collar junction and floating throat blob require repair before the head swap.
+tokens used

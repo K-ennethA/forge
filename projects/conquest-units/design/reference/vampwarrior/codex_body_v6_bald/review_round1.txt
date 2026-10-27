@@ -1,0 +1,36 @@
+codex
+Coordinates below are approximate, using the top-left origin: **x = column, y = row**. These are visual estimates, not pixel-difference measurements.
+
+**Front — A PASS; B PASS; C PASS; D FAIL; E PASS**
+
+- **A — Bald everywhere:** No visible hair remnants on the scalp, collar, shoulders, cape, arms, or background.
+- **B — Costume unchanged:** No identifiable alteration to previously visible costume details. The gem, breastplate, waist, belt rings, gloves, thigh openings, knees, boots, and cape hem retain their original placement and design.
+- **C — Fill quality:** The newly exposed collar, shoulder attachments, and cape surfaces continue plausibly. No definite ghost hair outline or conspicuous fill seam.
+- **D — Head consistency:** The front scalp and face are markedly grayer and less pink than the side and especially the back. Compare **x455–567, y55–207** with the corresponding head regions in the other views. This produces inconsistent skin material across the reference set. The scalp itself is smooth, and the ears are small and pointed.
+- **E — Same figure:** No clear displacement of the body landmarks.
+
+**Side_left — A PASS; B PASS; C PASS; D FAIL; E PASS**
+
+- **A — Bald everywhere:** No identifiable surviving strands or locks, including along the rear shoulder, cape edge, and beside the arm.
+- **B — Costume unchanged:** No definite change to originally visible armor, glove, thigh opening, leg, boot, or cape silhouette. The newly exposed shoulder and upper cape are plausible reconstructions.
+- **C — Fill quality:** No conspicuous hair-shaped pale streak, background patch, or seam in the former hair region.
+- **D — Head consistency:** The skull is disproportionately deep behind the ear. The rounded rear cranium at **x509–546, y65–174** gives the side head a swollen, rear-heavy silhouette relative to the narrow front and back heads. The pinker scalp at **x414–544, y55–190** also fails to match the front’s gray skin. The small pointed ear is present.
+- **E — Same figure:** Crown, chin, shoulder, waist, knee, and sole heights remain broadly aligned with the front. The main rotation inconsistency is the skull shape, rather than body placement.
+
+**Back — A PASS; B PASS; C FAIL; D FAIL; E FAIL**
+
+- **A — Bald everywhere:** No definite hair strands remain. The artifact beside the neck described below is a fill defect; it does not clearly depict hair.
+- **B — Costume unchanged:** No definite alteration to the previously visible arms, gloves, lower cape, boots, or torn hem. The exposed upper back and central cape folds occupy areas that the original hair concealed.
+- **C — Fill quality:**
+  - **Left of the neck, x449–482, y145–194:** A translucent gray, angular patch interrupts the background. Its straight/slanted boundaries form a visible ghost shape beside the neck and above the collar. This needs removal.
+  - **Scalp crown, x483–540, y53–66:** The top contour has small angular steps and a flattened peak. It does not read as a clean, smoothly rounded scalp.
+- **D — Head consistency:**
+  - **Head and neck, x450–574, y54–219:** The skin is substantially warmer and pinker than the front.
+  - **Nape, x480–543, y157–219:** The neck stays broad and nearly straight down to the collar, with a different apparent construction from the side view’s more tapered rear neck.
+  - The ears are small and pointed, and their height is broadly consistent with the other views.
+- **E — Same figure:** The back shoulder tops begin around **y286–290**, whereas the front shoulder tops begin around **y278–283**. That roughly **7–10 px** discrepancy is already present in the original references, but it still prevents strict shoulder-height alignment in the generator inputs. Crown and sole heights are otherwise close. The cape hides the waist and knees, so their back-view alignment cannot be verified.
+
+front: FIX - match scalp and face skin tone across views.
+side_left: FIX - reduce the rear-heavy skull depth and match skin tone.
+back: FIX - remove the angular neck-side ghost patch, smooth the crown, reconcile skin tone and nape shape, and align shoulder height.
+tokens used

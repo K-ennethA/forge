@@ -1,0 +1,15 @@
+[INFO ] services.locationservice ...............: Not adding link to MakeHuman user data, since neither explicit path nor auto-discovery is set in preferences.
+[INFO ] mpfb.init ..............................: Build info 20260722
+[INFO ] mpfb.init ..............................: Online access preference is not enabled. Not checking if MakeHuman is online.
+[INFO ] mpfb.init ..............................: MPFB initialization has finished.
+10:20:23 | INFO: Data are loaded, start creating Blender stuff
+10:20:23 | INFO: Blender create Mesh node 0
+10:20:24 | INFO: glTF import finished in 0.15s
+00:04.657  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\design\reference\vampwarrior\proxy_v6_bald\renders\s11_ortho_front.png'
+00:04.750  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\design\reference\vampwarrior\proxy_v6_bald\renders\s11_ortho_side.png'
+00:04.844  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\design\reference\vampwarrior\proxy_v6_bald\renders\s11_ortho_back.png'
+BBOX blender lo (-0.2284, -0.1262, -0.487) hi (0.2171, 0.1238, 0.497)
+ORTHO row r -> y_glb = 0.50688 - r * 0.000246  (1000 px over 0.2460)
+Blender 5.0.1 (hash a3db93c5b259 built 2025-12-16 01:32:30)
+
+Blender quit

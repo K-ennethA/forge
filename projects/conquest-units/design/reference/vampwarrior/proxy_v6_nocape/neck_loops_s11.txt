@@ -1,0 +1,41 @@
+z 0.4500 | w0.002 d0.003 c(-0.045,0.004) nest0 closed ; w0.003 d0.003 c(0.015,-0.007) nest3 closed ; w0.003 d0.005 c(0.044,0.004) nest0 closed ; w0.018 d0.018 c(0.033,-0.020) nest0 closed ; w0.023 d0.017 c(-0.017,-0.008) nest2 closed ; w0.023 d0.017 c(0.016,-0.008) nest2 closed ; w0.021 d0.020 c(-0.034,-0.020) nest0 closed
+z 0.4475 | w0.002 d0.001 c(0.045,-0.015) nest1 closed ; w0.006 d0.007 c(0.042,0.033) nest1 closed ; w0.007 d0.008 c(-0.042,0.033) nest0 closed ; w0.029 d0.039 c(-0.032,-0.011) nest0 closed ; w0.061 d0.086 c(-0.000,0.019) nest1 closed ; w0.081 d0.097 c(0.006,0.018) nest0 closed
+z 0.4450 | w0.002 d0.000 c(0.018,-0.023) nest2 closed ; w0.061 d0.086 c(-0.000,0.019) nest1 closed ; w0.096 d0.096 c(-0.001,0.018) nest0 closed
+z 0.4425 | w0.014 d0.014 c(-0.000,-0.016) nest1 closed ; w0.061 d0.076 c(-0.000,0.024) nest1 closed ; w0.095 d0.094 c(-0.000,0.019) nest0 closed
+z 0.4400 | w0.012 d0.013 c(-0.000,-0.016) nest1 closed ; w0.062 d0.072 c(-0.000,0.025) nest1 closed ; w0.091 d0.093 c(-0.001,0.019) nest0 closed
+z 0.4375 | w0.012 d0.015 c(-0.001,-0.017) nest1 closed ; w0.063 d0.072 c(0.000,0.024) nest1 closed ; w0.090 d0.093 c(-0.001,0.018) nest0 closed
+z 0.4350 | w0.061 d0.084 c(-0.000,0.017) nest1 closed ; w0.089 d0.094 c(-0.000,0.016) nest0 closed
+z 0.4325 | w0.058 d0.084 c(-0.000,0.015) nest1 closed ; w0.088 d0.095 c(-0.000,0.014) nest0 closed
+z 0.4300 | w0.000 d0.000 c(-0.036,-0.020) nest1 closed ; w0.004 d0.002 c(0.036,-0.019) nest1 closed ; w0.056 d0.084 c(-0.000,0.014) nest1 closed ; w0.087 d0.096 c(-0.001,0.013) nest0 closed
+z 0.4275 | w0.001 d0.002 c(0.021,-0.015) nest2 closed ; w0.055 d0.084 c(-0.001,0.011) nest1 closed ; w0.086 d0.097 c(-0.001,0.010) nest0 closed
+z 0.4250 | w0.010 d0.007 c(-0.016,-0.005) nest2 closed ; w0.010 d0.008 c(0.015,-0.006) nest2 closed ; w0.053 d0.084 c(-0.001,0.009) nest1 closed ; w0.086 d0.097 c(-0.001,0.008) nest0 closed
+z 0.4225 | w0.051 d0.080 c(-0.000,0.008) nest1 closed ; w0.086 d0.094 c(-0.001,0.007) nest0 closed
+z 0.4200 | w0.049 d0.075 c(-0.000,0.008) nest1 closed ; w0.085 d0.089 c(-0.001,0.007) nest0 closed
+z 0.4175 | w0.001 d0.002 c(-0.030,0.025) nest1 closed ; w0.003 d0.003 c(0.029,0.024) nest1 closed ; w0.009 d0.015 c(-0.039,-0.002) nest0 closed ; w0.047 d0.071 c(-0.000,0.008) nest1 closed ; w0.073 d0.082 c(0.005,0.008) nest0 closed
+z 0.4150 | w0.015 d0.019 c(0.034,-0.007) nest0 closed ; w0.046 d0.070 c(-0.000,0.007) nest1 closed ; w0.054 d0.079 c(-0.000,0.007) nest0 closed
+z 0.4125 | w0.011 d0.012 c(0.033,-0.009) nest0 closed ; w0.045 d0.070 c(-0.000,0.007) nest1 closed ; w0.053 d0.079 c(-0.000,0.006) nest0 closed
+z 0.4100 | w0.043 d0.064 c(-0.000,0.010) nest1 closed ; w0.052 d0.079 c(-0.000,0.006) nest0 closed
+z 0.4075 | w0.041 d0.064 c(-0.000,0.009) nest1 closed ; w0.050 d0.078 c(-0.000,0.006) nest0 closed
+z 0.4050 | w0.038 d0.065 c(-0.000,0.009) nest1 closed ; w0.048 d0.078 c(-0.000,0.006) nest0 closed
+z 0.4025 | w0.035 d0.066 c(-0.000,0.009) nest1 closed ; w0.045 d0.077 c(-0.000,0.007) nest0 closed
+z 0.4000 | w0.016 d0.004 c(-0.039,0.036) nest0 closed ; w0.024 d0.006 c(0.035,0.036) nest0 closed ; w0.031 d0.066 c(-0.000,0.009) nest1 closed ; w0.041 d0.074 c(-0.000,0.009) nest0 closed
+z 0.3975 | w0.030 d0.066 c(-0.000,0.009) nest1 closed ; w0.120 d0.074 c(0.000,0.009) nest0 closed
+z 0.3950 | w0.030 d0.066 c(-0.000,0.009) nest1 closed ; w0.136 d0.074 c(0.000,0.009) nest0 closed
+z 0.3925 | w0.013 d0.010 c(-0.000,-0.019) nest1 closed ; w0.030 d0.040 c(-0.000,0.022) nest1 closed ; w0.149 d0.076 c(0.000,0.010) nest0 closed
+z 0.3900 | w0.013 d0.003 c(0.000,0.048) nest1 closed ; w0.020 d0.021 c(-0.000,-0.017) nest0 closed ; w0.030 d0.039 c(-0.000,0.023) nest1 closed ; w0.162 d0.058 c(0.000,0.027) nest0 closed
+z 0.3875 | w0.013 d0.008 c(-0.000,-0.022) nest0 closed ; w0.029 d0.033 c(-0.000,0.021) nest1 closed ; w0.174 d0.055 c(0.000,0.027) nest0 closed
+z 0.3850 | w0.028 d0.027 c(-0.000,0.019) nest1 closed ; w0.174 d0.055 c(0.000,0.028) nest0 closed
+z 0.3825 | w0.029 d0.012 c(-0.000,0.037) nest1 closed ; w0.023 d0.024 c(-0.000,0.018) nest1 closed ; w0.163 d0.053 c(-0.000,0.028) nest0 closed
+z 0.3800 | w0.018 d0.020 c(-0.000,0.017) nest1 closed ; w0.032 d0.020 c(-0.000,0.033) nest1 closed ; w0.151 d0.052 c(-0.000,0.028) nest0 closed
+z 0.3775 | w0.012 d0.014 c(-0.000,0.018) nest1 closed ; w0.033 d0.027 c(-0.000,0.029) nest1 closed ; w0.142 d0.050 c(-0.000,0.026) nest0 closed
+z 0.3750 | w0.006 d0.007 c(-0.000,0.019) nest2 closed ; w0.034 d0.035 c(-0.000,0.025) nest1 closed ; w0.134 d0.049 c(-0.000,0.025) nest0 closed
+z 0.3725 | w0.012 d0.014 c(-0.000,0.019) nest2 closed ; w0.036 d0.038 c(-0.000,0.024) nest1 closed ; w0.126 d0.048 c(-0.000,0.025) nest0 closed
+z 0.3700 | w0.005 d0.005 c(-0.000,0.020) nest2 closed ; w0.038 d0.038 c(-0.000,0.025) nest1 closed ; w0.120 d0.047 c(0.000,0.024) nest0 closed
+z 0.3675 | w0.041 d0.037 c(-0.000,0.024) nest1 closed ; w0.121 d0.048 c(0.000,0.024) nest0 closed
+z 0.3650 | w0.044 d0.037 c(-0.000,0.024) nest1 closed ; w0.122 d0.049 c(-0.000,0.025) nest0 closed
+z 0.3625 | w0.048 d0.041 c(-0.000,0.026) nest1 closed ; w0.123 d0.050 c(0.000,0.026) nest0 closed
+z 0.3600 | w0.054 d0.042 c(-0.000,0.026) nest1 closed ; w0.124 d0.052 c(0.000,0.027) nest0 closed
+z 0.3575 | w0.061 d0.045 c(-0.000,0.027) nest1 closed ; w0.125 d0.055 c(-0.000,0.028) nest0 closed
+z 0.3550 | w0.072 d0.047 c(-0.000,0.029) nest1 closed ; w0.126 d0.058 c(-0.000,0.029) nest0 closed
+z 0.3525 | w0.083 d0.049 c(-0.000,0.030) nest1 closed ; w0.127 d0.060 c(-0.000,0.029) nest0 closed
+z 0.3500 | w0.001 d0.001 c(0.033,0.018) nest2 closed ; w0.095 d0.052 c(-0.000,0.030) nest1 closed ; w0.127 d0.061 c(-0.000,0.030) nest0 closed

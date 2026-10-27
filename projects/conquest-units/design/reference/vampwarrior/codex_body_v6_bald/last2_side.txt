@@ -1,0 +1,3 @@
+Saved [edited2_side_left.png](/C:/Users/kenne/OneDrive/Desktop/git/forge/projects/conquest-units/design/reference/vampwarrior/codex_body_v6_bald/edited2_side_left.png) (1024 × 1536).
+
+Top of head: pixel row **54** (zero-based).

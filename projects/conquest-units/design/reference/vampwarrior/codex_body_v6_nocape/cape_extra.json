@@ -1,0 +1,4 @@
+{"_note": "hand-traced additions to the diff-based cape mask (image px) where the edit changed the cape into similar-coloured costume (low diff): the back view's upper cape between the arms. clip_below = no cape below this row (the hem's lowest point + margin; keeps the boots out).",
+ "front": {"polygons": [], "clip_below": 1400},
+ "side_left": {"polygons": [], "clip_below": 1340},
+ "back": {"polygons": [[[445,263],[578,263],[600,276],[622,300],[626,330],[634,420],[641,500],[652,560],[662,620],[672,680],[680,720],[344,720],[352,680],[360,620],[368,560],[375,500],[384,420],[392,330],[397,300],[420,276]]], "clip_below": 1330}}

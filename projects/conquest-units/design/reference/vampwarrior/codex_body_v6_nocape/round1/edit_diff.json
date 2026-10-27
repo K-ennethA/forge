@@ -1,0 +1,29 @@
+{
+ "front": {
+  "cape_mask_pct": 17.15,
+  "composite_mask_pct": 27.05,
+  "edit_MAD_outside_mask": 1.805,
+  "edit_pct_px_gt10_outside": 2.683,
+  "final_MAD_outside_mask": 0.0,
+  "final_max_outside_mask": 1.0,
+  "final_whole_image_MAD": 11.09
+ },
+ "side_left": {
+  "cape_mask_pct": 6.31,
+  "composite_mask_pct": 9.8,
+  "edit_MAD_outside_mask": 1.868,
+  "edit_pct_px_gt10_outside": 1.304,
+  "final_MAD_outside_mask": 0.0,
+  "final_max_outside_mask": 1.0,
+  "final_whole_image_MAD": 3.76
+ },
+ "back": {
+  "cape_mask_pct": 22.07,
+  "composite_mask_pct": 27.19,
+  "edit_MAD_outside_mask": 2.308,
+  "edit_pct_px_gt10_outside": 2.126,
+  "final_MAD_outside_mask": 0.0,
+  "final_max_outside_mask": 1.0,
+  "final_whole_image_MAD": 10.53
+ }
+}

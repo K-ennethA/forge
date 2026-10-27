@@ -1,0 +1,3 @@
+Saved: [edited_side_left.png](C:/Users/kenne/OneDrive/Desktop/git/forge/projects/conquest-units/design/reference/vampwarrior/codex_body_v6_bald/edited_side_left.png) — 1024 × 1536.
+
+Used built-in image generation with the hair-removal prompt and preservation constraints. Pixel-for-pixel preservation is not guaranteed.

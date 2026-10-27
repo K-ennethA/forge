@@ -1,0 +1,11 @@
+Use your image generation tool to EDIT an existing image. This is a local edit (inpainting), not a new drawing.
+
+Attached:
+- base_back.png: THE BASE IMAGE to edit - the straight BACK view of a bald full-body game character (the "Vampire Warrior"), 1024 x 1536.
+- sheet.png: the artist's costume sheet (ignore its hair and sword); use it only to see how the costume continues under the cape.
+
+THE ONLY CHANGE: REMOVE THE CAPE COMPLETELY - the whole cape: the large black cloth hanging down the back from the collar and shoulders to the lower calves, the burgundy lining at its edges, the torn jagged hem strips. Where the cape covered the body, paint the costume continuing as the front implies: the back of the black armoured bodice and its plates, the waist and belt from behind, the back of the hips and the bare upper thighs, the backs of the black thigh-high armoured boots, the backs of the arms and gloves; between the arms and the body and between the legs, the plain grey background. No cape cloth, no lining, no hem strips may remain anywhere.
+
+KEEP EXACTLY: the HIGH STIFF STANDING COLLAR with its dark-red lining around the neck (it is NOT part of the cape - keep it whole, exactly as it is), the shoulder armour (pauldrons), the bald head and face, the bodice, the arms and gloves, the belt, the hips, the legs and the boots, the pose, the canvas size (1024 x 1536), the figure's position and scale (every body part on the same pixel rows and columns), the colours, the art style and the plain grey background. Do not redraw, restyle, re-light, move or rescale anything that the cape did not cover.
+
+Save the result in the current working directory as edited_back.png (1024 x 1536). Then print its path.

@@ -1,0 +1,11 @@
+Use your image generation tool to EDIT an existing image. This is a minimal, local edit (inpainting), not a new drawing.
+
+Attached:
+- orig_front.png: THE BASE IMAGE to edit - the straight FRONT view of a full-body game character (the "Vampire Warrior"), 1024 x 1536.
+- scalp_front.png: reference for the shape of a smooth BALD scalp and the small pointed ears of this character.
+
+THE ONLY CHANGE: remove ALL of the long bone-white hair - the two long locks falling in front of the shoulders and down beside the arms to the hips, the hair framing the face and the hair behind the shoulders that shows past the arms and the cape edges. Under the removed hair, continue what is already there: the bald scalp and the small POINTED ears (shape as in scalp_front.png), the bare sides of the neck, the black collar with its dark-red lining, the shoulders and arm armour, the cape and its dark-red lining, and the plain grey background between the arms and the cape. No hair, no strands, no locks, no hairline may remain anywhere; the scalp is smooth and bald.
+
+EVERYTHING ELSE STAYS EXACTLY AS IT IS, pixel for pixel: the same canvas size (1024 x 1536), the same figure at the same position and scale (the top of the head, the face, the chin, the shoulders, the waist, the knees and the soles on the same pixel rows and columns), the same face, the same costume, the same pose, the same cape, the same colours and art style, the same plain grey background. Do not redraw, restyle, re-light, re-pose, move, crop or rescale anything. Do not change the face or the costume. Do not add anything.
+
+Save the result in the current working directory as edited_front.png (1024 x 1536). Then print its path.

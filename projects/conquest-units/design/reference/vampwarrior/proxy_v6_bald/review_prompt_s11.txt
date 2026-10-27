@@ -1,0 +1,27 @@
+You are comparing two raw image-to-3D body proxy meshes of the same costumed female character. Be strict and concrete; do not soften defects. Do not write any files; answer in text only.
+
+A = body6 seed 11, the CURRENT body (generated from references WITH long hair).
+B = body6b s11, a NEW body generated from the SAME references with ONLY the hair removed (bald).
+The head of the chosen body will be cut off at a line on the neck inside the collar and replaced, so judge everything BELOW THE CHIN; the head matters only for hair remnants.
+
+Attached, in order:
+1. sbs_s11_untextured_front_side_back.png - grey renders, front / side / back; LEFT = A, RIGHT = B.
+2. sbs_s11_textured_front_side_back.png - the same with baked textures.
+3. sbs_s11_untextured_rawlook.png - grey renders, front / three-quarter / side; LEFT = A, RIGHT = B.
+4. sbs_s11_textured_rawlook.png - the same textured.
+5. s11_head_closeup_front_side_back.png - B: orthographic textured close-up of head, neck and collar (front | side | back).
+6. body6_s11_head_closeup_front_side_back.png - A: the same close-up.
+(Renders are on black; the dark cape is hard to read textured - use the grey renders for shape.)
+
+For each region say A better / B better / same, with the concrete reason: 1 neck, 2 collar, 3 bodice/chest, 4 shoulders, 5 arms, 6 hands, 7 belt, 8 hips/pelvic panels, 9 legs, 10 boots, 11 cape (front, sides, back, hem).
+Then, for B only:
+- SCALP: any hair remnants (lumps, ridges, strands, bumps) on the scalp, the back of the head, the shoulders, the collar or the cape? (PASS / FAIL with locations)
+- NECK / COLLAR: is there a clean bare neck between the chin and the collar? Is the collar clean? Anything fused across the throat, webbing, spikes, holes?
+- Measured geometry facts for B (from horizontal cross-sections; trust these, you cannot see them):
+  * The mesh is a closed, hollow, two-walled shell: every horizontal slice through the head shows two nested closed loops (outer surface and an inner wall about 0.004-0.009 units inside it; the head is about 0.05 wide, the figure 0.98 tall). That is a double shell around the whole head.
+  * Just under the chin (about y 0.3875-0.390) the neck shows the same double wall: an outer neck loop about 0.043 wide and an inner loop about 0.032 wide.
+  * From about y 0.385 downwards the outer neck surface is FUSED into the collar: the slice has only the collar outer loop (0.11-0.17 wide) and the inner neck wall (0.030-0.033 wide); there is no air gap between the neck skin and the collar, so a cut on the neck inside the collar goes through a fused solid ring with a hollow core.
+  * The collar side points rise to about y 0.395-0.398, ABOVE the chin bottom (about y 0.391); the back of the collar reaches about y 0.390.
+  * A small separate closed blob (about 0.015-0.019 wide) floats in front of the throat just under the chin, y 0.3875-0.395.
+List B's remaining defects below the chin plainly, one per line.
+End with exactly one line: "VERDICT: USE B" or "VERDICT: KEEP A" or "VERDICT: NEITHER", followed by one sentence why.

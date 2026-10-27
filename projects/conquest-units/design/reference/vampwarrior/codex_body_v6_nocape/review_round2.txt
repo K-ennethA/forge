@@ -1,0 +1,47 @@
+codex
+**All three views FAIL the strict review.** The side and back retain visible cape ghosts. The front has conspicuous reconstruction seams around the exposed thighs. Collar preservation looks successful.
+
+Coordinates below are approximate, measured from the upper-left corner: **x = column, y = row**. These are visual estimates, not a pixel-difference measurement.
+
+**Front — body_front.png**
+
+- **A. Cape fully gone: PASS.** No identifiable cape panels, burgundy strips, or torn hems remain. The short black pieces descending from the hip rings read as costume tassets.
+- **B. Collar kept: PASS.** The high collar and burgundy lining at **x394–630, y192–282** appear intact.
+- **C. Costume unchanged elsewhere: FAIL.** The exposed thigh rendering has been altered beyond simply filling previously covered areas. At **x392–490, y576–759** and **x533–632, y576–759**, conspicuous pale edging and long curved contour lines change the appearance of skin that was already visible in the original. The thigh interiors also have uneven pink-gray repainting. Head, gem, breastplate, belt rings, knees, and boots otherwise appear preserved.
+- **D. Invented parts: FAIL.** Both thigh openings have doubled boundaries: a dark costume edge plus a pale parallel line, particularly **x390–416, y635–752** and **x610–633, y635–752**. They read as tracing seams or halos rather than clean skin-to-armour transitions. The upper inner thighs, **x464–488 / x537–560, y586–674**, have muddy transitions into the central pelvic armour.
+- **E. Same figure: PASS for overall alignment.** Crown, chin, shoulders, waist, knees, and soles remain aligned with the original. The thigh reconstruction defects still undermine surface consistency with the other views.
+
+**Side_left — aligned_body_side_left.png**
+
+- **A. Cape fully gone: FAIL.** A large, faint cape silhouette remains behind the body. Look immediately behind the hip and thigh at **x548–623, y681–959**, then farther down and right at **x552–711, y938–1316**. Diagonal edges and pointed lower remnants reproduce the removed cape’s silhouette. These are visible background ghosts.
+- **B. Collar kept: PASS.** The red-lined standing collar at **x445–538, y207–290** appears preserved.
+- **C. Costume unchanged elsewhere: FAIL.** The already-visible thigh at **x408–475, y590–758** has acquired a long diagonal seam and pale contour edging. Its skin shading differs from the original. Most other changes occur where the cape previously obscured the figure; the head, breastplate front, hand, and forward boot silhouette appear retained.
+- **D. Invented parts: FAIL.**
+  - The newly exposed rear hip at **x521–558, y592–709** is a rounded pink bulge with little convincing garment construction. It does not clearly resolve how the side tasset, rear pelvic panel, and exposed skin meet.
+  - At **x520–539, y701–774**, the narrow skin strip behind the hand ends abruptly against a nearly horizontal black boot edge. The junction looks assembled from separate patches.
+  - The thigh has a thin pale outline at **x405–419, y625–759** and a sketch-like diagonal line through **x420–467, y597–671**.
+  - The reconstructed rear leg contour, **x528–552, y1002–1227**, has a pronounced calf bulge and uneven shading that need reconciliation with the back view.
+- **E. Same figure: FAIL.** Overall height and major rows remain close, but the rear hip projection and calf shape are insufficiently consistent with the rear reconstruction. The rear boot-top edge also needs matching to the back view’s much more angular, higher-reaching boot opening.
+
+**Back — aligned_body_back.png**
+
+- **A. Cape fully gone: FAIL.** Broad cape ghosts remain on both sides of the legs:
+  - **Left:** approximately **x233–390, y817–1341**, including diagonal cloth edges and pointed remnants.
+  - **Right:** approximately **x646–798, y802–1362**, especially the long diagonal silhouette outside the calf.
+  - Additional diffuse residue remains beside the hips and upper legs around **x331–397 / x627–700, y616–899**.
+- **B. Collar kept: PASS.** The standing collar and visible red lining at **x398–626, y189–266** appear intact.
+- **C. Costume unchanged elsewhere: PASS visually.** The head, shoulder armour, exposed outer arms, gloves, and original lower boot portions appear retained. Most of the new torso and leg surfaces were previously hidden by the cape.
+- **D. Invented parts: FAIL.**
+  - The rear pelvis at **x398–624, y558–736** introduces conspicuous buttock creases, diagonal skin lines, and pink tonal patches. These do not resolve into a clean, consistent costume construction.
+  - The central rear triangular panel at **x452–570, y516–700** needs a coherent attachment and thickness relationship with the side tassets. The side view does not clearly show the corresponding rear panel.
+  - Both rear boots have long smeared highlights, particularly **x410–434, y1007–1294** and **x579–605, y1000–1295**. These differ from the controlled faceted shading of the original armour.
+  - An isolated pale speck at approximately **x566–572, y1109–1117** is an obvious cleanup defect.
+  - The right calf has an unexplained angular dark interruption near **x573–599, y1154–1197**.
+- **E. Same figure: FAIL.** Major height landmarks remain approximately aligned, but the thigh openings are not convincingly reconciled across views: the back’s highest boot points are around **y703**, versus approximately **y735** in front and **y745** on the visible side. Different front/rear boot heights are possible, but the side drawing needs to describe that transition clearly. The calf contours and rear pelvic construction also need agreement.
+
+The artist’s sheet does **not** establish the hidden rear costume: its cape covers those areas. The new rear armour and pelvic panels therefore cannot be treated as confirmed design details merely because they resemble the front.
+
+front: FIX - remove thigh tracing seams, pale halos, and altered skin patches.
+side_left: FIX - erase cape ghosts and reconcile rear hip, thigh, boot opening, and calf construction.
+back: FIX - erase cape ghosts, clean pelvis and boot rendering, remove speck, and reconcile side/back construction.
+tokens used

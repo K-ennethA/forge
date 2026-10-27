@@ -1,0 +1,16 @@
+Use your image generation tool to EDIT an existing image. This is a local edit of a few areas only.
+
+Attached:
+- r1_back.png: THE BASE IMAGE to edit - the straight BACK view of a bald full-body game character, 1024 x 1536 (its cape was removed and the back of the costume was painted in).
+- r1_side_left.png: the LEFT PROFILE of the same character (same canvas and scale).
+- r1_front.png: the FRONT view of the same character.
+- sheet.png: the artist's costume sheet (ignore hair and sword).
+
+FIX ONLY THESE AREAS, so that the back view agrees with the side view and is simple to model:
+1. UPPER BACK (rows about 285-445): replace the two big rounded plates (they look like a second breastplate) with a FLAT, simple black armoured back of the bodice: smooth shoulder-blade panels that sit flat, a central vertical seam along the spine, thin silver edging like the front. Keep the outer shoulder armour (pauldrons), the arms and the collar exactly as they are. Remove the diagonal strap-like pieces across the shoulders.
+2. BACK OF THE KNEES AND SHINS (rows about 880-1300): the backs of the black thigh-high boots are PLAIN and SMOOTH - a simple vertical seam, no knee caps, no chevrons, no layered pointed plates on the back of the knee; remove the thin highlights and the dark or reddish marks on the shins. Keep the boot outlines (their silhouette) exactly where they are, and keep the ankles and feet as they are.
+3. HIPS (rows about 525-790): keep the belt and keep the high-cut bodice; the bodice ends at the back in a narrow pointed central panel; the buttocks are bare as now; make the lower edge of the bodice a clean line with silver edging. No other change.
+
+EVERYTHING ELSE STAYS EXACTLY AS IT IS, pixel for pixel: the head, the collar, the pauldrons, the arms, the gloves, the belt, the leg silhouettes, the feet, the background, the canvas and the figure's position and scale. Do not move or rescale anything.
+
+Save the result in the current working directory as edited2_back.png (1024 x 1536). Then print its path.

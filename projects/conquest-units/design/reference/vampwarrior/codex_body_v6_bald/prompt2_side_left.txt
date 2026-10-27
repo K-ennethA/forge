@@ -1,0 +1,14 @@
+Use your image generation tool to EDIT an existing image. This is a minimal, local edit of the HEAD ONLY.
+
+Attached:
+- base2_side_left.png: THE BASE IMAGE to edit - the LEFT PROFILE view of a bald full-body game character, 1024 x 1536.
+- ref_front_bald.png: the FRONT view of the same character on the same canvas and scale. Its bald head is the correct size and height.
+- scalp_side_left.png: the shape of this character's bald head in profile, with a small pointed ear.
+
+THE PROBLEM: in base2_side_left.png the top of the bald skull is too low (row 63); in the front view the top of the head is at pixel row 54.
+
+THE ONLY CHANGE: redraw the top and back of the bald skull so the top of the smooth bald scalp is at row 54, with the round profile of scalp_side_left.png, keeping the face, the eye, the ear, the jaw, the chin and the neck exactly where they are. Completely bald, no hair.
+
+EVERYTHING ELSE STAYS EXACTLY AS IT IS, pixel for pixel: the face, the collar, the costume, the cape, the background, the canvas size and the position of the figure. Do not redraw, restyle, move or rescale anything else.
+
+Save the result in the current working directory as edited2_side_left.png (1024 x 1536). Then print its path and the pixel row of the top of the head.

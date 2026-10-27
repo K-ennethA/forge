@@ -1,0 +1,52 @@
+z 0.4050 neck loops w0.048 d0.077 w0.039 d0.060 | collar loops 0 | collar at 
+z 0.4040 neck loops w0.048 d0.077 w0.038 d0.059 | collar loops 0 | collar at 
+z 0.4030 neck loops w0.047 d0.077 w0.036 d0.059 | collar loops 0 | collar at 
+z 0.4020 neck loops w0.045 d0.076 w0.034 d0.060 | collar loops 0 | collar at 
+z 0.4010 neck loops w0.044 d0.075 w0.032 d0.060 | collar loops 0 | collar at 
+z 0.4000 neck loops w0.042 d0.074 w0.032 d0.061 | collar loops 2 | collar at 
+z 0.3990 neck loops w0.041 d0.074 w0.032 d0.063 | collar loops 2 | collar at 
+z 0.3980 neck loops w0.039 d0.073 w0.032 d0.063 | collar loops 2 | collar at 
+z 0.3970 neck loops w0.039 d0.073 w0.032 d0.064 | collar loops 2 | collar at left,right
+z 0.3960 neck loops w0.039 d0.073 w0.032 d0.064 | collar loops 2 | collar at left,right
+z 0.3950 neck loops w0.039 d0.073 w0.032 d0.064 | collar loops 2 | collar at left,right
+z 0.3940 neck loops w0.039 d0.073 w0.032 d0.041 w0.016 d0.015 | collar loops 2 | collar at left,right
+z 0.3930 neck loops w0.040 d0.072 w0.032 d0.039 w0.013 d0.011 | collar loops 2 | collar at left,right
+z 0.3920 neck loops w0.040 d0.072 w0.031 d0.038 w0.010 d0.008 | collar loops 2 | collar at left,right
+z 0.3910 neck loops w0.041 d0.048 w0.031 d0.037 w0.022 d0.024 w0.006 d0.005 | collar loops 1 | collar at back,left,right
+z 0.3900 neck loops w0.042 d0.046 w0.031 d0.037 w0.019 d0.019 | collar loops 1 | collar at back,left,right
+z 0.3890 neck loops w0.043 d0.045 w0.031 d0.036 w0.016 d0.014 | collar loops 1 | collar at back,left,right
+z 0.3880 neck loops w0.031 d0.036 w0.013 d0.011 | collar loops 1 | collar at front,back,left,right
+z 0.3870 neck loops w0.031 d0.036 w0.009 d0.007 | collar loops 1 | collar at front,back,left,right
+z 0.3860 neck loops w0.032 d0.008 w0.031 d0.035 | collar loops 1 | collar at front,back,left,right
+z 0.3850 neck loops w0.031 d0.035 w0.029 d0.007 | collar loops 1 | collar at front,back,left,right
+z 0.3840 neck loops w0.031 d0.035 w0.017 d0.005 | collar loops 2 | collar at front,back,left,right
+z 0.3830 neck loops w0.031 d0.035 w0.016 d0.004 | collar loops 1 | collar at front,back,left,right
+z 0.3820 neck loops w0.031 d0.035 w0.013 d0.003 | collar loops 1 | collar at front,back,left,right
+z 0.3810 neck loops w0.031 d0.035 w0.005 d0.002 | collar loops 1 | collar at front,back,left,right
+z 0.3800 neck loops w0.031 d0.035 w0.002 d0.001 | collar loops 1 | collar at front,back,left,right
+z 0.3790 neck loops w0.031 d0.035 | collar loops 1 | collar at front,back,left,right
+z 0.3780 neck loops w0.031 d0.034 | collar loops 1 | collar at front,back,left,right
+z 0.3770 neck loops w0.031 d0.034 | collar loops 1 | collar at front,back,left,right
+z 0.3760 neck loops w0.032 d0.034 | collar loops 1 | collar at front,back,left,right
+z 0.3750 neck loops w0.032 d0.034 | collar loops 1 | collar at front,back,left,right
+z 0.3740 neck loops w0.032 d0.034 | collar loops 1 | collar at front,back,left,right
+z 0.3730 neck loops w0.032 d0.034 | collar loops 3 | collar at front,back,left,right
+z 0.3720 neck loops w0.033 d0.034 | collar loops 1 | collar at front,back,left,right
+z 0.3710 neck loops w0.034 d0.033 | collar loops 1 | collar at front,back,left,right
+z 0.3700 neck loops w0.036 d0.033 | collar loops 1 | collar at front,back,left,right
+z 0.3690 neck loops w0.037 d0.033 | collar loops 1 | collar at front,back,left,right
+z 0.3680 neck loops w0.038 d0.033 | collar loops 1 | collar at front,back,left,right
+z 0.3670 neck loops w0.039 d0.033 | collar loops 1 | collar at front,back,left,right
+z 0.3660 neck loops w0.041 d0.033 | collar loops 1 | collar at front,back,left,right
+z 0.3650 neck loops w0.042 d0.033 | collar loops 1 | collar at front,back,left,right
+z 0.3640 neck loops w0.044 d0.034 | collar loops 2 | collar at front,back,left,right
+z 0.3630 neck loops w0.045 d0.034 | collar loops 2 | collar at front,back,left,right
+z 0.3620 neck loops w0.047 d0.034 | collar loops 1 | collar at front,back,left,right
+z 0.3610 neck loops w0.048 d0.034 | collar loops 1 | collar at front,back,left,right
+z 0.3600 neck loops w0.050 d0.035 | collar loops 1 | collar at front,back,left,right
+z 0.3590 neck loops w0.052 d0.036 | collar loops 1 | collar at front,back,left,right
+z 0.3580 neck loops w0.054 d0.036 | collar loops 1 | collar at front,back,left,right
+z 0.3570 neck loops w0.055 d0.037 | collar loops 1 | collar at front,back,left,right
+z 0.3560 neck loops w0.057 d0.038 | collar loops 1 | collar at front,back,left,right
+z 0.3550 neck loops w0.059 d0.038 | collar loops 2 | collar at front,back,left,right
+COLLAR TOP {'front': 0.388, 'back': 0.391, 'left': 0.397, 'right': 0.397}

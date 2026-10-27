@@ -1,0 +1,16 @@
+[INFO ] services.locationservice ...............: Not adding link to MakeHuman user data, since neither explicit path nor auto-discovery is set in preferences.
+[INFO ] mpfb.init ..............................: Build info 20260722
+[INFO ] mpfb.init ..............................: Online access preference is not enabled. Not checking if MakeHuman is online.
+[INFO ] mpfb.init ..............................: MPFB initialization has finished.
+11:59:20 | INFO: Data are loaded, start creating Blender stuff
+11:59:20 | INFO: Blender create Mesh node 0
+11:59:21 | INFO: glTF import finished in 0.15s
+00:03.359  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\design\reference\vampwarrior\proxy_v6_nocape\renders\fsb_s56_single_front.png'
+00:03.422  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\design\reference\vampwarrior\proxy_v6_nocape\renders\fsb_s56_single_side.png'
+00:03.625  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\design\reference\vampwarrior\proxy_v6_nocape\renders\fsb_s56_single_back.png'
+00:03.922  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\design\reference\vampwarrior\proxy_v6_nocape\renders\fsb_s56_texture_front.png'
+00:04.000  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\design\reference\vampwarrior\proxy_v6_nocape\renders\fsb_s56_texture_side.png'
+00:04.078  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\design\reference\vampwarrior\proxy_v6_nocape\renders\fsb_s56_texture_back.png'
+Blender 5.0.1 (hash a3db93c5b259 built 2025-12-16 01:32:30)
+
+Blender quit

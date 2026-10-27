@@ -1,0 +1,26 @@
+You are comparing two raw image-to-3D body proxy meshes of the same costumed, bald female character. Be strict and concrete; do not soften defects. Do not write any files; answer in text only.
+
+A = body6b seed 7, the CURRENT bald body (generated WITH the long cape).
+B = body6c s7, a NEW body generated from the same references with the CAPE REMOVED (the cape will be a separate, procedurally built part; the collar is kept).
+The head will be cut off at a line on the neck inside the collar and replaced. Judge everything BELOW THE CHIN, EXCEPT the cape (A's cape is expected to be absent in B; do not score the cape itself).
+
+Attached, in order:
+1. sbs_s7_untextured_front_side_back.png - grey renders front / side / back; LEFT = A, RIGHT = B.
+2. sbs_s7_textured_front_side_back.png - the same, textured.
+3. sbs_s7_untextured_rawlook.png - grey renders front / three-quarter / side; LEFT = A, RIGHT = B.
+4. sbs_s7_textured_rawlook.png - the same, textured.
+5. s7_head_closeup_front_side_back.png - B: orthographic textured close-up of head, neck and collar (front | side | back).
+6. body6b_s7_head_closeup_front_side_back.png - A: the same close-up.
+(Renders are on black; use the grey renders for shape.)
+
+For each region say A better / B better / same, with the concrete reason: 1 neck, 2 collar, 3 bodice/chest, 4 upper back (B shows it for the first time; judge plausibility and cleanliness), 5 shoulders/pauldrons, 6 arms, 7 hands, 8 belt, 9 hips/pelvic panels (front and back), 10 buttocks/rear hip, 11 legs, 12 boots.
+Then, for B only:
+- SCALP: any hair remnants or lumps (bumps, ridges, a nub at the crown) on the scalp or the back of the head? (PASS / FAIL with locations)
+- NECK / COLLAR: clean bare neck between chin and collar? Collar clean, no webbing, spikes, holes, floating bits?
+- ARM CLEARANCE (for an arm-raise animation): do the arms read as clearly separate from the torso and hips all the way down?
+- Measured geometry facts for B (horizontal cross-sections; trust these, you cannot see them):
+  * The whole mesh is a closed, hollow, two-walled shell: slices through the head show two nested closed loops (outer surface and an inner wall about 0.004-0.009 inside it; the figure is about 0.99 tall). That double shell is the same as in A.
+  * Arm right_x+: separate from the body from the armpit (y 0.256) down to the fingertips (y -0.036); fused heights below the armpit: 0; smallest arm-to-body gap 0.0208 (torso 0.0208, hips 0.0237, thigh 0.0361); hand-to-thigh gap 0.0361; arm vertices within 0.002 of the body: 0.
+  * Arm left_x-: separate from the body from the armpit (y 0.256) down to the fingertips (y -0.036); fused heights below the armpit: 0; smallest arm-to-body gap 0.0203 (torso 0.0203, hips 0.0240, thigh 0.0364); hand-to-thigh gap 0.0364; arm vertices within 0.002 of the body: 0.
+List B's remaining defects below the chin (cape excluded) plainly, one per line.
+End with exactly one line: "VERDICT: USE B" or "VERDICT: KEEP A" or "VERDICT: NEITHER", followed by one sentence why.

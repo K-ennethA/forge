@@ -1,0 +1,7 @@
+[comfy] starting ComfyUI: C:\forge-models\comfyui\.venv\Scripts\python.exe C:\forge-models\comfyui\main.py --listen 127.0.0.1 --port 8188 --disable-auto-launch --output-directory C:\forge-models\comfyui-output --input-directory C:\forge-models\comfyui-input
+[comfy] ComfyUI is up
+BODY6C 7 192 {'duration_ms': 144415, 'stats': {'verts': 140492, 'faces': 199696, 'meshes': 1, 'primitives': 1, 'materials': 1, 'images': 3}, 'warnings': None}
+BODY6C 11 133 {'duration_ms': 132228, 'stats': {'verts': 138847, 'faces': 199754, 'meshes': 1, 'primitives': 1, 'materials': 1, 'images': 3}, 'warnings': None}
+BODY6C 56 134 {'duration_ms': 133197, 'stats': {'verts': 143559, 'faces': 199814, 'meshes': 1, 'primitives': 1, 'materials': 1, 'images': 3}, 'warnings': None}
+[comfy] stopping ComfyUI child (and its re-exec)
+comfy stopped

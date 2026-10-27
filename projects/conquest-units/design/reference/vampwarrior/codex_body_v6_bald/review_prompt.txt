@@ -1,0 +1,15 @@
+You are reviewing hair-removal edits of 3D-modelling reference images before they go to a multi-view image-to-3D generator. Be strict and concrete; do not soften defects. Do not write any files; answer in text only.
+
+Attached, in order:
+1. orig_front.png, 2. orig_side_left.png, 3. orig_back.png - the ORIGINAL references (with long bone-white hair).
+4. body_front.png, 5. aligned_body_side_left.png, 6. aligned_body_back.png - the EDITED references. The ONLY intended change is: all hair removed, a smooth bald scalp with small pointed ears, the bare neck shown where hair covered it, and the cape / back / collar / background filled in where the hair covered them.
+All images are 1024 x 1536 on the same canvas.
+
+Check each and give PASS or FAIL with the view and the location (pixel rows/columns) of every problem:
+A. BALD EVERYWHERE: no hair remnants anywhere - no strands, wisps, locks, hairline, pale streaks over the cape, the shoulders, the collar, beside the arms or in the background.
+B. COSTUME UNCHANGED: compare each edited view with its original - the collar, bodice, gem, arms, gloves, belt, hips, legs, boots and cape must be the same; list anything that changed, appeared or disappeared (other than what the hair used to hide).
+C. FILL QUALITY: where the hair used to be, does the filled-in cape / back / collar / neck / background continue plausibly? Any seams, smears, halos, tone patches, ghost outlines, or blocky / clipped edges?
+D. HEADS: the bald head is smooth with small pointed ears in all three views; the head is the same size and on the same rows in all three views (top of the head, ears, nape/chin); note any mismatch in skull size, shape or skin tone between the views.
+E. SAME FIGURE: the views still read as rigid rotations of one figure (rows of crown, chin, shoulders, waist, knees, soles).
+
+End with one line per view: "front: OK" or "front: FIX - <reason>", the same for side_left and back.

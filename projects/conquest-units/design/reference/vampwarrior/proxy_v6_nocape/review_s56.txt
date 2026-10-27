@@ -1,0 +1,59 @@
+codex
+B is the better body proxy overall, but it still has substantial cleanup defects. Its strongest gains are arm separation, a usable exposed back, and a less exaggerated chest profile. The replacement head does not resolve its collar, shoulder, hand, or pelvic problems.
+
+| Region | Judgment | Concrete reason |
+|---|---|---|
+| 1. Neck | **Same** | Both have a serviceable neck column, but the skin-to-collar boundary is ragged. B’s rear neck narrows abruptly into the collar. Neither has a clean finished neckline. |
+| 2. Collar | **A better** | A has a broader, more continuous flared collar. B’s flares look like two thin projecting horns, with uneven rims and bulky triangular connections into the shoulders. |
+| 3. Bodice/chest | **B better** | B reduces A’s strongly protruding, rounded breast cups and integrates the chest more closely with the torso. B still has dented, angular cups and a crushed-looking under-bust transition. |
+| 4. Upper back | **B better, with limited comparison** | B supplies a plausible armored back with a central seam and taper toward the waist. Its scapular plates are lumpy and the lower point pinches sharply. A’s cape hides this region, so its underlying quality cannot be established. |
+| 5. Shoulders/pauldrons | **A better** | A’s broad shoulder caps read more clearly as separate armor forms. B’s caps are boxy, with abrupt corners and diagonal ridges that blend into the upper arms instead of forming clean plate boundaries. |
+| 6. Arms | **B better** | B has clearer silhouettes and separation along the torso and hips. The forearms remain angular and the elbows poorly articulated, but A’s arm surfaces are more crowded by longitudinal folds and attachments. |
+| 7. Hands | **Same** | Both have crude fingers and weak knuckle structure. B’s hands are oversized, hooked, and mitten-like through the finger roots; the open thumb gaps do not make them anatomically clean. |
+| 8. Belt | **A better** | A’s paired rings and descending straps read more distinctly as belt hardware. B retains the rings but blends the surrounding belt into the waist and pelvic armor, losing construction clarity. |
+| 9. Hips/pelvic panels | **A better** | A’s front plate and longer side strips have a clearer layered arrangement. B has a long pointed crotch plate, thick side wedges, and jagged thigh openings. Its rear pelvic panel forms an awkward central downward point. A’s rear arrangement is obscured. |
+| 10. Buttocks/rear hip | **Same — A obscured** | There is insufficient exposed rear anatomy in A to establish superiority. B’s visible buttocks are crude, angular lobes with a pinched central division and abrupt transitions into the pelvic panel and upper thighs. |
+| 11. Legs | **A better** | A’s thigh and knee armor has more deliberate boundaries. B’s thighs are bulky and faceted, its knees are weakly defined, and its rear knee/calf transitions look uneven and knotted. |
+| 12. Boots | **A better** | A has clearer shin ornament and ankle structure. B’s boots narrow into thin ankles, then flare into blunt wedge feet; the side views show poorly resolved heel and sole shapes. |
+
+**B-only checks**
+
+- **SCALP: FAIL.** There is a definite nub at the crown and a short raised, flattened ridge/platform around the top of the scalp. The rear skull is faceted, but no distinct hanging hair remnant is visible.
+- **NECK / COLLAR: FAIL for cleanliness.** Bare neck is visible between the jaw and collar, but the front neckline has a ragged, pale scalloped edge. The collar has uneven thin rims, pointed flares, and thick triangular bridging into the shoulder assembly. No definite hole or detached floating fragment can be established from these renders.
+- **ARM CLEARANCE: PASS.** Both arms read as separate from the torso and hips below the armpits. The supplied measurements confirm zero fused heights and zero vertices within 0.002 of the body. Minimum gaps are **0.0188 right / 0.0196 left**, with hand-to-thigh gaps of **0.0332 / 0.0345**. This establishes clearance in the displayed pose; it does not establish collision-free shoulder deformation during an arm raise.
+- **SHELL STRUCTURE:** B retains A’s closed double-wall construction. The inner wall sits approximately **0.004–0.009** inside the outer surface on a figure approximately **0.99** tall. This is a real geometry cleanup issue, not an improvement over A.
+
+**B’s remaining defects below the chin, cape excluded**
+
+Ragged skin-to-collar boundary.
+
+Uneven collar rims and thin, horn-like lateral flares.
+
+Bulky triangular collar-to-shoulder connections.
+
+Boxy pauldrons with poorly separated plate boundaries.
+
+Dented breast armor and a pinched, irregular under-bust transition.
+
+Lumpy upper-back plates and an excessively pointed lower-back termination.
+
+Abrupt waist narrowing and weak separation between belt and body armor.
+
+Angular elbows and forearms with poorly resolved joint construction.
+
+Oversized hooked hands, fused-looking finger roots, and weak knuckles.
+
+Overlong pointed front pelvic plate and thick, jagged side panels.
+
+Awkward pointed rear pelvic panel and crude buttock shaping.
+
+Faceted thighs with abrupt skin-to-armor boundaries.
+
+Poorly defined knees and uneven rear knee/calf transitions.
+
+Thin ankles terminating in blunt wedge feet with weak heel and sole definition.
+
+Retained inner shell requiring removal or deliberate handling before body preparation and rigging.
+
+VERDICT: USE B — Its confirmed arm separation and exposed, usable back make it the stronger base for a separate cape, despite weaker collar, pelvic, and limb detailing.
+tokens used

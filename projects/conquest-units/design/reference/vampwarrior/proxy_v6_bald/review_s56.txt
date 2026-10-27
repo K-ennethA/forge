@@ -1,0 +1,47 @@
+codex
+Judging below the chin, B removes A’s major hair obstruction, but it also introduces a worse chest surface, more stringlike cape debris, and a neck/collar junction that requires reconstruction.
+
+| Region | Judgment | Concrete reason |
+|---|---|---|
+| 1. Neck | **B better visually; structurally defective** | A’s neck is crowded by thick hair locks. B exposes the neck, but your sections establish a double wall, fusion into the collar, and a separate floating throat blob. B does not provide a clean replacement-head attachment. |
+| 2. Collar | **B better** | B exposes the flared collar and its rear contour. A’s hair overlaps and obscures those surfaces. B still has thick, uneven edges and a crowded front throat junction; the measured neck fusion prevents calling it clean. |
+| 3. Bodice/chest | **A better** | A has smoother, more coherent breast volumes and a clearer transition into the segmented abdominal armor. B has conspicuous planar facets, distorted cup surfaces, and a pinched, irregular center junction. The grey three-quarter view makes this obvious. |
+| 4. Shoulders | **B better** | B’s angular shoulder plates are exposed and easier to read as continuous armor. A’s hair crosses their fronts and covers much of their rear transition. B’s plate-to-cape junctions remain crowded and lumpy. |
+| 5. Arms | **Same** | Both retain readable upper arms, elbows, and forearm armor, but both have uneven contours and poorly separated armor boundaries. B’s forearms are especially angular; removing the hair has not produced a clearly superior arm sculpt. |
+| 6. Hands | **Same** | Both have blunt, weakly separated fingers and muddy finger-to-palm transitions. Neither has clean, dependable hand anatomy. B’s exposed hands do not represent a meaningful improvement. |
+| 7. Belt | **Same** | Both preserve the paired circular hip fittings and narrow waist structure. Both fittings are soft and uneven, and their connections to the hanging panels are poorly resolved. |
+| 8. Hips/pelvic panels | **A better** | A’s central pelvic armor has a clearer broad shield shape and more coherent layering. B’s center is broken into irregular overlapping points, with a ragged transition into the long front strip. Both have rough panel boundaries. |
+| 9. Legs | **Same** | Both preserve the overall thigh, knee, and shin arrangement. Both have faceted surfaces and uneven armor ridges. B’s knee chevrons are readable, but the thighs and knee transitions remain angular and distorted. |
+| 10. Boots | **A better** | A’s feet have fuller, more coherent toe and sole silhouettes. B’s feet look narrower and more compressed, with abrupt angular transitions at the ankles and toe tips. Neither has crisp boot construction. |
+| 11a. Cape—front | **A better** | A has broader, more substantial hanging panels. B adds conspicuous thin cords and isolated slivers outside the main silhouette, plus an irregular central lower opening. |
+| 11b. Cape—sides | **A better** | A’s side panels read as larger fabric masses. B has a cluster of long, narrow hanging strips behind the arms and beside the legs, with weak connections and little convincing fabric volume. |
+| 11c. Cape—back | **B better** | A’s long hair covers much of the upper and middle cape. B exposes a continuous rear cape with readable shoulder-to-back folds. Its broad central surface is still shallow and faceted, and the outer edges contain stray strips. |
+| 11d. Cape—hem | **Same** | Both have crude torn silhouettes with needlelike tips, abrupt notches, and uneven panel thickness. B’s large central notch and dangling filaments are particularly conspicuous; A has bulky, slablike outer tails. |
+
+**B—SCALP: PASS for visible hair removal.** No identifiable locks, strands, or hair ridges remain on the scalp or back of the head. The skull has broad surface unevenness, but it does not read as residual hair. No definite hair locks are visible on the shoulders, collar, or cape. The long cape filaments are defects, but these images do not establish that they are hair remnants.
+
+**B—NECK / COLLAR: FAIL.** There is a short visible bare-neck area beneath the jaw, especially from the side and back. That appearance does **not** establish a clean neck inside the collar. Your sections prove that the outer neck merges into the collar below approximately y 0.385. A cut there crosses a fused annulus surrounding the hollow core; it will not simply detach an independent neck from an open collar.
+
+The collar points extend above the chin bottom, restricting access around the proposed cut. The separate closed blob in front of the throat is detached geometry, not a usable neck or collar feature. The front junction also reads as crowded and webbed. The renders cannot reliably establish small holes; the supplied measurements establish the hollow interior and fusion.
+
+**B’s remaining defects below the chin:**
+
+- Double-walled neck with a hollow interior.
+- Outer neck fused into the collar at the intended recessed attachment region.
+- Separate floating closed blob directly in front of the throat.
+- Collar side points rising above the chin bottom and crowding the replacement-head area.
+- Thick, uneven collar edges and a poorly resolved front throat junction.
+- Faceted, distorted breast surfaces and an irregular central chest junction.
+- Crowded shoulder-armor-to-cape transitions.
+- Angular forearms and poorly resolved armor boundaries.
+- Blunt fingers with weak separation and muddy palm transitions.
+- Soft, uneven belt fittings and indistinct panel attachments.
+- Irregular overlapping pelvic armor points.
+- Faceted thighs and distorted knee-to-shin armor transitions.
+- Compressed boot shapes and abrupt ankle/toe transitions.
+- Long, thin cape filaments and narrow hanging slivers.
+- Shallow, faceted rear cape folds.
+- Ragged cape panel junctions, needlelike hem tips, and an oversized central hem notch.
+
+VERDICT: USE B — Removing the extensive hair obstruction makes B the better body starting point, but its fused hollow neck, floating throat blob, chest distortion, and cape filaments require substantial cleanup.
+tokens used
