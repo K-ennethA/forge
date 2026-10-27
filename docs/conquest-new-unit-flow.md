@@ -190,3 +190,31 @@ so the face moves as a rigid body. The result is applied as the rest mesh, and t
 report gives edge stretch, self-intersections, the rigid-face check and the mirror test before and after.
 `proxy_finish.py gate <unit> [--ref <glb>]` adds the IoU against the artist-picked version;
 `panel <unit> [--ref <blend>]` renders sheet | picked | new, with a face row in light mode.
+
+#### Fast iteration flags (light mode, 2026-10-26)
+
+A texture tweak used to cost a whole build (vampwarrior: ~10 min, most of it recomputing the same geometry). These build
+flags are opt-in: without them nothing is read or written and the outputs are byte-identical. Pass them after `--`:
+- `--geo-cache` saves the HIGH + LOW step (remesh, the pre / dense / fine decimations, `smooth_region`) and reuses it
+  when the inputs match exactly. The key hashes the grids, the proxy mesh, the config keys that step reads, the kit
+  sources and the Blender version, so a geometry change or a kit edit always rebuilds.
+- `--retexture` (implies `--geo-cache`) also saves the raw bakes, before any 2D step. On a match, Cycles is skipped
+  and only the 2D steps run again (`despeckle`, `recolour`, `uv.dilate_px`, `paint_project`,
+  `smooth_region.albedo_blend`, `ao_fill_below`, `smooth`, `normal_flatten`). Normal + AO and the albedo have separate
+  keys, so a stage-1 texture tweak (`recolour3d`, `erase3d`, `face_paint`) re-bakes the albedo only.
+- `--preview-bake <blend>` is a `--preview` that does bake, at `bake_res [2048, 1024]`, `albedo_res 2048` and
+  `ao_samples 16` (never above the config). The UVs are the full build's. The textures are packed into the preview
+  blend (and written to `<blend>_textures/`). There is no rig and no clips.
+- `--solid <npz>` (existing) skips stage 1 when only post-stage-1 keys changed: `%TEMP%\<unit>_solid_main.npz` is the
+  last main build's solid.
+- `light.fine_pre_factor` (config) is the log10 factor where the `light.fine` pre-collapse bisection landed (vampwarrior:
+  -2.125, the last `low.fine.pre.trials` row at or above `want_share`). The factor is tried first and kept only when it
+  brackets the share, i.e. when it is the cell the bisection ends in. Then 2 decimations replace 7. Otherwise the kit
+  bisects as before.
+
+Measured on vampwarrior (an iris recolour, full builds run alone): the plain build took 516 s and `--retexture` took
+198 s, with the same combined digest (cffe5c205ab24008). What remains is stage 1 (~87 s, which `--solid` skips) and the
+2D steps at 4096 (~96 s).
+
+Cache entries live in `%TEMP%\forge_light_cache` (the newest 2 per unit and kind). The ship build stays the plain
+`<unit>_run.ps1` (digest twin + bake gate). The flags are for the look loop between ship builds.

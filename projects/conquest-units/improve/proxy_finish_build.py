@@ -123,7 +123,11 @@ def run(unit):
     cfg, raw_cfg = PF.load_cfg(unit)
     if cfg["mode"] == "light":                    # the proxy as generated, made shippable (+ optional bone repose)
         import proxy_finish_light as PFL
-        return PFL.run_light(unit, cfg, raw_cfg, PREVIEW, DIGEST_ONLY, SOLID, T0)
+        FAST = {"geo_cache": "--geo-cache" in argv or "--retexture" in argv, "retexture": "--retexture" in argv,
+                "preview_bake": "--preview-bake" in argv}   # opt-in fast iteration flags (absent = no change)
+        if FAST["preview_bake"]:
+            PREVIEW = argv[argv.index("--preview-bake") + 1]
+        return PFL.run_light(unit, cfg, raw_cfg, PREVIEW, DIGEST_ONLY, SOLID, T0, FAST)
     CC = cfg["colour"]
     OUT_IMPROVED = os.path.join(ROOT, "improved", unit + ".blend")
     OUT_RIGGED = os.path.join(ROOT, "rigged", unit + ".blend")

@@ -1977,10 +1977,28 @@ def pre_decimate_fine(Vh, Th, pre_tris, FINE, lc):
         V2, F2 = decimate(Vh, Th, float(pre_tris) / len(Th), vg, f)
         return float(in_boxes(V2[F2].mean(1), boxes).mean()), V2, F2
     f_lo, f_hi = -7.0, 1.0
+    n_it = int(lc.get("fine_pre_iters", 6))
+    kf = lc.get("fine_pre_factor")      # opt-in (absent = the bisection below, unchanged): the factor a previous build's
+    if kf is not None:                  # bisection landed on (report low.fine.pre.factor_log10), tried first
+        res = (f_hi - f_lo) / 2 ** n_it
+        k_ = int(round((float(kf) - f_lo) / res))
+        kn = {"log10": float(kf), "accepted": False}
+        if abs(f_lo + k_ * res - float(kf)) < 1e-9 and 0 < k_ < 2 ** n_it:   # a grid point the bisection can land on
+            fk = f_lo + k_ * res
+            s_k, Vk, Fk = share(10 ** fk)
+            s_b = share(10 ** (fk - res))[0] if s_k >= want else None
+            kn.update(trials=[(round(fk - res, 3), None if s_b is None else round(s_b, 4)), (round(fk, 3), round(s_k, 4))])
+            if s_b is not None and s_b < want:   # the bisection's final bracket [fk - res, fk]: the same pick, 2 trials
+                kn["accepted"] = True
+                return Vk, Fk, {"want_share": round(want, 4), "got_share": round(s_k, 4), "trials": kn["trials"],
+                                "factor_log10": round(fk, 3), "known_factor": kn,
+                                "rule": "light.fine_pre_factor: the known factor kept since it brackets the share "
+                                        "(share(f - step) < want <= share(f)), the cell the bisection ends in "
+                                        "(the share rises with the factor, the bisection's own premise)"}
     s0, Vp, Fp = share(10 ** f_lo)
     rows = [(f_lo, round(s0, 4))]
     if s0 < want:
-        for _ in range(int(lc.get("fine_pre_iters", 6))):
+        for _ in range(n_it):
             mid = 0.5 * (f_lo + f_hi)
             s_, V2, F2 = share(10 ** mid)
             rows.append((round(mid, 3), round(s_, 4)))
@@ -1991,14 +2009,104 @@ def pre_decimate_fine(Vh, Th, pre_tris, FINE, lc):
         if s0 < want:
             s0, Vp, Fp = share(10 ** f_hi)
             rows.append((f_hi, round(s0, 4)))
-    return Vp, Fp, {"want_share": round(want, 4), "got_share": round(s0, 4), "trials": rows,
-                    "rule": "pre_tris collapse with the fine boxes weighted 0.02 (vs 1); factor bisected until the boxes "
-                            "keep the high's triangle share"}
+    rep = {"want_share": round(want, 4), "got_share": round(s0, 4), "trials": rows,
+           "rule": "pre_tris collapse with the fine boxes weighted 0.02 (vs 1); factor bisected until the boxes "
+                   "keep the high's triangle share"}
+    if kf is not None:                  # the known factor was off (or not a bisection grid point): bisected as before
+        rep["known_factor"] = kn
+        rep["factor_log10"] = rows[0][0] if len(rows) == 1 else round(f_hi, 3)
+    return Vp, Fp, rep
 
 
-def run_light(unit, cfg, raw_cfg, PREVIEW, DIGEST_ONLY, SOLID, T0):
+# opt-in fast iteration (build flags; absent = no change, nothing read or written):
+#   --geo-cache            the HIGH + LOW step (remesh, the pre / dense / fine decimations, smooth_region) saved and reused
+#                          on an exact input match (builds are deterministic): ~4-5 min of a light.fine unit's build
+#   --retexture            (implies --geo-cache) the raw bakes saved before the 2D texture steps and reused on an exact
+#                          match: a 2D step tweak (despeckle / recolour / dilate / paint_project / albedo_blend / ao_fill /
+#                          smooth) re-runs the 2D steps only; normal + AO and the albedo are keyed apart, so a stage-1
+#                          texture tweak (recolour3d, erase3d, face_paint) re-bakes the albedo alone
+#   --preview-bake <blend> a --preview that bakes, at reduced settings (bake_res [2048, 1024], albedo_res 2048,
+#                          ao_samples 16, never above the config; the UVs as the full build), textures packed into the
+#                          preview blend (+ <blend>_textures/), no rig / clips
+# The keys hash the exact inputs (arrays in full, the config keys the step reads, the kit sources, the Blender version);
+# entries live in %TEMP%/forge_light_cache, the newest CACHE_KEEP per unit + kind.
+CACHE_DIR = os.path.join(tempfile.gettempdir(), "forge_light_cache")
+CACHE_KEEP = 2
+_Q8 = (lambda q: q.astype(np.float32) * np.float32(1.0 / 255.0), lambda q: q.astype(np.float32) / np.float32(255.0))
+
+
+def _cache_key(*parts):
+    import hashlib
+    h = hashlib.sha256()
+    for p in parts:
+        if isinstance(p, np.ndarray):
+            a = np.ascontiguousarray(p)
+            h.update(("%s%s" % (a.dtype.str, a.shape)).encode()); h.update(a.data)
+        else:
+            h.update(json.dumps(p, sort_keys=True, default=lambda o: o.tolist() if hasattr(o, "tolist") else str(o)).encode())
+        h.update(b"|")
+    return h.hexdigest()[:24]
+
+
+def _kit_sources():
+    """the kit code a cached step runs (any edit = a new key) + the Blender version"""
+    import hashlib
+    h = hashlib.sha256(bpy.app.version_string.encode())
+    for m_ in (__file__, PFB.__file__, SD.__file__):
+        h.update(open(m_, "rb").read())
+    return h.hexdigest()[:24]
+
+
+def _cache_load(unit, kind, key):
+    p_ = os.path.join(CACHE_DIR, "%s__%s__%s.npz" % (unit, kind, key))
+    if not os.path.exists(p_):
+        return None
+    try:
+        with np.load(p_, allow_pickle=False) as Z_:
+            return {k: Z_[k] for k in Z_.files}
+    except Exception as e_:
+        print("CACHE_UNREADABLE", p_, e_)
+        return None
+
+
+def _cache_save(unit, kind, key, **arrs):
+    os.makedirs(CACHE_DIR, exist_ok=True)
+    p_ = os.path.join(CACHE_DIR, "%s__%s__%s.npz" % (unit, kind, key))
+    tmp = p_[:-4] + ".%d.tmp" % os.getpid()
+    with open(tmp, "wb") as fh:
+        np.savez(fh, **arrs)
+    try:
+        os.replace(tmp, p_)             # atomic: the main build and its digest twin may write the same key
+    except OSError:                     # (Windows: the twin is reading it right now; its copy is the same entry)
+        os.remove(tmp)
+    pre = "%s__%s__" % (unit, kind)
+    old = sorted((f_ for f_ in os.listdir(CACHE_DIR) if f_.startswith(pre) and f_.endswith(".npz")),
+                 key=lambda f_: os.path.getmtime(os.path.join(CACHE_DIR, f_)), reverse=True)
+    for f_ in old[CACHE_KEEP:]:
+        try:
+            os.remove(os.path.join(CACHE_DIR, f_))
+        except OSError:
+            pass
+    return p_
+
+
+def _q8_pack(a):
+    """an 8-bit image's float pixels -> (uint8, mode) when they convert back bit-exactly, else (the floats, -1)"""
+    q = np.clip(np.rint(a * 255.0), 0, 255).astype(np.uint8)
+    for m_, f_ in enumerate(_Q8):
+        if np.array_equal(f_(q), a):
+            return q, m_
+    return a, -1
+
+
+def _q8_unpack(a, m_):
+    return _Q8[int(m_)](a) if int(m_) >= 0 else a
+
+
+def run_light(unit, cfg, raw_cfg, PREVIEW, DIGEST_ONLY, SOLID, T0, FAST=None):
     scene = bpy.context.scene
     lc = cfg["light"]
+    FAST = FAST or {}
     OUT_IMPROVED = os.path.join(ROOT, "improved", unit + ".blend")
     OUT_RIGGED = os.path.join(ROOT, "rigged", unit + ".blend")
     OUT_GLB = os.path.join(ROOT, "rigged", unit + ".glb")
@@ -2112,107 +2220,134 @@ def run_light(unit, cfg, raw_cfg, PREVIEW, DIGEST_ONLY, SOLID, T0):
 
     # ================================================================================================ 2. HIGH + LOW
     t = time.time()
-    if FINE:                            # light.fine: coarse + fine remeshes, blended and stitched (one closed high)
-        Vh, Th, fine_rep = polygonise_fine(F, lo, step, FINE)
+    if FINE:
         DIG["fine_grids"] = sha(np.concatenate([f_["F"][::2, ::2, ::2].ravel() for f_ in FINE]))
-        print("FINE_STITCH", json.dumps({k: fine_rep[k] for k in ("boxes", "tris", "open_edges", "nonmanifold_edges",
-                                                                    "seconds")}))
+    GEO, geo_key = None, None
+    if FAST.get("geo_cache"):           # opt-in --geo-cache: the same inputs give the same HIGH + LOW (deterministic)
+        geo_key = _cache_key("geo", _kit_sources(), F, lo, step, PV, PFc,
+                             [[f_["name"], f_["div"], f_["i0"], f_["i1"], f_["lo"], f_["step"], f_["spec"]] for f_ in FINE],
+                             *[f_["F"] for f_ in FINE], int(cfg["body_tris"]), RC.get("dense"), PF.light_cuts(lc),
+                             {k: lc.get(k) for k in ("speck_frac", "pre_tris", "fine_pre_iters", "fine_pre_factor",
+                                                     "calib_iters", "fine_share_tol")},
+                             {k: v for k, v in (lc.get("smooth_region") or {}).items() if k != "albedo_blend"})
+        GEO = _cache_load(unit, "geo", geo_key)
+    if GEO is not None:
+        LV, LF, BAKE_CAGE = GEO["LV"], GEO["LF"], float(GEO["bake_cage"])
+        report.update(json.loads(str(GEO["report"])))
+        Hh = float(PV[:, 2].max() - PV[:, 2].min())
+        report["geometry_cache"] = {"hit": True, "key": geo_key, "seconds": round(time.time() - t, 1),
+                                    "rule": "--geo-cache: HIGH + LOW reused (the report's high / low seconds are the build "
+                                            "that saved it)"}
+        print("GEO_CACHE hit", geo_key, report["geometry_cache"]["seconds"], "s")
+        print("HIGH", json.dumps(report["high"]))
+        print("LOW", json.dumps(report["low"]))
     else:
-        Vh, Th = SD.polygonise(types.SimpleNamespace(F=F, lo=lo, step=step))
-    Vh, Th, crumbs = PFB.keep_islands(Vh, Th, float(lc["speck_frac"]))
-    oe_h, nm_h = nonmanifold_edges(Th)
-    report["high"] = {"tris": int(len(Th)), "verts": int(len(Vh)), "specks_dropped": crumbs, "open_edges": oe_h,
-                      "nonmanifold_edges": nm_h, "rule": "marching tets of the whole remesh grid (no mirror)",
-                      "seconds": round(time.time() - t, 1)}
-    if FINE:
-        report["high"]["fine"] = fine_rep
-    print("HIGH", json.dumps(report["high"]))
-    t = time.time()
-    if FINE:                            # light.fine: the pre collapse keeps the fine boxes' share of the high
-        Vp_, Fp_, fine_pre = pre_decimate_fine(Vh, Th, int(lc["pre_tris"]), FINE, lc)
-    else:
-        Vp_, Fp_ = decimate(Vh, Th, float(lc["pre_tris"]) / len(Th))
-    target = int(cfg["body_tris"])
-    dense = RC.get("dense") or []
-    if FINE:                            # light.fine boxes with a "density" join the dense calibration (same rule)
-        dense = list(dense) + [dict({"box": f_["spec"]["box"], "density": float(f_["spec"]["density"])},
-                                    **({"vg_weight": f_["spec"]["vg_weight"]} if "vg_weight" in f_["spec"] else {}))
-                               for f_ in FINE if "density" in f_["spec"]]
-    calib = None
-    if dense:
-        dens = float(np.mean([b.get("density", 2.0) for b in dense]))
-        A = tri_area(Vp_, Fp_)
-        inb = in_boxes(Vp_[Fp_].mean(1), dense)
-        a = float(A[inb].sum() / A.sum())
-        want = a * dens / (a * dens + (1.0 - a))
-        vg = np.where(in_boxes(Vp_, dense), 0.02, 1.0)
-        for b_ in dense:                 # opt-in per box "vg_weight" (new units only; list order, later boxes win): a
-            if "vg_weight" in b_:        # small box (eye sockets) held denser than the rest; absent = 0.02 for all (unchanged)
-                vg = np.where(in_boxes(Vp_, [b_]), float(b_["vg_weight"]), vg)
+        if FINE:                            # light.fine: coarse + fine remeshes, blended and stitched (one closed high)
+            Vh, Th, fine_rep = polygonise_fine(F, lo, step, FINE)
+            print("FINE_STITCH", json.dumps({k: fine_rep[k] for k in ("boxes", "tris", "open_edges", "nonmanifold_edges",
+                                                                        "seconds")}))
+        else:
+            Vh, Th = SD.polygonise(types.SimpleNamespace(F=F, lo=lo, step=step))
+        Vh, Th, crumbs = PFB.keep_islands(Vh, Th, float(lc["speck_frac"]))
+        oe_h, nm_h = nonmanifold_edges(Th)
+        report["high"] = {"tris": int(len(Th)), "verts": int(len(Vh)), "specks_dropped": crumbs, "open_edges": oe_h,
+                          "nonmanifold_edges": nm_h, "rule": "marching tets of the whole remesh grid (no mirror)",
+                          "seconds": round(time.time() - t, 1)}
+        if FINE:
+            report["high"]["fine"] = fine_rep
+        print("HIGH", json.dumps(report["high"]))
+        t = time.time()
+        if FINE:                            # light.fine: the pre collapse keeps the fine boxes' share of the high
+            Vp_, Fp_, fine_pre = pre_decimate_fine(Vh, Th, int(lc["pre_tris"]), FINE, lc)
+        else:
+            Vp_, Fp_ = decimate(Vh, Th, float(lc["pre_tris"]) / len(Th))
+        target = int(cfg["body_tris"])
+        dense = RC.get("dense") or []
+        if FINE:                            # light.fine boxes with a "density" join the dense calibration (same rule)
+            dense = list(dense) + [dict({"box": f_["spec"]["box"], "density": float(f_["spec"]["density"])},
+                                        **({"vg_weight": f_["spec"]["vg_weight"]} if "vg_weight" in f_["spec"] else {}))
+                                   for f_ in FINE if "density" in f_["spec"]]
+        calib = None
+        if dense:
+            dens = float(np.mean([b.get("density", 2.0) for b in dense]))
+            A = tri_area(Vp_, Fp_)
+            inb = in_boxes(Vp_[Fp_].mean(1), dense)
+            a = float(A[inb].sum() / A.sum())
+            want = a * dens / (a * dens + (1.0 - a))
+            vg = np.where(in_boxes(Vp_, dense), 0.02, 1.0)
+            for b_ in dense:                 # opt-in per box "vg_weight" (new units only; list order, later boxes win): a
+                if "vg_weight" in b_:        # small box (eye sockets) held denser than the rest; absent = 0.02 for all (unchanged)
+                    vg = np.where(in_boxes(Vp_, [b_]), float(b_["vg_weight"]), vg)
 
-        def share(f):
-            V2, F2 = decimate(Vp_, Fp_, target / len(Fp_), vg, f)
-            return float(in_boxes(V2[F2].mean(1), dense).mean()), V2, F2
-        f_lo, f_hi = -7.0, 1.0               # log10 of the vertex-group factor
-        s0, LV, LF = share(10 ** f_lo)
-        rows = [(round(f_lo, 3), round(s0, 4))]
-        if s0 < want:
-            for _ in range(int(lc.get("calib_iters", 9))):
-                mid = 0.5 * (f_lo + f_hi)
-                s_, V2, F2 = share(10 ** mid)
-                rows.append((round(mid, 3), round(s_, 4)))
-                if s_ < want:
-                    f_lo = mid
-                else:
-                    f_hi = mid; LV, LF, s0 = V2, F2, s_
-            if s0 < want:                    # never reached: the densest tried
-                s0, LV, LF = share(10 ** f_hi)
-        calib = {"density": dens, "box_area_frac": round(a, 4), "target_tri_share": round(want, 4),
-                 "got_tri_share": round(s0, 4), "factor_log10": round(f_hi if s0 >= want else f_lo, 3),
-                 "trials": rows, "rule": "dense boxes weighted 0.02 (vs 1) in the collapse decimation; the factor bisected "
-                                         "until the boxes hold density x the rest's triangles per area"}
-    else:
-        LV, LF = decimate(Vp_, Fp_, target / len(Fp_))
-    if FINE:                            # light.fine: the boxes keep the share the coarse-only build gives them
-        rb_boxes = dense or [{"box": [f_["lo"].tolist(), (f_["lo"] + f_["step"] * (np.array(f_["F"].shape) - 1)).tolist()]}
-                             for f_ in FINE]
-        LV, LF, fine_rb = fine_rebalance(F, lo, step, Vp_, Fp_, LV, LF, target, rb_boxes, lc, bool(dense))
-        if calib is not None:
-            calib["got_tri_share"] = fine_rb["got_share"]
-        print("FINE_REBALANCE", json.dumps({k: fine_rb[k] for k in ("reference_share", "want_share", "calibrated_share", "got_share", "seconds")}))
-    LV, LF, specks = PFB.keep_islands(LV, LF, 0.001)
-    if lc.get("smooth_region"):         # opt-in light.smooth_region (new units only): the low smoothed in boxes (a seam)
-        LV, sm_rep = smooth_region(LV, LF, lc["smooth_region"])
-        report["smooth_region"] = sm_rep
-        print("SMOOTH_REGION", json.dumps({k: sm_rep[k] for k in ("verts_weighted", "max_move_u", "mean_move_u_weighted")}))
-    oe_l, nm_l = nonmanifold_edges(LF)
-    # deviation from the PROXY (the artist's pick), both ways
-    bvh_p = BVHTree.FromPolygons(PV.tolist(), PFc.tolist())
-    d_lp = np.array([bvh_p.find_nearest(Vector(p))[3] for p in LV])
-    bvh_l = BVHTree.FromPolygons(LV.tolist(), LF.tolist())
-    ss = np.arange(0, len(PV), max(1, len(PV) // 40000))
-    if PF.light_cuts(lc):               # only the vertices of the KEPT proxy faces (a cut part is not a deviation)
-        used_ = np.unique(PFc)
-        ss = used_[np.arange(0, len(used_), max(1, len(used_) // 40000))]
-    d_pl = np.array([bvh_l.find_nearest(Vector(PV[i]))[3] for i in ss])
-    Hh = float(PV[:, 2].max() - PV[:, 2].min())
-    report["low"] = {"method": "collapse decimation: uniform to %d, then %d with the dense boxes calibrated" % (
-                     lc["pre_tris"], target), "pre_tris": int(len(Fp_)), "tris": int(len(LF)), "verts": int(len(LV)),
-                     "specks": specks, "open_edges": oe_l, "nonmanifold_edges": nm_l, "dense": calib,
-                     "low_to_proxy": {"mean": round(float(d_lp.mean()), 5), "p99": round(float(np.percentile(d_lp, 99)), 5),
-                                      "max": round(float(d_lp.max()), 5)},
-                     "proxy_to_low_sampled": {"mean": round(float(d_pl.mean()), 5),
-                                              "p99": round(float(np.percentile(d_pl, 99)), 5), "max": round(float(d_pl.max()), 5)},
-                     "p99_over_height": round(float(np.percentile(d_pl, 99)) / Hh, 5),
-                     "seconds": round(time.time() - t, 1)}
-    if FINE:
-        fbx = [{"box": [f_["lo"].tolist(), (f_["lo"] + f_["step"] * (np.array(f_["F"].shape) - 1)).tolist()]} for f_ in FINE]
-        report["low"]["fine"] = {"pre": fine_pre, "rebalance": fine_rb,
-                                 "high_share": round(float(in_boxes(Vh[Th].mean(1), fbx).mean()), 4),
-                                 "low_share": round(float(in_boxes(LV[LF].mean(1), fbx).mean()), 4),
-                                 "dense_boxes_added": [f_["name"] for f_ in FINE if "density" in f_["spec"]]}
-    print("LOW", json.dumps(report["low"]))
-    BAKE_CAGE = max(0.02, round(3.0 * float(np.percentile(d_pl, 99)), 4))
+            def share(f):
+                V2, F2 = decimate(Vp_, Fp_, target / len(Fp_), vg, f)
+                return float(in_boxes(V2[F2].mean(1), dense).mean()), V2, F2
+            f_lo, f_hi = -7.0, 1.0               # log10 of the vertex-group factor
+            s0, LV, LF = share(10 ** f_lo)
+            rows = [(round(f_lo, 3), round(s0, 4))]
+            if s0 < want:
+                for _ in range(int(lc.get("calib_iters", 9))):
+                    mid = 0.5 * (f_lo + f_hi)
+                    s_, V2, F2 = share(10 ** mid)
+                    rows.append((round(mid, 3), round(s_, 4)))
+                    if s_ < want:
+                        f_lo = mid
+                    else:
+                        f_hi = mid; LV, LF, s0 = V2, F2, s_
+                if s0 < want:                    # never reached: the densest tried
+                    s0, LV, LF = share(10 ** f_hi)
+            calib = {"density": dens, "box_area_frac": round(a, 4), "target_tri_share": round(want, 4),
+                     "got_tri_share": round(s0, 4), "factor_log10": round(f_hi if s0 >= want else f_lo, 3),
+                     "trials": rows, "rule": "dense boxes weighted 0.02 (vs 1) in the collapse decimation; the factor bisected "
+                                             "until the boxes hold density x the rest's triangles per area"}
+        else:
+            LV, LF = decimate(Vp_, Fp_, target / len(Fp_))
+        if FINE:                            # light.fine: the boxes keep the share the coarse-only build gives them
+            rb_boxes = dense or [{"box": [f_["lo"].tolist(), (f_["lo"] + f_["step"] * (np.array(f_["F"].shape) - 1)).tolist()]}
+                                 for f_ in FINE]
+            LV, LF, fine_rb = fine_rebalance(F, lo, step, Vp_, Fp_, LV, LF, target, rb_boxes, lc, bool(dense))
+            if calib is not None:
+                calib["got_tri_share"] = fine_rb["got_share"]
+            print("FINE_REBALANCE", json.dumps({k: fine_rb[k] for k in ("reference_share", "want_share", "calibrated_share", "got_share", "seconds")}))
+        LV, LF, specks = PFB.keep_islands(LV, LF, 0.001)
+        if lc.get("smooth_region"):         # opt-in light.smooth_region (new units only): the low smoothed in boxes (a seam)
+            LV, sm_rep = smooth_region(LV, LF, lc["smooth_region"])
+            report["smooth_region"] = sm_rep
+            print("SMOOTH_REGION", json.dumps({k: sm_rep[k] for k in ("verts_weighted", "max_move_u", "mean_move_u_weighted")}))
+        oe_l, nm_l = nonmanifold_edges(LF)
+        # deviation from the PROXY (the artist's pick), both ways
+        bvh_p = BVHTree.FromPolygons(PV.tolist(), PFc.tolist())
+        d_lp = np.array([bvh_p.find_nearest(Vector(p))[3] for p in LV])
+        bvh_l = BVHTree.FromPolygons(LV.tolist(), LF.tolist())
+        ss = np.arange(0, len(PV), max(1, len(PV) // 40000))
+        if PF.light_cuts(lc):               # only the vertices of the KEPT proxy faces (a cut part is not a deviation)
+            used_ = np.unique(PFc)
+            ss = used_[np.arange(0, len(used_), max(1, len(used_) // 40000))]
+        d_pl = np.array([bvh_l.find_nearest(Vector(PV[i]))[3] for i in ss])
+        Hh = float(PV[:, 2].max() - PV[:, 2].min())
+        report["low"] = {"method": "collapse decimation: uniform to %d, then %d with the dense boxes calibrated" % (
+                         lc["pre_tris"], target), "pre_tris": int(len(Fp_)), "tris": int(len(LF)), "verts": int(len(LV)),
+                         "specks": specks, "open_edges": oe_l, "nonmanifold_edges": nm_l, "dense": calib,
+                         "low_to_proxy": {"mean": round(float(d_lp.mean()), 5), "p99": round(float(np.percentile(d_lp, 99)), 5),
+                                          "max": round(float(d_lp.max()), 5)},
+                         "proxy_to_low_sampled": {"mean": round(float(d_pl.mean()), 5),
+                                                  "p99": round(float(np.percentile(d_pl, 99)), 5), "max": round(float(d_pl.max()), 5)},
+                         "p99_over_height": round(float(np.percentile(d_pl, 99)) / Hh, 5),
+                         "seconds": round(time.time() - t, 1)}
+        if FINE:
+            fbx = [{"box": [f_["lo"].tolist(), (f_["lo"] + f_["step"] * (np.array(f_["F"].shape) - 1)).tolist()]} for f_ in FINE]
+            report["low"]["fine"] = {"pre": fine_pre, "rebalance": fine_rb,
+                                     "high_share": round(float(in_boxes(Vh[Th].mean(1), fbx).mean()), 4),
+                                     "low_share": round(float(in_boxes(LV[LF].mean(1), fbx).mean()), 4),
+                                     "dense_boxes_added": [f_["name"] for f_ in FINE if "density" in f_["spec"]]}
+        print("LOW", json.dumps(report["low"]))
+        BAKE_CAGE = max(0.02, round(3.0 * float(np.percentile(d_pl, 99)), 4))
+        if geo_key:
+            _cache_save(unit, "geo", geo_key, LV=LV, LF=LF, bake_cage=np.float64(BAKE_CAGE),
+                        report=np.array(json.dumps({k: v for k, v in report.items() if k in ("high", "low", "smooth_region")},
+                                                   default=lambda o: o.tolist() if hasattr(o, "tolist") else str(o))))
+            report["geometry_cache"] = {"hit": False, "key": geo_key, "saved": True}
+            print("GEO_CACHE saved", geo_key)
     NB, NBF = len(LV), len(LF)          # the body (shell) part of the low; opt-in light.parts are appended after it
     PARTS_L, PREG = [], []
     if lc.get("parts"):                 # opt-in light.parts (new units only): closed procedural parts (a weapon) from the
@@ -2332,7 +2467,7 @@ def run_light(unit, cfg, raw_cfg, PREVIEW, DIGEST_ONLY, SOLID, T0):
 
     # ================================================================================================ 4. bake (FLAT low)
     imgs = {}
-    if not PREVIEW:
+    if not PREVIEW or FAST.get("preview_bake"):
         try:
             import addon_utils
             addon_utils.enable("cycles", default_set=False, persistent=False)
@@ -2367,6 +2502,9 @@ def run_light(unit, cfg, raw_cfg, PREVIEW, DIGEST_ONLY, SOLID, T0):
         scene.render.engine = "CYCLES"
         scene.cycles.device = "CPU"; scene.cycles.use_denoising = False; scene.cycles.seed = 0
         RN, RA = cfg["bake_res"]; RC_ = int(lc["albedo_res"])
+        AO_S = int(lc.get("ao_samples", 16))
+        if FAST.get("preview_bake"):    # --preview-bake: reduced settings, never above the config (the UVs are unchanged)
+            RN, RA, RC_, AO_S = min(RN, 2048), min(RA, 1024), min(RC_, 2048), min(AO_S, 16)
         img_n = bpy.data.images.new(unit + "_normal", RN, RN, alpha=False)
         img_n.colorspace_settings.name = "Non-Color"; img_n.generated_color = (0.0, 0.0, 0.0, 1.0)
         img_ao = bpy.data.images.new(unit + "_ao", RA, RA, alpha=False)
@@ -2384,7 +2522,28 @@ def run_light(unit, cfg, raw_cfg, PREVIEW, DIGEST_ONLY, SOLID, T0):
         bpy.context.view_layer.objects.active = low
         bstats = {"reference": "flat", "source": "the proxy mesh itself (not the remesh)"}
         ao_low = bool(lc.get("ao_from_low"))   # opt-in (new units only): AO from the clean watertight LOW itself
-        for typ, node, samples in (("NORMAL", tn, 1), ("AO", ta, int(lc.get("ao_samples", 16))), ("EMIT", tc, 1)):
+        RAW, raw_keys = {}, None
+        if FAST.get("retexture"):       # opt-in --retexture: the raw bakes (before every 2D step) of these exact inputs
+            uv_k = np.empty(len(me.loops) * 2, np.float32); me.uv_layers.active.data.foreach_get("uv", uv_k)
+            k_na = _cache_key("bake_nao", _kit_sources(), LV, LF, uv_k, PV, PFc, BAKE_CAGE, RN, RA, AO_S, ao_low,
+                              lc.get("ao_distance"))
+            k_c = _cache_key("bake_albedo", k_na, PUV, RC_, texkeys[:1],
+                             (Z[texkeys[0]] if bake_tex is None else bake_tex) if texkeys else None)
+            raw_keys = {"nao": ("bake_nao_%d_%d" % (RN, RA), k_na), "albedo": ("bake_albedo_%d" % RC_, k_c)}
+            for part_, (kind_, key_) in raw_keys.items():
+                Zr = _cache_load(unit, kind_, key_)
+                if Zr is not None:
+                    st_ = json.loads(str(Zr["bstats"]))
+                    for typ_, nm_ in (("NORMAL", "normal"), ("AO", "ao"), ("EMIT", "albedo")):
+                        if nm_ in Zr:
+                            RAW[typ_] = _q8_unpack(Zr[nm_], Zr[nm_ + "_q8"])
+                            bstats[typ_] = st_[typ_]
+                    if "ao_distance" in st_:
+                        bstats["ao_distance"] = st_["ao_distance"]
+            print("RAW_BAKE_CACHE", json.dumps({"hit": sorted(RAW), "keys": {k: v[1] for k, v in raw_keys.items()}}))
+        for typ, node, samples in (("NORMAL", tn, 1), ("AO", ta, AO_S), ("EMIT", tc, 1)):
+            if typ in RAW:
+                continue
             nt.nodes.active = node
             scene.cycles.samples = samples
             t = time.time()
@@ -2414,10 +2573,32 @@ def run_light(unit, cfg, raw_cfg, PREVIEW, DIGEST_ONLY, SOLID, T0):
                 bstats["ao_distance"] = {"u": float(ao_dist), "world_default": round(float(ao_d0), 4)}
             bstats[typ] = {"result": sorted(r_), "seconds": round(time.time() - t, 1)}
         if ao_low:
-            bstats["ao_source"] = "the low itself (opt-in light.ao_from_low), %d samples" % int(lc.get("ao_samples", 16))
-        px = np.empty(RN * RN * 4, dtype=np.float32); img_n.pixels.foreach_get(px); px = px.reshape(-1, 4)
-        pa = np.empty(RA * RA * 4, dtype=np.float32); img_ao.pixels.foreach_get(pa); pa = pa.reshape(-1, 4)
-        pc = np.empty(RC_ * RC_ * 4, dtype=np.float32); img_c.pixels.foreach_get(pc); pc = pc.reshape(-1, 4)
+            bstats["ao_source"] = "the low itself (opt-in light.ao_from_low), %d samples" % AO_S
+        if "NORMAL" in RAW:
+            px = RAW["NORMAL"].copy()
+        else:
+            px = np.empty(RN * RN * 4, dtype=np.float32); img_n.pixels.foreach_get(px); px = px.reshape(-1, 4)
+        if "AO" in RAW:
+            pa = RAW["AO"].copy()
+        else:
+            pa = np.empty(RA * RA * 4, dtype=np.float32); img_ao.pixels.foreach_get(pa); pa = pa.reshape(-1, 4)
+        if "EMIT" in RAW:
+            pc = RAW["EMIT"].copy()
+        else:
+            pc = np.empty(RC_ * RC_ * 4, dtype=np.float32); img_c.pixels.foreach_get(pc); pc = pc.reshape(-1, 4)
+        if raw_keys:                    # --retexture: the raw bakes saved (only the passes baked this time)
+            for part_, typs_ in (("nao", (("NORMAL", "normal", px), ("AO", "ao", pa))), ("albedo", (("EMIT", "albedo", pc),))):
+                if all(t_ in RAW for t_, _, _ in typs_):
+                    continue
+                arrs_ = {}
+                for t_, nm_, a_ in typs_:
+                    arrs_[nm_], arrs_[nm_ + "_q8"] = _q8_pack(a_)
+                st_ = {t_: bstats[t_] for t_, _, _ in typs_}
+                if part_ == "nao" and "ao_distance" in bstats:
+                    st_["ao_distance"] = bstats["ao_distance"]
+                _cache_save(unit, raw_keys[part_][0], raw_keys[part_][1], bstats=np.array(json.dumps(st_)), **arrs_)
+            bstats["raw_bake_cache"] = {"reused": sorted(RAW), "keys": {k: v[1] for k, v in raw_keys.items()},
+                                        "rule": "--retexture: Cycles skipped for the reused passes; every 2D step re-run"}
         cov_n = px[:, 2] > 0.25
         cov_a = np.abs(pa[:, 0] - pa[:, 1]) < 0.02
         cov_c = ~((np.abs(pc[:, 0] - 1.0) < 1e-3) & (pc[:, 1] < 1e-3) & (np.abs(pc[:, 2] - 1.0) < 1e-3))
@@ -2504,17 +2685,19 @@ def run_light(unit, cfg, raw_cfg, PREVIEW, DIGEST_ONLY, SOLID, T0):
                        "ao_mean": round(float(pa[cov_a, 0].mean()), 4) if cov_a.any() else None,
                        "pixel_sha": {"normal": sha(q8(px[:, :3])), "ao": sha(q8(pa[:, :1])), "albedo": sha(q8(pc[:, :3]))},
                        "seconds": round(time.time() - tb, 1)})
-        np.save(os.path.join(tempfile.gettempdir(), "%s_normal_%s.npy" % (unit, tag)), px[:, :3])
-        np.save(os.path.join(tempfile.gettempdir(), "%s_ao_%s.npy" % (unit, tag)), pa[:, :1])
-        np.save(os.path.join(tempfile.gettempdir(), "%s_albedo_%s.npy" % (unit, tag)), pc[:, :3])
+        if not PREVIEW:                     # (--preview-bake: the main / twin bake-diff inputs are left alone)
+            np.save(os.path.join(tempfile.gettempdir(), "%s_normal_%s.npy" % (unit, tag)), px[:, :3])
+            np.save(os.path.join(tempfile.gettempdir(), "%s_ao_%s.npy" % (unit, tag)), pa[:, :1])
+            np.save(os.path.join(tempfile.gettempdir(), "%s_albedo_%s.npy" % (unit, tag)), pc[:, :3])
         report["bake"] = bstats
         DIG["bake_normal"] = bstats["pixel_sha"]["normal"]; DIG["bake_ao"] = bstats["pixel_sha"]["ao"]
         DIG["bake_albedo"] = bstats["pixel_sha"]["albedo"]
         imgs = {"normal": img_n, "ao": img_ao, "albedo": img_c, "basecolor": img_b}
         if not DIGEST_ONLY:
-            os.makedirs(TEX_DIR, exist_ok=True)
+            tex_dir = PREVIEW[:-6] + "_textures" if PREVIEW else TEX_DIR   # --preview-bake: beside the preview blend
+            os.makedirs(tex_dir, exist_ok=True)
             for k_, img in imgs.items():
-                img.filepath_raw = os.path.join(TEX_DIR, "%s_%s.png" % (unit, k_)); img.file_format = "PNG"
+                img.filepath_raw = os.path.join(tex_dir, "%s_%s.png" % (unit, k_)); img.file_format = "PNG"
                 img.save(); img.pack()
         # material: Col x basecolor (albedo x AO) -> Base Color; normal map
         nt.nodes.remove(ta); nt.nodes.remove(tc)
@@ -2550,7 +2733,7 @@ def run_light(unit, cfg, raw_cfg, PREVIEW, DIGEST_ONLY, SOLID, T0):
     gl = lc.get("glow3d")                # opt-in (new units only; absent = one region, Glow all off, unchanged)
     if gl:
         report["glow3d"] = glow3d_regions(me, LV, LF, gl, pal_default, REGION,
-                                          (pc, RC_) if (not PREVIEW and imgs) else None,
+                                          (pc, RC_) if imgs else None,
                                           init=tuple(PAL.read_regions(me)[:2]) if (PARTS_L or len(SMOOTH_IDS)) else None)
         report["regions_faces"] = report["glow3d"]["paint"]
         DIG["glow3d"] = report["glow3d"]["face_region_sha"]
@@ -2734,7 +2917,7 @@ def run_light(unit, cfg, raw_cfg, PREVIEW, DIGEST_ONLY, SOLID, T0):
         bpy.ops.wm.save_as_mainfile(filepath=PREVIEW, copy=True, compress=True)
         np.savez(PREVIEW[:-6] + "_prerepose.npz", V=V0, F=LF, rig=json.dumps(RC.get("rig") or {}),
                  repose=json.dumps(RC.get("repose") or {}), H=Hh)
-        print("PREVIEW", json.dumps({k: report.get(k) for k in ("high", "low", "tris", "finish")}))
+        print("PREVIEW", json.dumps({k: report.get(k) for k in ("high", "low", "tris", "finish") + (("bake",) if imgs else ())}))
         sys.stdout.flush(); os._exit(0)
 
     def set_tex_paths(rel_prefix):
