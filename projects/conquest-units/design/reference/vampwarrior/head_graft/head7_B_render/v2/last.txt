@@ -1,0 +1,11 @@
+Overwrote all three files at 1254 × 1254 using built-in imagegen. Rows below are approximate, zero-based; mouth means the dark opening.
+
+| File path | Skull top | Pupils | Mouth | Chin |
+|---|---:|---:|---:|---:|
+| [head_front.png](C:/Users/kenne/OneDrive/Desktop/git/forge/projects/conquest-units/design/reference/vampwarrior/head_graft/head7_B_render/v2/head_front.png) | 34 | 523, 522 | 783 | 964 |
+| [head_side_left.png](C:/Users/kenne/OneDrive/Desktop/git/forge/projects/conquest-units/design/reference/vampwarrior/head_graft/head7_B_render/v2/head_side_left.png) | 55 | 516 | 760 | 920 |
+| [head_back.png](C:/Users/kenne/OneDrive/Desktop/git/forge/projects/conquest-units/design/reference/vampwarrior/head_graft/head7_B_render/v2/head_back.png) | 29 | Hidden | Hidden | Hidden |
+
+Prompt focus: broader, shorter, softer lower face; simpler nose; flat eyelid liner.
+
+**Exact alignment was not fully preserved:** skull and mouth landmarks drifted about 1–3 pixels. The nose simplification is subtle.

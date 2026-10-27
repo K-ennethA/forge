@@ -1,0 +1,17 @@
+Attached: sheet.png (the artist's character sheet = THE DESIGN SPEC), sheet_face_panel.png (the face to match), prev_front.png (an earlier front reference with good proportions).
+
+Make 3D-modelling REFERENCE images of the HEAD of this character (the "Vampire Warrior"), for an image-to-3D generator: rigid orthographic rotations of ONE head. It must RESEMBLE the sheet face panel: the same face, identity and proportions.
+
+THE HEAD IS BALD (a smooth scalp, no hair at all: the hair will be built separately later). Face: pale warm grey-mauve skin; large open almond eyes with clear white sclera and dark-red irises with a small highlight; thin, clean brows angled slightly down toward the nose, sitting ON THE SKIN; a slender small nose; a SMALL mouth (about 60 % of the pupil distance), lips closed or barely parted, dark muted lips, exactly two small fangs just visible under the upper lip; tapered jaw, pointed chin; small pointed ears; a short neck ending in a clean horizontal cut a little below the jaw, with no collar or clothing.
+
+Images (each its own file in the current directory, exactly these names):
+  A. head_front.png      - straight front.
+  B. head_side_left.png  - TRUE orthographic left profile: the face points image-left, only the near eye visible, one continuous forehead-nose-lips-chin silhouette.
+  C. head_back.png       - straight back view.
+Rules: the same square canvas, scale and camera height in all three, no pitch; the top of the skull, the pupils, the mouth and the chin on the SAME pixel rows in every image; the head centred; a plain flat mid-grey background (about RGB 128,128,128), nothing else in the frame; no text.
+Then print each file path with the pixel rows of the skull top, the pupils, the mouth and the chin.
+
+STYLE B: render it as a high-end STYLIZED 3D GAME CHARACTER, the quality of a top studio's stylized hero game (NOT a 2D drawing): clean sculpted 3D forms with smooth, simplified planes; real modelled eyeballs set in shallow sockets; crisp painted colour patches with clean transitions (no line art, no hatching, no outlines); soft, even studio lighting from the front-top so the forms read, with no harsh cast shadows; a matte, clean surface. It must look like a finished 3D game model seen in a turntable, still clearly this character from the sheet.
+
+ALSO, after the three bald images: three more images of the SAME head in the SAME render style, now WITH its hair, as the target look for a later hair pass (not for generation):
+  D. hair_front.png, E. hair_side_left.png, F. hair_back.png - identical camera, scale and landmark rows as A-C, the same bald head underneath, plus the sheet's hair: very long muted warm-ivory hair parted in the centre, made of a FEW LARGE, CLEAN, SEPARATE locks with smooth surfaces, tapered pointed ends and visible gaps between locks; two locks frame the face and fall in front of the shoulders WITHOUT covering the eyes or brows; the rest sweeps behind the ears and down the back (cut off by the frame bottom). No hair over the face features.

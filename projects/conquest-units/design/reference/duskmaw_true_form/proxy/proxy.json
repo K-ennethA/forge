@@ -1,0 +1,429 @@
+{
+ "glb": "proxy/duskmaw_true_form_proxy.glb",
+ "sha256": "09e4004fb35f49ca69d4e564c9318812b49a7ae86421633ef44034397973a9c6",
+ "seed": 56,
+ "model": "Pixal3D multi-view (meshgen, shared_frame)",
+ "views_sent": {
+  "front": "proxy/view_front.png",
+  "right": "proxy/view_side.png"
+ },
+ "side_facing": "right",
+ "frame": {
+  "above_floor_px": 568,
+  "below_floor_px": 2,
+  "pad_px": 20,
+  "height_px": 611,
+  "views": {
+   "front": {
+    "crop_origin_px": [
+     -20,
+     94
+    ],
+    "floor_row": 588,
+    "mask_bbox_px": [
+     0,
+     140,
+     478,
+     683
+    ]
+   },
+   "side": {
+    "crop_origin_px": [
+     722,
+     96
+    ],
+    "floor_row": 588,
+    "mask_bbox_px": [
+     742,
+     116,
+     1091,
+     687
+    ]
+   }
+  }
+ },
+ "generated": {
+  "via": "direct",
+  "seed": {
+   "value": 56,
+   "base": 56,
+   "source": "caller",
+   "stages": {
+    "structure": 56,
+    "shape": 42,
+    "upsample": 42,
+    "texture": 43
+   }
+  },
+  "duration_ms": 191715,
+  "wall_s": 194.2,
+  "vram": {
+   "before_gb": 1.34,
+   "after_gb": 4.88,
+   "peak_gb": 8.61,
+   "total_gb": 11.94,
+   "device": "cuda:0 NVIDIA GeForce RTX 5070 : cudaMallocAsync"
+  },
+  "stats": {
+   "verts": 154553,
+   "faces": 198766,
+   "meshes": 1,
+   "primitives": 1,
+   "materials": 1,
+   "images": 3
+  },
+  "framing": {
+   "mode": "shared",
+   "carve_enclosed": false,
+   "size": 1024,
+   "layout": {
+    "mode": "shared",
+    "size": 1024,
+    "pad": 1.1,
+    "scale": 1.630314,
+    "extent_px": 571,
+    "v_span_px": [
+     20,
+     591
+    ],
+    "centres": {
+     "front": [
+      259.0,
+      305.5
+     ],
+     "right": [
+      194.5,
+      305.5
+     ]
+    },
+    "extents_px": {
+     "front": {
+      "w": 478,
+      "h": 543
+     },
+     "right": {
+      "w": 349,
+      "h": 571
+     }
+    },
+    "mask_source": {
+     "front": "alpha",
+     "right": "alpha"
+    },
+    "enclosed_background": {
+     "front": {
+      "regions": 1,
+      "area_px": 310
+     },
+     "right": {
+      "regions": 0,
+      "area_px": 0
+     }
+    }
+   },
+   "warnings": [
+    {
+     "code": "matte_filled_enclosed_background",
+     "view": "front",
+     "regions": [
+      {
+       "bbox_px": [
+        116,
+        489,
+        149,
+        514
+       ],
+       "area_px": 292,
+       "mean_delta": 5.68,
+       "std": 3.93
+      }
+     ],
+     "area_px": 310,
+     "frac_of_subject": 0.0021,
+     "bg_rgb": [
+      35.0,
+      35.0,
+      35.0
+     ],
+     "message": "the front matte filled 1 background-coloured pocket(s) the subject encloses (310 px, 0.2% of the subject) - a ring or loop will come back as a solid disc. Send the view with an alpha cut-out, or use options.shared_frame + options.carve_enclosed to carve them."
+    }
+   ]
+  },
+  "warnings": [
+   {
+    "code": "matte_filled_enclosed_background",
+    "view": "front",
+    "regions": [
+     {
+      "bbox_px": [
+       116,
+       489,
+       149,
+       514
+      ],
+      "area_px": 292,
+      "mean_delta": 5.68,
+      "std": 3.93
+     }
+    ],
+    "area_px": 310,
+    "frac_of_subject": 0.0021,
+    "bg_rgb": [
+     35.0,
+     35.0,
+     35.0
+    ],
+    "message": "the front matte filled 1 background-coloured pocket(s) the subject encloses (310 px, 0.2% of the subject) - a ring or loop will come back as a solid disc. Send the view with an alpha cut-out, or use options.shared_frame + options.carve_enclosed to carve them."
+   }
+  ],
+  "free_vram_gb_before": 10.0
+ },
+ "transform": {
+  "rotation": [
+   [
+    1.0,
+    0.0,
+    0.0
+   ],
+   [
+    0.0,
+    1.0,
+    0.0
+   ],
+   [
+    0.0,
+    0.0,
+    1.0
+   ]
+  ],
+  "offset": [
+   0.0018359571695327759,
+   0.005855396389961243,
+   -0.45268988609313965
+  ],
+  "scale": 5.9021739130434785,
+  "rule": "v_sheet = scale * (R @ v_zup - offset); glTF (x, y, z) -> z-up (x, -z, y)",
+  "orientation_identity_iou": 0.7277,
+  "orientation_best_iou": 0.7277
+ },
+ "clipped_below_floor_px": {},
+ "scores": {
+  "front": {
+   "iou": 0.7957,
+   "iou_shape": 0.7579,
+   "aspect_rel": 0.0142,
+   "row_err_u": 0.534,
+   "row_err_pct": 12.0,
+   "w_u": 4.84,
+   "h_u": 5.42,
+   "ref_w_u": 4.78,
+   "ref_h_u": 5.43,
+   "scored": true
+  },
+  "back": {
+   "iou": 0.541,
+   "iou_shape": 0.574,
+   "aspect_rel": 0.2144,
+   "row_err_u": 1.359,
+   "row_err_pct": 41.2,
+   "w_u": 4.84,
+   "h_u": 5.42,
+   "ref_w_u": 3.62,
+   "ref_h_u": 5.16,
+   "scored": false
+  },
+  "side": {
+   "iou": 0.7536,
+   "iou_shape": 0.7056,
+   "aspect_rel": 0.0314,
+   "row_err_u": 0.471,
+   "row_err_pct": 15.7,
+   "w_u": 3.42,
+   "h_u": 5.42,
+   "ref_w_u": 3.49,
+   "ref_h_u": 5.71,
+   "scored": true
+  }
+ },
+ "mean_iou": 0.7747,
+ "side_len_over_front_h": {
+  "mesh": 0.631,
+  "sheet": 0.643,
+  "rel_err": -0.0182
+ },
+ "front_w_over_h": {
+  "mesh": 0.893,
+  "sheet": 0.88
+ },
+ "gate": {
+  "pass": true,
+  "verdict": "reliable",
+  "rule": "mean IoU >= 0.75 and side length within 5%"
+ },
+ "sections": [
+  {
+   "z_frac": 0.06,
+   "z_u": 0.325,
+   "x_min_u": -2.328,
+   "x_max_u": 2.043,
+   "width_x_u": 4.371,
+   "y_front_u": -1.347,
+   "y_back_u": 1.373,
+   "depth_y_u": 2.72,
+   "y_centre_u": 0.013,
+   "points": 4754
+  },
+  {
+   "z_frac": 0.18,
+   "z_u": 0.975,
+   "x_min_u": -1.606,
+   "x_max_u": 1.645,
+   "width_x_u": 3.251,
+   "y_front_u": -1.623,
+   "y_back_u": 1.379,
+   "depth_y_u": 3.002,
+   "y_centre_u": -0.122,
+   "points": 4346
+  },
+  {
+   "z_frac": 0.3,
+   "z_u": 1.624,
+   "x_min_u": -2.241,
+   "x_max_u": 1.511,
+   "width_x_u": 3.753,
+   "y_front_u": -1.633,
+   "y_back_u": 1.585,
+   "depth_y_u": 3.218,
+   "y_centre_u": -0.024,
+   "points": 3080
+  },
+  {
+   "z_frac": 0.42,
+   "z_u": 2.274,
+   "x_min_u": -2.349,
+   "x_max_u": 2.287,
+   "width_x_u": 4.636,
+   "y_front_u": -1.428,
+   "y_back_u": 1.35,
+   "depth_y_u": 2.777,
+   "y_centre_u": -0.039,
+   "points": 2614
+  },
+  {
+   "z_frac": 0.54,
+   "z_u": 2.924,
+   "x_min_u": -2.165,
+   "x_max_u": 1.825,
+   "width_x_u": 3.99,
+   "y_front_u": -0.757,
+   "y_back_u": 1.247,
+   "depth_y_u": 2.003,
+   "y_centre_u": 0.245,
+   "points": 2928
+  },
+  {
+   "z_frac": 0.66,
+   "z_u": 3.574,
+   "x_min_u": -1.77,
+   "x_max_u": 1.805,
+   "width_x_u": 3.575,
+   "y_front_u": -1.394,
+   "y_back_u": 0.375,
+   "depth_y_u": 1.769,
+   "y_centre_u": -0.509,
+   "points": 2704
+  },
+  {
+   "z_frac": 0.78,
+   "z_u": 4.223,
+   "x_min_u": -1.736,
+   "x_max_u": 1.695,
+   "width_x_u": 3.431,
+   "y_front_u": -1.335,
+   "y_back_u": 0.978,
+   "depth_y_u": 2.313,
+   "y_centre_u": -0.179,
+   "points": 2088
+  },
+  {
+   "z_frac": 0.9,
+   "z_u": 4.873,
+   "x_min_u": -0.594,
+   "x_max_u": 0.597,
+   "width_x_u": 1.191,
+   "y_front_u": -1.057,
+   "y_back_u": 0.108,
+   "depth_y_u": 1.165,
+   "y_centre_u": -0.474,
+   "points": 1342
+  }
+ ],
+ "landmarks": {
+  "height_u": 5.415,
+  "top": {
+   "z_u": 5.415,
+   "x_u": -0.224,
+   "y_u": 0.021
+  },
+  "front_most": {
+   "y_u": -1.709,
+   "z_u": 1.776,
+   "note": "the most -Y point (snout / chest / beak tip)"
+  },
+  "rear_most": {
+   "y_u": 1.709,
+   "z_u": 1.199,
+   "note": "the most +Y point (tail)"
+  },
+  "length_y_u": 3.418,
+  "width_x_u": 4.834,
+  "widest_band": {
+   "z_u": 2.274,
+   "width_x_u": 4.636
+  },
+  "depth_at_intake_rows": {
+   "0.00": {
+    "z_u": 0.108,
+    "depth_y_u": 3.126,
+    "half_w_x_u": 2.188,
+    "sheet_half_w_u": 0.77
+   },
+   "0.10": {
+    "z_u": 0.541,
+    "depth_y_u": 2.974,
+    "half_w_x_u": 2.225,
+    "sheet_half_w_u": 2.27
+   },
+   "0.25": {
+    "z_u": 1.354,
+    "depth_y_u": 3.071,
+    "half_w_x_u": 2.166,
+    "sheet_half_w_u": 2.37
+   },
+   "0.50": {
+    "z_u": 2.707,
+    "depth_y_u": 2.305,
+    "half_w_x_u": 2.256,
+    "sheet_half_w_u": 2.41
+   },
+   "0.75": {
+    "z_u": 4.061,
+    "depth_y_u": 2.318,
+    "half_w_x_u": 1.87,
+    "sheet_half_w_u": 1.97
+   },
+   "0.90": {
+    "z_u": 4.873,
+    "depth_y_u": 1.165,
+    "half_w_x_u": 0.597,
+    "sheet_half_w_u": 0.86
+   }
+  }
+ },
+ "render": "proxy/duskmaw_true_form_proxy_vs_sheet.png",
+ "notes": [
+  "orchestrator 2026-10-24: front+side views (the 3-view seed-56 run let the maw show through the back, back IoU 0.57; kept in proxy_3view_seed56/)"
+ ],
+ "use": "3D REFERENCE ONLY: cite sections / landmark depths in the build's constants; the sheet is the spec and the rest pose stays symmetric (the proxy copies the sheet's pose)",
+ "units": "sheet units (1 u = 100 sheet px); z up from the floor, x = the creature's left/right (bbox centred), y = depth, front = -y"
+}

@@ -1,0 +1,7 @@
+﻿WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\duskmaw\duskmaw_sheet_vs_model.png
+GATE view=front iou=0.657 in_frame=0.651 row_err=6.9% | proxy iou=0.565
+GATE view=back  iou=0.671 in_frame=0.665 row_err=13.1% | proxy iou=0.625
+GATE view=side  iou=0.625 in_frame=0.605 row_err=8.7% | proxy iou=0.588
+GATE mean_iou=0.651 flagged=none proxy=proxy unreliable, work from the sheet (mean IoU 0.61 < 0.75; side length off by +39.7%)
+GATE bake_reference=none (no object.bake call found)
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\duskmaw\duskmaw_contact.png

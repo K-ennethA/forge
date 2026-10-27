@@ -42,7 +42,7 @@ import numpy as np
 from mathutils import Vector
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-SMOOTH_OK_PREFIX = ("hair",)   # flat_shaded exemption cap: only hair-family palette regions may ship smooth/authored normals
+SMOOTH_OK_PREFIX = ("hair", "skin")   # flat_shaded exemption cap: only hair-family (+ skin, artist 2026-10-25 vampwarrior smooth face) palette regions may ship smooth/authored normals
 FLAT_TOL_DEG = 0.5             # a sharp face's corner normals equal its face normal exactly (measured 0.0 deg, Blender 5.0);
                                #   0.5 deg = far below any visible shading turn, far above float noise
 sys.path.insert(0, os.path.normpath(os.path.join(HERE, "..", "..", "..", "addon")))
@@ -235,7 +235,8 @@ if meshes and rigs:
     # --- clip_loops
     fps = scene.render.fps / scene.render.fps_base
     check("clip_loops", fps == K.FPS and bool(clip_rows) and
-          all(r["cyclic"] and r["manual_range"] and r["seam_mm"] < 1.0 for r in clip_rows),
+          all(r["manual_range"] and ((r["cyclic"] and r["seam_mm"] < 1.0) or
+                                     (not r["cyclic"] and r["clip"] in K.ONESHOT_CLIP_NAMES)) for r in clip_rows),
           fps=fps, clips=clip_rows)
     # --- skin
     mods = [m for m in main.modifiers if m.type == "ARMATURE" and m.object is rig]

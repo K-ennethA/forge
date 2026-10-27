@@ -1,0 +1,10 @@
+{
+ "unit": "duskmaw_true_form",
+ "skin": "default",
+ "description": "duskmaw_true_form default look, LIGHT proxy finish: the colour is the Pixal3D proxy's own texture (near-black matte shadow body, red lips + dark-red ridged maw interior, cream fangs, red claw / spike tips) baked onto the low (improved/textures/duskmaw_true_form_basecolor.png); proxy_albedo (white) tints it; ONE glow region (the decoy head's two yellow eyes) carries the emission (Glow -> Emission Color). The maw is not emissive",
+ "regions": {
+  "proxy_albedo": {"rgb": [255, 255, 255], "note": "tint over the baked proxy albedo (light mode); white keeps the bake. Sheet chips for reference: shadow 42,41,46 / 59,59,63 / 69,71,84, dark red 122,43,49, red 201,60,62, orange 253,124,77, cream 252,234,167"},
+  "eye_glow": {"rgb": [255, 255, 255], "emission": [252, 234, 167], "emission_scale": 1.0, "note": "the decoy head's glowing yellow eyes (sheet chip 252,234,167; sheet front eye pixels median ~240,225,151)"}
+ },
+ "material": {"roughness": 0.85, "emission_strength": 1.0, "alpha": 1.0}
+}

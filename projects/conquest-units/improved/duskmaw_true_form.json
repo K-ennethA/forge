@@ -1,0 +1,858 @@
+{
+ "unit": "duskmaw_true_form",
+ "conquest_character_id": "duskmaw_true_form",
+ "tier": "regular",
+ "tri_budget": [
+  8000,
+  22000
+ ],
+ "pattern": "proxy finish LIGHT (proxy_finish.py stage_light + proxy_finish_light.py): the frozen Pixal3D sheet proxy kept as generated (geometry + texture), made watertight, decimated, baked, optionally reposed with bones",
+ "config": {
+  "unit": "duskmaw_true_form",
+  "char_id": "duskmaw_true_form",
+  "tier": "regular",
+  "tri_budget": [
+   8000,
+   22000
+  ],
+  "body_tris": 20000,
+  "mode": "light",
+  "refloor": {
+   "y_windows": [
+    [
+     -1.8,
+     1.8
+    ]
+   ],
+   "x_abs_min": 0.0,
+   "pct": 0.0,
+   "rescale_to_front_height": true,
+   "why": "sheet_proxy already floored the proxy at the tendril base (verts below z 0.02 span x -0.93..1.85, y -1.71..1.13: the ground tendrils, no tail curl / shadow plate): the floor stays at the lowest tendril contact (whole-body window, pct 0), then x(5.43 / 5.415) to the sheet front height (front 5.43 u vs side 5.69 u, +4.8 %: the side view's crown spike is drawn taller; the front wins, the brief's rule)"
+  },
+  "light": {
+   "steps_per_height": 300,
+   "dense": [
+    {
+     "box": [
+      [
+       -0.8,
+       -1.3,
+       4.45
+      ],
+      [
+       1.15,
+       0.35,
+       5.45
+      ]
+     ],
+     "density": 2.5,
+     "vg_weight": 0.3,
+     "why": "the DECOY HEAD: crown points + brim + face (proxy sha 09e4004f slabs z 4.6..5.4: x -0.68..1.05, y -1.10..0.15; crown tip (-0.22, 0.02, 5.415)); vg_weight 0.3 so the eye box below can sit denser"
+    },
+    {
+     "box": [
+      [
+       -0.04,
+       -1.12,
+       4.66
+      ],
+      [
+       0.5,
+       -0.82,
+       5.0
+      ]
+     ],
+     "density": 2.5,
+     "vg_weight": 0.0,
+     "why": "the two yellow decoy EYES (proxy texture yellow samples: x 0.07..0.18 / 0.28..0.39, y -1.02..-0.90, z 4.75..4.89): held densest so the glow core lands on its own faces"
+    },
+    {
+     "box": [
+      [
+       -1.05,
+       -1.75,
+       3.0
+      ],
+      [
+       1.05,
+       -0.75,
+       4.45
+      ]
+     ],
+     "density": 1.8,
+     "vg_weight": 0.5,
+     "why": "the UPPER FANG rows + upper lip (cream samples z 3..4.6 at y -1.47..-0.46, red lip z 4.0..4.6): teeth stay separate points"
+    },
+    {
+     "box": [
+      [
+       -1.05,
+       -1.8,
+       0.35
+      ],
+      [
+       1.05,
+       -0.8,
+       2.1
+      ]
+     ],
+     "density": 1.8,
+     "vg_weight": 0.5,
+     "why": "the LOWER FANG rows + lower lip (cream samples z 0..2 at y -1.67..-1.10, red lip z 0..1 y -1.59..-1.05)"
+    },
+    {
+     "box": [
+      [
+       -2.4,
+       -1.75,
+       1.1
+      ],
+      [
+       -1.25,
+       -0.4,
+       2.7
+      ]
+     ],
+     "density": 1.6,
+     "vg_weight": 0.6,
+     "why": "the -x arm's red CLAW tips (red clusters (-1.36, -1.67, 1.78), (-2.11, -1.38, 2.53), (-2.13, -0.99, 1.43))"
+    },
+    {
+     "box": [
+      [
+       1.4,
+       -0.7,
+       1.35
+      ],
+      [
+       2.4,
+       -0.05,
+       2.65
+      ]
+     ],
+     "density": 1.6,
+     "vg_weight": 0.6,
+     "why": "the +x arm's red CLAW tips (red clusters (1.60, -0.58, 1.72), (2.28, -0.19, 2.49))"
+    }
+   ],
+   "ao_from_low": true,
+   "ao_samples": 64,
+   "ao_fill_below": 0.04,
+   "ao_distance": 0.6,
+   "ao_why": "vulture_creature / crystal_canine lessons: AO from the watertight low (tendril soup inner shells black-hole AO rays) with a 0.6 u ray (only real crevices darken; the maw interior is a real crevice and darkens)",
+   "bake_drop_interior": 0.08,
+   "bake_drop_interior_why": "vulture_creature lesson: proxy faces with solid on both sides (buried tendril shells) left out of the albedo bake source",
+   "uv_island_margin": 0.001,
+   "uv_island_margin_why": "vulture_creature lesson: a tendril low unwraps into thousands of islands; margin 0.001 keeps the albedo detail",
+   "glow3d": [
+    {
+     "name": "decoy_eyes_core",
+     "spheres": [
+      [
+       [
+        0.12,
+        -0.97,
+        4.85
+       ],
+       0.06
+      ],
+      [
+       [
+        0.335,
+        -0.96,
+        4.8
+       ],
+       0.07
+      ]
+     ],
+     "feather": 0.02,
+     "select": {
+      "L": [
+       55,
+       101
+      ],
+      "b": [
+       15,
+       100
+      ],
+      "soft": 6
+     },
+     "levels": [
+      [
+       0.5,
+       "eye_glow"
+      ]
+     ],
+     "why": "GLOW = the decoy head's two yellow eyes only (spec): faces at the proxy's own eye texels (yellow clusters (0.09, -0.97, 4.86) / (0.335, -0.96, 4.80)) whose baked albedo is bright yellow -> eye_glow (sheet eye / tooth chip 252,234,167). The maw is NOT emissive"
+    }
+   ]
+  },
+  "rig": {
+   "spine_names": [
+    "base",
+    "body",
+    "upper_jaw",
+    "crown"
+   ],
+   "spine": [
+    [
+     0.0,
+     0.6,
+     0.2
+    ],
+    [
+     0.0,
+     0.7,
+     1.4
+    ],
+    [
+     0.0,
+     0.6,
+     2.45
+    ],
+    [
+     0.0,
+     -0.7,
+     3.95
+    ],
+    [
+     0.0,
+     -0.5,
+     5.25
+    ]
+   ],
+   "spine_why": "base (floor centre, behind the maw: the back half y 0.3..1.4 is solid down to the floor) -> body -> the JAW HINGE (0, 0.6, 2.45: behind the throat; the maw's deepest interior at x 0 is y 0..0.5, z 1.4..3.3) -> upper_jaw runs up-forward through the upper jaw mass to behind the upper fangs (cream z 3.0..4.4 at y -1.1..-1.3) -> crown = the DECOY HEAD (z 4.6..5.4), which rides on the upper jaw",
+   "chains": [
+    {
+     "name": "jaw_lower",
+     "kind": "leg",
+     "mirror": false,
+     "parent": "body",
+     "points": [
+      [
+       0.0,
+       0.6,
+       2.3
+      ],
+      [
+       0.0,
+       -0.35,
+       1.45
+      ],
+      [
+       0.0,
+       -1.3,
+       0.95
+      ]
+     ],
+     "why": "the LOWER JAW: hinge just under the upper jaw's (0, 0.6, 2.3) -> under the throat floor -> behind the lower fang row / lower lip (cream z 0.4..1.9 at y -1.4..-1.1, red lip y -1.45). A jaw-close = upper_jaw pitched down + jaw_lower pitched up about the hinge (kind 'leg': the kit's idle / walk give a leg chain no motion at leg_swing 0, so the lower jaw stays still in the placeholder clips; v1 kind 'jaw' swayed it +-3 deg and dipped the lower lip / front tendrils 0.23 u below the floor)"
+    },
+    {
+     "name": "arm",
+     "kind": "arm",
+     "parent": "body",
+     "phase": {
+      "L": 0.0,
+      "R": 0.5
+     },
+     "points": [
+      [
+       1.15,
+       0.2,
+       3.05
+      ],
+      [
+       1.75,
+       0.05,
+       2.75
+      ],
+      [
+       2.1,
+       -0.2,
+       2.35
+      ],
+      [
+       1.75,
+       -0.55,
+       1.75
+      ]
+     ],
+     "why": "the reaching tendril ARMS: shoulder inside the body side (z 3.05) out to the claw ends (+x claws (1.60, -0.58, 1.72) / (2.28, -0.19, 2.49); -x claws (-2.13, -0.99, 1.43) / (-2.11, -1.38, 2.53)); the proxy's -x arm reaches ~0.5 u further forward (it copies the sheet side view's near arm), so points_R follow it"
+    },
+    {
+     "name": "horn",
+     "kind": "ear",
+     "parent": "upper_jaw",
+     "phase": {
+      "L": 0.0,
+      "R": 0.0
+     },
+     "points": [
+      [
+       1.0,
+       0.2,
+       3.9
+      ],
+      [
+       1.5,
+       0.5,
+       4.3
+      ]
+     ],
+     "why": "the red-tipped upper-body spike tendrils (red tips (1.49, 0.55, 4.42) / (-1.86, 0.85, 4.09)): ride on the upper jaw"
+    },
+    {
+     "name": "tendril",
+     "kind": "tail",
+     "parent": "base",
+     "phase": {
+      "L": 0.0,
+      "R": 0.5
+     },
+     "points": [
+      [
+       0.8,
+       0.3,
+       0.6
+      ],
+      [
+       1.5,
+       0.1,
+       0.2
+      ],
+      [
+       2.1,
+       0.3,
+       0.08
+      ]
+     ],
+     "why": "the ground TENDRILS spreading to the sides (floor band z < 0.35 spans x -2.5..2.2): sway in idle, trail in the glide"
+    }
+   ],
+   "chains_why": "L points measured on the +x side; the contract rig mirrors them for .R (the proxy's -x arm reaches ~0.5 u further forward, copying the sheet side view's near arm: no repose, the front view reads symmetric)"
+  },
+  "focus": {
+   "decoy_head": [
+    [
+     -0.8,
+     -1.3,
+     4.4
+    ],
+    [
+     1.15,
+     0.35,
+     5.45
+    ]
+   ],
+   "maw": [
+    [
+     -1.3,
+     -1.8,
+     0.3
+    ],
+    [
+     1.3,
+     0.6,
+     4.5
+    ]
+   ]
+  },
+  "clips": {
+   "idle_frames": 72,
+   "breathe_deg": 1.5,
+   "walk_frames": 32,
+   "walk_bob": 0.006,
+   "walk_roll": 1.5,
+   "leg_swing": 0.0,
+   "arm_swing": 6.0,
+   "why": "PLACEHOLDER (the artist has not said how the true form moves): idle = the spine breathe (upper_jaw / crown pitch +-1.5 deg: a slow breathing of the open maw) + the kit's chain sway (arms, horns, ground tendrils); walk = the kit's in-place cycle as a GLIDE placeholder (no legs: bob 0.006 H, roll 1.5, arm swing 6, tendrils trail); the game slides the root. chomp / close / transform_in: clips.extra (below)",
+   "extra": [
+    {
+     "name": "chomp",
+     "frames": 24,
+     "cyclic": true,
+     "keys": [
+      {
+       "f": 0
+      },
+      {
+       "f": 8,
+       "rot": {
+        "upper_jaw": {
+         "X": 44
+        },
+        "jaw_lower.0": {
+         "X": -18
+        }
+       }
+      },
+      {
+       "f": 11,
+       "rot": {
+        "upper_jaw": {
+         "X": 44
+        },
+        "jaw_lower.0": {
+         "X": -18
+        }
+       }
+      },
+      {
+       "f": 24
+      }
+     ]
+    },
+    {
+     "name": "close",
+     "frames": 16,
+     "cyclic": false,
+     "keys": [
+      {
+       "f": 0
+      },
+      {
+       "f": 16,
+       "rot": {
+        "upper_jaw": {
+         "X": 44
+        },
+        "jaw_lower.0": {
+         "X": -18
+        }
+       }
+      }
+     ]
+    },
+    {
+     "name": "transform_in",
+     "frames": 48,
+     "cyclic": false,
+     "keys": [
+      {
+       "f": 0,
+       "loc": {
+        "base": [
+         0,
+         0,
+         -0.6
+        ],
+        "tendril.L.0": [
+         0,
+         0,
+         0.6
+        ],
+        "tendril.R.0": [
+         0,
+         0,
+         0.6
+        ]
+       },
+       "rot": {
+        "upper_jaw": {
+         "X": 44
+        },
+        "jaw_lower.0": {
+         "X": -18
+        },
+        "arm.L.0": {
+         "Y": 35
+        },
+        "arm.R.0": {
+         "Y": -35
+        }
+       }
+      },
+      {
+       "f": 30,
+       "rot": {
+        "upper_jaw": {
+         "X": 44
+        },
+        "jaw_lower.0": {
+         "X": -18
+        }
+       }
+      },
+      {
+       "f": 48
+      }
+     ]
+    }
+   ],
+   "extra_why": "v1.1 (kit clips.extra, keyed world poses, smoothstep): chomp 24 f cyclic (open -> shut at f8, hold to f11 -> open; CLOSED = upper_jaw +44 / jaw_lower.0 -18 deg world X, the mouth-states probe: lip-rim gap 0.13 u of 2.34), close 16 f non-looping (open -> CLOSED, held on the last frame), transform_in 48 f non-looping (f0: base sunk 0.6 H below the floor with the ground tendrils counter-lifted onto it, jaws shut, arms folded down 35 deg; f30 risen with the jaws shut; f48 the rest pose). PLACEHOLDER"
+  },
+  "bake_res": [
+   1024,
+   1024
+  ],
+  "_doc": "LIGHT finish of the raw Pixal3D proxy (seed 56, front + side views, sha 09e4004f). Points: stage-1 frame (floor at the tendril base, x1.0028 to the sheet front height 5.43), sheet units."
+ },
+ "units": "sheet units: 1 unit = 100 px of the reference sheet; floor z = 0",
+ "stage1_stdout": [
+  "LIGHT_SOLID {\"grid_sha\": \"2e9b77dc7ea2d7ad\", \"solid\": {\"step\": 0.0181, \"grid\": [285, 207, 317], \"shell_nodes\": 721481, \"close_voxels\": 1, \"sealed_cavities\": 222, \"min_half_thickness_u\": 0.0091, \"shell_nodes_signed_outside_frac\": 0.783, \"smooth_sigma_vox\": 0.0, \"pieces\": [2, [688065, 3263]], \"rule\": \"LIGHT: watertight remesh only (no smoothing / straighten / symmetrise / cuts); the surface sits min_half_thickness x step = 0.0091 u outside the proxy\", \"bake_interior_tris_dropped\": 5494}, \"refloor\": {\"foot_contact_z_u\": 0.0, \"rescale\": 1.0029, \"y_windows\": [[-1.8, 1.8]], \"window_z_u\": [0.0], \"x_abs_min\": 0.0, \"rule\": \"sheet_proxy put the floor at the lowest point (a tail curl): the feet hung z0 above it; floor moved to the feet, then scaled to the sheet front height\"}, \"seconds\": 12.0}"
+ ],
+ "stage1": {
+  "unit": "duskmaw_true_form",
+  "proxy": {
+   "glb": "proxy/duskmaw_true_form_proxy.glb",
+   "sha256": "09e4004fb35f49ca69d4e564c9318812b49a7ae86421633ef44034397973a9c6",
+   "gate": "reliable",
+   "mean_iou": 0.7747,
+   "refloor": {
+    "foot_contact_z_u": 0.0,
+    "rescale": 1.0029,
+    "y_windows": [
+     [
+      -1.8,
+      1.8
+     ]
+    ],
+    "window_z_u": [
+     0.0
+    ],
+    "x_abs_min": 0.0,
+    "rule": "sheet_proxy put the floor at the lowest point (a tail curl): the feet hung z0 above it; floor moved to the feet, then scaled to the sheet front height"
+   },
+   "tris": 198766,
+   "verts": 154553,
+   "height_u": 5.43,
+   "samples": 8665632,
+   "textured": true,
+   "z_range_u": [
+    0.0,
+    5.43
+   ]
+  },
+  "solid": {
+   "step": 0.0181,
+   "grid": [
+    285,
+    207,
+    317
+   ],
+   "shell_nodes": 721481,
+   "close_voxels": 1,
+   "sealed_cavities": 222,
+   "min_half_thickness_u": 0.0091,
+   "shell_nodes_signed_outside_frac": 0.783,
+   "smooth_sigma_vox": 0.0,
+   "pieces": [
+    2,
+    [
+     688065,
+     3263
+    ]
+   ],
+   "rule": "LIGHT: watertight remesh only (no smoothing / straighten / symmetrise / cuts); the surface sits min_half_thickness x step = 0.0091 u outside the proxy",
+   "bake_interior_tris_dropped": 5494
+  },
+  "colour": {
+   "mode": "light: the proxy texture as generated",
+   "drift_fit": null,
+   "textures": {
+    "0": [
+     2048,
+     2048,
+     3
+    ]
+   }
+  },
+  "grid_sha": "2e9b77dc7ea2d7ad",
+  "proxy_sha": "f410f5c7160c6e64"
+ },
+ "high": {
+  "tris": 4761360,
+  "verts": 2380468,
+  "specks_dropped": {
+   "pieces": 2,
+   "kept": 2,
+   "dropped_verts": 0
+  },
+  "open_edges": 0,
+  "nonmanifold_edges": 0,
+  "rule": "marching tets of the whole remesh grid (no mirror)",
+  "seconds": 23.5
+ },
+ "low": {
+  "method": "collapse decimation: uniform to 300000, then 20000 with the dense boxes calibrated",
+  "pre_tris": 300000,
+  "tris": 20000,
+  "verts": 9788,
+  "specks": {
+   "pieces": 2,
+   "kept": 2,
+   "dropped_verts": 0
+  },
+  "open_edges": 0,
+  "nonmanifold_edges": 0,
+  "dense": {
+   "density": 1.9666666666666666,
+   "box_area_frac": 0.1717,
+   "target_tri_share": 0.2896,
+   "got_tri_share": 0.2911,
+   "factor_log10": -1.047,
+   "trials": [
+    [
+     -7.0,
+     0.2751
+    ],
+    [
+     -3.0,
+     0.2761
+    ],
+    [
+     -1.0,
+     0.2927
+    ],
+    [
+     -2.0,
+     0.2764
+    ],
+    [
+     -1.5,
+     0.2813
+    ],
+    [
+     -1.25,
+     0.2841
+    ],
+    [
+     -1.125,
+     0.288
+    ],
+    [
+     -1.062,
+     0.2894
+    ],
+    [
+     -1.031,
+     0.2916
+    ],
+    [
+     -1.047,
+     0.2911
+    ]
+   ],
+   "rule": "dense boxes weighted 0.02 (vs 1) in the collapse decimation; the factor bisected until the boxes hold density x the rest's triangles per area"
+  },
+  "low_to_proxy": {
+   "mean": 0.01204,
+   "p99": 0.02634,
+   "max": 0.03713
+  },
+  "proxy_to_low_sampled": {
+   "mean": 0.01298,
+   "p99": 0.04222,
+   "max": 0.06992
+  },
+  "p99_over_height": 0.00778,
+  "seconds": 93.9
+ },
+ "regions_faces": {
+  "proxy_albedo": 19956,
+  "eye_glow": 44
+ },
+ "albedo_source": {
+  "texture": "tex_0",
+  "size": [
+   2048,
+   2048
+  ],
+  "faces_textured": 193272,
+  "faces": 193272
+ },
+ "ao_fill": {
+  "below": 0.04,
+  "texels_filled": 116552,
+  "of_covered": 1012726,
+  "rings": 21,
+  "left_to_mean": 0,
+  "rule": "AO < below = a bake origin inside the proxy soup: refilled from the covered valid 3x3 neighbours ring by ring (opt-in light.ao_fill_below)"
+ },
+ "bake": {
+  "reference": "flat",
+  "source": "the proxy mesh itself (not the remesh)",
+  "NORMAL": {
+   "result": [
+    "FINISHED"
+   ],
+   "seconds": 0.6
+  },
+  "ao_distance": {
+   "u": 0.6,
+   "world_default": 10.0
+  },
+  "AO": {
+   "result": [
+    "FINISHED"
+   ],
+   "seconds": 7.6
+  },
+  "EMIT": {
+   "result": [
+    "FINISHED"
+   ],
+   "seconds": 3.4
+  },
+  "ao_source": "the low itself (opt-in light.ao_from_low), 64 samples",
+  "cage_extrusion": 0.1267,
+  "resolution": {
+   "normal": 1024,
+   "ao": 1024,
+   "albedo": 2048
+  },
+  "high_tris": 193272,
+  "normal_coverage_pct": 95.29,
+  "albedo_coverage_pct": 90.87,
+  "normal_detail_fraction_dev_gt_0.05": 0.8014,
+  "ao_mean": 0.5378,
+  "pixel_sha": {
+   "normal": "355b3d1793cf4982",
+   "ao": "e6aff684e9ee5ff6",
+   "albedo": "f975121d32741b77"
+  },
+  "seconds": 14.4
+ },
+ "glow3d": {
+  "faces": {
+   "proxy_albedo": 19956,
+   "eye_glow": 44
+  },
+  "area_share": {
+   "proxy_albedo": 0.99988,
+   "eye_glow": 0.00012
+  },
+  "rows": [
+   {
+    "spec": "decoy_eyes_core",
+    "region": "eye_glow",
+    "min_weight": 0.5,
+    "faces": 44,
+    "albedo_select": true,
+    "why": "GLOW = the decoy head's two yellow eyes only (spec): faces at the proxy's own eye texels (yellow clusters (0.09, -0.97, 4.86) / (0.335, -0.96, 4.80)) whose baked albedo is bright yellow -> eye_glow (sheet eye / tooth chip 252,234,167). The maw is NOT emissive"
+   }
+  ],
+  "paint": {
+   "proxy_albedo": 19956,
+   "eye_glow": 44
+  },
+  "face_region_sha": "1df1251e6cb740e0",
+  "rule": "faces -> glow palette regions (emission -> Glow -> Emission Color); rgb white keeps the baked albedo"
+ },
+ "repose": {
+  "enabled": false,
+  "mirror": {
+   "plane_x_u": 0.0,
+   "max_u": 1.07866,
+   "p99_u": 0.72079,
+   "p90_u": 0.32233,
+   "mean_u": 0.12566,
+   "rule": "every vertex mirrored in X about the plane -> distance to the nearest surface (0 = exactly symmetric)"
+  },
+  "auto_chains": {}
+ },
+ "centre_shift": [
+  -0.014631,
+  0.001941,
+  -0.013572
+ ],
+ "floor": {
+  "min_z_after_repose_u": -0.01357,
+  "rule": "stage 1 floored the FEET at z 0; the centring puts the lowest point at 0"
+ },
+ "regions_area_share": {
+  "proxy_albedo": 1.0
+ },
+ "facing": {
+  "rule": "shell centroid -> the front-most midline point of the shell (proxy finish default)",
+  "anchor": [
+   0.0,
+   -0.1973,
+   2.2207
+  ],
+  "landmark": [
+   -0.0428,
+   -1.6941,
+   1.3911
+  ],
+  "angle_from_minusY_deg": -1.637
+ },
+ "tris": {
+  "total": 20000,
+  "shell": 20000
+ },
+ "open_edges": {
+  "per_island": {
+   "shell": 0
+  },
+  "total": 0,
+  "nonmanifold_edges": 0,
+  "rule": "the watertight remesh, decimated (closed)"
+ },
+ "measure": {
+  "bbox": [
+   [
+    -2.4397,
+    -1.7234,
+    0.0
+   ],
+   [
+    2.4397,
+    1.7234,
+    5.4544
+   ]
+  ],
+  "height": 5.4544,
+  "width_x": 4.8794,
+  "depth_y": 3.4468,
+  "export_cell_fit_report_only": {
+   "scale": 0.33001
+  }
+ },
+ "finish": {
+  "open_edges": 0,
+  "tris": 20000,
+  "mirror": {
+   "plane_x_u": 0.0,
+   "max_u": 1.08454,
+   "p99_u": 0.71829,
+   "p90_u": 0.31479,
+   "mean_u": 0.12484,
+   "rule": "every vertex mirrored in X about the plane -> distance to the nearest surface (0 = exactly symmetric)"
+  },
+  "tri_budget": [
+   8000,
+   22000
+  ],
+  "in_budget": true,
+  "mode": "light"
+ },
+ "digest_geometry_colour_uv": "4557dfbb87c00786",
+ "palette": {
+  "default": {
+   "proxy_albedo": {
+    "rgb": [
+     255,
+     255,
+     255
+    ]
+   },
+   "eye_glow": {
+    "rgb": [
+     255,
+     255,
+     255
+    ],
+    "emission": [
+     252,
+     234,
+     167
+    ],
+    "emission_scale": 1.0
+   }
+  },
+  "files": [
+   "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\palettes\\duskmaw_true_form\\default.json"
+  ]
+ }
+}

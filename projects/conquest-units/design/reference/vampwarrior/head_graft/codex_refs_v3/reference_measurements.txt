@@ -1,0 +1,10 @@
+Generated with the built-in image generation tool.
+Prompt set: front master preserving artist identity and previous front proportions; 90-degree left profile using master; 180-degree back using master; profile correction removing far-eye marks. All prompts required head/hair/short neck only, centered orthographic framing, bone-white grouped locks, small dark mouth with two small upper fangs, flat gray background and no text.
+
+Visual landmark estimates, zero-based pixel rows; all files 1254 x 1254.
+head_front.png: crown 30; pupils 524; mouth seam 762; chin 940.
+head_side_left.png: crown 21; pupil 508; mouth seam 737; chin 894.
+head_back.png: crown 30; pupils/mouth/chin occluded and not measurable.
+Front mouth corner x approximately 553 and 706; pupil centers x approximately 495 and 762. Ratio 153/267 = 0.573.
+
+QA: profile correction removed the far-eye mark. Exact rigid rotation, matching landmark rows, uniform background and hair correspondence were not achieved. These are generated drafts, not a verified reconstruction-ready rigid turnaround. Crown measures visible hair boundary; underlying skull is hidden.

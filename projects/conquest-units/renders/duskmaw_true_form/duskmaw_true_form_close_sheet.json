@@ -1,0 +1,16 @@
+{
+ "clip": "close",
+ "frames": [
+  1,
+  3,
+  5,
+  7,
+  9,
+  11,
+  13,
+  15
+ ],
+ "cols": 4,
+ "tile_px": 384,
+ "loop_frames": 16
+}

@@ -1,0 +1,9 @@
+Generated with the built-in image_gen tool from sheet.png and the supplied face identity images.
+
+Prompt set:
+1. Straight front full-body orthographic Vampire Warrior, exact supplied costume and facial identity, symmetric neutral stance, hip-width flat feet, arms down slightly away from torso, empty relaxed hands. Bone-white grouped hair, pale warm grey-mauve skin, black armor and red lining, flat armored boots, cape behind body, grey background, no weapon, labels or shadows.
+2. Rotate the master front rigidly 90 degrees to image-left full-body profile. Preserve costume, proportions, pose, hair and cape. Correct torso to true profile with only near eye/arm and one breast silhouette, hide frontal buckle. Match master vertical landmarks and flat soles.
+3. Rotate master front 180 degrees to straight back. Preserve stance and costume; broad grouped hair over cape to hips. Match master vertical landmarks, flat boots and plain grey background.
+
+Requested final correction targets on 1024x1536 canvas (zero-based y): crown 49, pupil 135, chin 205, upper shoulder armor 290, narrow waist 475, knee center 970, sole bottom 1474.
+These targets are prompt instructions, not verified output measurements. Image generation does not guarantee exact rigid 3D geometry or pixel alignment. See final reported measurements for observed estimates. Hidden back-view anatomy cannot be measured directly.

@@ -1,82 +1,77 @@
-"""Duskmaw preview renders, the SURVEY's lighting/camera rules (render_improved.py copied, not imported, so this
-lane never touches the shared file). In-memory only; never saves.
+"""duskmaw stills (scaffolded from firefly_render.py: the survey lighting/camera rules, copied not imported). In-memory
+only; never saves.
 
-    blender --background <blend> --factory-startup --python duskmaw_render.py -- <out_prefix> [views] [--glb <path> --yaw <deg>]
+    blender --background <blend> --factory-startup --python duskmaw_render.py -- <out_prefix> <views> [--pose <clip>:<frame>]
 
-views: comma list of front, threequarter, tactical, maw, back, side, backthreequarter, mawback, lowfront, lowback, head,
-    headthreequarter, mawthreequarter, hem, hemthreequarter (default front,threequarter,tactical,maw).
---skin <unit>:<skin>: repaint in memory from palettes/<unit>/<skin>.json before rendering (palette variants).
---glb: clear the scene, import the shipped glb and yaw it (the shipped monster.glb imports facing -Y: yaw 0 shows
-its TRUE front on the -Y camera; the survey game tiles used the roster yaw 180 and rendered its back).
-maw closeup: front camera (0 deg, 4 deg up) framed on the chest-to-skirt band (mouth illusion) -- the 14-40% height band at
-    the model centre for BOTH the rework and the shipped glb, so both sides frame the same anatomy.
-hem closeup (v3 tendrils): the 0-20% height band, front camera 8 deg up (hem) / 35 deg round and 12 deg up (hemthreequarter).
-v4 views: basetop / baselow (the floor tendrils from above / low round the side), silhouette / silhouetteside (black
-    figure on white, no floor or lights: the waist-curve proof), arm / armfront (the L arm, framed on the blend's
-    conquest_arm_L shoulder..wrist). v4 blends carry conquest_maw_band: the maw closeup frames on it.
+views (comma list):
+  front, threequarter, side, back, tactical   whole model, perspective (the survey table), floor at z = 0
+  focus                                        every close-up the build declares in the main mesh's 'conquest_focus' prop
+                                               ({name: [lo, hi] (world boxes), optional "views": {name: [angle, elev]},
+                                               "axis_xy": [x, y]}); a single declared name also works as a view
+  ortho_front, ortho_back, ortho_side         ORTHOGRAPHIC at the reference sheet's own scale (100 px per unit), framed by
+                                               design/reference/<unit>/intake.json 'ortho_frame' (the same box the compose
+                                               crops out of the sheet), floor at the sheet's floor line, transparent film
+--pose: evaluate at one frame of a clip (default: the rest pose; a missing clip falls back to rest and says so).
+Cameras: front = on -Y looking +Y (the Conquest front), side = on +X (the unit's left; its front faces image-left like
+the house sheets' side view), back = on +Y. When intake.json's side_facing says the sheet's side view faces image-RIGHT
+(smart intake; goo_shield / soot_puff did this by hand), ortho_side moves to -X so the render still lies on the sheet.
 """
-import bpy, sys, math
-import numpy as np
-from mathutils import Vector, Matrix
+import bpy, sys, os, math, json
+from mathutils import Vector
 
+HERE = os.path.dirname(os.path.abspath(__file__))
+ROOT = os.path.normpath(os.path.join(HERE, ".."))
+sys.path.insert(0, HERE)
+import rigkit as K  # noqa: E402  (read-only use)
+
+UNIT = "duskmaw"
 argv = sys.argv[sys.argv.index("--") + 1:]
 PREFIX = argv[0]
-VIEWS = argv[1].split(",") if len(argv) > 1 and not argv[1].startswith("--") else ["front", "threequarter", "tactical", "maw"]
+VIEWS = argv[1].split(",")
 scene = bpy.context.scene
-if "--glb" in argv:
-    for o in list(bpy.data.objects):
-        bpy.data.objects.remove(o, do_unlink=True)
-    bpy.ops.import_scene.gltf(filepath=argv[argv.index("--glb") + 1])
-    yaw = math.radians(float(argv[argv.index("--yaw") + 1])) if "--yaw" in argv else 0.0
-    for o in scene.objects:
-        if o.parent is None:
-            o.matrix_world = Matrix.Rotation(yaw, 4, "Z") @ o.matrix_world
+pose = argv[argv.index("--pose") + 1] if "--pose" in argv else None
 for o in scene.objects:
     if o.type == "ARMATURE":
-        o.data.pose_position = "REST"
-if any(o.type == "ARMATURE" for o in scene.objects):
-    # the glTF importer adds an unparented, unskinned 2 m 'Icosphere' (bone display shape): not part of the model
-    for o in list(scene.objects):
-        if o.type == "MESH" and o.parent is None and len(o.vertex_groups) == 0 and o.name.startswith("Icosphere"):
-            bpy.data.objects.remove(o, do_unlink=True)
-if "--skin" in argv:                      # in-memory palette swap (palettes.py, read-only use); never saved
-    sys.path.insert(0, __import__("os").path.dirname(__import__("os").path.abspath(__file__)))
-    import palettes as PAL
-    PAL.repaint_scene(argv[argv.index("--skin") + 1].split(":")[0], argv[argv.index("--skin") + 1].split(":")[1])
+        clip, fr = pose.split(":") if pose else (None, None)
+        if clip and clip in bpy.data.actions:
+            K.assign_action(o, bpy.data.actions[clip])
+            o.data.pose_position = "POSE"
+            scene.frame_set(int(fr))
+        else:
+            if clip:
+                print("NO CLIP", clip, "- rendering the rest pose")
+            o.data.pose_position = "REST"
+for o in list(scene.objects):
+    if o.type in ("CAMERA", "LIGHT"):
+        bpy.data.objects.remove(o, do_unlink=True)
 bpy.context.view_layer.update()
 meshes = [o for o in scene.objects if o.type == "MESH" and not o.hide_render]
+main = max(meshes, key=lambda o: len(o.data.polygons))
+FOCUS = json.loads(main["conquest_focus"]) if "conquest_focus" in main.keys() else {}
+FOCUS_VIEWS = FOCUS.pop("views", {})
+AXIS = FOCUS.pop("axis_xy", [0.0, 0.0])
+INTAKE = os.path.join(ROOT, "design", "reference", UNIT, "intake.json")
+OF = json.load(open(INTAKE))["ortho_frame"] if os.path.exists(INTAKE) else None
+SIDE_RIGHT = (os.path.exists(INTAKE)
+              and ((json.load(open(INTAKE)).get("side_facing") or {}).get("facing") == "right"))
 dg = bpy.context.evaluated_depsgraph_get()
 lo = Vector((1e9, 1e9, 1e9)); hi = -lo
 for o in meshes:
-    for c in o.evaluated_get(dg).bound_box:
-        w = o.matrix_world @ Vector(c)
+    ev = o.evaluated_get(dg)
+    me = ev.to_mesh()
+    for v in me.vertices:
+        w = o.matrix_world @ v.co
         lo = Vector(map(min, lo, w)); hi = Vector(map(max, hi, w))
+    ev.to_mesh_clear()
 size = hi - lo
 
-
-def region_bounds(pred):
-    for o in meshes:
-        me = o.data
-        if "region_id" not in me.attributes:
-            continue
-        names = list(me["conquest_regions"])
-        rid = np.empty(len(me.polygons), dtype=np.int32); me.attributes["region_id"].data.foreach_get("value", rid)
-        fc = np.empty(len(me.polygons) * 3); me.polygons.foreach_get("center", fc); fc = fc.reshape(-1, 3)
-        m = np.array([pred(names[r]) for r in rid])
-        if m.any():
-            P = fc[m] @ np.array(o.matrix_world)[:3, :3].T + np.array(o.matrix_world)[:3, 3]
-            return Vector(P.min(0)), Vector(P.max(0))
-    return None
-
-
 scene.render.engine = "BLENDER_EEVEE"
-scene.render.film_transparent = False
 scene.view_settings.view_transform = "Standard"
 scene.view_settings.look = "None"
 scene.render.use_compositing = False
 scene.render.use_sequencer = False
 try:
-    scene.eevee.taa_render_samples = 32
+    scene.eevee.taa_render_samples = 48
 except Exception:
     pass
 world = bpy.data.worlds.new("survey_world"); scene.world = world
@@ -100,86 +95,69 @@ radius = max(size.length / 2, 1e-3)
 fm_me = bpy.data.meshes.new("s_floor"); R = radius * 6
 fm_me.from_pydata([(-R, -R, 0), (R, -R, 0), (R, R, 0), (-R, R, 0)], [], [(0, 1, 2, 3)])
 floor = bpy.data.objects.new("s_floor", fm_me); scene.collection.objects.link(floor)
-floor.location = (centre.x, centre.y, lo.z)
+floor.location = (centre.x, centre.y, 0.0)
 fm = bpy.data.materials.new("s_floor"); fm.use_nodes = True
 fm.node_tree.nodes["Principled BSDF"].inputs["Base Color"].default_value = (0.1, 0.1, 0.11, 1)
 fm.node_tree.nodes["Principled BSDF"].inputs["Roughness"].default_value = 1.0
 fm_me.materials.append(fm)
 cam_d = bpy.data.cameras.new("s_cam"); cam_d.lens = 50
-cam_d.clip_start = radius * 0.01; cam_d.clip_end = radius * 100
 cam = bpy.data.objects.new("s_cam", cam_d); scene.collection.objects.link(cam)
 scene.camera = cam
 half_fov = math.atan(18.0 / 50.0)
 
 
-def aim(angle_deg, elev_deg, fill=1.08, c=None, rad=None):
-    c = centre if c is None else c
-    rad = radius if rad is None else rad
+def aim(c, rad, angle_deg, elev_deg, fill=1.08):
     a, e = math.radians(angle_deg), math.radians(elev_deg)
     dist = rad / math.sin(half_fov) * fill
     d = Vector((math.sin(a) * math.cos(e), -math.cos(a) * math.cos(e), math.sin(e)))
     cam.location = c + d * dist
     cam.rotation_euler = (c - cam.location).to_track_quat("-Z", "Y").to_euler()
+    cam_d.clip_start = rad * 0.01; cam_d.clip_end = rad * 100
 
 
-table = {"front": (0.0, 5.0, 1024, 1.0, None, None), "threequarter": (40.0, 15.0, 1024, 1.0, None, None),
-         "tactical": (40.0, 55.0, 256, 1.6, None, None),
-         "back": (180.0, 5.0, 1024, 1.0, None, None), "side": (90.0, 5.0, 1024, 1.0, None, None),
-         "backthreequarter": (140.0, 15.0, 1024, 1.0, None, None)}
-mb = (Vector((lo.x, lo.y, lo.z + 0.14 * size.z)), Vector((hi.x, hi.y, lo.z + 0.40 * size.z)))
-mc = (mb[0] + mb[1]) / 2
-mr = 0.30 * size.x
-main_ = max(meshes, key=lambda o: len(o.data.polygons)) if meshes else None
-if main_ is not None and "conquest_maw_band" in main_.keys() and "conquest_arm_L" in main_.keys():
-    # v4+: frame the maw on the model's own maw band (the tendrils widen the bbox, so x-fractions no longer fit it)
-    zb_ = list(main_["conquest_maw_band"])
-    mc = Vector((0.0, mc.y, 0.5 * (zb_[0] + zb_[1]) + 0.15))
-    mr = 0.95 * (zb_[1] - zb_[0])
-table["maw"] = (0.0, 4.0, 1024, 1.0, Vector((0.0, mc.y, mc.z)), mr)
-table["mawback"] = (180.0, 4.0, 1024, 1.0, Vector((0.0, mc.y, mc.z)), mr)
-# low-angle front / back: the camera sits below the mouth band looking UP through it (background through the maw = see-through)
-table["lowfront"] = (0.0, -6.0, 1024, 1.0, Vector((0.0, mc.y, lo.z + 0.30 * size.z)), 0.36 * size.x)
-table["lowback"] = (180.0, -6.0, 1024, 1.0, Vector((0.0, mc.y, lo.z + 0.30 * size.z)), 0.36 * size.x)
-# head closeup: the head/hat band (58-100 % of the height) on the front camera
-table["head"] = (0.0, 4.0, 1024, 1.0, Vector((0.0, mc.y, lo.z + 0.645 * size.z)), 0.19 * size.z)
-table["headthreequarter"] = (30.0, 6.0, 1024, 1.0, Vector((0.0, mc.y, lo.z + 0.645 * size.z)), 0.19 * size.z)
-table["mawthreequarter"] = (35.0, 6.0, 1024, 1.0, Vector((0.0, mc.y, mc.z)), mr * 1.1)
-hb = Vector((0.0, mc.y, lo.z + 0.10 * size.z))
-table["hem"] = (0.0, 8.0, 1024, 1.0, hb, 0.30 * size.x)
-table["hemthreequarter"] = (35.0, 12.0, 1024, 1.0, hb, 0.30 * size.x)
-# v4: the floor tendrils seen from above (base top-down-ish) and low round the side
-table["basetop"] = (25.0, 62.0, 1024, 1.0, Vector((0.0, 0.0, lo.z + 0.03 * size.z)), 0.52 * max(size.x, size.y))
-table["baselow"] = (60.0, 14.0, 1024, 1.0, Vector((0.0, 0.0, lo.z + 0.07 * size.z)), 0.42 * max(size.x, size.y))
-# silhouette: black figure on white, no floor, straight front (the waist-curve proof)
-table["silhouette"] = (0.0, 0.0, 1024, 1.0, None, None)
-table["silhouetteside"] = (90.0, 0.0, 1024, 1.0, None, None)
-if main_ is not None and "conquest_arm_L" in main_.keys():
-    Pa_ = np.array(main_["conquest_arm_L"]).reshape(-1, 3)
-    ac_ = Vector(tuple(0.5 * (Pa_[1] + Pa_[3]) + np.array([0.0, 0.0, -0.9])))
-    ar_ = 0.62 * float(np.linalg.norm(Pa_[1] - Pa_[3])) + 1.6
-    table["arm"] = (62.0, 6.0, 1024, 1.0, ac_, ar_)                  # the L arm (+x) from its outer front
-    table["armfront"] = (0.0, 4.0, 1024, 1.0, ac_, ar_)
-sil_mat = None
-for tag in VIEWS:
-    if tag not in table:
-        print("SKIP", tag); continue
-    is_sil = tag.startswith("silhouette")
-    if is_sil and sil_mat is None:
-        sil_mat = bpy.data.materials.new("sil_black"); sil_mat.use_nodes = True
-        bs_ = sil_mat.node_tree.nodes["Principled BSDF"]
-        bs_.inputs["Base Color"].default_value = (0, 0, 0, 1); bs_.inputs["Roughness"].default_value = 1.0
-        bs_.inputs["Specular IOR Level"].default_value = 0.0
-    bpy.context.view_layer.material_override = sil_mat if is_sil else None
-    floor.hide_render = is_sil
-    world.node_tree.nodes["Background"].inputs[0].default_value = (1, 1, 1, 1) if is_sil else (0.18, 0.18, 0.19, 1)
-    world.node_tree.nodes["Background"].inputs[1].default_value = 1.0 if is_sil else 0.6
-    for o in scene.objects:
-        if o.type == "LIGHT":
-            o.hide_render = is_sil
-    ang, elev, res, fill, c, rad = table[tag]
-    scene.render.resolution_x = scene.render.resolution_y = res
+table = {"front": (0.0, 5.0, 1024, 1.0), "threequarter": (40.0, 15.0, 1024, 1.0), "tactical": (40.0, 55.0, 256, 1.6),
+         "side": (90.0, 5.0, 1024, 1.0), "back": (180.0, 5.0, 1024, 1.0)}
+views = []
+for v in VIEWS:
+    views += sorted(FOCUS) if v == "focus" else [v]
+os.makedirs(os.path.dirname(PREFIX), exist_ok=True)
+for tag in views:
+    cam_d.type = "PERSP"
+    scene.render.film_transparent = False
+    floor.hide_render = False
     scene.render.resolution_percentage = 100
-    aim(ang, elev, fill, c, rad)
+    if tag in table:
+        ang, elev, res, fill = table[tag]
+        scene.render.resolution_x = scene.render.resolution_y = res
+        aim(centre, radius, ang, elev, fill)
+    elif tag in FOCUS:
+        b0, b1 = (Vector(v) for v in FOCUS[tag])
+        ang, elev = FOCUS_VIEWS.get(tag, (28.0, 8.0))
+        scene.render.resolution_x = scene.render.resolution_y = 1024
+        aim((b0 + b1) / 2, max((b1 - b0).length / 2, 1e-3), ang, elev, 1.0)
+    elif tag in ("ortho_front", "ortho_back", "ortho_side"):
+        if OF is None:
+            print("SKIP", tag, "(no intake.json ortho_frame)"); continue
+        w_px, h_px, below = OF["width_px"], OF["height_px"], OF["below_floor_px"]
+        ax, ay = AXIS
+        cam_d.type = "ORTHO"; cam_d.ortho_scale = max(w_px, h_px) / 100.0
+        cam_d.clip_start = 0.01; cam_d.clip_end = 100
+        scene.render.resolution_x, scene.render.resolution_y = w_px, h_px
+        scene.render.film_transparent = True
+        floor.hide_render = True
+        zc = (h_px / 2.0 - below) / 100.0          # image bottom = 'below_floor_px' under the floor line, like the sheet crop
+        if tag == "ortho_front":
+            cam.location = (ax, ay - 20.0, zc); cam.rotation_euler = (math.radians(90), 0, 0)
+        elif tag == "ortho_back":                  # on +Y looking -Y: the unit's right on image right, as sheets draw it
+            cam.location = (ax, ay + 20.0, zc); cam.rotation_euler = (math.radians(90), 0, math.radians(180))
+        elif SIDE_RIGHT:                           # the sheet's side view faces image-RIGHT: camera on -X
+            cam.location = (ax - 20.0, ay, zc); cam.rotation_euler = (math.radians(90), 0, math.radians(-90))
+        else:
+            cam.location = (ax + 20.0, ay, zc); cam.rotation_euler = (math.radians(90), 0, math.radians(90))
+    else:
+        print("SKIP", tag); continue
     scene.render.filepath = "%s_%s.png" % (PREFIX, tag)
     bpy.ops.render.render(write_still=True)
     print("WROTE", scene.render.filepath)
+sys.stdout.flush()
+os._exit(0)

@@ -1,0 +1,13 @@
+Saved all three using the built-in image tool, each **1254 × 1254**. Rows below are approximate, zero-based; “top” measures the visible hair crown because the skull is hidden.
+
+| File path | Top | Pupils | Mouth seam | Chin |
+|---|---:|---:|---:|---:|
+| [head_front.png](head_front.png) | 30 | 524 | 762 | 940 |
+| [head_side_left.png](head_side_left.png) | 21 | 508 | 737 | 894 |
+| [head_back.png](head_back.png) | 30 | Occluded | Occluded | Occluded |
+
+Front mouth width / pupil distance: **153 / 267 ≈ 0.57**.
+
+**These remain drafts:** generation removed the extra profile eye, but did not achieve matching landmark rows or guaranteed rigid hair correspondence. They do not fully meet your reconstruction requirements.
+
+[Measurement and prompt notes](reference_measurements.txt)

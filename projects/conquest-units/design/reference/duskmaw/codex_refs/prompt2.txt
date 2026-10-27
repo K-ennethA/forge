@@ -1,0 +1,8 @@
+Create clean turnaround concept art of a stylised, cartoon fantasy shadow spirit for a family-friendly strategy game, using your image generation tool. Attached are the two design sheets of this character (sheet_closed and sheet_open); follow their design, proportions and colours.
+
+Character: a tall slender spirit made of smooth near-black matte shadow, a crown-like pointed hat-head with red-tipped points and two small glowing yellow eyes, long thin arms ending in four long tapered fingers with red tips, and a flowing base of smooth curling shadow ribbons spreading along the floor. In its chest there is a decorative glowing pattern:
+- CLOSED version: a narrow vertical glowing zigzag stripe (red edge, orange and pale-yellow centre), like sheet_closed.
+- OPEN version: the chest pattern widens into a large oval opening edged with red-to-yellow glowing zigzag points, dark red inside, like sheet_open.
+Clean, simple, deliberate shapes: a mirror-symmetric crown (one tall centre point, a brim sweeping out to a red point on each side), one clean red-tipped point on each shoulder, continuous smooth arms, separate tapered fingers, 6-8 smooth tapered floor ribbons. Symmetric standing pose, arms hanging.
+
+Save six files in the current working directory with exactly these names: closed_front.png, closed_side_right.png (profile facing image-right), closed_back.png, open_front.png, open_side_right.png, open_back.png. Plain flat mid-grey background, the whole figure in frame with margin, same scale and floor line in all six, even flat lighting, no text. Then print one line per file.

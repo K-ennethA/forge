@@ -1,0 +1,14 @@
+C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\improve\duskmaw_true_form_clips.py:47: DeprecationWarning: 'World.use_nodes' is expected to be removed in Blender 6.0
+  world.use_nodes = True
+C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\improve\duskmaw_true_form_clips.py:86: DeprecationWarning: 'Material.use_nodes' is expected to be removed in Blender 6.0
+  fm = bpy.data.materials.new("s_floor"); fm.use_nodes = True
+Traceback (most recent call last):
+  File "C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\improve\duskmaw_true_form_clips.py", line 189, in <module>
+    write_sheet(clip, N, tag, n_tiles, cols)
+  File "C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\improve\duskmaw_true_form_clips.py", line 130, in write_sheet
+    bpy.ops.render.render(write_still=True)
+  File "C:\Program Files\Blender Foundation\Blender 5.0\5.0\scripts\modules\bpy\ops.py", line 109, in __call__
+    ret = _op_call(self.idname_py(), kw)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+RuntimeError: Error: Render error (No error) cannot save: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\duskmaw_true_form\_tile_duskmaw_true_form.png'
+

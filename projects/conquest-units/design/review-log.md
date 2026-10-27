@@ -3142,3 +3142,303 @@ Binding reading (next session, across the batch):
   (e.g. Drakescale Beast's J-curve under the belly). Rest tails trail BEHIND
   the body, centred, unless the sheet clearly draws otherwise; the tail chain
   still allows posing.
+
+## 2026-10-24 — NEW UNIT: Duskmaw re-run, two forms (artist reference sheets x2: Shadow Abyss + Shadow Abyss True Form)
+
+References: design/reference/duskmaw-character-sheet.webp (SHADOW ABYSS, base
+form) and design/reference/duskmaw_true_form-character-sheet.webp (SHADOW ABYSS
+- TRUE FORM). Intakes: design/reference/duskmaw/ and design/reference/duskmaw_true_form/.
+
+Artist (verbatim): "run duskmaw again with our new improvements and new
+references
+
+so base form is the first image and it shifts into the second image, these
+maybe should two separate models to keep things easier than a full morph or
+not sure follow best practices and our previous intakes"
+
+Decision (orchestrator, best practice + the 2026-09-25 Vineweave precedent):
+TWO SEPARATE MODELS, swapped in game under a transition, not a morph.
+- `duskmaw` = the base form (REPLACES the procedural v4; v4 stays in git at
+  6b9e2e1). `duskmaw_true_form` = a new unit.
+- Why not a morph: glTF / Godot morph targets need one mesh with identical
+  vertices in both shapes; two Pixal3D meshes never share topology, and the
+  true form is ~2.5x the size with a hollow maw. A swap is also what the
+  game needs anyway (separate collision / size / skills per form).
+- The shift = each model carries a transition clip (base `transform_out`:
+  sinks / dissolves down into its tendrils; true form `transform_in`: rises
+  out of its tendrils), same origin, same facing (-Y), same palette chips;
+  the game swaps the scene at the clip boundary under a shadow-burst VFX.
+  Clips are PLACEHOLDER until the artist confirms the feel.
+
+Binding reading — BASE FORM (`duskmaw`, sheet 1, front / back / side true orthos):
+- Tall slender shadow humanoid, near-black matte "smoke" body.
+- HEAD: sharp crown-like head (a tall central spike + swept points, a hat-brim
+  ridge), facial area shadowed, two GLOWING yellow eyes (slanted), red-tipped
+  spikes. Simple, elegant shapes.
+- Shoulders: a red-tipped spike rising from each shoulder.
+- TORSO: a central jagged mouth-like ABYSS - a vertical TEAR in the body,
+  red rim, inner orange-to-yellow glow, zigzag edges; NO eyes or features in
+  it (it is not a toothed mouth: the v2-v4 body maw with teeth is superseded).
+- ARMS: long, tapered, hanging; sharp claw fingers with RED tips; ragged
+  shadow extensions on the forearms.
+- BASE: the body flares into many shadow TENDRILS flowing out along the
+  ground, curling (liquid silhouette).
+- Palette chips: 37,36,41 / 54,56,68 / 62,58,69 (shadow tones), 170,52,57
+  (red), 254,136,75 (orange), 253,223,149 (pale yellow glow).
+- GLOW (sheet draws it): the eyes and the torso tear's inner glow.
+
+Binding reading — TRUE FORM (`duskmaw_true_form`, sheet 2):
+- The base form's head becomes a DECOY HEAD ("fake head to lure prey, not the
+  true body"): the same crown shape + glowing yellow eyes, sitting on top.
+- TRUE BODY = a MASSIVE HOLLOW MAW filling the whole front: red flesh lips,
+  multiple layers of cream fangs (upper + lower), deep dark-red ridged
+  interior (abyssal), organic flesh-like.
+- Large reaching tendril ARMS emerging from the body, whip-like, red claw
+  ends; red-tipped spikes on the upper body.
+- BASE: many tendrils blending into the ground (liquid smoke form).
+- MOUTH STATES drawn: OPEN (luring) = the turnaround; CHOMP (attack) = jaws
+  half closed, teeth interlocking; CLOSED (rest) = jaws shut, fangs crossed.
+  Rest pose = OPEN (as the three views draw it); the rig gets jaw bones so
+  chomp / closed are clips.
+- SCALE COMPARISON panel: ~2.5x a human figure (human 87 px vs creature
+  ~220 px tall).
+- Palette chips: 42,41,46 / 59,59,63 / 69,71,84, 122,43,49 (dark red),
+  201,60,62 (red), 253,124,77 (orange), 252,234,167 (cream teeth / eye glow).
+- GLOW: the decoy head's eyes. The maw is NOT drawn emissive.
+
+Both: Pixal3D light flow (proxy as the base mesh, light finish, symmetric
+rest pose by repose only where it does not touch the face). Regular tier.
+Known answers carried from the old duskmaw: movement = GLIDE (2026-09-25),
+in game 1.80 m. The old "idle chomp" applied to the toothed body maw; the new
+base form's torso tear has no teeth, so the base idle becomes a glow pulse +
+tendril sway (PLACEHOLDER), and chomp moves to the true form.
+PLACEHOLDER: every clip (idle, glide, transform_out / transform_in, true-form
+chomp / close) until the artist answers OPEN-QUESTIONS "Duskmaw (two forms)".
+Intake flags: base `--side-facing right --ortho-views front,back,side --axis
+front=246` (the front is a true front; the auto 3/4 flag came from the
+asymmetric arms / tendrils); true form `--ortho-views front,back,side --axis
+front=255` (axis on the decoy head + maw centre).
+
+## 2026-10-24 — NEW UNIT: Vampire Warrior re-run (artist reference sheet, re-supplied)
+
+Reference: design/reference/vampwarrior-character-sheet.png (the 2026-09-26
+sheet, re-pasted by the artist and saved this time; the original was never
+on disk). Intake: design/reference/vampwarrior/.
+
+Artist (verbatim): "rerun vampire warrior again as well with our improvements
+we should still have the reference"
+
+Binding reading: rebuild `vampwarrior` on the Pixal3D light flow, replacing
+the procedural v4.2 (kept in git at 0a6da6f / 6fd5808). The sheet
+transcription of 2026-09-26 stands (tall female vampire warrior, pale skin,
+red eyes, fangs, waist-long bone-white hair parted centre, black high-collar
+armoured bodice with silver trim + red throat gem, long torn black cape with
+dark-red lining, long black gloves, black thigh-high heeled boots with
+armoured knees, bare upper thighs; a leaf / flame-shaped bone-pale sword
+nearly her height held point-down in her right hand, simple handle, red
+tassel). Palette chips sampled: 177,164,156 / 122,113,108 / 53,49,49 /
+79,49,52 / 44,33,35 / 33,28,28.
+Artist notes from v2-v4.2 that are about the CHARACTER (not the old
+procedural build) and still bind: warm pale grey-mauve skin (not Blender
+grey; design/reference/vampwarrior-v4-face-reference.png), thick brows,
+darker less-bright red eyes, fangs emerging from UNDER the upper lip (no
+fang root visible at the lip edge), ONE large front strand per side framing
+the face with the rest of the hair hugging the scalp, a faint (not heavy)
+lip red, no outline shells / cel banding, hair + cape follow-through in the
+clips (no biped stiffness).
+Sword: a separate rigid mesh on its own bone (the old build had
+vampwarrior_sword too), from the SWORD DETAIL view if the proxy fuses it.
+Known answers carried: in game 1.88 m; clips idle + walk (biped).
+PLACEHOLDER: clips until movement is confirmed.
+Intake flags: --region 0,90,1055,935 --cuts 442,790 --side-facing left
+--axis front=233 --ortho-views front,back,side, plus the cape carve fix
+(intake_notes: union masks with a --bg-tol 6 pass, proxy-prep sheet with
+R+5 on in-silhouette near-background pixels).
+
+## 2026-10-24 — Duskmaw v5 head / crown note (artist verbatim)
+"yea the renders look off on the head and crown, seems it couldnt tell the
+shadows from the face and the assymetry on crown these things should be fixed"
+
+Binding reading: (1) the face: Pixal3D sculpted the sheet's face SHADING as
+surface features (brow / nose ridges, the orange V band and pink mouth the
+v5 paint covered) - the face must read as the sheet's smooth shadowed face
+under the brim with the two slanted yellow eyes. (2) the crown must be
+SYMMETRIC (the v5 brim is crooked and the head sits ~0.1 u off the body
+axis). Fix at the source (proxy-three-quarter-sheets lesson): regenerate
+the proxy from symmetric inputs - the front / back head rows mirrored about
+the sheet axis (the half carrying the side spike, so both sides get it),
+side as `right` + side mirrored as `left`; keep the light finish. The
+artist's ask overrides "never symmetrise the head" for this unit's crown.
+
+## 2026-10-24 — Vampire Warrior v5 verdict (artist verbatim)
+"vampire warrior seems like its too low quality, compared to our first vampire
+warrior this seems better clothes and shape but like a low render of what it
+should be"
+
+Binding reading: KEEP the v5 direction (clothes + shape beat v4.2); RAISE the
+fidelity. Causes measured: 18.5k tris (regular tier) from a 198k-face proxy,
+a 2048 albedo, the proxy's own 2048 texture, and a face only ~60 px tall in
+the sheet views. v5.1: HERO tier per docs/lane-conventions.md "Quality tier
+is a per-asset knob" (30-50k tris, ~40k), 4096 bakes, a proxy regenerated
+at texture_resolution 4096 if the card allows, the HEAD grafted from a
+head-only Pixal3D of the sheet's face panel (light.head_graft, drakescale
+precedent), and the sword rebuilt from the sheet's SWORD DETAIL silhouette
+(the sandbox's saw-step blade did not match).
+
+## 2026-10-24 — Duskmaw base form: mouth-open idle (artist verbatim + 1 sheet)
+Reference: design/reference/duskmaw-mouth-open-sheet.webp (SHADOW ABYSS, base
+form with the TORSO MOUTH open: "true mouth of the creature; wide, deep,
+hollow maw; strong upper and lower jaw; jagged predatory teeth; abyssal
+interior; appears like a huge mouth in the torso; main feeding organ; no
+eyes or features here"; the head is now a LURE head: "small, deceptive head,
+acts as a lure to attract prey, facial area is fake, glowing eyes, not the
+true mouth"). Intake: design/reference/duskmaw_open/.
+
+Artist (verbatim): "also for duskmaw, it should switch between whats built
+and this with the mouth more open for idle animations, the full mouth is a
+full transformation but this one should alternate with the base form"
+
+Binding reading: the base `duskmaw` gets a TORSO MOUTH that opens and closes.
+CLOSED = the built base form (the glowing jagged tear of sheet 1 is the
+mouth shut: the interlocking glowing teeth); OPEN = this sheet (wide maw,
+red / orange / yellow glowing jagged teeth, dark abyssal interior). The idle
+ALTERNATES between the two. ONE model: built from this mouth-open sheet's
+proxy (it has the cavity and the teeth; the closed sheet's body has none),
+with upper / lower torso-jaw bones that close it to the tear. The TRUE FORM
+(sheet 2) stays a separate model = the full transformation.
+
+## 2026-10-25 — Vampire Warrior v5.1 face + feet (artist verbatim + 2 images)
+Artist (on a v5.1 face close-up): "why is it look unpolished and choppy".
+Orchestrator diagnosis (measured): UV layout 6605 islands covering 27 % of the
+4096 map at a 0.001 margin (bleed cracks on every island edge, low face texel
+density); every face flat-shaded (contract) so each triangle is a facet; the
+albedo is the proxy's noisy projected texture + the graft's (tones differ).
+Artist: "do all fixes, the other issue is her feet thats not a realistic
+foot, can we just make a flat foot like our regular old model" (image: the
+v5.1 foot, a pointed heeled stump).
+Binding reading (v5.2): (1) re-unwrap - few large islands (face and hair
+front each one island), ~65 % packing, a real margin + dilation; (2) SMOOTH
+shading on the face + hair as declared smooth regions (the contract's
+hair-family exemption) - an explicit artist choice for this unit, the rest
+stays flat; (3) the face skin repainted as clean flat tones with the sheet
+face panel's drawn features (brows, red eyes, lips, fangs from under the lip);
+(4) FEET: replace the proxy's pointed heeled feet with FLAT feet like the
+v4.2 procedural model's (flat-soled boot feet), closed parts on the foot
+bones, boot black, planted on the floor.
+
+## 2026-10-25 — Duskmaw v5.2 verdict (artist verbatim + 3 images)
+Images: the v5.2 head close-up; closed sheet | v5.2 closed; open sheet | v5.2 open.
+Artist: "duskmaw face seems to have suffered here as well and the closed does
+not match
+the open one - the inside of ours is black but in the ref its red"
+Binding reading (v5.3): (1) FACE: the same polish fixes as vampwarrior v5.2 -
+re-unwrap (few large islands, real margin), a clean face paint (one smooth
+shadow tone under the brim, crisp slanted yellow eyes, no blotches), smooth
+shading on the face only; crisp red spike TIPS (clean boundary, not blotches).
+(2) CLOSED must match the closed sheet: a NARROW vertical jagged TEAR (about
+0.6 u wide at the chest: red rim, orange -> yellow zigzag core), the slim
+torso around it - not the two wide teeth rows pressed together. (3) OPEN
+interior is RED like the sheet (deep dark red at the back, lighter red toward
+the teeth), not black.
+
+## 2026-10-25 — Vampire Warrior v5.2 face + Duskmaw v5.3.2 closed (artist verbatim)
+"the front render for the face looks good, has dark spots that should be fixed
+but the side is now off - coordinate with a codex agent to generate references
+as needed
+
+also duskmaw mouth closed, it looks decimated instead of the sleek clean look"
++ "can also coordinate with a codex agent for a visual review as well"
+
+Binding reading: (1) VAMPWARRIOR face: keep the v5.2 front read; remove the
+dark spots; fix the SIDE (the graft is a single front-view generation, so its
+sides are a flat block): Codex generates head references in the sheet style
+(left / right profile, back, full front) -> a multi-view head generation ->
+re-graft. (2) DUSKMAW closed: a SLEEK clean torso with a crisp tear like the
+closed sheet, not crushed teeth / folded walls. (3) A Codex visual review of
+all three units against their sheets feeds the next lane briefs.
+Codex visual review (2026-10-25, of the v5.3.2 / v1.1 / v5.2 renders vs the
+sheets): design/codex-review-2026-10-25-duskmaw-vampwarrior.md. Orchestrator
+filter: NOT taken where it contradicts the sheet (the sword DOES have a
+mid-blade binding band and the waist ONE ring on the sheet) or the light flow
+(full retopology); taken: duskmaw closed lips over tucked teeth, open-maw tooth
+rows without crossing fragments, clean red tip masks, tapered claws;
+vampwarrior low wedge flat feet, softer nose / chin in profile, face dark
+islands, softer mouth surround. True-form items held for the artist.
+
+## 2026-10-25 — Quality verdict on vampwarrior v5.3 + duskmaw v5.4 (artist verbatim)
+"have another agent actually review these  its clumpy like poorly sculpted"
+"same for duskmaw he just looks destroyed on parts"
+"would a full re-run be better at this point, of the face"
+"or certain parts so it matchs better"
+Orchestrator: patching paused. An independent Codex review (raw proxy vs
+finished) + a stage-by-stage diagnostic (raw -> watertight remesh ->
+decimation -> bake -> patches) decide between a full re-run and a targeted
+re-generation of parts. Duskmaw v5.4's full run is held (its no-shell patch is
+applied; vulture_creature still 5b3aaa03830de189).
+
+## 2026-10-25 — Re-run decision (artist verbatim)
+"make the fices" (= make the fixes, after the diagnosis: the watertight remesh
+grid fuses strands / muddies the maw; the raw head4 has a stitched zigzag mouth
+and a flat profile).
+Plan: (1) kit: opt-in finer remesh grid inside named boxes (head / face /
+maw); (2) vampwarrior: Codex head references v2 (closed / softly parted mouth,
+small fangs under the lip, + 3/4 views, clean grouped locks) -> a new
+multi-view head -> the WHOLE head incl. hair replaces the proxy's (its turned
+head cap removed) -> clean light finish on the fine grid, the stacked repaint
+patches dropped; (3) duskmaw: Codex clean turnaround references (closed +
+open, front / side / back) -> a new proxy -> the light finish on the fine
+grid with a real maw triangle share (~22k body); the v5.4 rig / tear / clip
+work carried over; (4) duskmaw_true_form: the fine-grid re-run.
+
+## 2026-10-26 — Duskmaw v6.2 (artist verbatim)
+Shown as a direction check (v5.4's real maw grafted into the clean v6 body; lid + tear when closed; DIGEST
+12e32496b661a1c1). Artist: "duskmaw is fine for now". v6.2 stands; the v6.3 refinement (graft fit into the slim
+torso, sharper red-based teeth, darker throat; Codex review scratch codex_dusk62) was stopped and is held as known
+follow-ups, not shipped.
+
+## 2026-10-26 — Duskmaw import into Conquest + Dungeon Diver (artist verbatim)
+"import duskmaw into the two games dungeon diver and conquest, coordinate with agents from those projects and hand
+off to them, the true form duskmaw is a form shift on ultimate"
+Binding reading: base v6.2 (12e32496b661a1c1) + true form v1.1 (46e5e5268b5132c1) go into BOTH games, each import
+handed to a session working in that game's repo. MECHANIC (answers the trigger part of D1): the true form is a FORM
+SHIFT on Duskmaw's ULTIMATE: base `transform_out` -> model swap under VFX -> true form `transform_in` -> true form for
+the ult, then back. Movement feel + true-form size still open (D1 / D2). Handoff: design/handoff-2026-10-26-duskmaw-import.md.
+- Import results (2026-10-26, both unmerged, unpushed):
+  - Conquest: claude/duskmaw-forge-import-6a7761 @ 6037c30. Base root_scale 0.04316 -> 0.25004 (1.80 m); true form 4.50 m
+    (placeholder). The form shift sits on Voidstep's teleport half: 2 turns, purple burst swap, chomp in true form,
+    close -> swap back. Look-only (stats unchanged). Tests 4224/4226 (0 failing).
+  - Dungeon Diver: claude/duskmaw-forge-import-056353 @ dd2a8a8 + 49cd2bd. Duskfall (R): 10 s true form, transform
+    clips at 1.5x, true form 5.75 m (placeholder); boss = new model only. Test 22/22. The MP owner must hear about
+    rpc_hero_shift in world.gd.
+  - Forge follow-ups: (a) the true form v1.1's teeth do not glow (only its eyes): intended? (b) cyclic clips repeat
+    their first frame at the end (a one-frame loop hitch); (c) the true form's bind / rest pose is a tilted floating
+    mass, not a standing pose.
+
+## 2026-10-26 — Vampire Warrior: full regen (v7) + decisions for v7.1 (artist)
+After the v6.1 Codex review (hair ropes, magenta back, muddied face, noisy v5 body), the artist chose a FULL REGEN
+(option "Full regen"): a new body from a clean Codex full-body turnaround (design/reference/vampwarrior/codex_body_v6/,
+flat boots, no sword) -> Pixal3D proxy_v6/vamp_body6_s11.glb (Codex pick) + the head6 graft + the traced sword.
+v7 (DIGEST 328cdef8eb1d1e12) Codex review: body FIXED, back hair improved, face + head hair NOT fixed.
+Artist decisions for v7.1 (multiple choice): HEAD = "Face-only graft" (keep the body's own hair, graft only
+head6's face); SWORD = "Full sword, pose in clips" (rest pose symmetric arms-down; the idle / walk clips raise the
+right arm to hold the full-length sword point-down like the sheet). Artist rule: tell them review issues before
+any rebuild; lanes cap previews (~3).
+
+## 2026-10-26 — Vampire Warrior: face first, then hair (artist verbatim)
+Artist: "what are best practices for hair, seems we are trying to do both at one time, is that traditionally done
+that way, seems we could have a good face and then good hair" / "i think that'd be best as the image has face
+features over hair which is a style choice for 2d art but doesnt work on 3d".
+Binding reading: build in the standard order. (1) FACE PASS: a bald head / smooth scalp with the grafted face, no
+hair; Codex review, then artist approval; nothing hair-related. (2) HAIR PASS afterwards: hair as separate pieces on
+top of the approved head (traced lock strips like the sword, own sway bones), never touching the face. Rule: sheet
+features drawn OVER hair (brows / eye lines across locks) are a 2D style convention; in 3D the face lives on the
+skin under the hair.
+
+## 2026-10-26 — Vampire Warrior head7 references (artist verbatim)
+"we want it to resemble our reference but at the quality of studios" / "we can try a better reference image, and do
+we still think head first is better" / "go ahead with pointed ears".
+head7_B_render: Codex drew OUR sheet's face as a stylized 3D game render (no line art; real eyeballs, crisp colour
+patches), as a bald head for generation plus a with-hair target (separate clean locks clear of the face) for the
+later hair pass. Face first stays: our watertight remesh fuses any close locks, so hair must be separate geometry
+anyway. POINTED EARS: introduced by the orchestrator's prompt (the sheet panel shows a human ear); the artist chose to
+keep them (a deliberate deviation from the sheet).

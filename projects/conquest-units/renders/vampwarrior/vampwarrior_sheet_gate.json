@@ -1,0 +1,54 @@
+{
+ "unit": "vampwarrior",
+ "views": {
+  "front": {
+   "iou": 0.7826,
+   "iou_shape": 0.7616,
+   "aspect_rel": 0.1013,
+   "row_err_u": 0.292,
+   "row_err_pct": 7.4,
+   "w_u": 3.68,
+   "h_u": 8.16,
+   "ref_w_u": 4.11,
+   "ref_h_u": 8.19,
+   "iou_in_frame": 0.7761,
+   "row_err_pct_in_frame": 7.3,
+   "proxy_iou": 0.7244,
+   "flag": false
+  },
+  "back": {
+   "iou": 0.723,
+   "iou_shape": 0.7048,
+   "aspect_rel": 0.1391,
+   "row_err_u": 0.436,
+   "row_err_pct": 14.8,
+   "w_u": 3.68,
+   "h_u": 8.16,
+   "ref_w_u": 3.11,
+   "ref_h_u": 8.01,
+   "iou_in_frame": 0.7148,
+   "row_err_pct_in_frame": 14.2,
+   "proxy_iou": 0.738,
+   "flag": false
+  },
+  "side": {
+   "iou": 0.6829,
+   "iou_shape": 0.6824,
+   "aspect_rel": 0.0726,
+   "row_err_u": 0.427,
+   "row_err_pct": 21.3,
+   "w_u": 2.02,
+   "h_u": 8.16,
+   "ref_w_u": 2.13,
+   "ref_h_u": 7.98,
+   "iou_in_frame": 0.6691,
+   "row_err_pct_in_frame": 23.1,
+   "proxy_iou": 0.6969,
+   "flag": false
+  }
+ },
+ "proxy_sha256": "728b5cea1f99e947067021f7e62b2237d7bfd3306c4cf9f2f15a8dd1092b5525",
+ "proxy_gate": "proxy unreliable, work from the sheet (mean IoU 0.72 < 0.75; side length off by -6.0%)",
+ "flagged": [],
+ "mean_iou": 0.7295
+}

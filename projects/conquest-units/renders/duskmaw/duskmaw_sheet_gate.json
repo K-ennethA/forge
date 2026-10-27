@@ -1,0 +1,54 @@
+{
+ "unit": "duskmaw",
+ "views": {
+  "front": {
+   "iou": 0.6575,
+   "iou_shape": 0.6337,
+   "aspect_rel": 0.1399,
+   "row_err_u": 0.282,
+   "row_err_pct": 6.9,
+   "w_u": 4.95,
+   "h_u": 7.2,
+   "ref_w_u": 4.24,
+   "ref_h_u": 7.17,
+   "iou_in_frame": 0.6508,
+   "row_err_pct_in_frame": 6.9,
+   "proxy_iou": 0.5651,
+   "flag": false
+  },
+  "back": {
+   "iou": 0.6713,
+   "iou_shape": 0.6271,
+   "aspect_rel": 0.2768,
+   "row_err_u": 0.437,
+   "row_err_pct": 13.1,
+   "w_u": 4.95,
+   "h_u": 7.2,
+   "ref_w_u": 3.53,
+   "ref_h_u": 7.1,
+   "iou_in_frame": 0.6648,
+   "row_err_pct_in_frame": 13.8,
+   "proxy_iou": 0.6252,
+   "flag": false
+  },
+  "side": {
+   "iou": 0.6246,
+   "iou_shape": 0.6045,
+   "aspect_rel": 0.3117,
+   "row_err_u": 0.296,
+   "row_err_pct": 8.7,
+   "w_u": 4.9,
+   "h_u": 7.2,
+   "ref_w_u": 3.49,
+   "ref_h_u": 7.45,
+   "iou_in_frame": 0.6046,
+   "row_err_pct_in_frame": 8.7,
+   "proxy_iou": 0.5882,
+   "flag": false
+  }
+ },
+ "proxy_sha256": "92da035a09ce5fcc71e489563fa0699cbbf07c06bcc3a95bb370885ab0879e67",
+ "proxy_gate": "proxy unreliable, work from the sheet (mean IoU 0.61 < 0.75; side length off by +39.7%)",
+ "flagged": [],
+ "mean_iou": 0.6511
+}

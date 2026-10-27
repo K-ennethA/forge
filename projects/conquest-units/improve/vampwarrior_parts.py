@@ -1,18 +1,11 @@
-"""Vampire Warrior parametric parts (pure numpy, deterministic): the outfit / hair / sword pieces that ride on the MPFB2
-body. firefly_parts.py's lathe / torus / open_edges pattern, copied not imported (another unit's file).
+"""Vampire Warrior v5 closed procedural parts (pure numpy, deterministic) for the Pixal3D LIGHT finish: the SWORD that
+replaces the proxy's fused board sword (sheet SWORD DETAIL view + the front view's grip / finial / tassel).
 
-Every generator returns (V (n,3) float, F list of vertex-index lists, R list of per-face region names). Every part is a
-CLOSED solid (0 open edges): sheets (cape, fauld plates, collar) go through solidify(), which builds the outer skin, the
-inner skin and a rim strip along every boundary (hem tears and slits included), so a double-coloured sheet (black outside,
-red lining inside) needs no double-sided material.
-
-    lathe          profile (r, h) revolved about an axis (poles on the axis); oval via su / sv; per-point radius mod
-    torus          ring tube
-    solidify       open sheet (consistently oriented) -> closed solid: outer / inner / rim regions
-    loft           closed tube through a list of cross-section rings (pole or flat caps)
-    lens_ring      pointed-lens cross-section (a hair lock clump)
-    sword          leaf / flame blade (serrated edges, diamond section, dark centre vein strip) + guard + grip + pommel
-    gem            faceted cabochon (low segment count lathe = facets)
+The generators below (lathe / loft / lens_ring / sword / tassel and their helpers) are copied unchanged from the v4.2
+procedural build's vampwarrior_parts.py (git 6fd5808); sword_part() is new: it scales the v4.2 sword (metres, 1.88 m
+unit) into sheet units, adds the front view's flame finial above the grip and places the whole sword point-down in the
+right hand (stage-1 frame). Every piece is a CLOSED solid (0 open edges); pieces overlap, never share vertices.
+Returns (V (n,3), F list of vertex-index lists, R list of per-face palette region names).
 """
 import math
 import numpy as np
@@ -63,6 +56,7 @@ def merge(parts):
     return np.vstack(Vs), Fs, Rs
 
 
+
 # --------------------------------------------------------------------------- lathe / torus
 def lathe(profile, seg_regions, n, centre, axis, up_hint=(0, 0, 1), su=1.0, sv=1.0, rmod=None, phase=0.0):
     a, u, v = frame_from_axis(axis, up_hint)
@@ -96,70 +90,6 @@ def lathe(profile, seg_regions, n, centre, axis, up_hint=(0, 0, 1), su=1.0, sv=1
     V = np.array(V)
     return V, orient_outward(V, F), R
 
-
-def torus(R0, r, n_major, n_minor, centre, axis, up_hint=(0, 0, 1), su=1.0, sv=1.0, region="rim"):
-    a, u, v = frame_from_axis(axis, up_hint)
-    c = np.asarray(centre, float)
-    V, F = [], []
-    for i in range(n_major):
-        t = 2 * math.pi * i / n_major
-        radial = unit(math.cos(t) * su * u + math.sin(t) * sv * v)
-        ring_c = c + R0 * (math.cos(t) * su * u + math.sin(t) * sv * v)
-        for j in range(n_minor):
-            p = 2 * math.pi * j / n_minor
-            V.append(ring_c + r * (math.cos(p) * radial + math.sin(p) * a))
-    for i in range(n_major):
-        for j in range(n_minor):
-            i1, j1 = (i + 1) % n_major, (j + 1) % n_minor
-            F.append([i * n_minor + j, i1 * n_minor + j, i1 * n_minor + j1, i * n_minor + j1])
-    V = np.array(V)
-    f0 = F[0]
-    nrm = np.cross(V[f0[1]] - V[f0[0]], V[f0[2]] - V[f0[0]])
-    tube_c = c + R0 * (su * u)
-    if np.dot(nrm, V[f0[0]] - tube_c) < 0:
-        F = [f[::-1] for f in F]
-    return V, F, [region] * len(F)
-
-
-# --------------------------------------------------------------------------- sheets
-def vertex_normals(V, F):
-    N = np.zeros_like(V)
-    for f in F:
-        q = V[f]
-        n = np.cross(q[1] - q[0], q[2] - q[0])
-        if len(f) == 4:
-            n = n + np.cross(q[2] - q[0], q[3] - q[0])
-        for i in f:
-            N[i] += n
-    return N / np.maximum(np.linalg.norm(N, axis=1), 1e-12)[:, None]
-
-
-def solidify(V, F, t_out, t_in, reg_out, reg_in, reg_rim, N=None):
-    """Open sheet (faces consistently oriented, normal = the OUTER side) -> closed solid. reg_out may be a per-face list.
-    t_out / t_in: offsets along the vertex normal (scalars or per-vertex arrays). Rim quads along every boundary edge."""
-    V = np.asarray(V, float)
-    N = vertex_normals(V, F) if N is None else N
-    to = np.broadcast_to(np.asarray(t_out, float), (len(V),))[:, None]
-    ti = np.broadcast_to(np.asarray(t_in, float), (len(V),))[:, None]
-    n = len(V)
-    Vo = V + N * to
-    Vi = V - N * ti
-    Vs = np.vstack([Vo, Vi])
-    ro = reg_out if isinstance(reg_out, (list, tuple, np.ndarray)) else [reg_out] * len(F)
-    ri = reg_in if isinstance(reg_in, (list, tuple, np.ndarray)) else [reg_in] * len(F)
-    Fs = [list(f) for f in F] + [[i + n for i in f[::-1]] for f in F]
-    Rs = list(ro) + list(ri)
-    cnt = {}
-    for f in F:
-        for i in range(len(f)):
-            a, b = f[i], f[(i + 1) % len(f)]
-            key = (min(a, b), max(a, b))
-            cnt.setdefault(key, []).append((a, b))
-    for key, uses in cnt.items():
-        if len(uses) == 1:
-            a, b = uses[0]
-            Fs.append([b, a, a + n, b + n]); Rs.append(reg_rim)
-    return Vs, Fs, Rs
 
 
 def grid_faces(nu, nv, closed_u=False, skip=None):
@@ -353,7 +283,397 @@ def tassel(top, cfg):
     return V, F, R, np.concatenate(S)
 
 
-def gem(centre, axis, r, h, n=8, up_hint=(0, 0, 1)):
-    """Faceted cabochon: table + crown + girdle + pavilion (low n = facets)."""
-    prof = [(0.0, h), (r * 0.55, h), (r, h * 0.35), (r, h * 0.05), (r * 0.5, -h * 0.25), (0.0, -h * 0.35)]
-    return lathe(prof, ["gem"] * 5, n, centre, axis, up_hint=up_hint, phase=math.pi / n)
+
+
+# --------------------------------------------------------------------------- v5: the sword placed for the light finish
+def sword_part(args):
+    """The v4.2 sword (metres) x `scale` (sheet units per metre), the front view's flame finial above the pommel (a short
+    copy of the blade, point UP), and the red tassel hanging from the grip below the hand; translated so the guard centre
+    sits at `guard_at` (stage-1 frame). Blade flat in the XZ plane (edges along +-X: the sheet front shows its full width).
+    args: scale, grip [x, y, z], sword {v4.2 SWORD dict, metres}, finial {blade_len, blade_w, base_w, serr_n, n_st},
+    tassel {v4.2 TASSEL dict, metres}, tassel_top (m above the guard), tassel_side (m, +x = toward her),
+    guard_at [x, y, z]: where the guard centre (the silver ring below the hand) lands, stage-1 frame."""
+    k = float(args["scale"])
+    sw = {kk: (tuple(np.asarray(v, float) * k) if isinstance(v, (list, tuple)) else
+               (v * k if kk in ("blade_len", "blade_w", "base_w", "thick", "edge_t", "grip_len", "grip_r", "pommel_r")
+                else v)) for kk, v in args["sword"].items()}
+    V, F, R, lm = sword(sw)
+    R = ["sword_ring" if r in ("guard", "pommel") else ("sword_handle" if r == "handle" else
+         ("sword_vein" if r == "blade_vein" else "sword_blade")) for r in R]
+    parts = [(V, F, R)]
+    # finial: a short serrated leaf blade standing point-up on the pommel (front view: z 6.84 -> 7.74 sheet px 235 -> 145)
+    fc = dict(sw); fc.update({kk: (v * k if kk in ("blade_len", "blade_w", "base_w", "thick") else v)
+                              for kk, v in args["finial"].items()})
+    Vf, Ff, Rf, _ = sword(fc)
+    blade_faces = [i for i, r in enumerate(Rf) if r in ("blade", "blade_vein")]
+    keep_v = sorted({j for i in blade_faces for j in Ff[i]})
+    remap = {j: n for n, j in enumerate(keep_v)}
+    Vf = Vf[keep_v] * np.array([1.0, 1.0, -1.0])                     # point up
+    Vf = Vf + np.array([0.0, 0.0, float(lm["pommel_top"][2]) - 0.25 * float(sw["pommel_r"])])
+    Ff = [[remap[j] for j in Ff[i]][::-1] for i in blade_faces]      # mirrored in z: winding reversed
+    Rf = ["sword_vein" if Rf[i] == "blade_vein" else "sword_blade" for i in blade_faces]
+    parts.append((Vf, Ff, Rf))
+    tc = {kk: (v * k if isinstance(v, float) else v) for kk, v in args["tassel"].items()}
+    top = np.array([float(args.get("tassel_side", 0.0)) * k, 0.0, float(args["tassel_top"]) * k])
+    Vt, Ft, Rt, _ = tassel(top, tc)
+    parts.append((Vt, Ft, ["sword_tassel"] * len(Ft)))
+    V, F, R = merge(parts)
+    V = V - np.asarray(lm["guard"], float) + np.asarray(args["guard_at"], float)
+    info = {"total_len_u": round(float(V[:, 2].max() - V[:, 2].min()), 4), "tip_z_u": round(float(V[:, 2].min()), 4),
+            "top_z_u": round(float(V[:, 2].max()), 4), "blade_len_u": round(float(sw["blade_len"]), 4),
+            "blade_half_w_u": round(float(sw["blade_w"]), 4), "open_edges": open_edges(F)}
+    return V, F, R, info
+
+
+# --------------------------------------------------------------------------- v5.1: the sword traced from SWORD DETAIL
+def _traced_blade(st_z, half_l, half_r, x0, y0, tc, u_samples, vein_u, reg_blade, reg_vein, tip_last=True,
+                  tip_first=False):
+    """A flat blade along z through stations st_z with per-station half widths (left = -x, right = +x) and a lens
+    cross-section: front y0 - t(u), back y0 + t(u), t = tc_k (1 - |u|^1.5); the two edge points are shared (thin edges).
+    A zero-width end station becomes a single pole (the point). Ring segments within +-vein_u are the vein region.
+    Closed: a fan cap on a non-pole end."""
+    us = list(u_samples)                                      # -1 .. 1 inclusive, front surface order
+    nf = len(us)
+    ring_n = 2 * nf - 2
+    V, F, R, rings = [], [], [], []
+    n = len(st_z)
+    for k in range(n):
+        a, b = float(half_l[k]), float(half_r[k])
+        pole = (k == n - 1 and tip_last) or (k == 0 and tip_first)
+        if pole:
+            rings.append([len(V)]); V.append((x0 + 0.5 * (b - a), y0, st_z[k])); continue
+        t_k = float(tc[k])
+        front = [(x0 + (u * a if u < 0 else u * b), y0 - t_k * (1 - abs(u) ** 1.5), st_z[k]) for u in us]
+        back = [(x0 + (u * a if u < 0 else u * b), y0 + t_k * (1 - abs(u) ** 1.5), st_z[k]) for u in us[-2:0:-1]]
+        idx = list(range(len(V), len(V) + ring_n)); V += front + back; rings.append(idx)
+    seg_u = [(us[i], us[i + 1]) for i in range(nf - 1)] + [(us[-1 - i], us[-2 - i]) for i in range(nf - 1)]
+    seg_reg = [reg_vein if max(abs(p), abs(q)) <= vein_u + 1e-9 else reg_blade for p, q in seg_u]
+    for k in range(n - 1):
+        A, B = rings[k], rings[k + 1]
+        for i in range(ring_n):
+            i1 = (i + 1) % ring_n
+            if len(B) == 1:
+                F.append([A[i], A[i1], B[0]])
+            elif len(A) == 1:
+                F.append([A[0], B[i1], B[i]])
+            else:
+                F.append([A[i], A[i1], B[i1], B[i]])
+            R.append(seg_reg[i])
+    for end in (0, n - 1):
+        if len(rings[end]) > 1:
+            c = len(V); V.append(tuple(np.mean([V[j] for j in rings[end]], 0)))
+            ring = rings[end]
+            for i in range(ring_n):
+                F.append([ring[(i + 1) % ring_n], ring[i], c]); R.append(reg_blade)
+    V = np.array(V, float)
+    return V, orient_outward(V, F), R
+
+
+def _ribbon(top, drift, length, width, thick, twist_deg, n=6, reg="sword_tassel"):
+    """A flat ribbon (closed thin box loft) hanging from `top`: drifts by `drift` (x, y) at its end, narrows to 40 %,
+    twists about its own axis by twist_deg over its length."""
+    top = np.asarray(top, float)
+    rings = []
+    for k in range(n + 1):
+        t = k / n
+        c = top + np.array([drift[0] * t * t, drift[1] * t * t, -length * t])
+        a = math.radians(twist_deg * t)
+        wv = np.array([math.cos(a), math.sin(a), 0.0]); tv = np.array([-math.sin(a), math.cos(a), 0.0])
+        w = 0.5 * width * (1.0 - 0.6 * t ** 1.5); h = 0.5 * thick
+        rings.append(np.array([c - wv * w - tv * h, c + wv * w - tv * h, c + wv * w + tv * h, c - wv * w + tv * h]))
+    return loft(rings, "flat", "flat", reg=reg)
+
+
+def sword_part_v51(args):
+    """v5.1 sword (artist 2026-10-24 v5 verdict + orchestrator: the v4.2 saw-step blade did not match). The BLADE and
+    FINIAL outlines are the sheet's SWORD DETAIL silhouette itself, traced offline from vampwarrior-character-sheet.png
+    x 1040..1200 (rows 385..907 = the blade below the binding, rows 62..352 = the leaf above it; half widths about the
+    smoothed centre line, every 3 px; args.profile), extruded as a lens section thinning to the edges with a dark centre
+    vein. Blade length = the front view's (guard z 5.45 = sheet 370 px -> tip 0.23 = 895 px: 1 px = 0.01 u, the detail
+    view's own scale); the finial scaled to the front view's 0.9 u (145..235 px). Silver guard ring, a mid-blade ring
+    (front view 560 px), dark wrapped handle with silver rings below the finial and under the hand, red tassel RIBBONS
+    (flat strips) from under the hand toward the guard. Point down at args.axis_xy. -> V, F, R, info"""
+    pr = args["profile"]
+    x0, y0 = [float(v) for v in args["axis_xy"]]
+    zg, zt = float(args["guard_z"]), float(args["tip_z"])
+    zf0, zf1 = float(args["finial_z"][0]), float(args["finial_z"][1])
+    us = args.get("u_samples", [-1.0, -0.6, -0.25, -0.07, 0.0, 0.07, 0.25, 0.6, 1.0])
+    vein_u = float(args.get("vein_u", 0.07))
+    ws = float(args.get("width_scale", 1.0))
+    parts = []
+    bl = pr["blade"]; r0, r1, _ = bl["rows_px"]
+    nb = len(bl["half_left_px"])
+    s = np.linspace(0.0, 1.0, nb)
+    zb = zg + (zt - zg) * s
+    kpx = (zg - zt) / float(r1 - r0)
+    hl = np.asarray(bl["half_left_px"], float) * kpx * ws
+    hr = np.asarray(bl["half_right_px"], float) * kpx * ws
+    tc0 = float(args["thick"])
+    tcb = tc0 * (0.3 + 0.7 * (1.0 - s) ** 0.6)
+    parts.append(_traced_blade(zb, hl, hr, x0, y0, tcb, us, vein_u, "sword_blade", "sword_vein", tip_last=True))
+    fi = pr["finial"]; f0, f1, _ = fi["rows_px"]
+    step = int(args.get("finial_every", 2))
+    fl0 = np.asarray(fi["half_left_px"], float); fr0 = np.asarray(fi["half_right_px"], float)
+    sel = list(range(0, len(fl0), step))
+    if sel[-1] != len(fl0) - 1:
+        sel.append(len(fl0) - 1)
+    fl, fr = fl0[sel], fr0[sel]
+    sf = np.asarray(sel, float) / float(len(fl0) - 1)
+    zf = zf1 + (zf0 - zf1) * sf
+    kf = (zf1 - zf0) / float(f1 - f0)
+    tcf = tc0 * 0.6 * (0.3 + 0.7 * sf ** 0.6)
+    parts.append(_traced_blade(zf, fl * kf * ws, fr * kf * ws, x0, y0, tcf, us, vein_u, "sword_blade", "sword_vein",
+                               tip_last=False, tip_first=True))
+    zr = float(args["ring_z"])
+    kr = int(np.argmin(np.abs(zb - zr)))
+    a_, b_ = hl[kr], hr[kr]
+    hw = 0.5 * (a_ + b_) + 0.025; tr = tcb[kr] + 0.035; hh = 0.035
+    Vr, Fr, Rr = lathe([(0.0, hh), (1.0, hh), (1.0, -hh), (0.0, -hh)], ["sword_ring"] * 3, 12,
+                       (x0 + 0.5 * (b_ - a_), y0, zr), (0, 0, 1), up_hint=(1, 0, 0), su=hw, sv=tr, phase=math.pi / 12)
+    parts.append((Vr, Fr, Rr))
+    gx, gy, gz = [float(v) for v in args["guard"]]
+    Vg, Fg, Rg = lathe([(0.0, gz), (gx * 0.6, gz), (gx, 0.0), (gx * 0.6, -gz), (0.0, -gz)], ["sword_ring"] * 4, 10,
+                       (x0, y0, zg), (0, 0, 1), up_hint=(1, 0, 0), su=1.0, sv=gy / gx, phase=math.pi / 10)
+    parts.append((Vg, Fg, Rg))
+    hr_ = float(args["grip_r"]); wraps = int(args.get("grip_wraps", 9))
+    prof = [(0.0, 0.0)]
+    for k in range(wraps * 2 + 1):
+        prof.append((hr_ * (1.08 if k % 2 else 0.94), (zf1 - zg) * k / (wraps * 2)))
+    prof.append((0.0, zf1 - zg))
+    Vh, Fh, Rh = lathe(prof, ["sword_handle"] * (len(prof) - 1), 10, (x0, y0, zg), (0, 0, 1))
+    parts.append((Vh, Fh, Rh))
+    for zc, rr_ in args.get("handle_rings", []):
+        Vq, Fq, Rq = lathe([(0.0, 0.025), (rr_, 0.025), (rr_ * 1.06, 0.0), (rr_, -0.025), (0.0, -0.025)],
+                           ["sword_ring"] * 4, 12, (x0, y0, float(zc)), (0, 0, 1))
+        parts.append((Vq, Fq, Rq))
+    for rb in args.get("ribbons", []):
+        top = (x0 + rb["dx"], y0 + rb["dy"], float(args["tassel_top_z"]))
+        parts.append(_ribbon(top, rb["drift"], rb["length"], rb["width"], rb.get("thick", 0.012), rb.get("twist", 0.0),
+                             reg=rb.get("region", "sword_tassel")))
+    V, F, R = merge(parts)
+    info = {"total_len_u": round(float(V[:, 2].max() - V[:, 2].min()), 4), "tip_z_u": round(float(V[:, 2].min()), 4),
+            "top_z_u": round(float(V[:, 2].max()), 4), "blade_stations": int(nb), "finial_stations": int(len(fl)),
+            "blade_max_width_u": round(float((hl + hr).max()), 4), "open_edges": open_edges(F)}
+    return V, F, R, info
+
+
+# --------------------------------------------------------------------------- v5.1b: outline extrusion (true 2D silhouette)
+def _seg_dist(P, A, B):
+    """distance from each point P (n, 2) to the closed polygon edges A[i] -> B[i] (m, 2)"""
+    AB = B - A
+    t = np.clip(((P[:, None, :] - A[None]) * AB[None]).sum(2) / np.maximum((AB * AB).sum(1), 1e-12)[None], 0, 1)
+    C = A[None] + t[..., None] * AB[None]
+    return np.linalg.norm(P[:, None, :] - C, axis=2).min(1)
+
+
+def _inside(P, poly):
+    x, y = P[:, 0], P[:, 1]
+    ins = np.zeros(len(P), bool)
+    n = len(poly)
+    for i in range(n):
+        x1, y1 = poly[i]; x2, y2 = poly[(i + 1) % n]
+        c = ((y1 > y) != (y2 > y)) & (x < (x2 - x1) * (y - y1) / (y2 - y1 + 1e-12) + x1)
+        ins ^= c
+    return ins
+
+
+def _outline_blade(poly_px, centre_px, row_top, row_bot, z_top, z_bot, x0, y0, tc, d_full_px, taper_to,
+                   interior_px, vein_px, reg_blade="sword_blade", reg_vein="sword_vein", width_scale=1.0, neck=None):
+    """A flat blade whose outline IS a drawn silhouette (closed polygon in sheet px, the sheet's x to the right, y down):
+    constrained-Delaunay triangulated (Blender mathutils) with interior points on a grid + a vein strip along the
+    centre line; front / back surfaces y0 -+ t, t = tc x min(1, d / d_full)^0.6 (d = px distance to the outline) x a
+    linear taper from 1 at row_top to taper_to at row_bot; the outline vertices have t = 0 and are SHARED by both
+    surfaces (thin edges, closed). Sheet px -> body: x = x0 + (u - centre(v)) k, z = z_top - (v - row_top) k with
+    k = (z_top - z_bot) / (row_bot - row_top). Faces within vein_px of the centre line are the vein region."""
+    from mathutils import Vector
+    from mathutils.geometry import delaunay_2d_cdt
+    poly = np.asarray(poly_px, float)
+    cen = np.asarray(centre_px, float)
+
+    def cx(v):
+        return np.interp(v, cen[:, 0], cen[:, 1])
+    nb = len(poly)
+    A, B = poly, np.roll(poly, -1, 0)
+    lo, hi = poly.min(0), poly.max(0)
+    gx, gy = np.meshgrid(np.arange(lo[0], hi[0], interior_px), np.arange(lo[1], hi[1], interior_px))
+    G = np.stack([gx.ravel() + 0.5 * interior_px * (np.arange(gx.size) // gx.shape[1] % 2), gy.ravel()], 1)
+    vs = np.arange(lo[1] + 2, hi[1] - 1, max(2.0, interior_px * 0.5))
+    vein = np.concatenate([np.stack([cx(vs) + o, vs], 1) for o in (-vein_px, 0.0, vein_px)])
+    I = np.vstack([G, vein])
+    I = I[_inside(I, poly)]
+    I = I[_seg_dist(I, A, B) > 1.2]
+    pts = np.vstack([poly, I])
+    out = delaunay_2d_cdt([Vector((float(p[0]), float(p[1]))) for p in pts], [], [list(range(nb))], 1, 1e-4)
+    Vo, Fo, orig = out[0], out[2], out[3]
+    P2 = np.array([[v[0], v[1]] for v in Vo], float)
+    d = _seg_dist(P2, A, B)
+    is_b = d < 1e-3                                       # on the outline (incl. any point the CDT put on an edge)
+    d[is_b] = 0.0
+    k = (z_top - z_bot) / float(row_bot - row_top)
+    kx = k * float(width_scale)
+    if neck:                                              # opt-in: the cut end narrowed smoothly (neck [rows, min scale])
+        tt = np.clip((P2[:, 1] - row_top) / float(neck[0]), 0, 1)
+        kx = kx * (float(neck[1]) + (1.0 - float(neck[1])) * tt * tt * (3 - 2 * tt))
+    tap = 1.0 + (taper_to - 1.0) * np.clip((P2[:, 1] - row_top) / float(row_bot - row_top), 0, 1)
+    t = tc * np.clip(d / d_full_px, 0, 1) ** 0.6 * tap
+    X = x0 + (P2[:, 0] - cx(P2[:, 1])) * kx
+    Zc = z_top - (P2[:, 1] - row_top) * k
+    nV = len(P2)
+    Vf = np.stack([X, y0 - t, Zc], 1)
+    Vb = np.stack([X, y0 + t, Zc], 1)
+    back_idx = np.where(is_b, np.arange(nV), nV + np.arange(nV))
+    V = np.vstack([Vf, Vb])
+    F, R = [], []
+    for f in Fo:
+        f = list(f)
+        uc = np.mean([P2[i, 0] - cx(P2[i, 1]) for i in f])
+        reg = reg_vein if abs(uc) <= vein_px else reg_blade
+        F.append(f); R.append(reg)                              # front (winding fixed below)
+        F.append([int(back_idx[i]) for i in f[::-1]]); R.append(reg)
+    used = np.unique(np.concatenate([np.asarray(f) for f in F]))
+    remap = np.full(len(V), -1); remap[used] = np.arange(len(used))
+    V = V[used]; F = [[int(remap[i]) for i in f] for f in F]
+    return V, orient_outward(V, F), R
+
+
+def sword_part_v51b(args):
+    """v5.1 sword, outline version: the blade + finial outlines are the sheet SWORD DETAIL polygons themselves (args.
+    profile from the lane's trace_sword.py: Moore trace of the view's mask, Douglas-Peucker 0.8 px), so the long spiky
+    teeth and their overhangs survive; the rest (rings, handle, ribbons) as sword_part_v51."""
+    pr = args["profile"]
+    x0, y0 = [float(v) for v in args["axis_xy"]]
+    zg, zt = float(args["guard_z"]), float(args["tip_z"])
+    zf0, zf1 = float(args["finial_z"][0]), float(args["finial_z"][1])
+    tc0 = float(args["thick"])
+    bl = pr["blade"]; fi = pr["finial"]
+    rt, rb = [float(v) for v in args.get("blade_rows", bl["rows_px"])]
+    poly = np.asarray(bl["polygon_px"], float)
+    poly[:, 1] = np.clip(poly[:, 1], rt, rb)
+    keep = [i for i in range(len(poly)) if i == 0 or np.linalg.norm(poly[i] - poly[i - 1]) > 1e-6]
+    poly = poly[keep]
+    ws = float(args.get("width_scale", 1.0))
+    parts = [_outline_blade(poly, bl["centre_px"], rt, rb, zg, zt, x0, y0, tc0, float(args.get("d_full_px", 9.0)),
+                            0.35, float(args.get("interior_px", 7.0)), float(args.get("vein_px", 1.6)), width_scale=ws,
+                            neck=args.get("blade_neck"))]
+    fr0, fr1 = [float(v) for v in fi["rows_px"]]
+    parts.append(_outline_blade(fi["polygon_px"], fi["centre_px"], fr0, fr1, zf1, zf0, x0, y0, tc0 * 0.6,
+                                float(args.get("d_full_px", 9.0)), 1.0, float(args.get("interior_px", 7.0)) * 1.3,
+                                float(args.get("vein_px", 1.6)) * 1.5, width_scale=float(args.get("finial_width_scale", 1.0))))
+    k = (zg - zt) / (rb - rt)
+    ring_row = rt + (zg - float(args["ring_z"])) / k
+    rows_p = poly[:, 1]
+    near = np.abs(rows_p - ring_row) < 6
+    cxr = np.interp(ring_row, np.asarray(bl["centre_px"])[:, 0], np.asarray(bl["centre_px"])[:, 1])
+    hw = (max(1.0, float(np.abs(poly[near, 0] - cxr).max())) if near.any() else 30.0) * k * ws + 0.02
+    tr = tc0 + 0.03; hh = 0.035
+    Vr, Fr, Rr = lathe([(0.0, hh), (1.0, hh), (1.0, -hh), (0.0, -hh)], ["sword_ring"] * 3, 12,
+                       (x0, y0, float(args["ring_z"])), (0, 0, 1), up_hint=(1, 0, 0), su=hw, sv=tr, phase=math.pi / 12)
+    parts.append((Vr, Fr, Rr))
+    gx, gy, gz = [float(v) for v in args["guard"]]
+    Vg, Fg, Rg = lathe([(0.0, gz), (gx * 0.6, gz), (gx, 0.0), (gx * 0.6, -gz), (0.0, -gz)], ["sword_ring"] * 4, 10,
+                       (x0, y0, zg), (0, 0, 1), up_hint=(1, 0, 0), su=1.0, sv=gy / gx, phase=math.pi / 10)
+    parts.append((Vg, Fg, Rg))
+    hr_ = float(args["grip_r"]); wraps = int(args.get("grip_wraps", 9))
+    ov = 0.05                                 # the handle runs 0.05 u INTO the blade root and the finial base, so its
+    hz0, hz1 = zg - ov, zf0 + ov              # poles never coincide with their zero-thickness outline points
+    prof = [(0.0, 0.0)]
+    for kk in range(wraps * 2 + 1):
+        prof.append((hr_ * (1.08 if kk % 2 else 0.94), (hz1 - hz0) * kk / (wraps * 2)))
+    prof.append((0.0, hz1 - hz0))
+    Vh, Fh, Rh = lathe(prof, ["sword_handle"] * (len(prof) - 1), 10, (x0, y0, hz0), (0, 0, 1))
+    parts.append((Vh, Fh, Rh))
+    for zc, rr_ in args.get("handle_rings", []):
+        Vq, Fq, Rq = lathe([(0.0, 0.025), (rr_, 0.025), (rr_ * 1.06, 0.0), (rr_, -0.025), (0.0, -0.025)],
+                           ["sword_ring"] * 4, 12, (x0, y0, float(zc)), (0, 0, 1))
+        parts.append((Vq, Fq, Rq))
+    for rbn in args.get("ribbons", []):
+        top = (x0 + rbn["dx"], y0 + rbn["dy"], float(args["tassel_top_z"]))
+        parts.append(_ribbon(top, rbn["drift"], rbn["length"], rbn["width"], rbn.get("thick", 0.012),
+                             rbn.get("twist", 0.0), reg=rbn.get("region", "sword_tassel")))
+    V, F, R = merge(parts)
+    info = {"total_len_u": round(float(V[:, 2].max() - V[:, 2].min()), 4), "tip_z_u": round(float(V[:, 2].min()), 4),
+            "top_z_u": round(float(V[:, 2].max()), 4), "blade_rows_px": [rt, rb], "px_to_u": round(k, 5),
+            "open_edges": open_edges(F)}
+    return V, F, R, info
+
+
+# --------------------------------------------------------------------------- v5.2: flat boot feet
+def boot_foot(args):
+    """A closed FLAT boot foot (artist 2026-10-25: "can we just make a flat foot like our regular old model"): a lofted
+    foot (flat sole at `sole_z`, rounded heel and toe in plan: superellipse power `plan_pow`, instep high at the back,
+    low at the toe) + an ankle shaft (lathe tube) that swallows the cut shin end. Centre = the shin end (x, y);
+    the toe points -y. Sizes in sheet units (the v4.2 boot proportions x 4.31: foot 0.24 m -> 1.0 u, width 0.085 m ->
+    0.36 u). -> V, F, R, info"""
+    x, y = [float(v) for v in args["centre_xy"]]
+    zs = float(args.get("sole_z", 0.0))
+    Lf, Lb = float(args.get("toe_len", 0.62)), float(args.get("heel_len", 0.36))
+    W = float(args.get("width", 0.36)); p = float(args.get("plan_pow", 3.0))
+    h_back, h_toe = float(args.get("h_back", 0.34)), float(args.get("h_toe", 0.13))
+    n_s, n_r = int(args.get("sections", 16)), int(args.get("ring", 14))
+    rings = []
+    for k in range(n_s + 1):
+        s = k / n_s
+        yy = y + Lb - (Lb + Lf) * s
+        hw = 0.5 * W * max(1.0 - abs(2 * s - 1) ** p, 0.0) ** (1.0 / p)
+        tt = np.clip((s - 0.25) / 0.5, 0, 1); ht = h_back + (h_toe - h_back) * (tt * tt * (3 - 2 * tt))
+        if k == 0 or k == n_s:
+            rings.append(None); continue
+        pts = []
+        na = n_r - 4
+        for j in range(na + 1):                          # top arc, x from +hw to -hw
+            a = math.pi * j / na
+            ca, sa = math.cos(a), math.sin(a)
+            pts.append((x + hw * np.sign(ca) * abs(ca) ** 0.6, yy, zs + ht * abs(sa) ** 0.6))
+        for j in range(1, 4):                            # flat sole, -hw -> +hw
+            pts.append((x - hw + 2 * hw * j / 4, yy, zs))
+        rings.append(np.array(pts))
+    mid = [r for r in rings if r is not None]
+    c0 = mid[0].mean(0); c1 = mid[-1].mean(0)
+    pole0 = np.array([x, y + Lb, zs + 0.45 * h_back]); pole1 = np.array([x, y - Lf, zs + 0.5 * h_toe])
+    Vf, Ff, Rf = loft(mid, "pole", "pole", reg="boot", pole0=pole0, pole1=pole1)
+    r0, r1, hz = float(args.get("shaft_r0", 0.2)), float(args.get("shaft_r1", 0.17)), float(args.get("shaft_top", 0.62))
+    prof = [(0.0, 0.0), (r0, 0.0), (r0 * 1.03, 0.08), (0.5 * (r0 + r1), 0.5 * hz), (r1, hz), (0.0, hz)]
+    Vs, Fs, Rs = lathe(prof, ["boot"] * 5, 14, (x, y, zs), (0, 0, 1))
+    V, F, R = merge([(Vf, Ff, Rf), (Vs, Fs, Rs)])
+    return V, F, R, {"centre_xy": [x, y], "sole_z": zs, "length_u": round(Lf + Lb, 3), "width_u": W,
+                     "open_edges": open_edges(F)}
+
+
+# --------------------------------------------------------------------------- v5.3: low wedge flat feet
+def wedge_foot(args):
+    """A closed LOW WEDGE flat foot (artist / Codex review 2026-10-25: "low wedge-shaped feet: continuous flat soles,
+    modest toe projection and no separate raised heel; taper the ankles into them"): one loft from heel to toe on a
+    continuous flat sole (`sole_z`), rounded heel and toe in plan, the top falling from the ankle height `h_ankle` to
+    `h_toe` (a wedge, no heel step), plus an oval ankle collar (frustum, front-heavy `collar_fwd`) that tapers from
+    the foot top up to `collar_top`, swallowing the cut shin end and the low shin plate. Centre = the shin end (x, y),
+    toe -y. -> V, F, R, info"""
+    x, y = [float(v) for v in args["centre_xy"]]
+    zs = float(args.get("sole_z", 0.0))
+    Lf, Lb = float(args.get("toe_len", 0.66)), float(args.get("heel_len", 0.30))
+    W = float(args.get("width", 0.36)); p = float(args.get("plan_pow", 2.6))
+    ha, ht_ = float(args.get("h_ankle", 0.30)), float(args.get("h_toe", 0.10))
+    n_s, n_r = int(args.get("sections", 18)), int(args.get("ring", 16))
+    mid = []
+    for k in range(1, n_s):
+        s = k / n_s
+        yy = y + Lb - (Lb + Lf) * s
+        hw = 0.5 * W * max(1.0 - abs(2 * s - 1) ** p, 0.0) ** (1.0 / p)
+        tt = np.clip((s - 0.3) / 0.65, 0, 1); hh = ha + (ht_ - ha) * tt ** 1.2
+        pts = []
+        na = n_r - 4
+        for j in range(na + 1):
+            a = math.pi * j / na
+            ca, sa = math.cos(a), math.sin(a)
+            pts.append((x + hw * np.sign(ca) * abs(ca) ** 0.7, yy, zs + hh * abs(sa) ** 0.5))
+        for j in range(1, 4):
+            pts.append((x - hw + 2 * hw * j / 4, yy, zs))
+        mid.append(np.array(pts))
+    pole0 = np.array([x, y + Lb, zs + 0.4 * ha]); pole1 = np.array([x, y - Lf, zs + 0.45 * ht_])
+    Vf, Ff, Rf = loft(mid, "pole", "pole", reg="boot", pole0=pole0, pole1=pole1)
+    rb, rt = float(args.get("collar_r0", 0.22)), float(args.get("collar_r1", 0.18))
+    zt = float(args.get("collar_top", 0.62)); fwd = float(args.get("collar_fwd", 1.35))
+    prof = [(0.0, 0.0), (rb, 0.0), (rb, 0.5 * ha), (0.5 * (rb + rt), 0.5 * (0.5 * ha + zt)), (rt, zt), (0.0, zt)]
+    Vc, Fc, Rc = lathe(prof, ["boot"] * 5, 16, (x, y - 0.04, zs), (0, 0, 1), up_hint=(0, -1, 0), su=fwd, sv=1.0)
+    V, F, R = merge([(Vf, Ff, Rf), (Vc, Fc, Rc)])
+    return V, F, R, {"centre_xy": [x, y], "sole_z": zs, "length_u": round(Lf + Lb, 3), "width_u": W,
+                     "h_ankle": ha, "h_toe": ht_, "collar_top": zt, "open_edges": open_edges(F)}

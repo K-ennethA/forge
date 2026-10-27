@@ -846,11 +846,17 @@ def rig_clips_export(unit, cfg, RC, report, DIG, low, me, VALL, RANGE, PARTS, sv
     a_, b_ = RANGE["shell"]
     Ps = VALL[a_:b_]
     D = np.stack([seg_d(Ps, b[1], b[2]) for b in BONES], 1)
+    NOSHELL = set()                                   # opt-in chain "shell": false -> carries light.parts only
+    for ch in rcfg.get("chains") or []:
+        if ch.get("shell", True) is False:
+            NOSHELL |= {b_[0] for b_ in BONES if b_[0].rsplit(".", 1)[0] in (ch["name"], ch["name"] + ".L", ch["name"] + ".R")}
     for j, b in enumerate(BONES):                     # side-aware: a .L bone never pulls the -X half (and .R the +X)
         if b[5] == "L":
             D[Ps[:, 0] < -0.02 * H, j] = np.inf
         elif b[5] == "R":
             D[Ps[:, 0] > 0.02 * H, j] = np.inf
+        if b[0] in NOSHELL:
+            D[:, j] = np.inf
     dmin = D.min(1, keepdims=True)
     sig = float(rcfg.get("falloff", 0.06)) * H
     Wt[a_:b_] = np.exp(-((D - dmin) / sig) ** 2)
@@ -918,7 +924,30 @@ def rig_clips_export(unit, cfg, RC, report, DIG, low, me, VALL, RANGE, PARTS, sv
             q.negate()
         return q
 
+    EXTRA = {c_["name"]: c_ for c_ in (ccl.get("extra") or [])}   # keyed-pose clips (chomp / close / transform_in ...)
+
+    def extra_pose(c_, f):
+        """{"name", "frames", "cyclic", "keys": [{"f", "rot": {bone: {"X": deg}}, "loc": {bone: [dx, dy, dz] x H},
+        "scale": {bone: [sx, sy, sz]}}]}: world rotations / world location deltas / LOCAL pose-bone scale (about the
+        bone head, bone axes: y = along the bone; glTF carries it) per key, smoothstep between keys, absent = rest"""
+        ks = sorted(c_["keys"], key=lambda k: k["f"])
+        k0 = max([k for k in ks if k["f"] <= f], key=lambda k: k["f"]); k1 = min([k for k in ks if k["f"] >= f], key=lambda k: k["f"])
+        t_ = 0.0 if k1["f"] == k0["f"] else (f - k0["f"]) / (k1["f"] - k0["f"]); t_ = t_ * t_ * (3 - 2 * t_)
+        P_ = {}
+        for bn in (set(k0.get("rot", {})) | set(k1.get("rot", {})) | set(k0.get("loc", {})) | set(k1.get("loc", {}))
+                   | set(k0.get("scale", {})) | set(k1.get("scale", {}))):
+            r0 = k0.get("rot", {}).get(bn, {}); r1 = k1.get("rot", {}).get(bn, {})
+            rots = [(a, (1 - t_) * r0.get(a, 0.0) + t_ * r1.get(a, 0.0)) for a in ("X", "Y", "Z") if a in r0 or a in r1]
+            l_ = ((1 - t_) * np.array(k0.get("loc", {}).get(bn, [0, 0, 0]), float)
+                  + t_ * np.array(k1.get("loc", {}).get(bn, [0, 0, 0]), float)) * H
+            s_ = ((1 - t_) * np.array(k0.get("scale", {}).get(bn, [1, 1, 1]), float)
+                  + t_ * np.array(k1.get("scale", {}).get(bn, [1, 1, 1]), float))
+            P_[bn] = (l_ if np.any(l_) else None, rots, tuple(float(v) for v in s_) if np.any(np.abs(s_ - 1.0) > 1e-9) else None)
+        return P_
+
     def pose_at(clip, f):
+        if clip in EXTRA:
+            return extra_pose(EXTRA[clip], f)
         N = IDLE_N if clip == "idle" else WALK_N
         u = f / N
         P_ = {}
@@ -956,6 +985,8 @@ def rig_clips_export(unit, cfg, RC, report, DIG, low, me, VALL, RANGE, PARTS, sv
                     P_[bn] = (None, [("X", K.vine_wave(u, kk, nb, 1.5, 3.0, 0.6, 2, ph))], None)
         return P_
     CLIPS = {"idle": IDLE_N, "walk": WALK_N}
+    CLIPS.update({n_: int(c_["frames"]) for n_, c_ in EXTRA.items()})
+    CYC = {cn: bool(EXTRA.get(cn, {}).get("cyclic", True)) for cn in CLIPS}
     NEW_ACTS = {}
     key_rows = []
     for cn, N in CLIPS.items():
@@ -963,7 +994,7 @@ def rig_clips_export(unit, cfg, RC, report, DIG, low, me, VALL, RANGE, PARTS, sv
         act.use_fake_user = True
         K.assign_action(rig, act)
         for f in range(N + 1):
-            P_ = pose_at(cn, f % N)
+            P_ = pose_at(cn, f % N if CYC[cn] else f)
             for bn in DEFORM:
                 loc, rots, sc_ = P_.get(bn, (None, [], None))
                 pb = rig.pose.bones[bn]
@@ -978,7 +1009,7 @@ def rig_clips_export(unit, cfg, RC, report, DIG, low, me, VALL, RANGE, PARTS, sv
                 kp.interpolation = "LINEAR"
         act.use_frame_range = True
         act.frame_start, act.frame_end = 1, N + 1
-        act.use_cyclic = True
+        act.use_cyclic = CYC[cn]
         act["loop_seconds"] = N / K.FPS
         NEW_ACTS[cn] = act
     DIG["keys"] = sha(np.array(key_rows))
@@ -1006,7 +1037,7 @@ def rig_clips_export(unit, cfg, RC, report, DIG, low, me, VALL, RANGE, PARTS, sv
                 first = C
             if f == N + 1:
                 last = C
-        clip_rep[cn] = {"frames": [1, N + 1], "seconds": round(N / K.FPS, 3), "cyclic": True,
+        clip_rep[cn] = {"frames": [1, N + 1], "seconds": round(N / K.FPS, 3), "cyclic": CYC[cn],
                         "seam_mm": round(float(np.linalg.norm(first - last, axis=1).max()) * 1000, 6),
                         "clearance_min_z": round(min(minz), 4)}
     DIG["clip_samples"] = sha(np.concatenate(samples))
@@ -1022,7 +1053,7 @@ def rig_clips_export(unit, cfg, RC, report, DIG, low, me, VALL, RANGE, PARTS, sv
     rep["bone_count"] = len(arm_data.bones)
     rig["conquest_rig"] = "proxy finish: root > %s; chains %s" % (" > ".join(snames),
                                                                   ", ".join(sorted({b[0].rsplit(".", 1)[0] for b in BONES[len(snames):]})))
-    low["conquest_clips"] = ["idle", "walk"]
+    low["conquest_clips"] = list(CLIPS)
     low["conquest_clip_status"] = ("PLACEHOLDER (movement intent not given by the artist): idle = %d-frame breathe + "
                                    "chain sway; walk = %d-frame in-place bob / roll + leg / arm / tail swing"
                                    % (IDLE_N, WALK_N))

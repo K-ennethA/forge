@@ -33,6 +33,7 @@ import magmoo_sdf as SD          # noqa: E402  (read-only use)
 import proxy_finish as PF        # noqa: E402
 import proxy_finish_build as PFB  # noqa: E402
 import proxy_finish_repose as PR  # noqa: E402
+import proxy_finish_parts as PFP  # noqa: E402
 
 sha = PFB.sha
 
@@ -537,7 +538,7 @@ def albedo_blend(pc, R, me, spec):
             "radius_u": 2 * h, "why": ab.get("why")}
 
 
-def glow3d_regions(me, V, F, specs, pal, base_region, albedo=None):
+def glow3d_regions(me, V, F, specs, pal, base_region, albedo=None, init=None):
     """opt-in light.glow3d (artist 2026-10-12, Vulture Creature v1 verdict: "can we add green glow in the eyes and then
     the skull necklace make it a green spectre glow"): faces of the low are moved from the one light region into GLOW
     palette regions (palettes/<unit>/default.json: rgb white = the baked albedo kept, `emission` x `emission_scale` ->
@@ -549,6 +550,8 @@ def glow3d_regions(me, V, F, specs, pal, base_region, albedo=None):
     cen = V[F].mean(1)
     names = [base_region]
     rid = np.zeros(len(F), np.int32)
+    if init is not None:              # (names, rid) already stored (light.parts regions): kept; glow claims base faces only
+        names = list(init[0]); rid = np.asarray(init[1], np.int32).copy()
     sel_uv = None
     if albedo is not None:
         uv = np.empty(len(me.loops) * 2); me.uv_layers.active.data.foreach_get("uv", uv)
@@ -988,7 +991,17 @@ def _graft_tone(tex, tone):
                                                              [10, 50, 90]), 2).tolist()}
 
 
-def head_graft(F, lo, step, PV, PFc, PUV, PTI, tex_key, tex_proxy, spec, band_u, inflate_u):
+def _graft_cut_sd(P, c):
+    """signed distance (negative inside) of a light.head_graft.cuts shape: {"box": [lo, hi]} | {"capsule": [a, b, r]} |
+    {"sphere": [c, r]} (sheet units, body frame)"""
+    if "capsule" in c:
+        return PF.sd_capsule(P, *c["capsule"])
+    if "sphere" in c:
+        return np.linalg.norm(P - np.asarray(c["sphere"][0], float), axis=1) - float(c["sphere"][1])
+    return PF.sd_box(P, *c["box"])
+
+
+def head_graft(F, lo, step, PV, PFc, PUV, PTI, tex_key, tex_proxy, spec, band_u, inflate_u, pad=True):
     """opt-in light.head_graft (drakescale_beast v2, artist 2026-10-17: "compare this head to the ref, its way too
     compressed and looks smooshed where we cant see eyes or any other face details"): a SEPARATE Pixal3D head (generated
     from the sheet's HEAD DETAIL panel, `glb`) replaces the proxy's own head. The proxy's head is removed beforehand by
@@ -1014,6 +1027,15 @@ def head_graft(F, lo, step, PV, PFc, PUV, PTI, tex_key, tex_proxy, spec, band_u,
       opt-in shaping (absent = none): `stump` {q1, to_q1}: the cross-section at q1 continued straight down (head frame)
       to to_q1 (a throat where the panel cut the head block's bottom); `taper` {from_q0, to_q0, shrink_u}: the SDF
       offset by shrink_u x smoothstep over q0 from..to (the block's back shrinks into the neck instead of a flat cap).
+      opt-in (vampwarrior v6: a 4-view head kept WHOLE incl. its hair; absent = unchanged): `shell_u` (body units): every
+      node within shell_u (+ the stage-1 inflate) of the head's surface is inside (the SDF unioned with the thickened
+      surface band |d| - inflate - shell_u), so a head built of THIN or HOLLOW walls (head5: ray parity finds 2 % of its
+      box inside; 475 open / 836 non-manifold edges) is sampled consistently by a grid finer than the wall (the light.fine
+      grid otherwise aliases the walls into a lattice of pits), and a near node the parity calls inside while it lies in
+      front of its nearest face ((p - nearest) . n >= 0: a parity ray line flipped by a hole) is outside;
+      `cuts`: box / capsule / sphere volumes (body frame,
+      mirrored in x like the fold) where the graft is removed (its own collar / bust under a head kept with its hair);
+      its triangles there leave the bake source too.
     -> F, lo, PV, PFc, PUV, PTI, atlas (h, w, 3), report"""
     t0_ = time.time()
     path = os.path.join(ROOT, spec["glb"])
@@ -1099,7 +1121,7 @@ def head_graft(F, lo, step, PV, PFc, PUV, PTI, tex_key, tex_proxy, spec, band_u,
     pad_lo = np.maximum(np.ceil((lo - blo) / step).astype(int), 0)
     hi_grid = lo + step * (np.array(F.shape) - 1)
     pad_hi = np.maximum(np.ceil((bhi - hi_grid) / step).astype(int), 0)
-    if pad_lo.any() or pad_hi.any():
+    if pad and (pad_lo.any() or pad_hi.any()):
         F = np.pad(F, [(int(pad_lo[d]), int(pad_hi[d])) for d in range(3)], mode="constant",
                    constant_values=float(np.abs(F).max()))
         lo = lo - step * pad_lo
@@ -1122,17 +1144,33 @@ def head_graft(F, lo, step, PV, PFc, PUV, PTI, tex_key, tex_proxy, spec, band_u,
     ins = inside_glb(Pg)
     dmax = band_u / s
     dist = np.full(len(Pg), dmax)
+    shell_on = spec.get("shell_u") is not None
+    n_veto = 0
     for n_, p_ in enumerate(Pg):
         h_ = bvh.find_nearest(Vector(p_), dmax)
         if h_[0] is not None:
             dist[n_] = h_[3]
+            if shell_on and ins[n_] and (Vector(p_) - h_[0]).dot(h_[1]) >= 0.0:
+                ins[n_] = False                          # opt-in: parity "inside" vetoed in front of a face
+                n_veto += 1
     gval = np.where(ins, -dist, dist) * s - float(inflate_u)
+    if spec.get("shell_u") is not None:                  # opt-in: the thickened surface band is inside too
+        gval = np.minimum(gval, dist * s - float(inflate_u) - float(spec["shell_u"]))
     if st:
         gval = np.where(below > 0, np.maximum(gval, below * s), gval)   # capped below to_q1 only
     tp = spec.get("taper")
     if tp:                                               # opt-in: the head block's back shrinks smoothly into the neck
         t_ = np.clip((q0_raw - float(tp["from_q0"])) / (float(tp["to_q0"]) - float(tp["from_q0"])), 0.0, 1.0)
         gval = gval + float(tp["shrink_u"]) * t_ * t_ * (3.0 - 2.0 * t_)
+    cq2 = spec.get("clip_q2")
+    if cq2 is not None:                                  # opt-in: the side cut (|q2| = the folded half width)
+        kq = float(spec.get("clip_q2_k", kc))
+        dq = s * (Qn[:, 2] - float(cq2))
+        if kq > 0:
+            hq = np.clip(0.5 - 0.5 * (gval - dq) / kq, 0.0, 1.0)
+            gval = gval * (1 - hq) + dq * hq + kq * hq * (1 - hq)
+        else:
+            gval = np.maximum(gval, dq)
     if xc < 1e8:
         dc = s * (Qn[:, 0] - xc)
         if kc > 0:
@@ -1140,6 +1178,11 @@ def head_graft(F, lo, step, PV, PFc, PUV, PTI, tex_key, tex_proxy, spec, band_u,
             gval = gval * (1 - hh) + dc * hh + kc * hh * (1 - hh)
         else:
             gval = np.maximum(gval, dc)
+    gcut = spec.get("cuts") or []
+    if gcut:                                             # opt-in: graft parts removed (body frame, mirrored in x)
+        Pm = np.stack([np.abs(Pn[:, 0]), Pn[:, 1], Pn[:, 2]], 1)
+        for c_ in gcut:
+            gval = np.maximum(gval, -_graft_cut_sd(Pm, c_))
     gval = gval.reshape(X.shape)
     sl = tuple(slice(a_, b_) for a_, b_ in zip(i0, i1))
     cur = F[sl]
@@ -1162,6 +1205,13 @@ def head_graft(F, lo, step, PV, PFc, PUV, PTI, tex_key, tex_proxy, spec, band_u,
     Qg = to_q(Vg)
     cq = Qg[Fg_].mean(1)
     fsel = (cq[:, 2] >= 0) & (cq[:, 0] <= xc)
+    if cq2 is not None:                                  # the side cut leaves the bake source too
+        fsel &= cq[:, 2] <= float(cq2) + float(spec.get("clip_q2_bake_pad", 0.02))
+    if gcut:                                             # the cut graft parts leave the bake source too
+        Bc = q_to_body(cq)
+        Bc[:, 0] = np.abs(Bc[:, 0])
+        for c_ in gcut:
+            fsel &= _graft_cut_sd(Bc, c_) >= 0.0
     fs = Fg_[fsel]
     used = np.unique(fs)
     remap = np.full(len(Vg), -1, np.int64); remap[used] = np.arange(len(used))
@@ -1195,7 +1245,8 @@ def head_graft(F, lo, step, PV, PFc, PUV, PTI, tex_key, tex_proxy, spec, band_u,
     rep = {"glb": spec["glb"], "glb_sha256": hsha[:16], "glb_tris": int(len(Fg_)), "glb_verts_welded": int(len(Vw)),
            "frame": {"yaw_deg": float(spec["yaw_deg"]), "roll_deg": float(spec.get("roll_deg", 0.0)), "mid_z": mz},
            "scale": s, "pitch_deg": float(spec.get("pitch_deg", 0.0)), "place_yz": [ty, tz],
-           "clip_q0": xc, "clip_k": kc, "k": k, "inflate_u": round(float(inflate_u), 4),
+           "clip_q0": xc, "clip_k": kc, "clip_q2": cq2, "k": k, "inflate_u": round(float(inflate_u), 4),
+           "shell_u": spec.get("shell_u"), "parity_vetoed": n_veto, "cuts": len(gcut),
            "body_bbox": [Bv.min(0).round(4).tolist(), Bv.max(0).round(4).tolist()],
            "good_half_bbox_x": [round(float(Bk[:, 0].min()), 4), round(float(Bk[:, 0].max()), 4)],
            "landmarks_body": lm, "occupancy": {"cell": hs, "grid": gn.tolist(), "rays": ncast,
@@ -1310,6 +1361,641 @@ def belly_metrics(V, W, B, cz, limb_chains=("arm", "leg"), band=0.06):
             "belly_front_y_u": round(float(y0), 4)}
 
 
+# ======================================================================================================================
+# v5.2 opt-ins (vampwarrior, artist 2026-10-25 "why is it look unpolished and choppy"): light.uv, light.smooth,
+# light.paint_project. Absent keys = no change.
+# ======================================================================================================================
+def _face_arrays(me):
+    uv = np.empty(len(me.loops) * 2); me.uv_layers.active.data.foreach_get("uv", uv); uv = uv.reshape(-1, 3, 2)
+    co = np.empty(len(me.vertices) * 3); me.vertices.foreach_get("co", co); co = co.reshape(-1, 3)
+    lv = np.empty(len(me.loops), dtype=np.int64); me.loops.foreach_get("vertex_index", lv)
+    return uv, co[lv.reshape(-1, 3)]
+
+
+def _raster_faces(me, face_ids, R, edge_tol=0.0):
+    """texels of the given triangles in the R x R UV grid -> (texel index, 3D point, face id)"""
+    uv, T3 = _face_arrays(me)
+    ii_, pp_, ff_ = [], [], []
+    for f in face_ids:
+        t2 = uv[f] * R
+        x0, y0 = np.floor(t2.min(0)).astype(int) - 1; x1, y1 = np.ceil(t2.max(0)).astype(int) + 1
+        xs, ys = np.meshgrid(np.arange(max(x0, 0), min(x1, R)) + 0.5, np.arange(max(y0, 0), min(y1, R)) + 0.5)
+        Pq = np.stack([xs.ravel(), ys.ravel()], 1)
+        if not len(Pq):
+            continue
+        a_, b_, c_ = t2
+        den = (b_[1] - c_[1]) * (a_[0] - c_[0]) + (c_[0] - b_[0]) * (a_[1] - c_[1])
+        if abs(den) < 1e-12:
+            continue
+        l0 = ((b_[1] - c_[1]) * (Pq[:, 0] - c_[0]) + (c_[0] - b_[0]) * (Pq[:, 1] - c_[1])) / den
+        l1 = ((c_[1] - a_[1]) * (Pq[:, 0] - c_[0]) + (a_[0] - c_[0]) * (Pq[:, 1] - c_[1])) / den
+        l2 = 1.0 - l0 - l1
+        ins = (l0 >= -edge_tol) & (l1 >= -edge_tol) & (l2 >= -edge_tol)
+        if not ins.any():
+            continue
+        B_ = np.stack([l0[ins], l1[ins], l2[ins]], 1)
+        ii_.append(Pq[ins, 1].astype(int) * R + Pq[ins, 0].astype(int)); pp_.append(B_ @ T3[f]); ff_.append(np.full(int(ins.sum()), f))
+    if not ii_:
+        return np.zeros(0, int), np.zeros((0, 3)), np.zeros(0, int)
+    return np.concatenate(ii_), np.vstack(pp_), np.concatenate(ff_)
+
+
+def uv_stats(me, R):
+    """UV island count (faces joined across an edge whose two UV endpoints agree), coverage (UV area share), and the
+    texel density (texels per u) of the whole mesh"""
+    uv, T3 = _face_arrays(me)
+    n = len(T3)
+    par = np.arange(n)
+
+    def find(a):
+        while par[a] != a:
+            par[a] = par[par[a]]; a = par[a]
+        return a
+    lv = np.empty(len(me.loops), dtype=np.int64); me.loops.foreach_get("vertex_index", lv); Fv = lv.reshape(-1, 3)
+    key = {}
+    for f in range(n):
+        for k in range(3):
+            a, b = int(Fv[f, k]), int(Fv[f, (k + 1) % 3])
+            ua, ub = tuple(np.round(uv[f, k], 6)), tuple(np.round(uv[f, (k + 1) % 3], 6))
+            e = (a, b) if a < b else (b, a)
+            uvk = (ua, ub) if a < b else (ub, ua)
+            if e in key:
+                g, uvg = key[e]
+                if uvg == uvk:
+                    ra, rb = find(f), find(g)
+                    if ra != rb:
+                        par[ra] = rb
+            else:
+                key[e] = (f, uvk)
+    roots = len({find(f) for f in range(n)})
+    a_uv = 0.5 * np.abs((uv[:, 1, 0] - uv[:, 0, 0]) * (uv[:, 2, 1] - uv[:, 0, 1]) -
+                        (uv[:, 2, 0] - uv[:, 0, 0]) * (uv[:, 1, 1] - uv[:, 0, 1]))
+    a3 = 0.5 * np.linalg.norm(np.cross(T3[:, 1] - T3[:, 0], T3[:, 2] - T3[:, 0]), axis=1)
+    return {"islands": int(roots), "coverage_pct": round(100 * float(a_uv.sum()), 2),
+            "texels_per_u": round(float(np.sqrt(a_uv.sum() * R * R / max(a3.sum(), 1e-12))), 1)}, a_uv, a3
+
+
+def _face_pairs(LF):
+    nf = len(LF)
+    ek = np.sort(np.stack([LF[:, [0, 1, 2]].ravel(), LF[:, [1, 2, 0]].ravel()], 1), 1)
+    ff = np.repeat(np.arange(nf), 3)
+    o = np.lexsort((ek[:, 1], ek[:, 0])); eks = ek[o]; ffs = ff[o]
+    same = np.all(eks[1:] == eks[:-1], 1)
+    return ffs[:-1][same], ffs[1:][same]
+
+
+def _components(nf, pa, pb, lab_):
+    """connected components of the faces joined across shared edges with equal label (min-label propagation)"""
+    par = np.arange(nf)
+    m = lab_[pa] == lab_[pb]
+    a_, b_ = pa[m], pb[m]
+    for _ in range(200):
+        lo_ = np.minimum(par[a_], par[b_])
+        if not ((par[a_] != lo_) | (par[b_] != lo_)).any():
+            break
+        np.minimum.at(par, a_, lo_); np.minimum.at(par, b_, lo_)
+        par = par[par]
+    _, cid = np.unique(par, return_inverse=True)
+    return cid
+
+
+def _uv_charts(LV, LF, fid, min_area, iters=60):
+    """box charts for the faces outside the named islands: label = the dominant axis of the face normal (+-x, +-y,
+    +-z), connected components per label, charts smaller than min_area (u^2) merged into their largest neighbouring
+    chart (a sliver next to a named island joins it; no two small charts swap) until none is left; named islands keep
+    their own label. fid is updated in place for the slivers that joined a named island. -> chart id per face"""
+    nf = len(LF)
+    Nf = np.cross(LV[LF[:, 1]] - LV[LF[:, 0]], LV[LF[:, 2]] - LV[LF[:, 0]])
+    A = 0.5 * np.linalg.norm(Nf, axis=1)
+    Nf = Nf / np.maximum(2 * A, 1e-12)[:, None]
+    dirs = np.array([[1, 0, 0], [-1, 0, 0], [0, 1, 0], [0, -1, 0], [0, 0, 1], [0, 0, -1]], float)
+    lab = np.where(fid >= 0, 100 + fid, np.argmax(Nf @ dirs.T, 1))
+    pa, pb = _face_pairs(LF)                              # face pairs sharing an edge
+
+    def comps(lab_):
+        return _components(nf, pa, pb, lab_)
+    it = 0
+    for it in range(iters):
+        cid = comps(lab)
+        nc = int(cid.max()) + 1
+        area = np.bincount(cid, weights=A, minlength=nc)
+        named_c = np.zeros(nc, bool); named_c[cid[fid >= 0]] = True
+        small = (area < min_area) & ~named_c
+        if not small.any():
+            break
+        ca, cb = cid[pa], cid[pb]
+        nb = ca != cb
+        ca, cb = np.concatenate([ca[nb], cb[nb]]), np.concatenate([cb[nb], ca[nb]])
+        ok = small[ca] & ((~small[cb]) | (area[cb] > area[ca]) | ((area[cb] == area[ca]) & (cb > ca)))   # no swaps
+        ca, cb = ca[ok], cb[ok]
+        if not len(ca):
+            break
+        best = np.full(nc, -1); besta = np.full(nc, -1.0)
+        order = np.lexsort((-area[cb], ca))
+        firsts = np.ones(len(order), bool); firsts[1:] = ca[order][1:] != ca[order][:-1]
+        best[ca[order][firsts]] = cb[order][firsts]
+        lab_c = np.zeros(nc, lab.dtype); lab_c[cid] = lab
+        mv = (best >= 0)
+        lab = np.where(mv[cid], lab_c[np.maximum(best, 0)][cid], lab)
+        into_named = mv[cid] & (lab >= 100) & (fid < 0)       # a sliver merged into a named island joins its unwrap
+        fid[into_named] = lab[into_named] - 100
+    cid = comps(lab)
+    return cid, {"charts": int(cid.max()) + 1, "merge_iters": it + 1, "min_area_u2": float(min_area)}
+
+
+def custom_uv(low, me, LV, LF, spec, R, report, nbf=None):
+    """opt-in light.uv: the named `islands` (boxes; faces by centroid, optional facing_min on -y) are each unwrapped as
+    their own island(s) with seams only at their border (ANGLE_BASED unwrap), the rest as box CHARTS (method "charts",
+    default: dominant-axis charts, small ones merged, `chart_min_area`; LSCM) or a smart project at `angle_deg`, then the named islands are scaled to `density` x the rest's texel density and everything is packed
+    (concave shapes, `margin`). Called in edit mode right after the default unwrap (which it replaces)."""
+    import bmesh
+    bpy.ops.object.mode_set(mode="OBJECT")
+    before = uv_stats(me, R)[0]
+    bpy.ops.object.mode_set(mode="EDIT")
+    C = LV[LF].mean(1)
+    Nf = np.cross(LV[LF[:, 1]] - LV[LF[:, 0]], LV[LF[:, 2]] - LV[LF[:, 0]])
+    Nf /= np.maximum(np.linalg.norm(Nf, axis=1), 1e-12)[:, None]
+    fid = np.full(len(LF), -1)
+    for k, isl in enumerate(spec.get("islands") or []):
+        m = in_boxes(C, [isl]) & (fid < 0)
+        if nbf is not None:                # shell faces only (light.parts keep the smart project)
+            m &= np.arange(len(LF)) < int(nbf)
+        if isl.get("facing_min") is not None:
+            m &= (-Nf[:, 1]) > float(isl["facing_min"])
+        fid[m] = k
+    pa_, pb_ = _face_pairs(LF)                       # each named island keeps only its big connected pieces
+    cidn = _components(len(LF), pa_, pb_, fid)
+    cnt = np.bincount(cidn)
+    fid[(fid >= 0) & (cnt[cidn] < int(spec.get("named_min_faces", 40)))] = -1
+    margin = float(spec.get("margin", 0.004))
+    bm = bmesh.from_edit_mesh(me)
+    bm.faces.ensure_lookup_table(); bm.edges.ensure_lookup_table()
+    for e in bm.edges:
+        lf = [f.index for f in e.link_faces]
+        e.seam = len({int(fid[i]) for i in lf}) > 1
+    bmesh.update_edit_mesh(me)
+
+    def select(mask):
+        bm.faces.ensure_lookup_table()
+        for f in bm.faces:
+            f.select_set(bool(mask[f.index]))
+        bm.select_flush_mode()
+        bmesh.update_edit_mesh(me)
+    chart_rep = None
+    if spec.get("method", "charts") == "charts":   # box charts: seams at every chart border, one LSCM unwrap of all
+        cid, chart_rep = _uv_charts(LV, LF, fid, float(spec.get("chart_min_area", 0.05)))
+        bm.edges.ensure_lookup_table()
+        for e in bm.edges:
+            lf = [f.index for f in e.link_faces]
+            e.seam = len({int(cid[i]) for i in lf}) > 1
+        bmesh.update_edit_mesh(me)
+        select(fid < 0)
+        bpy.ops.uv.unwrap(method=spec.get("chart_method", "ANGLE_BASED"), margin=margin)
+    else:
+        select(fid < 0)
+        bpy.ops.uv.smart_project(angle_limit=math.radians(float(spec.get("angle_deg", 85.0))), island_margin=margin,
+                                 area_weight=0.0, correct_aspect=True, scale_to_bounds=False)
+    rows = []
+    for k, isl in enumerate(spec.get("islands") or []):
+        if not (fid == k).any():
+            rows.append({"name": isl.get("name"), "faces": 0}); continue
+        if isl.get("method", "front") == "front":   # a planar FRONT projection (x, z): one island, no unwrap folds
+            bm = bmesh.from_edit_mesh(me); bm.faces.ensure_lookup_table(); ul_ = bm.loops.layers.uv.active
+            for fi in np.nonzero(fid == k)[0]:
+                for l in bm.faces[int(fi)].loops:
+                    co_ = l.vert.co
+                    l[ul_].uv = (float(co_[0]), float(co_[2]))
+            bmesh.update_edit_mesh(me)
+        else:
+            select(fid == k)
+            bpy.ops.uv.unwrap(method=isl.get("method"), margin=margin)
+        rows.append({"name": isl.get("name"), "faces": int((fid == k).sum())})
+    # density: named islands scaled about their own UV centroid to density x the rest's texels per u
+    bm = bmesh.from_edit_mesh(me); bm.faces.ensure_lookup_table()
+    ul = bm.loops.layers.uv.active
+    UVf = np.array([[list(l[ul].uv) for l in f.loops] for f in bm.faces])
+    a_uv = 0.5 * np.abs((UVf[:, 1, 0] - UVf[:, 0, 0]) * (UVf[:, 2, 1] - UVf[:, 0, 1]) -
+                        (UVf[:, 2, 0] - UVf[:, 0, 0]) * (UVf[:, 1, 1] - UVf[:, 0, 1]))
+    a3 = tri_area(LV, LF)
+    rest = fid < 0
+    d_rest = np.sqrt(a_uv[rest].sum() / max(a3[rest].sum(), 1e-12)) if rest.any() else 1.0
+    for k, isl in enumerate(spec.get("islands") or []):
+        m = fid == k
+        if not m.any():
+            continue
+        d_k = np.sqrt(a_uv[m].sum() / max(a3[m].sum(), 1e-12))
+        s_ = float(isl.get("density", 1.0)) * d_rest / max(d_k, 1e-12)
+        c_ = UVf[m].reshape(-1, 2).mean(0)
+        for fi in np.nonzero(m)[0]:
+            for l in bm.faces[int(fi)].loops:
+                l[ul].uv = (c_ + (np.array(l[ul].uv) - c_) * s_).tolist()
+        rows[k]["scale"] = round(float(s_), 4)
+    bmesh.update_edit_mesh(me)
+    bpy.ops.mesh.select_all(action="SELECT")
+    bpy.ops.uv.select_all(action="SELECT")
+    bpy.ops.uv.pack_islands(rotate=True, margin=margin, shape_method=spec.get("shape_method", "CONCAVE"))
+    bpy.ops.object.mode_set(mode="OBJECT")
+    after, a_uv2, a32 = uv_stats(me, R)
+    for k, isl in enumerate(spec.get("islands") or []):
+        m = fid == k
+        if m.any():
+            rows[k]["texels_per_u"] = round(float(np.sqrt(a_uv2[m].sum() * R * R / max(a32[m].sum(), 1e-12))), 1)
+    bpy.ops.object.mode_set(mode="EDIT")
+    rep = {"before": before, "after": after, "islands_named": rows, "margin": margin, "charts": chart_rep,
+           "angle_deg": float(spec.get("angle_deg", 85.0)), "rule": "named boxes unwrapped alone (seams at their border), "
+           "the rest smart-projected wide, named islands at density x the rest, concave pack (opt-in light.uv)"}
+    report["uv"] = rep
+    print("UV", json.dumps({k: rep[k] for k in ("before", "after", "islands_named", "charts")}))
+    return fid
+
+
+def dilate_fill(pc, R, cov, rings):
+    """uncovered albedo texels take their covered 4-neighbours' mean, ring by ring (so no global-mean colour bleeds into
+    an island edge); what is left after `rings` takes the covered mean"""
+    img = pc.reshape(R, R, 4)
+    have = cov.reshape(R, R).copy()
+    n_ = 0
+    for _ in range(int(rings)):
+        acc = np.zeros((R, R, 3)); cnt = np.zeros((R, R))
+        for dy, dx in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+            sh = np.roll(have, (dy, dx), (0, 1)); col = np.roll(img[..., :3], (dy, dx), (0, 1))
+            acc += col * sh[..., None]; cnt += sh
+        grow = (~have) & (cnt > 0)
+        if not grow.any():
+            break
+        img[grow, :3] = acc[grow] / cnt[grow][:, None]
+        have |= grow; n_ += int(grow.sum())
+    left = ~have
+    if left.any():
+        img[left, :3] = img[have, :3].mean(0)
+    return {"texels_dilated": n_, "left_to_mean": int(left.sum()), "rings": int(rings)}
+
+
+def smooth_texels(px, pa, RN, RA, me, face_ids, spec):
+    """light.smooth on the bakes: the smooth faces' normal-map texels set neutral (the map was baked against the FLAT
+    low; under smooth shading it would print the facets back), their AO softened by `ao_blur` masked 3x3 passes"""
+    rep = {}
+    ii, _, _ = _raster_faces(me, face_ids, RN, edge_tol=0.02)
+    ii = np.unique(ii)
+    px[ii, :3] = (0.5, 0.5, 1.0)
+    rep["normal_texels_neutral"] = int(len(ii))
+    nb = int(spec.get("ao_blur", 3))
+    if nb:
+        ia, _, _ = _raster_faces(me, face_ids, RA, edge_tol=0.02)
+        ia = np.unique(ia)
+        msk = np.zeros(RA * RA, bool); msk[ia] = True; msk = msk.reshape(RA, RA)
+        A = pa[:, 0].reshape(RA, RA).astype(np.float64).copy()
+        for _ in range(nb):
+            p_ = np.pad(A, 1, mode="edge")
+            Bx = sum(p_[1 + dy:1 + dy + RA, 1 + dx:1 + dx + RA] for dy in (-1, 0, 1) for dx in (-1, 0, 1)) / 9.0
+            A = np.where(msk, Bx, A)
+        pa[:, 0] = pa[:, 1] = pa[:, 2] = A.ravel().astype(np.float32)
+        rep["ao_texels_blurred"] = int(msk.sum()); rep["ao_blur_passes"] = nb
+    return rep
+
+
+def paint_project(pc, R, me, specs):
+    """opt-in light.paint_project: an image (the sheet face panel) projected onto the BAKED albedo: every texel of a low
+    face in `box` facing the front (-n_y over `facing` [f0, f1], smoothstep) maps its 3D (x, z) through the affine that
+    takes the three `pairs` [[src u, v px], [dst x, z]] dst -> src, samples the image (bilinear), tones it
+    (_graft_tone `tone`) and blends it in by facing x the `ellipse_px` mask {c, r, feather} in source px"""
+    out = []
+    uvl, T3 = _face_arrays(me)
+    N = np.cross(T3[:, 1] - T3[:, 0], T3[:, 2] - T3[:, 0]); N /= np.maximum(np.linalg.norm(N, axis=1), 1e-12)[:, None]
+    C = T3.mean(1)
+    for sp in specs:
+        img = bpy.data.images.load(os.path.join(ROOT, sp["image"]), check_existing=True)
+        W, H = img.size
+        S = np.empty(W * H * 4, np.float32); img.pixels.foreach_get(S); S = S.reshape(H, W, 4)[::-1, :, :3]
+        pr = sp["pairs"]
+        Dm = np.array([[p[1][0], p[1][1], 1.0] for p in pr]); Sm = np.array([[p[0][0], p[0][1]] for p in pr])
+        A = np.linalg.solve(Dm, Sm)                       # [x z 1] @ A = [u v]
+        lo, hi = np.asarray(sp["box"][0], float), np.asarray(sp["box"][1], float)
+        f0, f1 = [float(v) for v in sp.get("facing", [0.15, 0.45])]
+        cand = np.nonzero(np.all((C >= lo) & (C <= hi), 1) & (-N[:, 1] > f0))[0]
+        ii, P3, ff = _raster_faces(me, cand, R, edge_tol=0.01)
+        if not len(ii):
+            out.append({"name": sp.get("name"), "texels": 0}); continue
+        uvp = np.stack([P3[:, 0], P3[:, 2], np.ones(len(P3))], 1) @ A
+        u, v = uvp[:, 0], uvp[:, 1]
+        u0 = np.clip(np.floor(u).astype(int), 0, W - 2); v0 = np.clip(np.floor(v).astype(int), 0, H - 2)
+        du = np.clip(u - u0, 0, 1)[:, None]; dv = np.clip(v - v0, 0, 1)[:, None]
+        col = (S[v0, u0] * (1 - du) * (1 - dv) + S[v0, u0 + 1] * du * (1 - dv) + S[v0 + 1, u0] * (1 - du) * dv +
+               S[v0 + 1, u0 + 1] * du * dv)
+        if sp.get("tone"):
+            c8 = np.clip(np.rint(col * 255), 0, 255).astype(np.uint8).reshape(-1, 1, 3)
+            col = _graft_tone(c8, sp["tone"])[0].reshape(-1, 3).astype(np.float64) / 255.0
+        fw = np.clip((-N[ff, 1] - f0) / max(f1 - f0, 1e-9), 0, 1); fw = fw * fw * (3 - 2 * fw)
+        el = sp.get("ellipse_px")
+        if el:
+            d = np.sqrt(((u - el["c"][0]) / el["r"][0]) ** 2 + ((v - el["c"][1]) / el["r"][1]) ** 2)
+            t_ = np.clip((d - 1.0) * min(el["r"]) / max(float(el.get("feather", 10)), 1e-9), 0, 1)
+            ew = 1.0 - t_ * t_ * (3 - 2 * t_)
+        else:
+            ew = np.ones(len(u))
+        w = fw * ew * float(sp.get("strength", 1.0))
+        o_ = np.lexsort((-w, ii)); first = np.ones(len(o_), bool); first[1:] = ii[o_][1:] != ii[o_][:-1]
+        k_ = o_[first]
+        pc[ii[k_], :3] = pc[ii[k_], :3] * (1 - w[k_, None]) + col[k_] * w[k_, None]
+        out.append({"name": sp.get("name"), "faces": int(len(cand)), "texels": int(len(k_)),
+                    "texels_ge_half": int((w[k_] > 0.5).sum()), "affine_dst_to_src": np.round(A, 4).tolist(),
+                    "why": sp.get("why")})
+    return out
+
+
+# opt-in light.fine (vampwarrior / duskmaw v5.4, artist 2026-10-25 "clumpy, like poorly sculpted"): stage 1
+# (proxy_finish.build_fine) remeshes boxes on a grid `div` times finer; here each fine grid is BLENDED into the coarse
+# field over `blend_voxels` (coarse voxels) inside its border and the two remeshes are STITCHED crack-free:
+#   - the coarse cells inside a box are not contoured; the fine grid covers them (its nodes: every div-th = a coarse node);
+#   - on the box faces the fine values ARE the coarse grid's own piecewise-linear field on its Kuhn tets (magmoo_sdf's
+#     0 -> 7 split): a Kuhn grid refined by an integer factor refines the coarse Kuhn tets, so the fine contour on a box
+#     face lies exactly on the coarse contour segments (more vertices, same line);
+#   - every coarse crossing on a box face has exactly one fine twin (on the fine sub-edge of the same coarse edge): the
+#     twins are welded, and each coarse border triangle is fanned through the fine border vertices between its two
+#     twins (the T-junctions), so the high is one closed manifold (open / non-manifold edges reported).
+def _push(F, step):
+    e = SD.NODE_EPS * step
+    return np.where(np.abs(F) < e, np.where(F < 0, -e, e), F)
+
+
+def _crossing_cells(Fp):
+    nx, ny, nz = Fp.shape
+    mn = Fp[:-1, :-1, :-1].copy(); mx = mn.copy()
+    for dx, dy, dz in SD._CORNERS[1:]:
+        v_ = Fp[dx:nx - 1 + dx, dy:ny - 1 + dy, dz:nz - 1 + dz]
+        np.minimum(mn, v_, out=mn); np.maximum(mx, v_, out=mx)
+    return (mn < 0) & (mx >= 0)
+
+
+def _mt_cells(Fp, lo, step, cells):
+    """magmoo_sdf.polygonise's marching tets (same tables, edge welding and orientation) over the listed cells of an
+    already-pushed grid -> V, T, and per vertex its grid edge (lo node id, hi node id)"""
+    nx, ny, nz = Fp.shape
+    ci, cj, ck = cells
+    gid = lambda i, j, k: (i * ny + j) * nz + k
+    corner_g = np.stack([gid(ci + dx, cj + dy, ck + dz) for dx, dy, dz in SD._CORNERS], 1)
+    Ff = Fp.ravel()
+    tris_pairs = []
+    for t in SD._TETS:
+        g4 = corner_g[:, t]
+        v4 = Ff[g4]
+        code = ((v4 < 0).astype(np.int64) * (1 << np.arange(4))).sum(1)
+        for cd, tris in SD._CASES.items():
+            m = code == cd
+            if not m.any():
+                continue
+            G = g4[m]
+            for tri in tris:
+                tris_pairs.append(np.stack([np.stack([G[:, a], G[:, b]], 1) for a, b in tri], 1))
+    TP = np.concatenate(tris_pairs, 0)
+    lo_ = np.minimum(TP[..., 0], TP[..., 1]); hi_ = np.maximum(TP[..., 0], TP[..., 1])
+    NP = nx * ny * nz
+    key = lo_.astype(np.int64) * NP + hi_
+    uk, inv = np.unique(key.ravel(), return_inverse=True)
+    ea, eb = uk // NP, uk % NP
+
+    def pos(g):
+        i = g // (ny * nz); j = (g // nz) % ny; k = g % nz
+        return lo + step * np.stack([i, j, k], 1)
+    va, vb = Ff[ea], Ff[eb]
+    t_ = va / (va - vb)
+    V = pos(ea) + t_[:, None] * (pos(eb) - pos(ea))
+    T = inv.reshape(-1, 3)
+    ins_end = np.where(Ff[TP[..., 0]] < 0, TP[..., 0], TP[..., 1])
+    out_end = np.where(Ff[TP[..., 0]] < 0, TP[..., 1], TP[..., 0])
+    grad = (pos(out_end.ravel()) - pos(ins_end.ravel())).reshape(-1, 3, 3).sum(1)
+    nrm = np.cross(V[T[:, 1]] - V[T[:, 0]], V[T[:, 2]] - V[T[:, 0]])
+    flip = np.einsum("ij,ij->i", nrm, grad) < 0
+    T[flip] = T[flip][:, ::-1]
+    ok = (T[:, 0] != T[:, 1]) & (T[:, 1] != T[:, 2]) & (T[:, 0] != T[:, 2])
+    return V, T[ok], ea, eb
+
+
+def _kuhn_at(Fc, gi, u):
+    """the coarse grid's piecewise-LINEAR field on its Kuhn tets (the field marching tets contours) at cell gi (N, 3)
+    + fraction u (N, 3) in [0, 1]"""
+    order = np.argsort(-u, axis=1, kind="stable")
+    s_ = np.take_along_axis(u, order, 1)
+    E = np.eye(3, dtype=np.int64)
+    p1 = gi + E[order[:, 0]]; p2 = p1 + E[order[:, 1]]; p3 = gi + 1
+    f = lambda q: Fc[q[:, 0], q[:, 1], q[:, 2]]
+    return (1 - s_[:, 0]) * f(gi) + (s_[:, 0] - s_[:, 1]) * f(p1) + (s_[:, 1] - s_[:, 2]) * f(p2) + s_[:, 2] * f(p3)
+
+
+def _directed_boundary(T):
+    e = np.concatenate([T[:, [0, 1]], T[:, [1, 2]], T[:, [2, 0]]])
+    srt = np.sort(e, 1)
+    _, inv, cnt = np.unique(srt, axis=0, return_inverse=True, return_counts=True)
+    return e[cnt[inv.ravel()] == 1]
+
+
+def polygonise_fine(F, lo, step, FINE):
+    """the coarse grid + the light.fine grids -> one closed high (V, T), report (see the block comment above)"""
+    t0_ = time.time()
+    Fc = _push(F, step)
+    nc_ = np.array(Fc.shape)
+    NPc = int(np.prod(nc_))
+    cross = _crossing_cells(Fc)
+    for f_ in FINE:
+        i0, i1 = f_["i0"], f_["i1"]
+        cross[i0[0]:i1[0], i0[1]:i1[1], i0[2]:i1[2]] = False
+    Vc, Tc, eac, ebc = _mt_cells(Fc, lo, step, np.nonzero(cross))
+    del cross
+    ckey = eac * NPc + ebc                            # sorted (np.unique) -> searchsorted
+    cb = _directed_boundary(Tc)                       # coarse border edges (all on box faces)
+    VS, TS, nv = [Vc], [], len(Vc)
+    expand = {}
+    rows = []
+    for f_ in FINE:
+        div, i0, i1 = f_["div"], f_["i0"], f_["i1"]
+        blend = float(f_["spec"].get("blend_voxels", 2.0))
+        Ff = f_["F"].copy()
+        fn = np.array(Ff.shape)
+        # the blend band: fine field -> the coarse Kuhn field at the box faces (smoothstep over blend_voxels)
+        ax = [np.minimum(np.arange(fn[d]), fn[d] - 1 - np.arange(fn[d])) / div for d in range(3)]
+        dmin = np.minimum(np.minimum(ax[0][:, None, None], ax[1][None, :, None]), ax[2][None, None, :])
+        bi = np.nonzero(dmin < blend)
+        fq = np.stack(bi, 1) / div
+        a_ = np.minimum(np.floor(fq).astype(np.int64), (i1 - i0 - 1)[None, :])
+        kv = _kuhn_at(Fc, a_ + i0[None, :], fq - a_)
+        tb = np.clip(dmin[bi] / blend, 0.0, 1.0)
+        w = tb * tb * (3.0 - 2.0 * tb)
+        Ff[bi] = (1.0 - w) * kv + w * Ff[bi]
+        del dmin, fq, a_, kv
+        Ffp = _push(Ff, f_["step"])
+        del Ff
+        Vf, Tf, eaf, ebf = _mt_cells(Ffp, f_["lo"], f_["step"], np.nonzero(_crossing_cells(Ffp)))
+        del Ffp
+        # fine vertices on a sub-edge of a coarse edge -> that coarse edge's key (its twin)
+        fa = np.stack(np.unravel_index(eaf, fn), 1); fb = np.stack(np.unravel_index(ebf, fn), 1)
+        dd = fb - fa
+        r = fa % div
+        rmax = np.where(dd == 1, r, -1).max(1)
+        on = np.all(np.where(dd == 0, r == 0, r == rmax[:, None]), 1) & (dd.min(1) >= 0)
+        Pa = i0[None, :] + (fa - rmax[:, None] * dd) // div
+        Pb = Pa + dd
+        gk = lambda q: (q[:, 0] * nc_[1] + q[:, 1]) * nc_[2] + q[:, 2]
+        twin = np.full(len(Vf), -1, np.int64)
+        kk = gk(Pa) * NPc + gk(Pb)
+        pos_ = np.clip(np.searchsorted(ckey, kk), 0, len(ckey) - 1)
+        hit = on & (ckey[pos_] == kk)
+        twin[hit] = pos_[hit]
+        fbd = _directed_boundary(Tf)
+        nxt = np.full(len(Vf), -1, np.int64)
+        outdeg = np.bincount(fbd[:, 0], minlength=len(Vf))
+        nxt[fbd[:, 0]] = fbd[:, 1]
+        bverts = np.unique(fbd)
+        anchors = bverts[twin[bverts] >= 0]
+        # coarse vertex -> its fine twin (this box)
+        c2f = {int(twin[a]): int(a) for a in anchors}
+        keep = np.ones(len(Vf), bool); keep[anchors] = False
+        newid = np.full(len(Vf), -1, np.int64)
+        newid[keep] = nv + np.arange(int(keep.sum()))
+        newid[anchors] = twin[anchors]
+        ok_e, fail_e, walked = 0, 0, 0
+        for a, b in cb:
+            a, b = int(a), int(b)
+            if a not in c2f or b not in c2f or (a, b) in expand:
+                continue
+            fa_, fb_ = c2f[a], c2f[b]
+            cur, path, good = fb_, [], False
+            for _ in range(100000):
+                if outdeg[cur] != 1:
+                    break
+                cur = int(nxt[cur])
+                if cur < 0:
+                    break
+                if twin[cur] >= 0:
+                    good = cur == fa_
+                    break
+                path.append(cur)
+            if good:
+                expand[(a, b)] = [int(newid[m]) for m in path[::-1]]
+                ok_e += 1; walked += len(path)
+            else:
+                fail_e += 1
+        VS.append(Vf[keep]); TS.append(newid[Tf])
+        nv += int(keep.sum())
+        rows.append({"name": f_["name"], "div": div, "fine_tris": int(len(Tf)), "fine_border_verts": int(len(bverts)),
+                     "welded_twins": int(len(anchors)), "border_edges_stitched": ok_e, "border_edges_failed": fail_e,
+                     "t_junction_verts": walked, "blend_voxels": blend,
+                     "border_verts_unaccounted": int(len(bverts) - len(anchors) - walked)})
+    # coarse border triangles fanned through the stitched T-junction vertices
+    Tc2 = []
+    m_ = np.zeros(len(Tc), bool)
+    for ti, (a, b, c) in enumerate(Tc.tolist()):
+        es = [(a, b, c), (b, c, a), (c, a, b)]
+        hitn = [e for e in es if (e[0], e[1]) in expand and expand[(e[0], e[1])]]
+        if not hitn:
+            continue
+        m_[ti] = True
+        x, y, z = hitn[0]                        # apex = the corner opposite the first stitched edge
+        poly = [x] + expand[(x, y)] + [y] + expand.get((y, z), []) + [z] + expand.get((z, x), [])
+        k_ = poly.index(z)
+        poly = poly[k_:] + poly[:k_]             # apex first
+        for i in range(1, len(poly) - 1):
+            Tc2.append((poly[0], poly[i], poly[i + 1]))
+    T = np.vstack([Tc[~m_], np.array(Tc2, np.int64).reshape(-1, 3)] + TS)
+    V = np.vstack(VS)
+    oe, nm = nonmanifold_edges(T)
+    rep = {"boxes": rows, "coarse_tris": int(len(Tc)), "coarse_border_edges": int(len(cb)),
+           "coarse_tris_fanned": int(m_.sum()), "tris": int(len(T)), "open_edges": oe, "nonmanifold_edges": nm,
+           "seconds": round(time.time() - t0_, 1),
+           "rule": "coarse cells inside the boxes not contoured; fine grid blended to the coarse Kuhn-linear field at "
+                   "the box faces; coarse/fine twins welded, coarse border triangles fanned through the T-junctions"}
+    return V, T, rep
+
+
+def fine_rebalance(F, lo, step, Vp, Fp, LV, LF, target, boxes, lc, calibrate=True):
+    """light.fine: the denser high must not change the boxes' share of the FINAL low. Reference = the same light
+    pipeline on the COARSE grid alone (marching tets, specks, the uniform pre_tris collapse, the one-sided dense
+    calibration when light.dense is set: share = max(want, the uncalibrated share)), i.e. exactly the share the build
+    has without light.fine. The fine strands / teeth hold more quadric error, so the calibrated collapse over-feeds the
+    boxes and starves the body (vampwarrior: 0.73 vs 0.41). When the share is off by more than `fine_share_tol` the low
+    is redone from the pre_tris mesh in two LOCKED passes (vertex group weight 0 = locked, factor 1): the rest locked
+    while the boxes collapse to share x body_tris, then the boxes locked while the rest collapses to body_tris.
+    -> LV, LF, report"""
+    t0_ = time.time()
+    Vc, Tc = SD.polygonise(types.SimpleNamespace(F=F, lo=lo, step=step))
+    Vc, Tc, _ = PFB.keep_islands(Vc, Tc, float(lc["speck_frac"]))
+    Vpc, Fpc = decimate(Vc, Tc, float(lc["pre_tris"]) / len(Tc))
+    del Vc, Tc
+    A = tri_area(Vpc, Fpc)
+    a = float(A[in_boxes(Vpc[Fpc].mean(1), boxes)].sum() / A.sum())
+    dens = float(np.mean([b_.get("density", 2.0) for b_ in boxes]))
+    want = a * dens / (a * dens + (1.0 - a))
+    vgc = np.where(in_boxes(Vpc, boxes), 0.02, 1.0)
+    for b_ in boxes:
+        if "vg_weight" in b_:
+            vgc = np.where(in_boxes(Vpc, [b_]), float(b_["vg_weight"]), vgc)
+
+    def sh(V_, F_, vg, f):
+        V2, F2 = decimate(V_, F_, target / len(F_), vg, f)
+        return float(in_boxes(V2[F2].mean(1), boxes).mean())
+    if calibrate:                        # the build's own one-sided calibration, on the coarse pipeline
+        s_ref = sh(Vpc, Fpc, vgc, 1e-7)
+        if s_ref < want:
+            f_lo, f_hi, best = -7.0, 1.0, None
+            for _ in range(int(lc.get("calib_iters", 9))):
+                mid = 0.5 * (f_lo + f_hi)
+                s_ = sh(Vpc, Fpc, vgc, 10 ** mid)
+                if s_ < want:
+                    f_lo = mid
+                else:
+                    f_hi = mid; best = s_
+            s_ref = best if best is not None else sh(Vpc, Fpc, vgc, 10 ** f_hi)
+    else:
+        V2, F2 = decimate(Vpc, Fpc, target / len(Fpc))
+        s_ref = float(in_boxes(V2[F2].mean(1), boxes).mean())
+    del Vpc, Fpc
+    s_cal = float(in_boxes(LV[LF].mean(1), boxes).mean())
+    rep = {"reference_share": round(s_ref, 4), "want_share": round(want, 4), "calibrated_share": round(s_cal, 4)}
+    if abs(s_cal - s_ref) > float(lc.get("fine_share_tol", 0.01)):
+        inb = in_boxes(Vp[Fp].mean(1), boxes)
+        n_in = int(round(s_ref * target))
+        r1 = (len(Fp) - int(inb.sum()) + n_in) / len(Fp)
+        V1, F1 = decimate(Vp, Fp, r1, np.where(in_boxes(Vp, boxes), 1.0, 0.0), 1.0) if r1 < 1.0 else (Vp, Fp)
+        LV, LF = decimate(V1, F1, target / len(F1), np.where(in_boxes(V1, boxes), 0.0, 1.0), 1.0)
+        rep["two_pass"] = {"box_tris_wanted": n_in, "pass1_tris": int(len(F1)),
+                           "pass1_box_tris": int(in_boxes(V1[F1].mean(1), boxes).sum())}
+    rep["got_share"] = round(float(in_boxes(LV[LF].mean(1), boxes).mean()), 4)
+    rep["seconds"] = round(time.time() - t0_, 1)
+    rep["rule"] = ("the dense boxes' share of the final low held to the coarse-only pipeline's share, so light.fine "
+                   "changes WHERE the box triangles go, not how many")
+    return LV, LF, rep
+
+
+def pre_decimate_fine(Vh, Th, pre_tris, FINE, lc):
+    """light.fine: the first (pre_tris) collapse keeps the fine boxes' share of the HIGH's triangles (their div^2
+    tessellation), so the final calibrated collapse (light.dense) starts from the fine detail; the dense vertex-group
+    factor is bisected (log10 in [-7, 1]) only when the uniform collapse falls below that share"""
+    boxes = [{"box": [f_["lo"].tolist(), (f_["lo"] + f_["step"] * (np.array(f_["F"].shape) - 1)).tolist()]} for f_ in FINE]
+    want = float(in_boxes(Vh[Th].mean(1), boxes).mean())
+    vg = np.where(in_boxes(Vh, boxes), 0.02, 1.0)
+
+    def share(f):
+        V2, F2 = decimate(Vh, Th, float(pre_tris) / len(Th), vg, f)
+        return float(in_boxes(V2[F2].mean(1), boxes).mean()), V2, F2
+    f_lo, f_hi = -7.0, 1.0
+    s0, Vp, Fp = share(10 ** f_lo)
+    rows = [(f_lo, round(s0, 4))]
+    if s0 < want:
+        for _ in range(int(lc.get("fine_pre_iters", 6))):
+            mid = 0.5 * (f_lo + f_hi)
+            s_, V2, F2 = share(10 ** mid)
+            rows.append((round(mid, 3), round(s_, 4)))
+            if s_ < want:
+                f_lo = mid
+            else:
+                f_hi = mid; Vp, Fp, s0 = V2, F2, s_
+        if s0 < want:
+            s0, Vp, Fp = share(10 ** f_hi)
+            rows.append((f_hi, round(s0, 4)))
+    return Vp, Fp, {"want_share": round(want, 4), "got_share": round(s0, 4), "trials": rows,
+                    "rule": "pre_tris collapse with the fine boxes weighted 0.02 (vs 1); factor bisected until the boxes "
+                            "keep the high's triangle share"}
+
+
 def run_light(unit, cfg, raw_cfg, PREVIEW, DIGEST_ONLY, SOLID, T0):
     scene = bpy.context.scene
     lc = cfg["light"]
@@ -1351,10 +2037,18 @@ def run_light(unit, cfg, raw_cfg, PREVIEW, DIGEST_ONLY, SOLID, T0):
     report["stage1"] = meta["report"]
     DIG["solid_grid"] = sha(F[::2, ::2, ::2])
     PV, PFc, PUV, PTI = Z["prox_V"], Z["prox_F"], Z["prox_UV"], Z["prox_texi"]
-    if lc.get("cuts"):                  # opt-in light.cuts: the removed part leaves the BAKE source too (else its texture,
+    FINE = []                           # opt-in light.fine (stage 1 build_fine): finer grids stitched into the remesh
+    for i_, fm in enumerate(meta.get("fine") or []):
+        FINE.append({"name": fm["name"], "div": int(fm["div"]), "i0": np.asarray(fm["i0"], np.int64),
+                     "i1": np.asarray(fm["i1"], np.int64), "lo": np.asarray(fm["lo"], float), "step": float(fm["step"]),
+                     "spec": fm["spec"], "F": Z["fine_%d" % i_].astype(np.float64)})
+    if FINE:
+        assert not lc.get("move_region") and not lc.get("segment_array"), \
+            "light.fine: move_region / segment_array are not carried into the fine grids"
+    if PF.light_cuts(lc):               # opt-in light.cuts: the removed part leaves the BAKE source too (else its texture,
         Pc_ = PV[PFc].mean(1)           # AO shadow and the cage distance would still see the part that is gone)
         cut_in = np.zeros(len(PFc), bool)
-        for c_ in lc["cuts"]:
+        for c_ in PF.light_cuts(lc):
             if "capsule" in c_:
                 d_ = PF.sd_capsule(Pc_, *c_["capsule"])
             elif "sphere" in c_:
@@ -1373,6 +2067,8 @@ def run_light(unit, cfg, raw_cfg, PREVIEW, DIGEST_ONLY, SOLID, T0):
         print("MOVE_REGION", json.dumps({k: mv_rep[k] for k in ("grid_nodes_resampled", "inverse_residual_max_u",
                                                                  "proxy_verts_moved", "proxy_max_move_u", "landmarks")}))
     if lc.get("mirror_copy"):           # opt-in light.mirror_copy (new units only): a one-sided part (a single leg) copied
+        for f_ in FINE:                 # light.fine: the same copy in every fine grid (grid only)
+            f_["F"] = mirror_copy(f_["F"], f_["lo"], f_["step"], PV, PFc, PUV, PTI, lc["mirror_copy"])[0]
         F, PV, PFc, PUV, PTI, mc_rep = mirror_copy(F, lo, step, PV, PFc, PUV, PTI, lc["mirror_copy"])   # to the other side
         report["mirror_copy"] = mc_rep
         DIG["mirror_copy_grid"] = sha(F[::2, ::2, ::2])
@@ -1380,16 +2076,27 @@ def run_light(unit, cfg, raw_cfg, PREVIEW, DIGEST_ONLY, SOLID, T0):
     bake_tex = None
     if lc.get("head_graft"):            # opt-in light.head_graft (new units only): a separately generated head, its good
         _tk = sorted(k for k in Z.files if k.startswith("tex_"))[0]     # half mirrored, unioned at the neck
+        for f_ in FINE:                 # light.fine: the graft SDF in every fine grid (its step; never padded)
+            f_["F"] = head_graft(f_["F"], f_["lo"], f_["step"], PV, PFc, PUV, PTI, int(_tk[4:]), Z[_tk], lc["head_graft"],
+                                 float(lc["band_voxels"]) * f_["step"], float(lc["min_half_thickness"]) * f_["step"],
+                                 pad=False)[0]
+        lo_hg0 = lo.copy()
         F, lo, PV, PFc, PUV, PTI, bake_tex, hg_rep = head_graft(
             F, lo, step, PV, PFc, PUV, PTI, int(_tk[4:]), Z[_tk], lc["head_graft"],
             float(lc["band_voxels"]) * step, float(lc["min_half_thickness"]) * step)
         report["head_graft"] = hg_rep
+        if FINE:                        # the coarse grid may have been padded: the boxes keep their place
+            sh_ = np.rint((lo_hg0 - lo) / step).astype(np.int64)
+            for f_ in FINE:
+                f_["i0"] = f_["i0"] + sh_; f_["i1"] = f_["i1"] + sh_
         DIG["head_graft_grid"] = sha(F[::2, ::2, ::2])
         print("HEAD_GRAFT", json.dumps({k: hg_rep[k] for k in ("scale", "pitch_deg", "place_yz", "body_bbox", "occupancy",
                                                                 "grid_nodes_added_inside", "faces_appended",
                                                                 "bake_faces_dropped_buried", "landmarks_body", "seconds")}))
     if lc.get("cylinders"):             # opt-in light.cylinders (new units only): capped cylinders (flat ends) unioned
         F, cy_rep = add_cylinders(F, lo, step, lc["cylinders"])          # into the grid before the remesh
+        for f_ in FINE:
+            f_["F"] = add_cylinders(f_["F"], f_["lo"], f_["step"], lc["cylinders"])[0]
         report["cylinders"] = cy_rep
         DIG["cylinders_grid"] = sha(F[::2, ::2, ::2])
         print("CYLINDERS", json.dumps([{k: r_[k] for k in ("nodes_inside", "grid_nodes_added_inside", "clipped_by_grid")}
@@ -1405,17 +2112,32 @@ def run_light(unit, cfg, raw_cfg, PREVIEW, DIGEST_ONLY, SOLID, T0):
 
     # ================================================================================================ 2. HIGH + LOW
     t = time.time()
-    Vh, Th = SD.polygonise(types.SimpleNamespace(F=F, lo=lo, step=step))
+    if FINE:                            # light.fine: coarse + fine remeshes, blended and stitched (one closed high)
+        Vh, Th, fine_rep = polygonise_fine(F, lo, step, FINE)
+        DIG["fine_grids"] = sha(np.concatenate([f_["F"][::2, ::2, ::2].ravel() for f_ in FINE]))
+        print("FINE_STITCH", json.dumps({k: fine_rep[k] for k in ("boxes", "tris", "open_edges", "nonmanifold_edges",
+                                                                    "seconds")}))
+    else:
+        Vh, Th = SD.polygonise(types.SimpleNamespace(F=F, lo=lo, step=step))
     Vh, Th, crumbs = PFB.keep_islands(Vh, Th, float(lc["speck_frac"]))
     oe_h, nm_h = nonmanifold_edges(Th)
     report["high"] = {"tris": int(len(Th)), "verts": int(len(Vh)), "specks_dropped": crumbs, "open_edges": oe_h,
                       "nonmanifold_edges": nm_h, "rule": "marching tets of the whole remesh grid (no mirror)",
                       "seconds": round(time.time() - t, 1)}
+    if FINE:
+        report["high"]["fine"] = fine_rep
     print("HIGH", json.dumps(report["high"]))
     t = time.time()
-    Vp_, Fp_ = decimate(Vh, Th, float(lc["pre_tris"]) / len(Th))
+    if FINE:                            # light.fine: the pre collapse keeps the fine boxes' share of the high
+        Vp_, Fp_, fine_pre = pre_decimate_fine(Vh, Th, int(lc["pre_tris"]), FINE, lc)
+    else:
+        Vp_, Fp_ = decimate(Vh, Th, float(lc["pre_tris"]) / len(Th))
     target = int(cfg["body_tris"])
     dense = RC.get("dense") or []
+    if FINE:                            # light.fine boxes with a "density" join the dense calibration (same rule)
+        dense = list(dense) + [dict({"box": f_["spec"]["box"], "density": float(f_["spec"]["density"])},
+                                    **({"vg_weight": f_["spec"]["vg_weight"]} if "vg_weight" in f_["spec"] else {}))
+                               for f_ in FINE if "density" in f_["spec"]]
     calib = None
     if dense:
         dens = float(np.mean([b.get("density", 2.0) for b in dense]))
@@ -1451,6 +2173,13 @@ def run_light(unit, cfg, raw_cfg, PREVIEW, DIGEST_ONLY, SOLID, T0):
                                          "until the boxes hold density x the rest's triangles per area"}
     else:
         LV, LF = decimate(Vp_, Fp_, target / len(Fp_))
+    if FINE:                            # light.fine: the boxes keep the share the coarse-only build gives them
+        rb_boxes = dense or [{"box": [f_["lo"].tolist(), (f_["lo"] + f_["step"] * (np.array(f_["F"].shape) - 1)).tolist()]}
+                             for f_ in FINE]
+        LV, LF, fine_rb = fine_rebalance(F, lo, step, Vp_, Fp_, LV, LF, target, rb_boxes, lc, bool(dense))
+        if calib is not None:
+            calib["got_tri_share"] = fine_rb["got_share"]
+        print("FINE_REBALANCE", json.dumps({k: fine_rb[k] for k in ("reference_share", "want_share", "calibrated_share", "got_share", "seconds")}))
     LV, LF, specks = PFB.keep_islands(LV, LF, 0.001)
     if lc.get("smooth_region"):         # opt-in light.smooth_region (new units only): the low smoothed in boxes (a seam)
         LV, sm_rep = smooth_region(LV, LF, lc["smooth_region"])
@@ -1462,7 +2191,7 @@ def run_light(unit, cfg, raw_cfg, PREVIEW, DIGEST_ONLY, SOLID, T0):
     d_lp = np.array([bvh_p.find_nearest(Vector(p))[3] for p in LV])
     bvh_l = BVHTree.FromPolygons(LV.tolist(), LF.tolist())
     ss = np.arange(0, len(PV), max(1, len(PV) // 40000))
-    if lc.get("cuts"):                  # only the vertices of the KEPT proxy faces (a cut part is not a deviation)
+    if PF.light_cuts(lc):               # only the vertices of the KEPT proxy faces (a cut part is not a deviation)
         used_ = np.unique(PFc)
         ss = used_[np.arange(0, len(used_), max(1, len(used_) // 40000))]
     d_pl = np.array([bvh_l.find_nearest(Vector(PV[i]))[3] for i in ss])
@@ -1476,8 +2205,33 @@ def run_light(unit, cfg, raw_cfg, PREVIEW, DIGEST_ONLY, SOLID, T0):
                                               "p99": round(float(np.percentile(d_pl, 99)), 5), "max": round(float(d_pl.max()), 5)},
                      "p99_over_height": round(float(np.percentile(d_pl, 99)) / Hh, 5),
                      "seconds": round(time.time() - t, 1)}
+    if FINE:
+        fbx = [{"box": [f_["lo"].tolist(), (f_["lo"] + f_["step"] * (np.array(f_["F"].shape) - 1)).tolist()]} for f_ in FINE]
+        report["low"]["fine"] = {"pre": fine_pre, "rebalance": fine_rb,
+                                 "high_share": round(float(in_boxes(Vh[Th].mean(1), fbx).mean()), 4),
+                                 "low_share": round(float(in_boxes(LV[LF].mean(1), fbx).mean()), 4),
+                                 "dense_boxes_added": [f_["name"] for f_ in FINE if "density" in f_["spec"]]}
     print("LOW", json.dumps(report["low"]))
     BAKE_CAGE = max(0.02, round(3.0 * float(np.percentile(d_pl, 99)), 4))
+    NB, NBF = len(LV), len(LF)          # the body (shell) part of the low; opt-in light.parts are appended after it
+    PARTS_L, PREG = [], []
+    if lc.get("parts"):                 # opt-in light.parts (new units only): closed procedural parts (a weapon) from the
+        import importlib                # unit's own parts module, separate islands rigid on a config bone
+        pv_, pf_ = [LV], [LF]
+        o_ = NB
+        for sp_ in lc["parts"]:
+            fn_ = getattr(importlib.import_module(sp_["module"]), sp_["func"])
+            Vq, Fq, Rq, info_ = fn_(sp_.get("args") or {})
+            part = PFP.Part(sp_["name"], Vq, Fq, Rq, bone=sp_.get("bone"))
+            part.range = (o_, o_ + len(part.V)); o_ += len(part.V)
+            pv_.append(part.V); pf_.append(np.asarray(part.F, np.int64) + part.range[0])
+            PREG += part.R
+            PARTS_L.append(part)
+            report.setdefault("parts", {})[part.name] = dict(info_, tris=part.tris(), open_edges=PFP.open_edges(part.F),
+                                                             bone=part.bone, why=sp_.get("why"))
+            print("PART", part.name, json.dumps(report["parts"][part.name]))
+        LV = np.vstack(pv_); LF = np.vstack(pf_)
+        DIG["parts"] = sha(LV[NB:])
     Vh = Th = Vp_ = Fp_ = None           # free the high (3 M tris)
 
     # ================================================================================================ 3. low object
@@ -1495,8 +2249,35 @@ def run_light(unit, cfg, raw_cfg, PREVIEW, DIGEST_ONLY, SOLID, T0):
     low = obj_from_arrays(unit, LV, LF)
     me = low.data
     me.materials.append(mat)
-    PAL.store_regions(me, [REGION], np.zeros(len(LF), np.int32), np.ones(len(LF)))
+    if PARTS_L:
+        REG_L = [REGION] + [r_ for r_ in dict.fromkeys(PREG) if r_ != REGION]
+        rid_l = np.concatenate([np.zeros(NBF, np.int32), np.array([REG_L.index(r_) for r_ in PREG], np.int32)])
+        missing_ = [r_ for r_ in REG_L if r_ not in pal_default["regions"]]
+        assert not missing_, "palette %s lacks the part regions %s" % (unit, missing_)
+        PAL.store_regions(me, REG_L, rid_l, np.ones(len(LF)))
+    else:
+        PAL.store_regions(me, [REGION], np.zeros(len(LF), np.int32), np.ones(len(LF)))
     report["regions_faces"] = PAL.paint(me, pal_default)
+    SMOOTH_IDS = np.zeros(0, np.int64); SMOOTH_NAMES = []
+    smc = lc.get("smooth")
+    if smc:                             # opt-in light.smooth: boxed shell faces -> named (white) smooth palette regions
+        names_s, rid_s, sh_s = PAL.read_regions(me)
+        names_s = list(names_s)
+        Cs_ = LV[LF].mean(1)
+        for r_ in smc["regions"]:
+            assert r_["name"] in pal_default["regions"], "palette %s lacks the smooth region %r" % (unit, r_["name"])
+            if r_["name"] not in names_s:
+                names_s.append(r_["name"])
+            m_ = in_boxes(Cs_, [{"box": b_} for b_ in r_["boxes"]]) & (rid_s == names_s.index(REGION))
+            m_[NBF:] = False
+            rid_s[m_] = names_s.index(r_["name"])
+            SMOOTH_NAMES.append(r_["name"])
+        PAL.store_regions(me, names_s, rid_s, sh_s)
+        report["regions_faces"] = PAL.paint(me, pal_default)
+        SMOOTH_IDS = np.nonzero(np.isin(rid_s, [names_s.index(n_) for n_ in SMOOTH_NAMES]))[0]
+        report["smooth"] = {"regions": SMOOTH_NAMES, "faces": int(len(SMOOTH_IDS)),
+                            "rule": "boxed shell faces in white palette regions (Col x the baked texture as before), "
+                                    "use_smooth after the flat bake, conquest_smooth_regions (opt-in light.smooth)"}
     PAL.apply_material(mat, pal_default)
     me.update()
     me.shade_flat()
@@ -1544,6 +2325,8 @@ def run_light(unit, cfg, raw_cfg, PREVIEW, DIGEST_ONLY, SOLID, T0):
                                             "angle_deg, the rest kept; opt-in light.uv_fix_overlap"}
     bpy.ops.uv.select_all(action="SELECT")
     bpy.ops.uv.pack_islands(rotate=True, margin=UVM)
+    if lc.get("uv"):                    # opt-in light.uv: named single islands + a wide smart project + concave pack
+        custom_uv(low, me, LV, LF, lc["uv"], int(lc["albedo_res"]), report, NBF)
     bpy.ops.object.mode_set(mode="OBJECT")
     mir_before = mirror_to_surface(LV, LF, 0.0)
 
@@ -1677,8 +2460,18 @@ def run_light(unit, cfg, raw_cfg, PREVIEW, DIGEST_ONLY, SOLID, T0):
                                  "rings": rings, "left_to_mean": int(bad.sum()),
                                  "rule": "AO < below = a bake origin inside the proxy soup: refilled from the covered "
                                          "valid 3x3 neighbours ring by ring (opt-in light.ao_fill_below)"}
+        if len(SMOOTH_IDS):                 # light.smooth: neutral normal map + softened AO on the smooth faces
+            report["smooth"]["bake"] = smooth_texels(px, pa, RN, RA, me, SMOOTH_IDS, smc)
+            img_n.pixels.foreach_set(px.ravel()); img_ao.pixels.foreach_set(pa.ravel())
+        if (lc.get("uv") or {}).get("dilate_px"):   # opt-in: uncovered texels from their neighbours, not the global mean
+            report["uv"]["dilate"] = dilate_fill(pc, RC_, cov_c, int(lc["uv"]["dilate_px"]))
+            img_c.pixels.foreach_set(pc.ravel())
         mean_c = pc[cov_c, :3].mean(0) if cov_c.any() else np.full(3, 0.5)
         pc[~cov_c, :3] = mean_c; img_c.pixels.foreach_set(pc.ravel())
+        if lc.get("paint_project"):         # opt-in: the sheet face panel projected onto the baked albedo
+            report["paint_project"] = paint_project(pc, RC_, me, lc["paint_project"])
+            img_c.pixels.foreach_set(pc.ravel())
+            print("PAINT_PROJECT", json.dumps([{k: r_[k] for k in r_ if k != "why"} for r_ in report["paint_project"]]))
         if lc.get("recolour"):              # opt-in (new units only): targeted texture recolours on a GEOMETRY mask
             report["recolour"] = recolour_albedo(pc, RC_, me, lc["recolour"])
             img_c.pixels.foreach_set(pc.ravel())
@@ -1741,10 +2534,24 @@ def run_light(unit, cfg, raw_cfg, PREVIEW, DIGEST_ONLY, SOLID, T0):
         print("BAKE", json.dumps({k: bstats[k] for k in ("cage_extrusion", "normal_coverage_pct", "albedo_coverage_pct",
                                                           "pixel_sha", "seconds")}))
 
+    if PARTS_L:
+        pmat = bpy.data.materials.new(unit + "_parts"); pmat.use_nodes = True
+        pnt = pmat.node_tree; pbs = pnt.nodes["Principled BSDF"]
+        pvc = pnt.nodes.new("ShaderNodeVertexColor"); pvc.layer_name = "Col"; pvc.name = "col"
+        pvg = pnt.nodes.new("ShaderNodeVertexColor"); pvg.layer_name = "Glow"; pvg.name = "glow"
+        pnt.links.new(pvc.outputs["Color"], pbs.inputs["Base Color"]); pnt.links.new(pvg.outputs["Color"], pbs.inputs["Emission Color"])
+        pmat.use_backface_culling = True
+        PAL.apply_material(pmat, pal_default)
+        me.materials.append(pmat)
+        mi_ = np.zeros(len(LF), np.int32); mi_[NBF:] = len(me.materials) - 1
+        me.polygons.foreach_set("material_index", mi_); me.update()
+        report["parts_material"] = {"name": pmat.name, "faces": int(len(LF) - NBF),
+                                    "rule": "light.parts faces: Col (palette regions) -> Base Color, no baked texture"}
     gl = lc.get("glow3d")                # opt-in (new units only; absent = one region, Glow all off, unchanged)
     if gl:
         report["glow3d"] = glow3d_regions(me, LV, LF, gl, pal_default, REGION,
-                                          (pc, RC_) if (not PREVIEW and imgs) else None)
+                                          (pc, RC_) if (not PREVIEW and imgs) else None,
+                                          init=tuple(PAL.read_regions(me)[:2]) if (PARTS_L or len(SMOOTH_IDS)) else None)
         report["regions_faces"] = report["glow3d"]["paint"]
         DIG["glow3d"] = report["glow3d"]["face_region_sha"]
         print("GLOW3D", json.dumps({k: report["glow3d"][k] for k in ("faces", "rows")}))
@@ -1762,10 +2569,18 @@ def run_light(unit, cfg, raw_cfg, PREVIEW, DIGEST_ONLY, SOLID, T0):
     V0 = LV.copy()
     rp = RC.get("repose") or {}
     if rp.get("targets"):
-        V1, rig_cfg, rrep, ex = PR.run_repose(LV, LF, rig_cfg, rp, Hh, float(rig_cfg.get("falloff", 0.06)), 0.0)
-        fm_ = ex["dom_moved"][LF].any(1)
-        si0 = self_intersections(V0, LF, fm_)
-        si1 = self_intersections(V1, LF, fm_)
+        V1, rig_cfg, rrep, ex = PR.run_repose(LV[:NB], LF[:NBF], rig_cfg, rp, Hh, float(rig_cfg.get("falloff", 0.06)), 0.0)
+        fm_ = ex["dom_moved"][LF[:NBF]].any(1)
+        si0 = self_intersections(V0[:NB], LF[:NBF], fm_)
+        si1 = self_intersections(V1, LF[:NBF], fm_)
+        if PARTS_L:                     # light.parts: each part moves rigidly with its bone (identity if the bone is unposed)
+            bn_ = [b[0] for b in ex["B"]]
+            Vq_ = LV[NB:].copy()
+            for part in PARTS_L:
+                if part.bone in bn_:
+                    a_, b_ = part.range
+                    Vq_[a_ - NB:b_ - NB] = PR.apply_aff(ex["M"][bn_.index(part.bone)], LV[a_:b_])
+            V1 = np.vstack([V1, Vq_])
         rrep["self_intersections"] = {"before": {"all": si0[0], "moved_region": si0[1]},
                                       "after": {"all": si1[0], "moved_region": si1[1]},
                                       "rule": "intersecting triangle pairs sharing no vertex (BVH overlap)"}
@@ -1781,16 +2596,19 @@ def run_light(unit, cfg, raw_cfg, PREVIEW, DIGEST_ONLY, SOLID, T0):
         for tg in rrep["targets"]:
             print("REPOSE_TARGET", json.dumps({k: tg[k] for k in ("target", "bones", "lift")}))
         tail_ids = [j for j, b in enumerate(ex["B"]) if b[0] in set(rrep["moved_bones"]) and b[4] == "tail"]
-        tail_dom = ex["W"][:, tail_ids].sum(1) >= 0.5 if tail_ids else np.zeros(len(LV), bool)
-        rigid_m = np.zeros(len(LV), bool)
+        tail_dom = ex["W"][:, tail_ids].sum(1) >= 0.5 if tail_ids else np.zeros(NB, bool)
+        rigid_m = np.zeros(NB, bool)
         for rb in rp.get("rigid") or []:
             j = [b[0] for b in ex["B"]].index(rb["bone"])
             rigid_m |= ex["W"][:, j] >= 1.0 - 1e-12
+        tail_dom = np.concatenate([tail_dom, np.zeros(len(LV) - NB, bool)])
+        rigid_m = np.concatenate([rigid_m, np.zeros(len(LV) - NB, bool)])
     else:
         rig_cfg, _auto = PR.resolve_auto(rig_cfg, LV)
         report["repose"] = {"enabled": False, "mirror": mir_before, "auto_chains": _auto}
         tail_dom = rigid_m = np.zeros(len(LV), bool)
     if lc.get("belly"):                 # opt-in light.belly (new units only): a fuller belly on the finished low; the
+        assert not PARTS_L, "light.belly + light.parts: not supported together"
         bl = lc["belly"]                # texture rides on the UVs; arms swung out rigidly, legs kept
         if rp.get("targets"):
             W_b, B_b = ex["W"], ex["B"]
@@ -1827,7 +2645,7 @@ def run_light(unit, cfg, raw_cfg, PREVIEW, DIGEST_ONLY, SOLID, T0):
     VALL = LV - SHIFT
     me.vertices.foreach_set("co", VALL.astype(np.float32).ravel()); me.update()
     FALL = LF.tolist()
-    RANGE = {"shell": (0, len(VALL))}
+    RANGE = {"shell": (0, NB), **{p_.name: p_.range for p_ in PARTS_L}}
     me["conquest_islands"] = json.dumps({k: list(v) for k, v in RANGE.items()})
     report["regions_area_share"] = {REGION: 1.0}
     fcfg = RC.get("facing") or {}
@@ -1844,11 +2662,17 @@ def run_light(unit, cfg, raw_cfg, PREVIEW, DIGEST_ONLY, SOLID, T0):
     report["facing"] = {"rule": frule, "anchor": anchor.round(4).tolist(), "landmark": landmark.round(4).tolist(),
                         "angle_from_minusY_deg": round(math.degrees(math.atan2(dvec[0], -dvec[1])), 3)}
     me.shade_flat()
+    if len(SMOOTH_IDS):                 # light.smooth: the smooth faces (after every flat-shading pass)
+        sm_ = np.zeros(len(me.polygons), bool); sm_[SMOOTH_IDS] = True
+        me.polygons.foreach_set("use_smooth", sm_); me.update()
+        me["conquest_smooth_regions"] = list(SMOOTH_NAMES)
     tris_main = len(FALL)
-    report["tris"] = {"total": tris_main, "shell": tris_main}
+    report["tris"] = {"total": tris_main, "shell": int(NBF), **{p_.name: p_.tris() for p_ in PARTS_L}}
     oe_f, nm_f = nonmanifold_edges(LF)
-    report["open_edges"] = {"per_island": {"shell": oe_f}, "total": oe_f, "nonmanifold_edges": nm_f,
-                            "rule": "the watertight remesh, decimated (closed)"}
+    report["open_edges"] = {"per_island": {"shell": nonmanifold_edges(LF[:NBF])[0],
+                                           **{p_.name: PFP.open_edges(p_.F) for p_ in PARTS_L}},
+                            "total": oe_f, "nonmanifold_edges": nm_f,
+                            "rule": "the watertight remesh, decimated (closed)" + (" + closed light.parts" if PARTS_L else "")}
     H = float(VALL[:, 2].max() - VALL[:, 2].min())
     lo_a, hi_a = VALL.min(0), VALL.max(0)
     fp = float(max(hi_a[0] - lo_a[0], hi_a[1] - lo_a[1]))
@@ -1893,6 +2717,8 @@ def run_light(unit, cfg, raw_cfg, PREVIEW, DIGEST_ONLY, SOLID, T0):
         P_ = VALL[tail_dom]; focus["tail"] = [P_.min(0).tolist(), P_.max(0).tolist()]; fviews["tail"] = [120.0, 35.0]
     for nm, box in (RC.get("focus") or {}).items():
         focus[nm] = [(np.array(box[0]) - SHIFT).tolist(), (np.array(box[1]) - SHIFT).tolist()]
+    for p_ in PARTS_L:
+        P_ = VALL[p_.range[0]:p_.range[1]]; focus[p_.name] = [P_.min(0).tolist(), P_.max(0).tolist()]
     if fviews:
         focus["views"] = fviews
     ax_y = 0.0
@@ -1944,5 +2770,5 @@ def run_light(unit, cfg, raw_cfg, PREVIEW, DIGEST_ONLY, SOLID, T0):
         np.savez(os.path.join(dbg, "prerepose_low.npz"), V=V0 - SHIFT, F=LF, shift=SHIFT)
     print("IMPROVED_SAVED", OUT_IMPROVED, round(time.time() - T0, 1))
     RC2 = dict(RC); RC2["rig"] = rig_cfg
-    PFB.rig_clips_export(unit, cfg, RC2, report, DIG, low, me, VALL, RANGE, [], VALL, H, SHIFT, pal_default, set_tex_paths,
+    PFB.rig_clips_export(unit, cfg, RC2, report, DIG, low, me, VALL, RANGE, PARTS_L, VALL, H, SHIFT, pal_default, set_tex_paths,
                          geometry_digest, OUT_IMPROVED, OUT_RIGGED, OUT_GLB, DIGEST_ONLY, T0)

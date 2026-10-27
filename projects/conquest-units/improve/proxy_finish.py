@@ -349,7 +349,8 @@ def apply_cut(F, lo, step, cut, mirror=True):
 
 
 def apply_add(F, lo, step, add):
-    """smooth UNION of a capsule / sphere into the SDF grid (light.adds): F = smin(F, d, k); never mirrored"""
+    """smooth UNION of a capsule / sphere / ellipsoid into the SDF grid (light.adds): F = smin(F, d, k); never mirrored.
+    "ellipsoid": [centre, [rx, ry, rz]] uses the usual bound k0 (k0 - 1) / k1 (exact on the axes; duskmaw v6 torso)"""
     k = float(add.get("k", 0.04))
     if "capsule" in add:
         a, b, r = add["capsule"]; pts = np.array([a, b], float); rad = float(r)
@@ -357,6 +358,14 @@ def apply_add(F, lo, step, add):
     elif "sphere" in add:
         c, r = add["sphere"]; pts = np.array([c], float); rad = float(r)
         fn = lambda P: np.linalg.norm(P - np.asarray(c, float), axis=1) - r
+    elif "ellipsoid" in add:
+        c, rr = add["ellipsoid"]; c = np.asarray(c, float); rr = np.asarray(rr, float)
+        pts = np.array([c - rr, c + rr]); rad = 0.0
+
+        def fn(P):
+            q = P - c
+            k0 = np.linalg.norm(q / rr, axis=1); k1 = np.linalg.norm(q / (rr * rr), axis=1)
+            return k0 * (k0 - 1.0) / np.maximum(k1, 1e-12)
     else:
         raise ValueError(add)
     g = rad + k + 3 * step
@@ -1317,6 +1326,91 @@ def floor_lift(V, spec):
             "ramps": spec.get("ramps"), "why": spec.get("why")}
 
 
+def light_cuts(lc):
+    """light.cuts + every light.parts entry's `replace_cuts` (a procedural part removes the proxy part it replaces);
+    no parts = light.cuts unchanged"""
+    return list(lc.get("cuts") or []) + [c for p_ in lc.get("parts") or [] for c in p_.get("replace_cuts") or []]
+
+
+def build_fine(V, Fp, UV, TEXI, Fg, lo, step, lc, report):
+    """opt-in light.fine (vampwarrior / duskmaw v5.4, artist 2026-10-25 "clumpy, like poorly sculpted", "destroyed on
+    parts"; diagnosis: the stage-1 grid (0.025-0.027 u) is as coarse as the strands / eyelids / teeth, so the closing and
+    the min_half_thickness offset fuse them): inside each box the SAME watertight rule as build_solid (shell nodes,
+    closing `close_voxels`, exterior flood fill, exact near-band distance to the surface samples, the sign from the
+    nearest sample's face normal, offset min_half_thickness x the FINE step) on a grid `div` (2 or 3) times finer.
+    The box is snapped OUTWARD to coarse nodes [i0, i1] so every div-th fine node IS a coarse node. Exterior seed: any
+    flood component holding a fine node that coincides with a coarse node the coarse solid calls clearly outside
+    (> 1.5 coarse steps); the box cuts the body, so its border cannot seed the fill. The Blender half stitches each
+    fine grid into the coarse remesh (proxy_finish_light.polygonise_fine). Absent key = no change.
+    -> [{"name", "div", "i0", "i1", "lo", "step", "F"}] (+ report["solid"]["fine"])"""
+    from scipy import ndimage
+    from scipy.spatial import cKDTree
+    n = np.array(Fg.shape)
+    k = int(lc["close_voxels"]); band = int(lc["band_voxels"]); mht = float(lc["min_half_thickness"])
+    cen = V[Fp].mean(1)
+    tri = V[Fp]
+    fnr = np.cross(tri[:, 1] - tri[:, 0], tri[:, 2] - tri[:, 0])
+    fnr /= np.maximum(np.linalg.norm(fnr, axis=1, keepdims=True), 1e-18)
+    out, rows = [], []
+    for bi_, b in enumerate(lc["fine"]):
+        t0_ = time.time()
+        div = int(b.get("div", 2))
+        assert div in (2, 3), "light.fine div must be 2 or 3 (got %r)" % div
+        blend = float(b.get("blend_voxels", 2.0))
+        blo, bhi = np.asarray(b["box"][0], float), np.asarray(b["box"][1], float)
+        i0 = np.clip(np.floor((blo - lo) / step).astype(int), 1, n - 2)
+        i1 = np.clip(np.ceil((bhi - lo) / step).astype(int), 1, n - 2)
+        assert np.all(i1 - i0 >= 2 * math.ceil(blend) + 2), "light.fine box %r is too small for its blend band" % b.get("name")
+        for o_ in out:                   # boxes may not overlap (one fine grid per coarse cell)
+            assert np.any((i1 <= o_["i0"]) | (i0 >= o_["i1"])), "light.fine boxes %r and %r overlap" % (b.get("name"), o_["name"])
+        st = step / div
+        flo = lo + step * i0
+        fn = (i1 - i0) * div + 1
+        fhi = flo + st * (fn - 1)
+        pad = (band + 3 + k) * st + step
+        selF = np.nonzero(np.all((cen >= flo - pad) & (cen <= fhi + pad), 1))[0]
+        P, FI, _ = sample_surface(V, Fp[selF], UV, TEXI, {}, 0.5 * st)
+        FI = selF[FI]                    # sample -> proxy face index
+        ij = np.rint((P - flo) / st).astype(np.int64)
+        inb = np.all((ij >= 0) & (ij < fn), 1)
+        shell = np.zeros(fn, bool); shell[ij[inb, 0], ij[inb, 1], ij[inb, 2]] = True
+        bl = ball(k) if k > 0 else None
+        shell_d = ndimage.binary_dilation(shell, structure=bl) if k > 0 else shell
+        lab, nl = ndimage.label(~shell_d)
+        del shell_d
+        cs = Fg[i0[0]:i1[0] + 1, i0[1]:i1[1] + 1, i0[2]:i1[2] + 1]
+        ls = lab[::div, ::div, ::div]
+        seed = np.unique(ls[(cs > 1.5 * step) & (ls > 0)])
+        ext0 = np.isin(lab, seed)
+        del lab
+        ext = (ndimage.binary_dilation(ext0, structure=bl) & ~shell) if k > 0 else ext0
+        del ext0
+        near_ext = ndimage.binary_dilation(ext, iterations=1)
+        bandm = ndimage.binary_dilation(shell, iterations=band)
+        tree = cKDTree(P)
+        bix = np.nonzero(bandm)
+        del bandm
+        Q = flo + st * np.stack(bix, 1)
+        dist, nn = tree.query(Q, workers=-1)
+        sgn = np.einsum("ij,ij->i", Q - P[nn], fnr[FI[nn]]) >= 0
+        is_ext = ext[bix]; is_sh = (shell & near_ext)[bix]
+        t = mht * st
+        val = np.where(is_ext, dist - t, np.where(is_sh, np.where(sgn, dist, -dist) - t, -(dist + t)))
+        Ff = np.where(ext, band * st, -band * st).astype(np.float64)
+        Ff[bix] = np.clip(val, -band * st, band * st)
+        del Q, dist, nn, sgn, is_ext, is_sh, val, ext, near_ext, tree
+        if float(lc["smooth_sigma"]) > 0:
+            Ff = ndimage.gaussian_filter(Ff, float(lc["smooth_sigma"]))
+        out.append({"name": b.get("name", "fine%d" % bi_), "div": div, "i0": i0, "i1": i1, "lo": flo, "step": st, "F": Ff})
+        rows.append({"name": out[-1]["name"], "div": div, "step_u": round(st, 6), "grid": fn.tolist(),
+                     "nodes": int(np.prod(fn)), "box_snapped": [flo.round(5).tolist(), fhi.round(5).tolist()],
+                     "samples": int(len(P)), "shell_nodes": int(shell.sum()), "seed_components": int(len(seed)),
+                     "components": int(nl), "min_half_thickness_u": round(t, 5), "blend_voxels": blend,
+                     "seconds": round(time.time() - t0_, 1)})
+    report["solid"]["fine"] = rows
+    return out
+
+
 def stage_light(unit, out_npz, cfg, intake, pp, report, V, Fp, UV, TEXI, images, quiet, t0):
     """LIGHT finish (artist 2026-10-11: the raw proxy's look is the pick; "in trying to fix the symmetry and make changes
     we broke some things, like the mouth"). Stage 1 only makes the proxy WATERTIGHT: the same shell / flood-fill /
@@ -1344,17 +1438,34 @@ def stage_light(unit, out_npz, cfg, intake, pp, report, V, Fp, UV, TEXI, images,
                  "min_half_thickness": float(lc["min_half_thickness"]), "band_voxels": int(lc["band_voxels"]),
                  "sym_search_voxels": 0})
     Fg, lo, step = build_solid(V, Fp, P, FI, scfg, report)
+    FINE = build_fine(V, Fp, UV, TEXI, Fg, lo, step, lc, report) if lc.get("fine") else []   # opt-in light.fine
     report["solid"]["pieces"] = occupancy_pieces(Fg < 0)
     report["solid"]["rule"] = ("LIGHT: watertight remesh only (no smoothing / straighten / symmetrise / cuts); the surface "
                                "sits min_half_thickness x step = %.4f u outside the proxy" % (lc["min_half_thickness"] * step))
-    if lc.get("cuts"):                # opt-in: a duplicate PART Pixal3D invented (a forked tail), removed, never mirrored
+    adds_pre = [c for c in lc.get("adds") or [] if c.get("before_cuts")]    # opt-in per add (duskmaw v6: the torso
+    adds_post = [c for c in lc.get("adds") or [] if not c.get("before_cuts")]   # widened, THEN the maw carved into it)
+    if adds_pre:
+        report["solid"]["light_adds_pre"] = [{"shape": [k for k in ("capsule", "sphere", "ellipsoid") if k in c][0],
+                                              "nodes_inside": apply_add(Fg, lo, step, c), "why": c.get("why")}
+                                             for c in adds_pre]
+        for f_ in FINE:
+            for c in adds_pre:
+                apply_add(f_["F"], f_["lo"], f_["step"], c)
+    if light_cuts(lc):                # opt-in: a duplicate PART Pixal3D invented (a forked tail), removed, never mirrored
         report["solid"]["light_cuts"] = [{"shape": [k for k in ("capsule", "sphere", "box") if k in c][0],
                                           "nodes_inside": apply_cut(Fg, lo, step, c, mirror=False), "why": c.get("why")}
-                                         for c in lc["cuts"]]
-    if lc.get("adds"):                # opt-in, after the cuts: a smooth UNION that re-joins what a cut left disjoint (a
-        report["solid"]["light_adds"] = [{"shape": [k for k in ("capsule", "sphere") if k in c][0],   # kept limb's stalk)
-                                          "nodes_inside": apply_add(Fg, lo, step, c), "why": c.get("why")}
-                                         for c in lc["adds"]]
+                                         for c in light_cuts(lc)]
+        for f_ in FINE:                 # light.fine: the same cuts in every fine grid
+            for c in light_cuts(lc):
+                apply_cut(f_["F"], f_["lo"], f_["step"], c, mirror=False)
+    if adds_post:                     # opt-in, after the cuts: a smooth UNION that re-joins what a cut left disjoint (a
+        report["solid"]["light_adds"] = [{"shape": [k for k in ("capsule", "sphere", "ellipsoid") if k in c][0],   # kept
+                                          "nodes_inside": apply_add(Fg, lo, step, c), "why": c.get("why")}   # limb's stalk)
+                                         for c in adds_post]
+    if adds_post and FINE:            # light.fine: the same adds in every fine grid
+        for f_ in FINE:
+            for c in adds_post:
+                apply_add(f_["F"], f_["lo"], f_["step"], c)
     if lc.get("bake_drop_interior"):            # opt-in: proxy faces buried inside the watertight solid (inner shells the
         thr = float(lc["bake_drop_interior"])   # flood fill sealed) never show; dropped from the bake source so the bake
         T_ = V[Fp]                              # cage (3 x p99 proxy-to-low) stays tight and rays hit the outer skin
@@ -1374,6 +1485,9 @@ def stage_light(unit, out_npz, cfg, intake, pp, report, V, Fp, UV, TEXI, images,
     if lc["floor_clip"]:
         z = lo[2] + step * np.arange(Fg.shape[2])
         Fg = np.maximum(Fg, (0.0 - z)[None, None, :])
+        for f_ in FINE:
+            zf = f_["lo"][2] + f_["step"] * np.arange(f_["F"].shape[2])
+            f_["F"] = np.maximum(f_["F"], (0.0 - zf)[None, None, :])
     sheet_rgb = np.asarray(Image.open(SP.sheet_path(intake)).convert("RGB"))
     masks = SP.view_masks(intake, pp["ref"], sheet_rgb)
     SP.clip_below_floor(intake, masks)
@@ -1434,6 +1548,9 @@ def stage_light(unit, out_npz, cfg, intake, pp, report, V, Fp, UV, TEXI, images,
             print("RECOLOUR3D", json.dumps(report.get("recolour3d")))
             print("TINT_CLAMP", json.dumps(report.get("tint_clamp")))
     meta ={"report": report, "regs": regs, "resolved": rcfg, "cfg": cfg, "facing": facing, "mode": "light"}
+    if FINE:                          # light.fine: the fine grids ride in the npz (fine_<i>), their frame in meta
+        meta["fine"] = [{"name": f_["name"], "div": f_["div"], "i0": f_["i0"].tolist(), "i1": f_["i1"].tolist(),
+                         "lo": f_["lo"].tolist(), "step": f_["step"], "spec": lc["fine"][i_]} for i_, f_ in enumerate(FINE)]
     Fg = Fg.astype(np.float32)
     report["grid_sha"] = sha_arr(Fg[::2, ::2, ::2])
     report["proxy_sha"] = sha_arr(V)
@@ -1442,6 +1559,8 @@ def stage_light(unit, out_npz, cfg, intake, pp, report, V, Fp, UV, TEXI, images,
               "meta": np.frombuffer(json.dumps(meta).encode(), np.uint8)}
     for k_, t_ in tex.items():
         arrays["tex_%d" % int(k_)] = t_
+    for i_, f_ in enumerate(FINE):
+        arrays["fine_%d" % i_] = f_["F"].astype(np.float32)
     os.makedirs(os.path.dirname(os.path.abspath(out_npz)), exist_ok=True)
     np.savez(out_npz, **arrays)
     report["seconds"] = round(time.time() - t0, 1)

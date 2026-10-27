@@ -1,0 +1,14 @@
+Saved all six images, **1254 × 1254**. They still have alignment drift and slight background variation, so they do **not** fully meet your exact turntable requirements.
+
+Approximate rows, counted from zero:
+
+| File path | Skull top | Pupils | Mouth | Chin |
+|---|---:|---:|---:|---:|
+| [head_front.png](head_front.png) | 60 | 520 | 779 | 974 |
+| [head_side_left.png](head_side_left.png) | 57 | 520 | 770 | 947 |
+| [head_back.png](head_back.png) | 31 | Hidden | Hidden | Hidden |
+| [hair_front.png](hair_front.png) | Hidden | 524 | 786 | 982 |
+| [hair_side_left.png](hair_side_left.png) | Hidden | 518 | 760 | 935 |
+| [hair_back.png](hair_back.png) | Hidden | Hidden | Hidden | Hidden |
+
+Built-in image generation was used. The prompt set and limitations are recorded in [generation_notes.txt](generation_notes.txt).

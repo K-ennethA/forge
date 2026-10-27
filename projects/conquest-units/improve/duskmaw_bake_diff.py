@@ -1,36 +1,29 @@
-"""Two-run NORMAL-bake tolerance gate for Duskmaw (duskmaw_run.ps1 -Determinism calls it; vampito_bake_diff.py's rule).
+"""Two-run bake tolerance gate for duskmaw (duskmaw_run.ps1 calls this when the only digest parts that differ between
+the build and its --digest-only twin are bake_normal / bake_ao).
 
-The Cycles normal bake is not byte-deterministic (a per-process ray tie-break flips isolated texels; the vampito lane
-measured it first). Duskmaw v2's first two full runs (2026-09-26) differed ONLY in the normal bake: geometry/colour, UV,
-AO and rig digests were identical, and a single-thread bake did not change that. So the two-run proof is: every other
-digest identical + the normal buffers within the limits below.
+Limits are vampito's pinned measurement (vampito_bake_diff.py, 2026-09-25: 13 probe runs, worst differing pair 2 of
+1,048,576 normal texels, max per-channel delta 0.0039 = one 8-bit step; limits = x8 texels, x2 delta), applied here to
+BOTH bakes because duskmaw bakes the same way (Cycles CPU, selected-to-active, seed 0, 1024 normal / 512 AO).
+The unit's own twin measurement is printed every run and quoted in the lane report; a failure here is a REAL regression.
 
-Limits are pinned from measurement (see LIMITS_NOTE); a failure is a real regression, not the known tie-break.
-
-Usage: python -P duskmaw_bake_diff.py <main.npy> <twin.npy> [<twin.npy> ...]   (exit 0 pass / 1 fail)
+Usage: python -P duskmaw_bake_diff.py <normal_main.npy> <normal_twin.npy> <ao_main.npy> <ao_twin.npy>  (exit 0 / 1)
 """
 import sys
 
 import numpy as np
 
-TEXELS_MAX = 64       # measured worst pair: 21 of 4,194,304 texels (x3 margin) -- see LIMITS_NOTE for the history
-DELTA_MAX = 0.016     # measured worst pair: 0.00784 = two 8-bit steps (x2 margin)
-LIMITS_NOTE = ("v2 measurement 2026-09-26 (main vs 3 twins): 3 / 2 / 5 texels, max delta up to 0.00784 -> pinned 20. "
-               "v3's arm/maw/tendril rework moved the worst pair to 21 texels (3 / 3 / 21, max delta 0.00392 = ONE "
-               "8-bit step) - same tie-break class, more geometry near coincident surfaces. Re-pinned 2026-09-26 to "
-               "64 = 21 x3 margin; every other digest stayed identical in all four builds, delta bound unchanged")
+TEXELS_MAX = 16       # vampito measured worst pair: 2
+DELTA_MAX = 0.008     # vampito measured worst pair: 0.0039 (one 8-bit step)
 
-args = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else sys.argv[1:]   # also runs under blender --python
-a = np.load(args[0])
 ok_all = True
-for p in args[1:]:
-    b = np.load(p)
+for tag, a_p, b_p in (("normal", sys.argv[1], sys.argv[2]), ("ao", sys.argv[3], sys.argv[4])):
+    a = np.load(a_p)
+    b = np.load(b_p)
     d = np.abs(a - b).max(1)
     texels = int((d > 0).sum())
     mx = float(d.max())
     ok = texels <= TEXELS_MAX and mx <= DELTA_MAX
     ok_all &= ok
-    print("BAKE_DIFF %s texels=%d of %d max_delta=%.5f p99_of_differing=%.5f limits=(%d, %.3f) pass=%s" % (
-        p, texels, d.size, mx, float(np.percentile(d[d > 0], 99)) if texels else 0.0, TEXELS_MAX, DELTA_MAX, ok))
-sys.stdout.flush()
-__import__("os")._exit(0 if ok_all else 1)
+    print("BAKE_DIFF %s texels=%d of %d max_delta=%.5f limits=(%d, %.3f) pass=%s" % (tag, texels, len(d), mx, TEXELS_MAX,
+                                                                                    DELTA_MAX, ok))
+sys.exit(0 if ok_all else 1)

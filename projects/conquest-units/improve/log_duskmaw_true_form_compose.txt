@@ -1,0 +1,7 @@
+﻿WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\duskmaw_true_form\duskmaw_true_form_sheet_vs_model.png
+GATE view=front iou=0.840 in_frame=0.720 row_err=7.4% | proxy iou=0.796
+GATE view=back  iou=0.533 in_frame=0.514 row_err=34.8% | proxy iou=0.541
+GATE view=side  iou=0.773 in_frame=0.720 row_err=11.9% | proxy iou=0.754
+GATE mean_iou=0.715 flagged=none proxy=reliable
+GATE bake_reference=none (no object.bake call found)
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\duskmaw_true_form\duskmaw_true_form_contact.png

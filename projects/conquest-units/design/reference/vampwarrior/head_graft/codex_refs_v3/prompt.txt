@@ -1,0 +1,22 @@
+Generate 3D-modelling REFERENCE images for a game character head (the "Vampire Warrior"), using your image generation tool. They will be fed to a multi-view image-to-3D generator, so the views must be RIGID ORTHOGRAPHIC ROTATIONS OF ONE AND THE SAME HEAD.
+
+Attached:
+- sheet_face_panel.png: the artist's face panel. THIS IS THE IDENTITY TO PRESERVE (eyes, brows, nose, mouth, jaw, hair parting).
+- prev_front.png: a previous front reference. Its face proportions are good (keep its mouth size).
+- prev_side_left.png, prev_back.png: previous side / back references. Their problem: the head is in profile but the collar and chest still face the camera, the eye / chin heights do not match the front, and the hair changes between views. That produced a 3D head with two overlapping faces.
+
+Preserve the sheet identity: pale warm grey-mauve skin, large almond eyes with dark red irises (open, not squinting), thin dark brows angled slightly down toward the nose, a slender straight nose, a SMALL mouth: its width is about 60 % of the distance between the two pupils in the front view, lips closed or barely parted, faint dark lips (not pink), exactly two small fangs just visible under the upper lip. Tapered jaw and pointed chin. Very long bone-white hair parted in the centre, a few large, clean, grouped locks: two locks fall in front of the shoulders framing the face, the rest sweeps behind the ears and down the back.
+
+Images (each its own file, saved in the current working directory with exactly these names):
+  A. head_front.png      - straight front, face looking straight at the camera.
+  B. head_side_left.png  - TRUE orthographic left profile: the face points image-left; only the near eye is visible; one continuous forehead-nose-lips-chin silhouette; the ear visible with the hair tucked behind it.
+  C. head_back.png       - straight back view of the same head and hair.
+
+Rules for all three:
+- HEAD, HAIR AND A SHORT NECK ONLY. No collar, no clothing, no chest, no shoulders: the neck ends in a clean horizontal cut a little below the chin. The hair is cut off by the bottom of the frame, the same way in every view.
+- Exactly the same canvas size, the same scale, the same camera height and no pitch. The pupils on the same image row in A and B, the chin on the same row, the top of the skull on the same row. The head centred horizontally.
+- The SAME hairstyle rotated: the same locks in the same places, seen from the other side.
+- One face only: no second outline of cheek, jaw or lips, and no extra lip shelf.
+- A plain flat mid-grey background (about RGB 128,128,128) and nothing else in the frame; even, flat, shadowless lighting; no text or labels; the same art style and colours as the face panel.
+
+Then, for each file, print its path and the pixel rows of: the top of the skull, the pupils, the mouth and the chin; and for A the mouth width / pupil-distance ratio.

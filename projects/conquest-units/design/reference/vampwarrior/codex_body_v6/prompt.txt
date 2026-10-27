@@ -1,0 +1,22 @@
+Generate 3D-modelling REFERENCE images of a full game character (the "Vampire Warrior"), using your image generation tool. They will be fed to a multi-view image-to-3D generator, so the three views must be RIGID ORTHOGRAPHIC ROTATIONS OF ONE AND THE SAME FIGURE in ONE pose.
+
+Attached:
+- sheet.png: the artist's character sheet. THIS IS THE DESIGN SPEC (costume, proportions, colours).
+- sheet_face_panel.png, face_identity_front.png, face_identity_side.png: the face to keep (large almond eyes with dark red irises, thin brows angled down toward the nose, slender nose, a SMALL mouth about 60 % of the pupil distance, faint dark lips, two small fangs under the upper lip, tapered jaw).
+
+The design, as on the sheet: a tall, slender woman; pale warm grey-mauve skin; very long bone-white hair parted in the centre, falling to the hips in a few LARGE, clean, grouped locks with smooth surfaces and tapered pointed ends (two locks in front of the shoulders framing the face, the rest a broad fall down the back); a high stiff black collar with dark-red lining; a black armoured bodice with a red gem at the throat; a belt with a round ring buckle; long black gloves; bare upper thighs; black thigh-high armoured boots with FLAT soles and NO heels (the artist's request: a flat, realistic foot); a long black cape with dark-red lining and a torn, jagged hem, hanging behind her to the lower calves.
+
+POSE (the same in all three views): a symmetric neutral rest pose. Standing straight, facing forward, feet apart at hip width, flat on the ground. Arms hanging down, held slightly away from the body (a small gap between arm and torso), hands relaxed and loosely closed. NO sword or any other weapon, and nothing held in the hands. The cape hangs straight down BEHIND her; it must not cover the arms or the front of the body in the front view.
+
+Images (each its own file, saved in the current working directory with exactly these names):
+  A. body_front.png      - straight front.
+  B. body_side_left.png  - TRUE orthographic left profile of the WHOLE figure: the face, the chest, the hips and the feet ALL point image-left (nothing turned toward the camera); only the near arm and the near eye are visible; the cape seen from the side behind her.
+  C. body_back.png       - straight back view: the broad fall of hair down to the hips over the cape.
+
+Rules for all three:
+- The same portrait canvas size, the same scale, and the same camera height with no pitch. The top of the head, the chin, the shoulders, the waist, the knees and the soles on the SAME pixel rows in every image. The whole figure inside the frame with a margin, feet included, centred horizontally.
+- The same costume, hair and pose rotated: the same locks and the same cape tears, seen from the other side.
+- Clean, simple, large readable forms: no thin stray hair strands, no fine surface clutter, no motion, no wind.
+- A plain flat mid-grey background (about RGB 128,128,128) and nothing else in the frame; even, flat, shadowless lighting (no drop shadow); no text or labels; the art style and colours of the sheet.
+
+Then, for each file, print its path and the pixel rows of: the top of the head, the pupils, the chin, the shoulders, the waist, the knees and the soles.

@@ -1,16 +1,19 @@
-"""Duskmaw v2 animated preview mp4s (copy of render_animated.py, which this lane may not edit): idle (float + CHOMP, shot from
-near the front so the maw reads) and walk (the GLIDE, shot from the side-front so the forward lean reads),
-the SAME lighting as render_improved.py (key/fill/rim suns + grey world, Standard view
-transform, dark floor). In-memory only; never saves the blend.
+"""duskmaw clip previews (scaffolded from firefly_clips.py, copied not imported): per clip an mp4 + a contact sheet; the
+survey lighting (key/fill/rim suns + grey world, Standard view transform, dark floor AT z = 0 -- the contract floor).
+In-memory only; never saves the blend.
 
-    blender --background <rigged/duskmaw.blend> --factory-startup --python duskmaw_clips.py -- <out_dir> [res] [sheet] [clips]
+    blender --background <rigged/duskmaw.blend> --factory-startup --python duskmaw_clips.py -- <out_dir> [res] [clips]
 
-Writes <out_dir>/<unit>[_<tag>]_{idle,walk,idle_maw}.mp4 (H.264, 24 fps). Loops play by adding a
-CYCLES modifier to every fcurve in memory (the clip's last frame == its first, so the period
-is the clip's cycle length). Camera framing covers the union of the clip's extents so the
-whole motion stays in shot; the camera and lights never move.
+clips (comma list, default: every action in the blend):
+  idle   duskmaw_idle.mp4 (three-quarter, ~8 s of loops) + duskmaw_idle_sheet.png (8 frames over one loop)
+  walk   duskmaw_walk.mp4 (three-quarter from the front-left, ~8 s) + duskmaw_walk_side_sheet.png (SIDE view, 12 frames
+         over one loop) + its .json (the sampled frames)
+  other  idle's framing.
+The camera frames the union of the clip's extents over every mesh on the rig and never moves. Loops play by adding a
+CYCLES modifier to every fcurve in memory (the clip's last frame == its first).
 """
-import bpy, sys, os, math, glob
+import bpy, sys, os, math, glob, json
+import numpy as np
 from mathutils import Vector
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -18,18 +21,17 @@ sys.path.insert(0, HERE)
 import rigkit as K  # noqa: E402
 
 argv = sys.argv[sys.argv.index("--") + 1:]
-TAG = ""
-if "--tag" in argv:                      # --tag v3: files are <unit>_v3_<clip>.mp4 / _sheet.png (the version beside the old)
-    k_ = argv.index("--tag"); TAG = argv[k_ + 1]; argv = argv[:k_] + argv[k_ + 2:]
 OUT = argv[0]
 RES = int(argv[1]) if len(argv) > 1 else 768
+CLIPS = argv[2].split(",") if len(argv) > 2 else sorted(a.name for a in bpy.data.actions)
 os.makedirs(OUT, exist_ok=True)
 scene = bpy.context.scene
 rig = next(o for o in scene.objects if o.type == "ARMATURE")
-mesh = next(o for o in scene.objects if o.type == "MESH" and o.parent is rig)
-UNIT = mesh.name
-NAME = UNIT + ("_" + TAG if TAG else "")
-nt = mesh.data.materials[0].node_tree if mesh.data.materials else None
+meshes = [o for o in scene.objects if o.type == "MESH" and o.parent is rig]
+UNIT = max(meshes, key=lambda o: len(o.data.polygons)).name
+# (movie angle deg, elevation deg, loops, sheet (tag, angle, elevation, tiles, cols))
+SPEC = {"idle": (40.0, 15.0, 2, ("sheet", 40.0, 15.0, 8, 4)),
+        "walk": (-55.0, 12.0, 4, ("side_sheet", 90.0, 3.0, 12, 6))}
 
 scene.render.engine = "BLENDER_EEVEE"
 scene.render.film_transparent = False
@@ -38,7 +40,7 @@ scene.view_settings.look = "None"
 scene.render.use_compositing = False
 scene.render.use_sequencer = False
 try:
-    scene.eevee.taa_render_samples = 16
+    scene.eevee.taa_render_samples = 24
 except Exception:
     pass
 world = bpy.data.worlds.new("survey_world"); scene.world = world
@@ -57,19 +59,23 @@ def light(name, energy, rot_deg, color=(1, 1, 1)):
 
 light("s_key", 3.2, (50, 0, 150)); light("s_fill", 1.0, (65, 0, 215), (0.85, 0.9, 1.0)); light("s_rim", 2.0, (60, 0, 10))
 lrig.rotation_euler = (0, 0, math.radians(180))
-
 scene.render.fps = K.FPS
 scene.render.fps_base = 1.0
 scene.render.resolution_x = scene.render.resolution_y = RES
 scene.render.resolution_percentage = 100
-if hasattr(scene.render.image_settings, "media_type"):
-    scene.render.image_settings.media_type = "VIDEO"
-scene.render.image_settings.file_format = "FFMPEG"
-scene.render.image_settings.color_mode = "RGB"
-scene.render.ffmpeg.format = "MPEG4"
-scene.render.ffmpeg.codec = "H264"
-scene.render.ffmpeg.constant_rate_factor = "HIGH"
-scene.render.ffmpeg.audio_codec = "NONE"
+
+
+def video_mode():
+    f = scene.render.image_settings
+    if hasattr(f, "media_type"):
+        f.media_type = "VIDEO"
+    f.file_format = "FFMPEG"
+    f.color_mode = "RGB"
+    scene.render.ffmpeg.format = "MPEG4"
+    scene.render.ffmpeg.codec = "H264"
+    scene.render.ffmpeg.constant_rate_factor = "HIGH"
+    scene.render.ffmpeg.audio_codec = "NONE"
+
 
 cam_d = bpy.data.cameras.new("s_cam"); cam_d.lens = 50
 cam = bpy.data.objects.new("s_cam", cam_d); scene.collection.objects.link(cam)
@@ -85,34 +91,39 @@ fm_me.materials.append(fm)
 
 def extents(n_frames):
     lo = Vector((1e9, 1e9, 1e9)); hi = -lo
-    for f in range(1, n_frames + 1, 2):
+    for f in range(1, n_frames + 1):
         scene.frame_set(f)
         dg = bpy.context.evaluated_depsgraph_get()
-        for c in mesh.evaluated_get(dg).bound_box:
-            w = mesh.matrix_world @ Vector(c)
-            lo = Vector(map(min, lo, w)); hi = Vector(map(max, hi, w))
+        for m in meshes:
+            ev = m.evaluated_get(dg)
+            me = ev.to_mesh()
+            co = np.empty(len(me.vertices) * 3); me.vertices.foreach_get("co", co)
+            ev.to_mesh_clear()
+            co = co.reshape(-1, 3)
+            lo = Vector(np.minimum(np.array(lo), co.min(0))); hi = Vector(np.maximum(np.array(hi), co.max(0)))
     return lo, hi
 
 
-SHEET = "sheet" in argv
-CLIPS = [c for c in ("idle", "walk") if c in (argv[3].split(",") if len(argv) > 3 else ("idle", "walk"))]
-VIEW = {"idle": (15.0, 8.0), "walk": (65.0, 10.0), "idle_maw": (0.0, 4.0)}   # camera yaw from the front, elevation (deg)
-# (tag, action): idle_maw = the idle clip framed on the mouth band (the chomp up close)
-SHOTS = [(c, c) for c in CLIPS] + ([("idle_maw", "idle")] if "idle" in CLIPS else [])
+def aim(centre, radius, ang, elev):
+    a, e = math.radians(ang), math.radians(elev)
+    dist = radius / math.sin(half_fov) * 1.08
+    d = Vector((math.sin(a) * math.cos(e), -math.cos(a) * math.cos(e), math.sin(e)))
+    cam.location = centre + d * dist
+    cam.rotation_euler = (centre - cam.location).to_track_quat("-Z", "Y").to_euler()
 
 
-def write_sheet(clip, N):
-    """Contact sheet: 8 evenly spaced frames of one cycle, 4x2, same camera (PNG)."""
-    import numpy as np
+def write_sheet(clip, N, tag, n_tiles, cols):
     fmt = scene.render.image_settings
     if hasattr(fmt, "media_type"):
         fmt.media_type = "IMAGE"
     fmt.file_format = "PNG"
+    fmt.color_mode = "RGBA"
     r = RES // 2
     scene.render.resolution_x = scene.render.resolution_y = r
-    tiles = []
-    for k in range(8):
-        f = 1 + int(round(k * N / 8))
+    tiles, frames = [], []
+    for k in range(n_tiles):
+        f = 1 + int(round(k * N / n_tiles))
+        frames.append(f)
         scene.frame_set(f)
         p = os.path.join(OUT, "_tile_%s.png" % UNIT)
         scene.render.filepath = p
@@ -122,67 +133,59 @@ def write_sheet(clip, N):
         bpy.data.images.remove(img)
         tiles.append(px)
     os.remove(os.path.join(OUT, "_tile_%s.png" % UNIT))
-    rows = [np.concatenate(tiles[i * 4:(i + 1) * 4], axis=1) for i in (1, 0)]   # pixel rows are bottom-up
+    rows_n = n_tiles // cols
+    rows = [np.concatenate(tiles[i * cols:(i + 1) * cols], axis=1) for i in reversed(range(rows_n))]   # pixel rows bottom-up
     sheet = np.concatenate(rows, axis=0)
     im = bpy.data.images.new("sheet", sheet.shape[1], sheet.shape[0], alpha=True)
     im.pixels.foreach_set(sheet.ravel())
-    im.filepath_raw = os.path.join(OUT, "%s_%s_sheet.png" % (NAME, clip)); im.file_format = "PNG"; im.save()
+    path = os.path.join(OUT, "%s_%s_%s.png" % (UNIT, clip, tag))
+    im.filepath_raw = path; im.file_format = "PNG"; im.save()
     bpy.data.images.remove(im)
+    json.dump({"clip": clip, "frames": frames, "cols": cols, "tile_px": r, "loop_frames": N},
+              open(path[:-4] + ".json", "w"), indent=1)
     scene.render.resolution_x = scene.render.resolution_y = RES
-    if hasattr(fmt, "media_type"):
-        fmt.media_type = "VIDEO"
-    fmt.file_format = "FFMPEG"
-    print("WROTE sheet", clip)
+    print("WROTE sheet", path, frames)
 
 
-floor_built = False
-for clip, act_name in SHOTS:
-    act = bpy.data.actions.get(act_name)
+for clip in CLIPS:
+    act = bpy.data.actions.get(clip)
     if act is None:
         print("NO CLIP", clip); continue
     for fc in K.action_fcurves(act):
         if not any(m.type == "CYCLES" for m in fc.modifiers):
             fc.modifiers.new("CYCLES")
     K.assign_action(rig, act)
-    has_nt = nt is not None and any("nodes[" in fc.data_path for fc in K.action_fcurves(act))
-    if nt is not None:
-        K.assign_action(nt, act if has_nt else None)
     N = int(round(act.frame_range[1] - act.frame_range[0]))
-    loops = max(3, math.ceil(96 / N))
+    ang, elev, _loops, (tag, s_ang, s_elev, n_tiles, cols) = SPEC.get(clip, SPEC["idle"])
+    loops = max(1, int(round(8 * K.FPS / max(N, 1))))       # ~8 s of movie whatever the loop length
     lo, hi = extents(N)
-    print("EXTENTS", clip, tuple(round(v, 3) for v in lo), tuple(round(v, 3) for v in hi))
-    size = hi - lo
+    lo.z = min(lo.z, 0.0)
     centre = (lo + hi) / 2
-    radius = max(size.length / 2, 1e-3)
-    if clip == "idle_maw":
-        if "conquest_maw_band" in mesh.keys():          # v4+: the model's own maw band (hole heights, final frame)
-            zb_ = list(mesh["conquest_maw_band"])
-            centre = Vector((centre.x, centre.y, 0.5 * (zb_[0] + zb_[1]) + 0.15)); radius = 0.9 * (zb_[1] - zb_[0])
-        else:
-            centre = Vector((centre.x, centre.y, lo.z + 0.26 * size.z)); radius = 0.2 * size.z
-    if not floor_built:
-        R = radius * 6
-        fm_me.from_pydata([(-R, -R, 0), (R, -R, 0), (R, R, 0), (-R, R, 0)], [], [(0, 1, 2, 3)])
-        floor.location = (centre.x, centre.y, 0.0)
-        floor_built = True
+    radius = max((hi - lo).length / 2, 1e-3)
+    R = radius * 6
+    fm_me.clear_geometry()
+    fm_me.from_pydata([(-R, -R, 0), (R, -R, 0), (R, R, 0), (-R, R, 0)], [], [(0, 1, 2, 3)])
+    floor.location = (centre.x, centre.y, 0.0)
     cam_d.clip_start = radius * 0.01; cam_d.clip_end = radius * 100
-    a, e = math.radians(VIEW[clip][0]), math.radians(VIEW[clip][1])
-    dist = radius / math.sin(half_fov) * 1.08
-    d = Vector((math.sin(a) * math.cos(e), -math.cos(a) * math.cos(e), math.sin(e)))
-    cam.location = centre + d * dist
-    cam.rotation_euler = (centre - cam.location).to_track_quat("-Z", "Y").to_euler()
+    aim(centre, radius, ang, elev)
+    video_mode()
     scene.frame_start, scene.frame_end = 1, N * loops
-    prefix = os.path.join(OUT, "%s_%s_" % (NAME, clip))
-    for old in glob.glob(prefix + "*.mp4"):
+    prefix = os.path.join(OUT, "%s_%s_" % (UNIT, clip))
+    for old in glob.glob(prefix + "[0-9]*.mp4"):
         os.remove(old)
     scene.render.filepath = prefix
     bpy.ops.render.render(animation=True)
-    made = sorted(glob.glob(prefix + "*.mp4"), key=os.path.getmtime)
-    final = os.path.join(OUT, "%s_%s.mp4" % (NAME, clip))
+    made = sorted(glob.glob(prefix + "[0-9]*.mp4"), key=os.path.getmtime)
+    final = os.path.join(OUT, "%s_%s.mp4" % (UNIT, clip))
     if made:
         if os.path.exists(final):
             os.remove(final)
         os.replace(made[-1], final)
     print("WROTE", final, "frames", N * loops, "loops", loops, "cycle", N)
-    if SHEET:
-        write_sheet(clip, N)
+    if tag == "side_sheet":             # side view: frame the height x depth only (the wingspan is along the view)
+        aim(centre, 0.5 * max(hi.z - lo.z, hi.y - lo.y) * 1.02, s_ang, s_elev)
+    else:
+        aim(centre, radius, s_ang, s_elev)
+    write_sheet(clip, N, tag, n_tiles, cols)
+sys.stdout.flush()
+os._exit(0)

@@ -1,0 +1,480 @@
+{
+ "unit": "duskmaw_true_form",
+ "char_id": "duskmaw_true_form",
+ "tier": "regular",
+ "tri_budget": [
+  8000,
+  22000
+ ],
+ "body_tris": 20000,
+ "mode": "light",
+ "refloor": {
+  "y_windows": [
+   [
+    -1.8,
+    1.8
+   ]
+  ],
+  "x_abs_min": 0.0,
+  "pct": 0.0,
+  "rescale_to_front_height": true,
+  "why": "sheet_proxy already floored the proxy at the tendril base (verts below z 0.02 span x -0.93..1.85, y -1.71..1.13: the ground tendrils, no tail curl / shadow plate): the floor stays at the lowest tendril contact (whole-body window, pct 0), then x(5.43 / 5.415) to the sheet front height (front 5.43 u vs side 5.69 u, +4.8 %: the side view's crown spike is drawn taller; the front wins, the brief's rule)"
+ },
+ "light": {
+  "steps_per_height": 300,
+  "dense": [
+   {
+    "box": [
+     [
+      -0.8,
+      -1.3,
+      4.45
+     ],
+     [
+      1.15,
+      0.35,
+      5.45
+     ]
+    ],
+    "density": 2.5,
+    "vg_weight": 0.3,
+    "why": "the DECOY HEAD: crown points + brim + face (proxy sha 09e4004f slabs z 4.6..5.4: x -0.68..1.05, y -1.10..0.15; crown tip (-0.22, 0.02, 5.415)); vg_weight 0.3 so the eye box below can sit denser"
+   },
+   {
+    "box": [
+     [
+      -0.04,
+      -1.12,
+      4.66
+     ],
+     [
+      0.5,
+      -0.82,
+      5.0
+     ]
+    ],
+    "density": 2.5,
+    "vg_weight": 0.0,
+    "why": "the two yellow decoy EYES (proxy texture yellow samples: x 0.07..0.18 / 0.28..0.39, y -1.02..-0.90, z 4.75..4.89): held densest so the glow core lands on its own faces"
+   },
+   {
+    "box": [
+     [
+      -1.05,
+      -1.75,
+      3.0
+     ],
+     [
+      1.05,
+      -0.75,
+      4.45
+     ]
+    ],
+    "density": 1.8,
+    "vg_weight": 0.5,
+    "why": "the UPPER FANG rows + upper lip (cream samples z 3..4.6 at y -1.47..-0.46, red lip z 4.0..4.6): teeth stay separate points"
+   },
+   {
+    "box": [
+     [
+      -1.05,
+      -1.8,
+      0.35
+     ],
+     [
+      1.05,
+      -0.8,
+      2.1
+     ]
+    ],
+    "density": 1.8,
+    "vg_weight": 0.5,
+    "why": "the LOWER FANG rows + lower lip (cream samples z 0..2 at y -1.67..-1.10, red lip z 0..1 y -1.59..-1.05)"
+   },
+   {
+    "box": [
+     [
+      -2.4,
+      -1.75,
+      1.1
+     ],
+     [
+      -1.25,
+      -0.4,
+      2.7
+     ]
+    ],
+    "density": 1.6,
+    "vg_weight": 0.6,
+    "why": "the -x arm's red CLAW tips (red clusters (-1.36, -1.67, 1.78), (-2.11, -1.38, 2.53), (-2.13, -0.99, 1.43))"
+   },
+   {
+    "box": [
+     [
+      1.4,
+      -0.7,
+      1.35
+     ],
+     [
+      2.4,
+      -0.05,
+      2.65
+     ]
+    ],
+    "density": 1.6,
+    "vg_weight": 0.6,
+    "why": "the +x arm's red CLAW tips (red clusters (1.60, -0.58, 1.72), (2.28, -0.19, 2.49))"
+   }
+  ],
+  "ao_from_low": true,
+  "ao_samples": 64,
+  "ao_fill_below": 0.04,
+  "ao_distance": 0.6,
+  "ao_why": "vulture_creature / crystal_canine lessons: AO from the watertight low (tendril soup inner shells black-hole AO rays) with a 0.6 u ray (only real crevices darken; the maw interior is a real crevice and darkens)",
+  "bake_drop_interior": 0.08,
+  "bake_drop_interior_why": "vulture_creature lesson: proxy faces with solid on both sides (buried tendril shells) left out of the albedo bake source",
+  "uv_island_margin": 0.001,
+  "uv_island_margin_why": "vulture_creature lesson: a tendril low unwraps into thousands of islands; margin 0.001 keeps the albedo detail",
+  "glow3d": [
+   {
+    "name": "decoy_eyes_core",
+    "spheres": [
+     [
+      [
+       0.12,
+       -0.97,
+       4.85
+      ],
+      0.06
+     ],
+     [
+      [
+       0.335,
+       -0.96,
+       4.8
+      ],
+      0.07
+     ]
+    ],
+    "feather": 0.02,
+    "select": {
+     "L": [
+      55,
+      101
+     ],
+     "b": [
+      15,
+      100
+     ],
+     "soft": 6
+    },
+    "levels": [
+     [
+      0.5,
+      "eye_glow"
+     ]
+    ],
+    "why": "GLOW = the decoy head's two yellow eyes only (spec): faces at the proxy's own eye texels (yellow clusters (0.09, -0.97, 4.86) / (0.335, -0.96, 4.80)) whose baked albedo is bright yellow -> eye_glow (sheet eye / tooth chip 252,234,167). The maw is NOT emissive"
+   }
+  ]
+ },
+ "rig": {
+  "spine_names": [
+   "base",
+   "body",
+   "upper_jaw",
+   "crown"
+  ],
+  "spine": [
+   [
+    0.0,
+    0.6,
+    0.2
+   ],
+   [
+    0.0,
+    0.7,
+    1.4
+   ],
+   [
+    0.0,
+    0.6,
+    2.45
+   ],
+   [
+    0.0,
+    -0.7,
+    3.95
+   ],
+   [
+    0.0,
+    -0.5,
+    5.25
+   ]
+  ],
+  "spine_why": "base (floor centre, behind the maw: the back half y 0.3..1.4 is solid down to the floor) -> body -> the JAW HINGE (0, 0.6, 2.45: behind the throat; the maw's deepest interior at x 0 is y 0..0.5, z 1.4..3.3) -> upper_jaw runs up-forward through the upper jaw mass to behind the upper fangs (cream z 3.0..4.4 at y -1.1..-1.3) -> crown = the DECOY HEAD (z 4.6..5.4), which rides on the upper jaw",
+  "chains": [
+   {
+    "name": "jaw_lower",
+    "kind": "leg",
+    "mirror": false,
+    "parent": "body",
+    "points": [
+     [
+      0.0,
+      0.6,
+      2.3
+     ],
+     [
+      0.0,
+      -0.35,
+      1.45
+     ],
+     [
+      0.0,
+      -1.3,
+      0.95
+     ]
+    ],
+    "why": "the LOWER JAW: hinge just under the upper jaw's (0, 0.6, 2.3) -> under the throat floor -> behind the lower fang row / lower lip (cream z 0.4..1.9 at y -1.4..-1.1, red lip y -1.45). A jaw-close = upper_jaw pitched down + jaw_lower pitched up about the hinge (kind 'leg': the kit's idle / walk give a leg chain no motion at leg_swing 0, so the lower jaw stays still in the placeholder clips; v1 kind 'jaw' swayed it +-3 deg and dipped the lower lip / front tendrils 0.23 u below the floor)"
+   },
+   {
+    "name": "arm",
+    "kind": "arm",
+    "parent": "body",
+    "phase": {
+     "L": 0.0,
+     "R": 0.5
+    },
+    "points": [
+     [
+      1.15,
+      0.2,
+      3.05
+     ],
+     [
+      1.75,
+      0.05,
+      2.75
+     ],
+     [
+      2.1,
+      -0.2,
+      2.35
+     ],
+     [
+      1.75,
+      -0.55,
+      1.75
+     ]
+    ],
+    "why": "the reaching tendril ARMS: shoulder inside the body side (z 3.05) out to the claw ends (+x claws (1.60, -0.58, 1.72) / (2.28, -0.19, 2.49); -x claws (-2.13, -0.99, 1.43) / (-2.11, -1.38, 2.53)); the proxy's -x arm reaches ~0.5 u further forward (it copies the sheet side view's near arm), so points_R follow it"
+   },
+   {
+    "name": "horn",
+    "kind": "ear",
+    "parent": "upper_jaw",
+    "phase": {
+     "L": 0.0,
+     "R": 0.0
+    },
+    "points": [
+     [
+      1.0,
+      0.2,
+      3.9
+     ],
+     [
+      1.5,
+      0.5,
+      4.3
+     ]
+    ],
+    "why": "the red-tipped upper-body spike tendrils (red tips (1.49, 0.55, 4.42) / (-1.86, 0.85, 4.09)): ride on the upper jaw"
+   },
+   {
+    "name": "tendril",
+    "kind": "tail",
+    "parent": "base",
+    "phase": {
+     "L": 0.0,
+     "R": 0.5
+    },
+    "points": [
+     [
+      0.8,
+      0.3,
+      0.6
+     ],
+     [
+      1.5,
+      0.1,
+      0.2
+     ],
+     [
+      2.1,
+      0.3,
+      0.08
+     ]
+    ],
+    "why": "the ground TENDRILS spreading to the sides (floor band z < 0.35 spans x -2.5..2.2): sway in idle, trail in the glide"
+   }
+  ],
+  "chains_why": "L points measured on the +x side; the contract rig mirrors them for .R (the proxy's -x arm reaches ~0.5 u further forward, copying the sheet side view's near arm: no repose, the front view reads symmetric)"
+ },
+ "focus": {
+  "decoy_head": [
+   [
+    -0.8,
+    -1.3,
+    4.4
+   ],
+   [
+    1.15,
+    0.35,
+    5.45
+   ]
+  ],
+  "maw": [
+   [
+    -1.3,
+    -1.8,
+    0.3
+   ],
+   [
+    1.3,
+    0.6,
+    4.5
+   ]
+  ]
+ },
+ "clips": {
+  "idle_frames": 72,
+  "breathe_deg": 1.5,
+  "walk_frames": 32,
+  "walk_bob": 0.006,
+  "walk_roll": 1.5,
+  "leg_swing": 0.0,
+  "arm_swing": 6.0,
+  "why": "PLACEHOLDER (the artist has not said how the true form moves): idle = the spine breathe (upper_jaw / crown pitch +-1.5 deg: a slow breathing of the open maw) + the kit's chain sway (arms, horns, ground tendrils); walk = the kit's in-place cycle as a GLIDE placeholder (no legs: bob 0.006 H, roll 1.5, arm swing 6, tendrils trail); the game slides the root. chomp / close / transform_in: clips.extra (below)",
+  "extra": [
+   {
+    "name": "chomp",
+    "frames": 24,
+    "cyclic": true,
+    "keys": [
+     {
+      "f": 0
+     },
+     {
+      "f": 8,
+      "rot": {
+       "upper_jaw": {
+        "X": 44
+       },
+       "jaw_lower.0": {
+        "X": -18
+       }
+      }
+     },
+     {
+      "f": 11,
+      "rot": {
+       "upper_jaw": {
+        "X": 44
+       },
+       "jaw_lower.0": {
+        "X": -18
+       }
+      }
+     },
+     {
+      "f": 24
+     }
+    ]
+   },
+   {
+    "name": "close",
+    "frames": 16,
+    "cyclic": false,
+    "keys": [
+     {
+      "f": 0
+     },
+     {
+      "f": 16,
+      "rot": {
+       "upper_jaw": {
+        "X": 44
+       },
+       "jaw_lower.0": {
+        "X": -18
+       }
+      }
+     }
+    ]
+   },
+   {
+    "name": "transform_in",
+    "frames": 48,
+    "cyclic": false,
+    "keys": [
+     {
+      "f": 0,
+      "loc": {
+       "base": [
+        0,
+        0,
+        -0.6
+       ],
+       "tendril.L.0": [
+        0,
+        0,
+        0.6
+       ],
+       "tendril.R.0": [
+        0,
+        0,
+        0.6
+       ]
+      },
+      "rot": {
+       "upper_jaw": {
+        "X": 44
+       },
+       "jaw_lower.0": {
+        "X": -18
+       },
+       "arm.L.0": {
+        "Y": 35
+       },
+       "arm.R.0": {
+        "Y": -35
+       }
+      }
+     },
+     {
+      "f": 30,
+      "rot": {
+       "upper_jaw": {
+        "X": 44
+       },
+       "jaw_lower.0": {
+        "X": -18
+       }
+      }
+     },
+     {
+      "f": 48
+     }
+    ]
+   }
+  ],
+  "extra_why": "v1.1 (kit clips.extra, keyed world poses, smoothstep): chomp 24 f cyclic (open -> shut at f8, hold to f11 -> open; CLOSED = upper_jaw +44 / jaw_lower.0 -18 deg world X, the mouth-states probe: lip-rim gap 0.13 u of 2.34), close 16 f non-looping (open -> CLOSED, held on the last frame), transform_in 48 f non-looping (f0: base sunk 0.6 H below the floor with the ground tendrils counter-lifted onto it, jaws shut, arms folded down 35 deg; f30 risen with the jaws shut; f48 the rest pose). PLACEHOLDER"
+ },
+ "bake_res": [
+  1024,
+  1024
+ ],
+ "_doc": "LIGHT finish of the raw Pixal3D proxy (seed 56, front + side views, sha 09e4004f). Points: stage-1 frame (floor at the tendril base, x1.0028 to the sheet front height 5.43), sheet units."
+}

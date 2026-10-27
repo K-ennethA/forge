@@ -1,0 +1,15 @@
+Saved all three at **1024 × 1536** using the built-in image generator.
+
+**The strict alignment requirement remains unmet:** landmark rows differ, and hair/cape geometry varies between views.
+
+Rows below are approximate, zero-based from the top; “hidden” means not directly measurable.
+
+| File path | Head top | Pupils | Chin | Shoulders¹ | Waist | Knees | Soles |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| [body_front.png](body_front.png) | 49 | 135 | 205 | 290 | 475 | 970 | 1474 |
+| [body_side_left.png](body_side_left.png) | 33 | 123 | 197 | 272 | 470 | 970 | 1462 |
+| [body_back.png](body_back.png) | 44 | hidden | hidden | 280 | hidden | hidden | 1479 |
+
+¹ Upper shoulder armor edge.
+
+Prompt summary saved in [generation_notes.txt](generation_notes.txt).

@@ -1,0 +1,1072 @@
+{
+ "unit": "vampwarrior",
+ "sheet": "design/reference/vampwarrior/vampwarrior-sheet-proxyprep.png",
+ "size_px": [
+  1536,
+  1024
+ ],
+ "background_rgb": [
+  39,
+  39,
+  38
+ ],
+ "bg_tol": 26.0,
+ "views": {
+  "front": {
+   "bbox_px": [
+    30,
+    100,
+    440,
+    908
+   ],
+   "axis_x_px": 233.0,
+   "floor_y_px": 907,
+   "height_px": 808,
+   "height_units": 8.08,
+   "width_units": 4.1,
+   "half_width_profile": {
+    "0.00": {
+     "y_px": 907,
+     "half_w_units": 1.57
+    },
+    "0.10": {
+     "y_px": 826,
+     "half_w_units": 1.77
+    },
+    "0.25": {
+     "y_px": 705,
+     "half_w_units": 2.01
+    },
+    "0.50": {
+     "y_px": 504,
+     "half_w_units": 1.95
+    },
+    "0.75": {
+     "y_px": 302,
+     "half_w_units": 1.73
+    },
+    "0.90": {
+     "y_px": 181,
+     "half_w_units": 1.84
+    }
+   },
+   "transform": "z = (907 - y_px) / 100 ; x = (x_px - 233.0) / 100"
+  },
+  "back": {
+   "bbox_px": [
+    444,
+    108,
+    754,
+    908
+   ],
+   "axis_x_px": 569.5,
+   "floor_y_px": 907,
+   "height_px": 800,
+   "height_units": 8.0,
+   "width_units": 3.1,
+   "half_width_profile": {
+    "0.00": {
+     "y_px": 907,
+     "half_w_units": 0.295
+    },
+    "0.10": {
+     "y_px": 827,
+     "half_w_units": 1.565
+    },
+    "0.25": {
+     "y_px": 707,
+     "half_w_units": 1.755
+    },
+    "0.50": {
+     "y_px": 508,
+     "half_w_units": 1.785
+    },
+    "0.75": {
+     "y_px": 308,
+     "half_w_units": 1.615
+    },
+    "0.90": {
+     "y_px": 188,
+     "half_w_units": 1.575
+    }
+   },
+   "transform": "z = (907 - y_px) / 100 ; x = (x_px - 569.5) / 100"
+  },
+  "side": {
+   "bbox_px": [
+    810,
+    110,
+    1022,
+    902
+   ],
+   "axis_x_px": 914.5,
+   "floor_y_px": 901,
+   "height_px": 792,
+   "height_units": 7.92,
+   "width_units": 2.12,
+   "half_width_profile": {
+    "0.00": {
+     "y_px": 901,
+     "half_w_units": 0.965
+    },
+    "0.10": {
+     "y_px": 822,
+     "half_w_units": 0.965
+    },
+    "0.25": {
+     "y_px": 703,
+     "half_w_units": 1.025
+    },
+    "0.50": {
+     "y_px": 506,
+     "half_w_units": 0.855
+    },
+    "0.75": {
+     "y_px": 308,
+     "half_w_units": 0.785
+    },
+    "0.90": {
+     "y_px": 189,
+     "half_w_units": 0.545
+    }
+   },
+   "transform": "z = (901 - y_px) / 100 ; x = (x_px - 914.5) / 100"
+  }
+ },
+ "ortho_frame": {
+  "views": [
+   "front",
+   "back",
+   "side"
+  ],
+  "width_px": 460,
+  "height_px": 870,
+  "below_floor_px": 20,
+  "crops": {
+   "front": [
+    3,
+    57,
+    463,
+    927
+   ],
+   "back": [
+    340,
+    57,
+    800,
+    927
+   ],
+   "side": [
+    684,
+    51,
+    1144,
+    921
+   ]
+  }
+ },
+ "unnamed_extra_segments_px": [],
+ "swatches": [
+  {
+   "centre_px": [
+    1274.0,
+    754.5
+   ],
+   "rgb": [
+    177,
+    164,
+    156
+   ],
+   "diameter_px": 30
+  },
+  {
+   "centre_px": [
+    1274.0,
+    783.5
+   ],
+   "rgb": [
+    122,
+    113,
+    108
+   ],
+   "diameter_px": 30
+  },
+  {
+   "centre_px": [
+    1275.0,
+    831.6
+   ],
+   "rgb": [
+    79,
+    49,
+    52
+   ],
+   "diameter_px": 26
+  }
+ ],
+ "swatch_rejects_off_column": [],
+ "base_frac": 0.06,
+ "axis_overrides": {
+  "front": 233.0
+ },
+ "units_rule": "1 sheet unit = 100 px; per view z = (floor_y - y) / 100, x = (x - axis_x) / 100",
+ "caveat": "automatic split: VERIFY intake_overlay.png before dispatch (overlapping views or a floor shadow fuse / extend a view; rerun with --views or --bg-tol). A DARK subject on a dark sheet (shadowbun) loses its outline into the background: the floor line can sit high by ~15 px - check the soles",
+ "smart": true,
+ "auto_flags": {
+  "floor": {
+   "front": 907,
+   "side": 901
+  },
+  "axis": {
+   "back": 569.5,
+   "side": 914.5
+  }
+ },
+ "auto_flags_cli": "--floor front=907,side=901 --axis back=569.5,side=914.5",
+ "side_facing": {
+  "facing": "left",
+  "source": "flag",
+  "guess": "left",
+  "score": -0.031,
+  "confidence": 0.1,
+  "cue": "colour",
+  "front_back_separation": 0.421,
+  "rule": "score > 0 = face toward image-right; 'right' needs >= 0.14, else the house default (left)",
+  "meshgen_camera": "left"
+ },
+ "view_checks": {
+  "front": {
+   "floating_parts": [],
+   "mass_centroid_px": 236.1,
+   "core_width_px": 345,
+   "mass_axis_px": 210.5,
+   "mirror_iou": 0.438,
+   "mirror_iou_core": 0.207,
+   "tone_asym": 0.661,
+   "half_area_ratio": 0.936,
+   "contact_x_px": [
+    112,
+    350
+   ],
+   "floor_candidates": {
+    "raw_lowest_px": 918,
+    "body_lowest_px": 917,
+    "contact_px": 907,
+    "shadow_px": 44,
+    "support_run_min_px": 81,
+    "skipped": [
+     {
+      "y_px": 914,
+      "x_px": [
+       81,
+       111
+      ],
+      "why": "narrow contact at the end"
+     }
+    ]
+   },
+   "floor_px": 907,
+   "feet_axis_px": 208.5,
+   "threshold_holes_frac": 0.183,
+   "near_bg_frac": 0.705,
+   "dark_subject": true,
+   "three_quarter_suspect": true,
+   "three_quarter_why": [
+    "mirror IoU 0.44",
+    "tone asymmetry 0.66"
+   ]
+  },
+  "back": {
+   "floating_parts": [
+    {
+     "bbox_px": [
+      470,
+      108,
+      691,
+      490
+     ],
+     "area_px": 33760,
+     "below_body": false
+    }
+   ],
+   "mass_centroid_px": 595.2,
+   "core_width_px": 240,
+   "mass_axis_px": 569.5,
+   "mirror_iou": 0.344,
+   "mirror_iou_core": 0.451,
+   "tone_asym": 0.144,
+   "half_area_ratio": 0.444,
+   "contact_x_px": [
+    532,
+    712
+   ],
+   "floor_candidates": {
+    "raw_lowest_px": 907,
+    "body_lowest_px": 907,
+    "contact_px": 907,
+    "shadow_px": 0,
+    "support_run_min_px": 80,
+    "skipped": []
+   },
+   "floor_px": 907,
+   "feet_axis_px": 590.5,
+   "threshold_holes_frac": 0.025,
+   "near_bg_frac": 0.485,
+   "dark_subject": true,
+   "three_quarter_suspect": false,
+   "three_quarter_why": []
+  },
+  "side": {
+   "floating_parts": [],
+   "mass_centroid_px": 922.8,
+   "core_width_px": 209,
+   "mass_axis_px": 914.5,
+   "contact_x_px": [
+    843,
+    986
+   ],
+   "floor_candidates": {
+    "raw_lowest_px": 907,
+    "body_lowest_px": 905,
+    "contact_px": 901,
+    "shadow_px": 53,
+    "support_run_min_px": 79,
+    "skipped": []
+   },
+   "floor_px": 901,
+   "feet_axis_px": 901.0,
+   "threshold_holes_frac": 0.335,
+   "near_bg_frac": 0.725,
+   "dark_subject": true
+  }
+ },
+ "front_back_width_ratio": 0.696,
+ "height_check": {
+  "heights_units": {
+   "front": 8.08,
+   "back": 8.0,
+   "side": 7.92
+  },
+  "pairs": [
+   {
+    "views": [
+     "front",
+     "back"
+    ],
+    "diff_pct": 1.0
+   },
+   {
+    "views": [
+     "front",
+     "side"
+    ],
+    "diff_pct": 2.0
+   },
+   {
+    "views": [
+     "back",
+     "side"
+    ],
+    "diff_pct": 1.0
+   }
+  ],
+  "worst": {
+   "views": [
+    "front",
+    "side"
+   ],
+   "diff_pct": 2.0
+  }
+ },
+ "clutter_removed": null,
+ "matte_strips_px": [
+  [
+   30,
+   442
+  ],
+  [
+   442,
+   790
+  ],
+  [
+   790,
+   1015
+  ]
+ ],
+ "dark_strips": [
+  {
+   "x_px": [
+    30,
+    442
+   ],
+   "threshold_holes_frac": 0.509,
+   "near_bg_frac": 0.331,
+   "carved_px": 32940
+  },
+  {
+   "x_px": [
+    442,
+    790
+   ],
+   "threshold_holes_frac": 0.632,
+   "near_bg_frac": 0.167,
+   "carved_px": 51793
+  },
+  {
+   "x_px": [
+    790,
+    1015
+   ],
+   "threshold_holes_frac": 0.587,
+   "near_bg_frac": 0.421,
+   "carved_px": 33065
+  }
+ ],
+ "palette_fallback": null,
+ "view_masks": {
+  "path": "view_masks.png",
+  "labels": {
+   "front": 1,
+   "back": 2,
+   "side": 3
+  },
+  "rule": "label image at sheet px: the silhouette each view was measured on"
+ },
+ "intake_notes": [
+  "dark subject on a dark sheet at x 30-442; 442-790; 790-1015 (the threshold lost 50%, 63%, 58% of the filled silhouette): BiRefNet matte merged in, enclosed background carved (32940, 51793, 33065 px)",
+  "front floor 907 px = the lowest body contact; ignored a drop shadow (44 px), a part with no leg-like support hanging 10 px lower (tail curl / pool / unpaired tail), 1 narrow end contact(s) (tail tip) (raw lowest row 918)",
+  "back axis 569.5 px (mirror-symmetry of the body mass); the feet-base rule says 590.5",
+  "side floor 901 px = the lowest body contact; ignored a drop shadow (53 px), a part with no leg-like support hanging 4 px lower (tail curl / pool / unpaired tail) (raw lowest row 907)",
+  "side axis 914.5 px (centre of the floor contact span); the feet-base rule says 901.0",
+  "front and back body widths disagree (0.70, eroded silhouettes): one of them may be drawn 3/4 or in perspective",
+  "side view faces image-left (flag, colour score -0.03) -> meshgen view 'left'",
+  "front-vs-side height: front 8.08 u, side 7.92 u (-2.0%)",
+  "orchestrator 2026-10-24: the near-black cape matches the sheet grey (39,39,39), so the enclosed-background carve cut ~33-52k px holes out of the cape. Fix: view_masks = the tol-26 labels UNION a --bg-tol 6 pass, and `sheet` = vampwarrior-sheet-proxyprep.png (the sheet with R+5 on 202528 in-silhouette near-background pixels, so the carve no longer treats cloth as background; real pockets outside the silhouette still carve). Original: design/reference/vampwarrior-character-sheet.png"
+ ],
+ "proxy": {
+  "glb": "proxy_v6/vamp_body6_s11.glb",
+  "sha256": "728b5cea1f99e947067021f7e62b2237d7bfd3306c4cf9f2f15a8dd1092b5525",
+  "seed": 11,
+  "model": "Pixal3D multi-view (direct, shared_frame, texture 4096)",
+  "views_sent": {
+   "front": "codex_body_v6/body_front.png",
+   "left": "codex_body_v6/aligned_body_side_left.png",
+   "right": "codex_body_v6/aligned_body_side_right.png (mirror of left)",
+   "back": "codex_body_v6/aligned_body_back.png"
+  },
+  "side_facing": "left",
+  "frame": {
+   "above_floor_px": 807,
+   "below_floor_px": 11,
+   "pad_px": 20,
+   "height_px": 859,
+   "views": {
+    "front": {
+     "crop_origin_px": [
+      10,
+      80
+     ],
+     "floor_row": 827,
+     "mask_bbox_px": [
+      30,
+      100,
+      441,
+      919
+     ]
+    },
+    "back": {
+     "crop_origin_px": [
+      424,
+      80
+     ],
+     "floor_row": 827,
+     "mask_bbox_px": [
+      444,
+      108,
+      755,
+      909
+     ]
+    },
+    "side": {
+     "crop_origin_px": [
+      790,
+      74
+     ],
+     "floor_row": 827,
+     "mask_bbox_px": [
+      810,
+      110,
+      1023,
+      908
+     ]
+    }
+   }
+  },
+  "generated": {
+   "via": "reused",
+   "source": "design/reference/vampwarrior/proxy_v6/vamp_body6_s11.glb"
+  },
+  "transform": {
+   "rotation": [
+    [
+     1.0,
+     0.0,
+     0.0
+    ],
+    [
+     0.0,
+     1.0,
+     0.0
+    ],
+    [
+     0.0,
+     0.0,
+     1.0
+    ]
+   ],
+   "offset": [
+    0.0011497586965560913,
+    -0.0007791109383106232,
+    -0.49008044600486755
+   ],
+   "scale": 8.272727272727273,
+   "rule": "v_sheet = scale * (R @ v_zup - offset); glTF (x, y, z) -> z-up (x, -z, y)",
+   "orientation_identity_iou": 0.7413,
+   "orientation_best_iou": 0.7413
+  },
+  "clipped_below_floor_px": {},
+  "scores": {
+   "front": {
+    "iou": 0.7244,
+    "iou_shape": 0.7261,
+    "aspect_rel": 0.1334,
+    "row_err_u": 0.426,
+    "row_err_pct": 10.8,
+    "w_u": 3.54,
+    "h_u": 8.14,
+    "ref_w_u": 4.11,
+    "ref_h_u": 8.19,
+    "scored": false
+   },
+   "back": {
+    "iou": 0.738,
+    "iou_shape": 0.7424,
+    "aspect_rel": 0.1072,
+    "row_err_u": 0.291,
+    "row_err_pct": 9.9,
+    "w_u": 3.54,
+    "h_u": 8.14,
+    "ref_w_u": 3.11,
+    "ref_h_u": 8.01,
+    "scored": true
+   },
+   "side": {
+    "iou": 0.6969,
+    "iou_shape": 0.7003,
+    "aspect_rel": 0.0841,
+    "row_err_u": 0.404,
+    "row_err_pct": 20.1,
+    "w_u": 1.99,
+    "h_u": 8.14,
+    "ref_w_u": 2.13,
+    "ref_h_u": 7.98,
+    "scored": true
+   }
+  },
+  "mean_iou": 0.7174,
+  "side_len_over_front_h": {
+   "mesh": 0.244,
+   "sheet": 0.26,
+   "rel_err": -0.06
+  },
+  "front_w_over_h": {
+   "mesh": 0.435,
+   "sheet": 0.502
+  },
+  "gate": {
+   "pass": false,
+   "verdict": "proxy unreliable, work from the sheet (mean IoU 0.72 < 0.75; side length off by -6.0%)",
+   "rule": "mean IoU >= 0.75 and side length within 5%"
+  },
+  "sections": [
+   {
+    "z_frac": 0.06,
+    "z_u": 0.488,
+    "x_min_u": -0.765,
+    "x_max_u": 1.399,
+    "width_x_u": 2.164,
+    "y_front_u": -0.492,
+    "y_back_u": 0.015,
+    "depth_y_u": 0.507,
+    "y_centre_u": -0.238,
+    "points": 694
+   },
+   {
+    "z_frac": 0.18,
+    "z_u": 1.464,
+    "x_min_u": -1.634,
+    "x_max_u": 1.665,
+    "width_x_u": 3.299,
+    "y_front_u": -0.351,
+    "y_back_u": 0.957,
+    "depth_y_u": 1.308,
+    "y_centre_u": 0.303,
+    "points": 2044
+   },
+   {
+    "z_frac": 0.3,
+    "z_u": 2.44,
+    "x_min_u": -1.688,
+    "x_max_u": 1.666,
+    "width_x_u": 3.354,
+    "y_front_u": -0.444,
+    "y_back_u": 0.964,
+    "depth_y_u": 1.409,
+    "y_centre_u": 0.26,
+    "points": 2468
+   },
+   {
+    "z_frac": 0.42,
+    "z_u": 3.416,
+    "x_min_u": -1.54,
+    "x_max_u": 1.46,
+    "width_x_u": 3.0,
+    "y_front_u": -0.774,
+    "y_back_u": 0.774,
+    "depth_y_u": 1.548,
+    "y_centre_u": -0.0,
+    "points": 2020
+   },
+   {
+    "z_frac": 0.54,
+    "z_u": 4.392,
+    "x_min_u": -1.318,
+    "x_max_u": 1.293,
+    "width_x_u": 2.611,
+    "y_front_u": -0.801,
+    "y_back_u": 0.58,
+    "depth_y_u": 1.38,
+    "y_centre_u": -0.11,
+    "points": 2662
+   },
+   {
+    "z_frac": 0.66,
+    "z_u": 5.367,
+    "x_min_u": -1.416,
+    "x_max_u": 1.384,
+    "width_x_u": 2.8,
+    "y_front_u": -0.745,
+    "y_back_u": 0.842,
+    "depth_y_u": 1.588,
+    "y_centre_u": 0.048,
+    "points": 3624
+   },
+   {
+    "z_frac": 0.78,
+    "z_u": 6.343,
+    "x_min_u": -0.953,
+    "x_max_u": 0.927,
+    "width_x_u": 1.879,
+    "y_front_u": -0.858,
+    "y_back_u": 0.567,
+    "depth_y_u": 1.425,
+    "y_centre_u": -0.145,
+    "points": 2844
+   },
+   {
+    "z_frac": 0.9,
+    "z_u": 7.319,
+    "x_min_u": -0.497,
+    "x_max_u": 0.475,
+    "width_x_u": 0.972,
+    "y_front_u": -0.649,
+    "y_back_u": 0.42,
+    "depth_y_u": 1.069,
+    "y_centre_u": -0.114,
+    "points": 1762
+   }
+  ],
+  "landmarks": {
+   "height_u": 8.132,
+   "top": {
+    "z_u": 8.132,
+    "x_u": -0.023,
+    "y_u": -0.078
+   },
+   "front_most": {
+    "y_u": -0.993,
+    "z_u": 0.083,
+    "note": "the most -Y point (snout / chest / beak tip)"
+   },
+   "rear_most": {
+    "y_u": 0.993,
+    "z_u": 2.436,
+    "note": "the most +Y point (tail)"
+   },
+   "length_y_u": 1.986,
+   "width_x_u": 3.538,
+   "widest_band": {
+    "z_u": 2.44,
+    "width_x_u": 3.354
+   },
+   "depth_at_intake_rows": {
+    "0.00": {
+     "z_u": 0.163,
+     "depth_y_u": 0.928,
+     "half_w_x_u": 0.845,
+     "sheet_half_w_u": 1.57
+    },
+    "0.10": {
+     "z_u": 0.813,
+     "depth_y_u": 0.462,
+     "half_w_x_u": 1.439,
+     "sheet_half_w_u": 1.77
+    },
+    "0.25": {
+     "z_u": 2.033,
+     "depth_y_u": 1.335,
+     "half_w_x_u": 1.616,
+     "sheet_half_w_u": 2.01
+    },
+    "0.50": {
+     "z_u": 4.066,
+     "depth_y_u": 1.429,
+     "half_w_x_u": 1.399,
+     "sheet_half_w_u": 1.95
+    },
+    "0.75": {
+     "z_u": 6.099,
+     "depth_y_u": 1.493,
+     "half_w_x_u": 1.125,
+     "sheet_half_w_u": 1.73
+    },
+    "0.90": {
+     "z_u": 7.319,
+     "depth_y_u": 1.069,
+     "half_w_x_u": 0.497,
+     "sheet_half_w_u": 1.84
+    }
+   }
+  },
+  "render": "(scored 2026-10-26 by the vampwarrior v7 lane; panel in session 4f1944ab scratchpad vampwarrior_lane2/score/vampwarrior_proxy_vs_sheet.png)",
+  "notes": [
+   "front left out: the intake flags it 3/4 (mirror IoU 0.44, tone asymmetry 0.66)",
+   "front stood in by the mirrored back (same ortho silhouette; its colours are the back's - the proxy is geometry only)",
+   "v7 2026-10-26: body6 seed 11 = a Pixal3D of the Codex full-body turnaround codex_body_v6/ (symmetric rest pose, arms down, NO sword, flat-soled boots, cape behind) - the IoU is lower than the v5 proxy because the sheet pose holds the sword with a raised arm and draws heeled boots; the light flow uses it as the base mesh (Codex pick B, scratchpad codex_body6/review.md)",
+   "previous proxy (v5..v6.1): proxy/vampwarrior_proxy.glb sha 3f0ae1b3 mean IoU 0.7744 (block kept as proxy_v5 in this file)"
+  ],
+  "use": "3D REFERENCE ONLY: cite sections / landmark depths in the build's constants; the sheet is the spec and the rest pose stays symmetric (the proxy copies the sheet's pose)",
+  "units": "sheet units (1 u = 100 sheet px); z up from the floor, x = the creature's left/right (bbox centred), y = depth, front = -y"
+ },
+ "sheet_original": "design/reference/vampwarrior-character-sheet.png",
+ "proxy_v5": {
+  "glb": "proxy/vampwarrior_proxy.glb",
+  "sha256": "3f0ae1b3be4fa0f3bb4feede6222fe4614a6968299be664c2661ec6057b90101",
+  "seed": 56,
+  "model": "Pixal3D multi-view (meshgen, shared_frame)",
+  "views_sent": {
+   "front": "proxy/view_front_from_back.png",
+   "left": "proxy/view_side.png"
+  },
+  "side_facing": "left",
+  "frame": {
+   "above_floor_px": 807,
+   "below_floor_px": 11,
+   "pad_px": 20,
+   "height_px": 859,
+   "views": {
+    "front": {
+     "crop_origin_px": [
+      10,
+      80
+     ],
+     "floor_row": 827,
+     "mask_bbox_px": [
+      30,
+      100,
+      441,
+      919
+     ]
+    },
+    "back": {
+     "crop_origin_px": [
+      424,
+      80
+     ],
+     "floor_row": 827,
+     "mask_bbox_px": [
+      444,
+      108,
+      755,
+      909
+     ]
+    },
+    "side": {
+     "crop_origin_px": [
+      790,
+      74
+     ],
+     "floor_row": 827,
+     "mask_bbox_px": [
+      810,
+      110,
+      1023,
+      908
+     ]
+    }
+   }
+  },
+  "generated": {
+   "via": "reused",
+   "source": "C:/Users/kenne/AppData/Local/Temp/claude/C--Users-kenne-OneDrive-Desktop-git-forge/da2aa1fe-9826-4887-a170-2ed983961ce7/scratchpad/vw_hi/vampwarrior_hi.glb"
+  },
+  "transform": {
+   "rotation": [
+    [
+     1.0,
+     0.0,
+     0.0
+    ],
+    [
+     0.0,
+     1.0,
+     0.0
+    ],
+    [
+     0.0,
+     0.0,
+     1.0
+    ]
+   ],
+   "offset": [
+    0.017087474465370178,
+    -0.0003975704312324524,
+    -0.4953053295612335
+   ],
+   "scale": 8.357142857142858,
+   "rule": "v_sheet = scale * (R @ v_zup - offset); glTF (x, y, z) -> z-up (x, -z, y)",
+   "orientation_identity_iou": 0.8527,
+   "orientation_best_iou": 0.8527
+  },
+  "clipped_below_floor_px": {},
+  "scores": {
+   "front": {
+    "iou": 0.8939,
+    "iou_shape": 0.8638,
+    "aspect_rel": 0.0171,
+    "row_err_u": 0.16,
+    "row_err_pct": 4.1,
+    "w_u": 4.02,
+    "h_u": 8.15,
+    "ref_w_u": 4.11,
+    "ref_h_u": 8.19,
+    "scored": true
+   },
+   "back": {
+    "iou": 0.6851,
+    "iou_shape": 0.6559,
+    "aspect_rel": 0.2128,
+    "row_err_u": 0.613,
+    "row_err_pct": 20.8,
+    "w_u": 4.02,
+    "h_u": 8.15,
+    "ref_w_u": 3.11,
+    "ref_h_u": 8.01,
+    "scored": true
+   },
+   "side": {
+    "iou": 0.8637,
+    "iou_shape": 0.8642,
+    "aspect_rel": 0.0025,
+    "row_err_u": 0.14,
+    "row_err_pct": 6.9,
+    "w_u": 2.17,
+    "h_u": 8.15,
+    "ref_w_u": 2.13,
+    "ref_h_u": 7.98,
+    "scored": true
+   }
+  },
+  "mean_iou": 0.7744,
+  "side_len_over_front_h": {
+   "mesh": 0.266,
+   "sheet": 0.26,
+   "rel_err": 0.0238
+  },
+  "front_w_over_h": {
+   "mesh": 0.493,
+   "sheet": 0.502
+  },
+  "gate": {
+   "pass": true,
+   "verdict": "reliable",
+   "rule": "mean IoU >= 0.75 and side length within 5%"
+  },
+  "sections": [
+   {
+    "z_frac": 0.06,
+    "z_u": 0.489,
+    "x_min_u": -1.655,
+    "x_max_u": 1.06,
+    "width_x_u": 2.715,
+    "y_front_u": -0.901,
+    "y_back_u": -0.091,
+    "depth_y_u": 0.809,
+    "y_centre_u": -0.496,
+    "points": 710
+   },
+   {
+    "z_frac": 0.18,
+    "z_u": 1.466,
+    "x_min_u": -1.826,
+    "x_max_u": 1.407,
+    "width_x_u": 3.233,
+    "y_front_u": -1.016,
+    "y_back_u": 1.047,
+    "depth_y_u": 2.063,
+    "y_centre_u": 0.016,
+    "points": 2464
+   },
+   {
+    "z_frac": 0.3,
+    "z_u": 2.443,
+    "x_min_u": -1.831,
+    "x_max_u": 1.848,
+    "width_x_u": 3.679,
+    "y_front_u": -0.972,
+    "y_back_u": 1.058,
+    "depth_y_u": 2.031,
+    "y_centre_u": 0.043,
+    "points": 2646
+   },
+   {
+    "z_frac": 0.42,
+    "z_u": 3.421,
+    "x_min_u": -1.771,
+    "x_max_u": 1.822,
+    "width_x_u": 3.593,
+    "y_front_u": -0.889,
+    "y_back_u": 1.012,
+    "depth_y_u": 1.9,
+    "y_centre_u": 0.062,
+    "points": 2666
+   },
+   {
+    "z_frac": 0.54,
+    "z_u": 4.398,
+    "x_min_u": -1.897,
+    "x_max_u": 1.628,
+    "width_x_u": 3.525,
+    "y_front_u": -1.001,
+    "y_back_u": 0.891,
+    "depth_y_u": 1.893,
+    "y_centre_u": -0.055,
+    "points": 4612
+   },
+   {
+    "z_frac": 0.66,
+    "z_u": 5.375,
+    "x_min_u": -1.881,
+    "x_max_u": 1.119,
+    "width_x_u": 3.001,
+    "y_front_u": -0.905,
+    "y_back_u": 0.963,
+    "depth_y_u": 1.868,
+    "y_centre_u": 0.029,
+    "points": 3932
+   },
+   {
+    "z_frac": 0.78,
+    "z_u": 6.352,
+    "x_min_u": -1.799,
+    "x_max_u": 1.023,
+    "width_x_u": 2.822,
+    "y_front_u": -0.818,
+    "y_back_u": 0.689,
+    "depth_y_u": 1.507,
+    "y_centre_u": -0.065,
+    "points": 3838
+   },
+   {
+    "z_frac": 0.9,
+    "z_u": 7.33,
+    "x_min_u": -1.825,
+    "x_max_u": 0.528,
+    "width_x_u": 2.352,
+    "y_front_u": -0.712,
+    "y_back_u": 0.319,
+    "depth_y_u": 1.03,
+    "y_centre_u": -0.197,
+    "points": 1804
+   }
+  ],
+  "landmarks": {
+   "height_u": 8.144,
+   "top": {
+    "z_u": 8.144,
+    "x_u": -0.073,
+    "y_u": -0.212
+   },
+   "front_most": {
+    "y_u": -1.084,
+    "z_u": 4.335,
+    "note": "the most -Y point (snout / chest / beak tip)"
+   },
+   "rear_most": {
+    "y_u": 1.084,
+    "z_u": 3.2,
+    "note": "the most +Y point (tail)"
+   },
+   "length_y_u": 2.167,
+   "width_x_u": 4.02,
+   "widest_band": {
+    "z_u": 2.443,
+    "width_x_u": 3.679
+   },
+   "depth_at_intake_rows": {
+    "0.00": {
+     "z_u": 0.163,
+     "depth_y_u": 0.27,
+     "half_w_x_u": 1.391,
+     "sheet_half_w_u": 1.57
+    },
+    "0.10": {
+     "z_u": 0.814,
+     "depth_y_u": 1.832,
+     "half_w_x_u": 1.785,
+     "sheet_half_w_u": 1.77
+    },
+    "0.25": {
+     "z_u": 2.036,
+     "depth_y_u": 2.058,
+     "half_w_x_u": 1.881,
+     "sheet_half_w_u": 2.01
+    },
+    "0.50": {
+     "z_u": 4.072,
+     "depth_y_u": 1.681,
+     "half_w_x_u": 1.805,
+     "sheet_half_w_u": 1.95
+    },
+    "0.75": {
+     "z_u": 6.108,
+     "depth_y_u": 1.396,
+     "half_w_x_u": 1.807,
+     "sheet_half_w_u": 1.73
+    },
+    "0.90": {
+     "z_u": 7.33,
+     "depth_y_u": 1.03,
+     "half_w_x_u": 1.825,
+     "sheet_half_w_u": 1.84
+    }
+   }
+  },
+  "render": "proxy/vampwarrior_proxy_vs_sheet.png",
+  "notes": [
+   "front left out: the intake flags it 3/4 (mirror IoU 0.44, tone asymmetry 0.66)",
+   "front stood in by the mirrored back (same ortho silhouette; its colours are the back's - the proxy is geometry only)",
+   "orchestrator 2026-10-24 (artist: \"too low quality ... like a low render\"): regenerated by proxy/gen_hi.py - the same views as b8352fbf (front clean, back, side=left, seed 56, shared_frame) at texture_resolution 4096 + target_face_count 400000 (399652 faces, peak 7.6 GB). Same shape (IoU identical); the 2k proxy is kept in proxy_v5_2k/. Head graft source: head_graft/head_pixal3d.glb (sha 192d4a91f114, single view of the sheet face panel x 1228-1476, y 270-520, seed 56)."
+  ],
+  "use": "3D REFERENCE ONLY: cite sections / landmark depths in the build's constants; the sheet is the spec and the rest pose stays symmetric (the proxy copies the sheet's pose)",
+  "units": "sheet units (1 u = 100 sheet px); z up from the floor, x = the creature's left/right (bbox centred), y = depth, front = -y"
+ }
+}

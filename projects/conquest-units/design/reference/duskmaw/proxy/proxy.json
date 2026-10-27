@@ -1,0 +1,312 @@
+{
+ "glb": "proxy/duskmaw_open_proxy.glb",
+ "sha256": "89d09152f2d547ee6156ebf477d8565eaaf15e1ee5af8eaf7500f5c9fd4ec42d",
+ "seed": 56,
+ "model": "Pixal3D multi-view (meshgen, shared_frame)",
+ "views_sent": {
+  "front": "proxy/view_front_from_back.png",
+  "right": "proxy/view_side.png"
+ },
+ "side_facing": "right",
+ "frame": {
+  "above_floor_px": 742,
+  "below_floor_px": 5,
+  "pad_px": 20,
+  "height_px": 788,
+  "views": {
+   "front": {
+    "crop_origin_px": [
+     -8,
+     82
+    ],
+    "floor_row": 762,
+    "mask_bbox_px": [
+     12,
+     128,
+     436,
+     845
+    ]
+   },
+   "back": {
+    "crop_origin_px": [
+     422,
+     74
+    ],
+    "floor_row": 762,
+    "mask_bbox_px": [
+     442,
+     132,
+     795,
+     842
+    ]
+   },
+   "side": {
+    "crop_origin_px": [
+     775,
+     78
+    ],
+    "floor_row": 762,
+    "mask_bbox_px": [
+     795,
+     98,
+     1144,
+     843
+    ]
+   }
+  }
+ },
+ "generated": {
+  "via": "reused",
+  "source": "C:/Users/kenne/AppData/Local/Temp/claude/C--Users-kenne-OneDrive-Desktop-git-forge/da2aa1fe-9826-4887-a170-2ed983961ce7/scratchpad/dmo/gen/duskmaw_open_symhead.glb"
+ },
+ "transform": {
+  "rotation": [
+   [
+    1.0,
+    0.0,
+    0.0
+   ],
+   [
+    0.0,
+    1.0,
+    0.0
+   ],
+   [
+    0.0,
+    0.0,
+    1.0
+   ]
+  ],
+  "offset": [
+   -0.002940833568572998,
+   -0.0060105472803115845,
+   -0.4862219989299774
+  ],
+  "scale": 7.627659574468085,
+  "rule": "v_sheet = scale * (R @ v_zup - offset); glTF (x, y, z) -> z-up (x, -z, y)",
+  "orientation_identity_iou": 0.7182,
+  "orientation_best_iou": 0.7182
+ },
+ "clipped_below_floor_px": {},
+ "scores": {
+  "front": {
+   "iou": 0.775,
+   "iou_shape": 0.7708,
+   "aspect_rel": 0.1735,
+   "row_err_u": 0.318,
+   "row_err_pct": 7.8,
+   "w_u": 5.13,
+   "h_u": 7.17,
+   "ref_w_u": 4.24,
+   "ref_h_u": 7.17,
+   "scored": false
+  },
+  "back": {
+   "iou": 0.6582,
+   "iou_shape": 0.614,
+   "aspect_rel": 0.3051,
+   "row_err_u": 0.535,
+   "row_err_pct": 16.1,
+   "w_u": 5.13,
+   "h_u": 7.17,
+   "ref_w_u": 3.53,
+   "ref_h_u": 7.1,
+   "scored": true
+  },
+  "side": {
+   "iou": 0.855,
+   "iou_shape": 0.7397,
+   "aspect_rel": 0.2569,
+   "row_err_u": 0.127,
+   "row_err_pct": 3.7,
+   "w_u": 4.52,
+   "h_u": 7.17,
+   "ref_w_u": 3.49,
+   "ref_h_u": 7.45,
+   "scored": true
+  }
+ },
+ "mean_iou": 0.7566,
+ "side_len_over_front_h": {
+  "mesh": 0.63,
+  "sheet": 0.487,
+  "rel_err": 0.2951
+ },
+ "front_w_over_h": {
+  "mesh": 0.715,
+  "sheet": 0.591
+ },
+ "gate": {
+  "pass": false,
+  "verdict": "proxy unreliable, work from the sheet (side length off by +29.5%)",
+  "rule": "mean IoU >= 0.75 and side length within 5%"
+ },
+ "sections": [
+  {
+   "z_frac": 0.06,
+   "z_u": 0.43,
+   "x_min_u": -1.754,
+   "x_max_u": 1.433,
+   "width_x_u": 3.187,
+   "y_front_u": -1.396,
+   "y_back_u": 1.758,
+   "depth_y_u": 3.153,
+   "y_centre_u": 0.181,
+   "points": 5814
+  },
+  {
+   "z_frac": 0.18,
+   "z_u": 1.29,
+   "x_min_u": -1.59,
+   "x_max_u": 1.648,
+   "width_x_u": 3.238,
+   "y_front_u": -0.895,
+   "y_back_u": 1.311,
+   "depth_y_u": 2.206,
+   "y_centre_u": 0.208,
+   "points": 1540
+  },
+  {
+   "z_frac": 0.3,
+   "z_u": 2.15,
+   "x_min_u": -0.784,
+   "x_max_u": 1.846,
+   "width_x_u": 2.629,
+   "y_front_u": -1.009,
+   "y_back_u": 0.754,
+   "depth_y_u": 1.762,
+   "y_centre_u": -0.127,
+   "points": 1280
+  },
+  {
+   "z_frac": 0.42,
+   "z_u": 3.01,
+   "x_min_u": -1.669,
+   "x_max_u": 1.878,
+   "width_x_u": 3.547,
+   "y_front_u": -1.007,
+   "y_back_u": 0.812,
+   "depth_y_u": 1.819,
+   "y_centre_u": -0.097,
+   "points": 2698
+  },
+  {
+   "z_frac": 0.54,
+   "z_u": 3.87,
+   "x_min_u": -1.374,
+   "x_max_u": 1.65,
+   "width_x_u": 3.025,
+   "y_front_u": -0.569,
+   "y_back_u": 0.528,
+   "depth_y_u": 1.097,
+   "y_centre_u": -0.02,
+   "points": 1014
+  },
+  {
+   "z_frac": 0.66,
+   "z_u": 4.73,
+   "x_min_u": -0.93,
+   "x_max_u": 1.139,
+   "width_x_u": 2.069,
+   "y_front_u": -0.976,
+   "y_back_u": 0.259,
+   "depth_y_u": 1.235,
+   "y_centre_u": -0.359,
+   "points": 1360
+  },
+  {
+   "z_frac": 0.78,
+   "z_u": 5.59,
+   "x_min_u": -0.383,
+   "x_max_u": 0.51,
+   "width_x_u": 0.893,
+   "y_front_u": -1.288,
+   "y_back_u": -0.124,
+   "depth_y_u": 1.164,
+   "y_centre_u": -0.706,
+   "points": 638
+  },
+  {
+   "z_frac": 0.9,
+   "z_u": 6.45,
+   "x_min_u": -0.279,
+   "x_max_u": 0.611,
+   "width_x_u": 0.89,
+   "y_front_u": -0.584,
+   "y_back_u": 0.426,
+   "depth_y_u": 1.01,
+   "y_centre_u": -0.079,
+   "points": 450
+  }
+ ],
+ "landmarks": {
+  "height_u": 7.166,
+  "top": {
+   "z_u": 7.166,
+   "x_u": 0.137,
+   "y_u": 0.003
+  },
+  "front_most": {
+   "y_u": -2.256,
+   "z_u": 0.225,
+   "note": "the most -Y point (snout / chest / beak tip)"
+  },
+  "rear_most": {
+   "y_u": 2.256,
+   "z_u": 0.302,
+   "note": "the most +Y point (tail)"
+  },
+  "length_y_u": 4.512,
+  "width_x_u": 5.123,
+  "widest_band": {
+   "z_u": 3.01,
+   "width_x_u": 3.547
+  },
+  "depth_at_intake_rows": {
+   "0.00": {
+    "z_u": 0.143,
+    "depth_y_u": 1.035,
+    "half_w_x_u": 1.523,
+    "sheet_half_w_u": 1.2
+   },
+   "0.10": {
+    "z_u": 0.717,
+    "depth_y_u": 3.296,
+    "half_w_x_u": 1.986,
+    "sheet_half_w_u": 2.12
+   },
+   "0.25": {
+    "z_u": 1.792,
+    "depth_y_u": 1.812,
+    "half_w_x_u": 1.603,
+    "sheet_half_w_u": 1.63
+   },
+   "0.50": {
+    "z_u": 3.583,
+    "depth_y_u": 1.636,
+    "half_w_x_u": 1.908,
+    "sheet_half_w_u": 1.98
+   },
+   "0.75": {
+    "z_u": 5.375,
+    "depth_y_u": 0.728,
+    "half_w_x_u": 1.548,
+    "sheet_half_w_u": 1.43
+   },
+   "0.90": {
+    "z_u": 6.45,
+    "depth_y_u": 1.01,
+    "half_w_x_u": 0.611,
+    "sheet_half_w_u": 0.88
+   }
+  }
+ },
+ "render": "proxy/duskmaw_open_proxy_vs_sheet.png",
+ "notes": [
+  "front left out: the intake flags it 3/4 (mirror IoU 0.71, tone asymmetry 0.43)",
+  "front stood in by the mirrored back (same ortho silhouette; its colours are the back's - the proxy is geometry only)",
+  "orchestrator 2026-10-24 generated by proxy/sym_proxy.py (args duskmaw_open 305 295): front + back HEAD rows mirrored about the sheet axis (front y<305 image-left half, back y<295 image-right half), views front / back / right = side / left = side mirrored, seed 56 shared_frame. Gate verdict unreliable comes from a modelled GROUND-SHADOW PLATE (bbox 5.13 u wide vs the sheet 4.24; side length +29.5 %); IoUs 0.78 / 0.66 / 0.85. Picked over 3-view seeds 56 / 57 (proxy_alternates/): single crown spike + symmetric V brim + eyes; all three put a grey pillar inside the maw."
+ ],
+ "use": "3D REFERENCE ONLY: cite sections / landmark depths in the build's constants; the sheet is the spec and the rest pose stays symmetric (the proxy copies the sheet's pose)",
+ "units": "sheet units (1 u = 100 sheet px); z up from the floor, x = the creature's left/right (bbox centred), y = depth, front = -y"
+}

@@ -1,63 +1,59 @@
-"""Vampire Warrior stills (firefly_render.py's survey lighting / camera rules, copied not imported). In-memory only.
+"""vampwarrior stills (scaffolded from firefly_render.py: the survey lighting/camera rules, copied not imported). In-memory
+only; never saves.
 
-    blender --background <blend> --factory-startup --python vampwarrior_render.py -- <out_prefix> <views>
-            [--pose <clip>:<frame>] [--res N] [--focus x0,y0,z0,x1,y1,z1]
+    blender --background <blend> --factory-startup --python vampwarrior_render.py -- <out_prefix> <views> [--pose <clip>:<frame>]
 
 views (comma list):
-  front, threequarter, side, back, tactical     whole model, perspective (the survey table), floor at z = 0
-  face, face_side, sword, hem, boots, torso     close-ups framed on the build's 'conquest_focus' boxes (or --focus)
-  ortho_front, ortho_side                       orthographic sheet-style views (transparent film)
---pose: evaluate at one frame of a clip (default: the rest pose).
-Cameras: front = on -Y looking +Y (the Conquest front), side = on +X (her left), back = on +Y.
+  front, threequarter, side, back, tactical   whole model, perspective (the survey table), floor at z = 0
+  focus                                        every close-up the build declares in the main mesh's 'conquest_focus' prop
+                                               ({name: [lo, hi] (world boxes), optional "views": {name: [angle, elev]},
+                                               "axis_xy": [x, y]}); a single declared name also works as a view
+  ortho_front, ortho_back, ortho_side         ORTHOGRAPHIC at the reference sheet's own scale (100 px per unit), framed by
+                                               design/reference/<unit>/intake.json 'ortho_frame' (the same box the compose
+                                               crops out of the sheet), floor at the sheet's floor line, transparent film
+--pose: evaluate at one frame of a clip (default: the rest pose; a missing clip falls back to rest and says so).
+Cameras: front = on -Y looking +Y (the Conquest front), side = on +X (the unit's left; its front faces image-left like
+the house sheets' side view), back = on +Y. When intake.json's side_facing says the sheet's side view faces image-RIGHT
+(smart intake; goo_shield / soot_puff did this by hand), ortho_side moves to -X so the render still lies on the sheet.
 """
 import bpy, sys, os, math, json
 from mathutils import Vector
 
 HERE = os.path.dirname(os.path.abspath(__file__))
+ROOT = os.path.normpath(os.path.join(HERE, ".."))
 sys.path.insert(0, HERE)
 import rigkit as K  # noqa: E402  (read-only use)
 
+UNIT = "vampwarrior"
 argv = sys.argv[sys.argv.index("--") + 1:]
 PREFIX = argv[0]
 VIEWS = argv[1].split(",")
-RES = int(argv[argv.index("--res") + 1]) if "--res" in argv else 1024
-FOC = [float(x) for x in argv[argv.index("--focus") + 1].split(",")] if "--focus" in argv else None
 scene = bpy.context.scene
 pose = argv[argv.index("--pose") + 1] if "--pose" in argv else None
 for o in scene.objects:
     if o.type == "ARMATURE":
-        if pose:
-            clip, fr = pose.split(":")
+        clip, fr = pose.split(":") if pose else (None, None)
+        if clip and clip in bpy.data.actions:
             K.assign_action(o, bpy.data.actions[clip])
             o.data.pose_position = "POSE"
             scene.frame_set(int(fr))
         else:
+            if clip:
+                print("NO CLIP", clip, "- rendering the rest pose")
             o.data.pose_position = "REST"
 for o in list(scene.objects):
     if o.type in ("CAMERA", "LIGHT"):
         bpy.data.objects.remove(o, do_unlink=True)
-import vampwarrior_toon as VT  # noqa: E402
-if "--no-outline" in argv:
-    print("HIDDEN", VT.hide_outlines(bpy))
-if "--toon" in argv:
-    print("TOON", VT.toon_preview(bpy))
-if "--palette-override" in argv:
-    # in-memory repaint with some regions overridden: "name=r,g,b[:emission_scale];name=..." (debug tints, alternatives)
-    import palettes as PAL  # noqa: E402  (read-only use)
-    for o in scene.objects:
-        if o.type == "MESH" and "region_id" in o.data.attributes:
-            pal = PAL.load(o.get("conquest_unit", "vampwarrior"), o.data.get("conquest_skin", "default"))
-            for item in argv[argv.index("--palette-override") + 1].split(";"):
-                nm, val = item.split("=")
-                rgb, _, esc = val.partition(":")
-                pal["regions"][nm] = dict(pal["regions"][nm], rgb=[int(x) for x in rgb.split(",")])
-                if esc:
-                    pal["regions"][nm]["emission_scale"] = float(esc)
-            print("OVERRIDE", o.name, PAL.paint(o.data, pal) is not None)
 bpy.context.view_layer.update()
 meshes = [o for o in scene.objects if o.type == "MESH" and not o.hide_render]
 main = max(meshes, key=lambda o: len(o.data.polygons))
 FOCUS = json.loads(main["conquest_focus"]) if "conquest_focus" in main.keys() else {}
+FOCUS_VIEWS = FOCUS.pop("views", {})
+AXIS = FOCUS.pop("axis_xy", [0.0, 0.0])
+INTAKE = os.path.join(ROOT, "design", "reference", UNIT, "intake.json")
+OF = json.load(open(INTAKE))["ortho_frame"] if os.path.exists(INTAKE) else None
+SIDE_RIGHT = (os.path.exists(INTAKE)
+              and ((json.load(open(INTAKE)).get("side_facing") or {}).get("facing") == "right"))
 dg = bpy.context.evaluated_depsgraph_get()
 lo = Vector((1e9, 1e9, 1e9)); hi = -lo
 for o in meshes:
@@ -119,53 +115,45 @@ def aim(c, rad, angle_deg, elev_deg, fill=1.08):
     cam_d.clip_start = rad * 0.01; cam_d.clip_end = rad * 100
 
 
-table = {"front": (0.0, 5.0, 1.0), "threequarter": (35.0, 12.0, 1.0), "tactical": (40.0, 55.0, 1.6),
-         "tactical_small": (40.0, 55.0, 1.6), "side": (90.0, 5.0, 1.0), "back": (180.0, 5.0, 1.0),
-         "back_threequarter": (145.0, 10.0, 1.0)}
-close = {"face": (18.0, 4.0, 1.0), "face_side": (70.0, 4.0, 1.0), "face_front": (0.0, 2.0, 0.62), "sword": (20.0, 6.0, 1.0),
-         "hem": (150.0, 10.0, 1.0), "boots": (30.0, 12.0, 1.0), "torso": (20.0, 6.0, 1.0), "hand": (35.0, 10.0, 1.0),
-         "head": (25.0, 6.0, 1.0), "head_back": (160.0, 8.0, 1.0), "head_front": (0.0, 4.0, 1.0),
-         "portrait": (0.0, 3.0, 0.62), "portrait_tq": (32.0, 6.0, 0.66), "portrait_low": (12.0, -14.0, 0.66),
-         "eyes": (0.0, 1.0, 1.0), "torso_front": (0.0, 4.0, 1.0),
-         # v4: brow close-up; the fang close-ups (the root must never show over the upper lip) at the portrait angle,
-         # from below, three-quarter-below and above
-         "brows": (0.0, 2.0, 1.0), "mouth": (0.0, 3.0, 1.0), "mouth_low": (0.0, -30.0, 1.0),
-         "mouth_tq_low": (35.0, -15.0, 1.0), "mouth_high": (0.0, 25.0, 1.0)}
+table = {"front": (0.0, 5.0, 1024, 1.0), "threequarter": (40.0, 15.0, 1024, 1.0), "tactical": (40.0, 55.0, 256, 1.6),
+         "side": (90.0, 5.0, 1024, 1.0), "back": (180.0, 5.0, 1024, 1.0)}
+views = []
+for v in VIEWS:
+    views += sorted(FOCUS) if v == "focus" else [v]
 os.makedirs(os.path.dirname(PREFIX), exist_ok=True)
-for tag in VIEWS:
+for tag in views:
     cam_d.type = "PERSP"
     scene.render.film_transparent = False
     floor.hide_render = False
     scene.render.resolution_percentage = 100
-    scene.render.resolution_x = scene.render.resolution_y = RES
     if tag in table:
-        ang, elev, fill = table[tag]
-        if tag == "tactical":
-            scene.render.resolution_x = scene.render.resolution_y = 256
-        if tag == "tactical_small":
-            scene.render.resolution_x = scene.render.resolution_y = 128
+        ang, elev, res, fill = table[tag]
+        scene.render.resolution_x = scene.render.resolution_y = res
         aim(centre, radius, ang, elev, fill)
-    elif tag in close:
-        if FOC is not None:
-            b0, b1 = Vector(FOC[:3]), Vector(FOC[3:])
-        else:
-            key = tag if tag in FOCUS else tag.split("_")[0]
-            b0, b1 = (Vector(v) for v in FOCUS[key])
-        ang, elev, fill = close[tag]
-        aim((b0 + b1) / 2, max((b1 - b0).length / 2, 1e-3), ang, elev, fill)
-    elif tag in ("ortho_front", "ortho_side"):
-        cam_d.type = "ORTHO"
+    elif tag in FOCUS:
+        b0, b1 = (Vector(v) for v in FOCUS[tag])
+        ang, elev = FOCUS_VIEWS.get(tag, (28.0, 8.0))
+        scene.render.resolution_x = scene.render.resolution_y = 1024
+        aim((b0 + b1) / 2, max((b1 - b0).length / 2, 1e-3), ang, elev, 1.0)
+    elif tag in ("ortho_front", "ortho_back", "ortho_side"):
+        if OF is None:
+            print("SKIP", tag, "(no intake.json ortho_frame)"); continue
+        w_px, h_px, below = OF["width_px"], OF["height_px"], OF["below_floor_px"]
+        ax, ay = AXIS
+        cam_d.type = "ORTHO"; cam_d.ortho_scale = max(w_px, h_px) / 100.0
         cam_d.clip_start = 0.01; cam_d.clip_end = 100
-        scene.render.resolution_x, scene.render.resolution_y = RES // 2, RES
-        wide = size.x if tag == "ortho_front" else size.y
-        cam_d.ortho_scale = max(size.z, 2.0 * wide) * 1.06
+        scene.render.resolution_x, scene.render.resolution_y = w_px, h_px
         scene.render.film_transparent = True
         floor.hide_render = True
-        zc = size.z * 0.5
+        zc = (h_px / 2.0 - below) / 100.0          # image bottom = 'below_floor_px' under the floor line, like the sheet crop
         if tag == "ortho_front":
-            cam.location = (centre.x, -20.0, zc); cam.rotation_euler = (math.radians(90), 0, 0)
+            cam.location = (ax, ay - 20.0, zc); cam.rotation_euler = (math.radians(90), 0, 0)
+        elif tag == "ortho_back":                  # on +Y looking -Y: the unit's right on image right, as sheets draw it
+            cam.location = (ax, ay + 20.0, zc); cam.rotation_euler = (math.radians(90), 0, math.radians(180))
+        elif SIDE_RIGHT:                           # the sheet's side view faces image-RIGHT: camera on -X
+            cam.location = (ax - 20.0, ay, zc); cam.rotation_euler = (math.radians(90), 0, math.radians(-90))
         else:
-            cam.location = (20.0, centre.y, zc); cam.rotation_euler = (math.radians(90), 0, math.radians(90))
+            cam.location = (ax + 20.0, ay, zc); cam.rotation_euler = (math.radians(90), 0, math.radians(90))
     else:
         print("SKIP", tag); continue
     scene.render.filepath = "%s_%s.png" % (PREFIX, tag)

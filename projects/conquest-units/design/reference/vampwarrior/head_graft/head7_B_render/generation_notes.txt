@@ -1,0 +1,15 @@
+Generated with the built-in image_gen tool using sheet.png, sheet_face_panel.png and prev_front.png as design references. Bald front was the identity master; subsequent views used it or the corresponding bald view as reference.
+
+Prompt set: High-end stylized 3D game character orthographic head turntable. Pale warm grey-mauve skin, large open almond eyes, white sclera, dark-red irises, thin angled brows on skin, small slender nose, small muted mouth and exactly two tiny upper fangs, tapered jaw and pointed chin, small pointed ears, smooth bald scalp, short neck with horizontal cut, no clothing. Matte sculpted simplified forms and soft front-top lighting; no line art. Plain RGB128 grey background. Front, true image-left profile, and back, each a separate square image. Hair variants add only very long warm ivory centre-parted hair in a few large separated smooth tapered locks, face features clear, hair behind ears and continuing past frame bottom.
+
+Requested alignment targets: skull top 60, pupil 520, mouth 779, chin 974 on 1254 square canvas. These were prompt constraints, not achieved exact measurements.
+
+Approximate visually inspected visible landmark rows, zero-based from top (not exact segmentation):
+head_front.png: skull 60, pupil 520, mouth 779, chin 974.
+head_side_left.png: skull 57, pupil 520, mouth 770, chin 947.
+head_back.png: skull 31; pupils, mouth and chin not visible.
+hair_front.png: skull hidden (hair crown about 6), pupils 524, mouth 786, chin 982.
+hair_side_left.png: skull hidden (hair crown about 22), pupil 518, mouth 760, chin 935.
+hair_back.png: skull hidden (hair crown about 20); pupils, mouth and chin not visible.
+
+Limitations: generated views are not renders of a shared 3D mesh. Exact rigid multiview identity and identical anatomical rows are not established. Background has slight tonal variation rather than exact constant RGB128. Hair variants retain some fine surface striation. They should be treated as concept references, not pixel-calibrated turntable renders.

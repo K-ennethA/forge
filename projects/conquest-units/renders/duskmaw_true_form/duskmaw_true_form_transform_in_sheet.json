@@ -1,0 +1,16 @@
+{
+ "clip": "transform_in",
+ "frames": [
+  1,
+  7,
+  13,
+  19,
+  25,
+  31,
+  37,
+  43
+ ],
+ "cols": 4,
+ "tile_px": 384,
+ "loop_frames": 48
+}

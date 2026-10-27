@@ -18,7 +18,10 @@ CLIP_NAMES = ("idle", "walk")                     # Conquest UnitAnimator CLIP_I
 ALLOWED_CLIP_NAMES = ("idle", "walk", "idle-loop", "walk-loop",
                       "run", "run-loop",          # locomotion (wren young-hero sprint, artist 2026-10-03); game selects by speed
                       "ball", "ball-loop",        # special forms (magmoo goo-ball, artist 2026-09-26); UnitAnimator ignores extras
-                      "float", "float-loop")      # supaoctto float-up arms-crossed cape-flare (artist 2026-09-26)
+                      "float", "float-loop",      # supaoctto float-up arms-crossed cape-flare (artist 2026-09-26)
+                      "chomp", "close",           # duskmaw maw states (true form sheet MOUTH STATES, 2026-10-24)
+                      "transform_in", "transform_out")  # duskmaw base <-> true form swap under a VFX (artist 2026-10-24)
+ONESHOT_CLIP_NAMES = ("close", "transform_in", "transform_out")   # non-looping by design: hold / end on the last frame
 FPS = 24
 
 

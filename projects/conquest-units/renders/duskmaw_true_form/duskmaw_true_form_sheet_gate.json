@@ -1,0 +1,54 @@
+{
+ "unit": "duskmaw_true_form",
+ "views": {
+  "front": {
+   "iou": 0.8397,
+   "iou_shape": 0.7855,
+   "aspect_rel": 0.0169,
+   "row_err_u": 0.331,
+   "row_err_pct": 7.4,
+   "w_u": 4.88,
+   "h_u": 5.45,
+   "ref_w_u": 4.78,
+   "ref_h_u": 5.43,
+   "iou_in_frame": 0.7198,
+   "row_err_pct_in_frame": 8.7,
+   "proxy_iou": 0.7957,
+   "flag": false
+  },
+  "back": {
+   "iou": 0.5331,
+   "iou_shape": 0.5611,
+   "aspect_rel": 0.2165,
+   "row_err_u": 1.148,
+   "row_err_pct": 34.8,
+   "w_u": 4.88,
+   "h_u": 5.45,
+   "ref_w_u": 3.62,
+   "ref_h_u": 5.16,
+   "iou_in_frame": 0.5143,
+   "row_err_pct_in_frame": 34.4,
+   "proxy_iou": 0.541,
+   "flag": false
+  },
+  "side": {
+   "iou": 0.7731,
+   "iou_shape": 0.721,
+   "aspect_rel": 0.0345,
+   "row_err_u": 0.356,
+   "row_err_pct": 11.9,
+   "w_u": 3.45,
+   "h_u": 5.45,
+   "ref_w_u": 3.49,
+   "ref_h_u": 5.71,
+   "iou_in_frame": 0.7195,
+   "row_err_pct_in_frame": 11.5,
+   "proxy_iou": 0.7536,
+   "flag": false
+  }
+ },
+ "proxy_sha256": "09e4004fb35f49ca69d4e564c9318812b49a7ae86421633ef44034397973a9c6",
+ "proxy_gate": "reliable",
+ "flagged": [],
+ "mean_iou": 0.7153
+}

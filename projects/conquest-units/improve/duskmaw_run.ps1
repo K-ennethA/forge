@@ -1,65 +1,67 @@
-# Duskmaw v4 (shadow lord: curving maw / long slender trunk / floor tendrils / clawed arms), one command (hidden,
-# headless). Reads source-copies/hero-monster.blend (and v3's kept outputs improved/duskmaw_v3.blend for the before
-# column). Writes improved/duskmaw.*, rigged/duskmaw.{blend,json,glb}, improved/check_duskmaw.json,
-# rigged/check_duskmaw.json, rigged/duskmaw_aabb.json, rigged/duskmaw_seethrough.json, rigged/duskmaw_base.json,
-# renders/duskmaw/duskmaw_v4_* (+ v3's silhouettes into renders/duskmaw/v3/). -SkipBuild re-runs only the gates + renders.
-param([switch]$SkipBuild, [switch]$Determinism)   # -Determinism: 3 twin builds at the end, digests compared
+# duskmaw (from-scratch unit, scaffolded by new_unit_scaffold.py from the firefly pattern), one command (hidden, headless).
+# Reads no source blend (the sheet only). Writes improved/duskmaw.*, improved/textures/duskmaw_*, rigged/duskmaw.{blend,json,glb},
+# rigged/duskmaw__<skin>.blend per extra palette, improved/check_duskmaw.json, rigged/check_duskmaw.json, renders/duskmaw/,
+# improve/log_duskmaw_*. Prints the GATE lines (numeric sheet gate + bake reference) at the end.
+#   -SkipBuild re-runs only the gates + renders. The build runs TWICE in parallel: the real build and a --digest-only twin
+#   (saves nothing but its digest); every digest part must match, except the two bakes, which are held to the pinned
+#   tolerance gate (duskmaw_bake_diff.py) if they differ.
+param([switch]$SkipBuild)
 $B = "C:\Program Files\Blender Foundation\Blender 5.0\blender.exe"
-$P = "C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units"
+$P = Split-Path -Parent $PSScriptRoot   # this runner's own project folder (worktree-safe); never assign lowercase $p: PowerShell names are case-insensitive
 $I = "$P\improve"
-$OUT = "$P\renders\duskmaw"
-$GLB = "C:\Users\kenne\OneDrive\Desktop\git\Conquest\game\characters\models\dark\monster.glb"
+$U = "duskmaw"
+$OUT = "$P\renders\$U"
+$VPY = "C:\Users\kenne\OneDrive\Desktop\git\forge\service\.venv\Scripts\python.exe"
 New-Item -ItemType Directory -Force $OUT | Out-Null
-New-Item -ItemType Directory -Force "$OUT\v3" | Out-Null
-$t0 = Get-Date
+$T0 = Get-Date
 if (-not $SkipBuild) {
-  $bp = Start-Process -FilePath $B -ArgumentList @("--background","`"$P\source-copies\hero-monster.blend`"","--factory-startup","--python","`"$I\duskmaw_build.py`"") -WindowStyle Hidden -PassThru -RedirectStandardOutput "$I\log_duskmaw_build.txt" -RedirectStandardError "$I\log_duskmaw_build.err"
-  $null = $bp.Handle; $bp.WaitForExit(); "build exit=$($bp.ExitCode) wall=$([math]::Round(((Get-Date)-$t0).TotalSeconds,1))s"   # not $p: PowerShell names are case-insensitive ($P is the project path)
-  if ($bp.ExitCode -ne 0 -or -not (Select-String -Path "$I\log_duskmaw_build.txt" -Pattern "^RIG_DONE" -Quiet)) { "BUILD FAILED - stopping"; exit 1 }
-}
-$VIEWS = "front,threequarter,tactical,back,side,backthreequarter,maw,mawback,mawthreequarter,lowfront,head,hem,hemthreequarter,basetop,baselow,silhouette,silhouetteside,arm,armfront"
-$dmJobs = @(
-  @("check_improved", @("--background","`"$P\improved\duskmaw.blend`"","--factory-startup","--python","`"$I\conquest_contract_check.py`"","--","`"$P\improved\check_duskmaw.json`"")),
-  @("check_rigged",   @("--background","`"$P\rigged\duskmaw.blend`"","--factory-startup","--python","`"$I\conquest_contract_check.py`"","--","`"$P\rigged\check_duskmaw.json`"")),
-  @("render_after",   @("--background","`"$P\improved\duskmaw.blend`"","--factory-startup","--python","`"$I\duskmaw_render.py`"","--","`"$OUT\duskmaw_v4`"",$VIEWS)),
-  @("render_v3sil",   @("--background","`"$P\improved\duskmaw_v3.blend`"","--factory-startup","--python","`"$I\duskmaw_render.py`"","--","`"$OUT\v3\duskmaw`"","silhouette,silhouetteside")),
-  @("aabb",           @("--background","--factory-startup","--python-exit-code","1","--python","`"$I\duskmaw_aabb_check.py`"","--","`"$P\rigged\duskmaw_aabb.json`"","shipped=$GLB#180@1.0","rerun_natural=$P\rigged\duskmaw.glb#180@1.0","rerun_roster_fit=$P\rigged\duskmaw.glb#180@fit")),
-  @("seethrough",     @("--background","--factory-startup","--python-exit-code","1","--python","`"$I\duskmaw_seethrough.py`"","--","`"$P\rigged\duskmaw_seethrough.json`"","v3_improved=`"$P\improved\duskmaw_v3.blend`"","v4_improved=`"$P\improved\duskmaw.blend`"","v4_rigged=`"$P\rigged\duskmaw.blend`"")),
-  @("clips_mp4",      @("--background","`"$P\rigged\duskmaw.blend`"","--factory-startup","--python","`"$I\duskmaw_clips.py`"","--","`"$OUT`"","768","sheet","--tag","v4")),
-  @("base",           @("--background","--factory-startup","--python-exit-code","1","--python","`"$I\duskmaw_base_measure.py`"","--","`"$P\rigged\duskmaw_base.json`"","v3_improved=`"$P\improved\duskmaw_v3.blend`"","v4_improved=`"$P\improved\duskmaw.blend`""))
-)
-$dmProcs = @()
-foreach ($j in $dmJobs) {
-  $pr = Start-Process -FilePath $B -ArgumentList $j[1] -WindowStyle Hidden -PassThru -RedirectStandardOutput "$I\log_duskmaw_$($j[0]).txt" -RedirectStandardError "$I\log_duskmaw_$($j[0]).err"
-  $null = $pr.Handle; $dmProcs += ,@($j[0], $pr)
-}
-foreach ($x in $dmProcs) { $x[1].WaitForExit(); "$($x[0]) exit=$($x[1].ExitCode)" }
-$pb = Start-Process -FilePath $B -ArgumentList @("--background","--factory-startup","--python-exit-code","1","--python","`"$I\duskmaw_before_after.py`"") -WindowStyle Hidden -PassThru -RedirectStandardOutput "$I\log_duskmaw_ba.txt" -RedirectStandardError "$I\log_duskmaw_ba.err"
-$null = $pb.Handle; $pb.WaitForExit(); "before_after exit=$($pb.ExitCode)"
-foreach ($c in @("check_improved","check_rigged")) { (Get-Content "$I\log_duskmaw_$c.txt" | Select-String "checks, ").Line | % { "$c : $_" } }
-(Get-Content "$I\log_duskmaw_aabb.txt" | Select-String "^AABB").Line
-"gates+renders wall=$([math]::Round(((Get-Date)-$t0).TotalSeconds,1))s"
-if ($Determinism) {
-  # two-run digest: TWIN builds (--out-root under %TEMP%, never the project) compared with the main build: every build
-  # digest must be identical except the normal bake, which duskmaw_bake_diff.py gates (Cycles tie-break, see there)
-  function Digests($R) { $a = Get-Content "$R\improved\duskmaw.json" -Raw | ConvertFrom-Json; $r = Get-Content "$R\rigged\duskmaw.json" -Raw | ConvertFrom-Json
-    "geom_colour=$($a.digest_geometry_colour) uv=$($a.uv.uv_sha) bake_ao=$($a.bake.pixel_sha.ao) rig=$($r.digest_rig)" }
-  $d1 = Digests $P
-  $t1 = Get-Date
-  $tw = @()
-  foreach ($k in 1..3) {
-    $R = "$env:TEMP\duskmaw_twin$k"; Remove-Item -Recurse -Force $R -ErrorAction SilentlyContinue
-    $pr = Start-Process -FilePath $B -ArgumentList @("--background","`"$P\source-copies\hero-monster.blend`"","--factory-startup","--python","`"$I\duskmaw_build.py`"","--","--out-root","`"$R`"") -WindowStyle Hidden -PassThru -RedirectStandardOutput "$I\log_duskmaw_twin$k.txt" -RedirectStandardError "$I\log_duskmaw_twin$k.err"
-    $null = $pr.Handle; $tw += ,@($k, $R, $pr)
+  $bp = Start-Process -FilePath $B -ArgumentList @("--background","--factory-startup","--python-exit-code","1","--python","`"$I\$($U)_build.py`"") -WindowStyle Hidden -PassThru -RedirectStandardOutput "$I\log_$($U)_build.txt" -RedirectStandardError "$I\log_$($U)_build.err"
+  $dp = Start-Process -FilePath $B -ArgumentList @("--background","--factory-startup","--python-exit-code","1","--python","`"$I\$($U)_build.py`"","--","--digest-only","`"$I\log_$($U)_digest2.json`"") -WindowStyle Hidden -PassThru -RedirectStandardOutput "$I\log_$($U)_digest2.txt" -RedirectStandardError "$I\log_$($U)_digest2.err"
+  $null = $bp.Handle; $null = $dp.Handle
+  $bp.WaitForExit(); "build exit=$($bp.ExitCode) wall_s=$([math]::Round(((Get-Date)-$T0).TotalSeconds,1))"
+  $dp.WaitForExit(); "digest twin exit=$($dp.ExitCode) wall_s=$([math]::Round(((Get-Date)-$T0).TotalSeconds,1))"
+  if ($bp.ExitCode -ne 0) { "BUILD FAILED - see log_$($U)_build.err"; exit 1 }
+  $j1 = (Get-Content "$P\rigged\$U.json" -Raw | ConvertFrom-Json).digest
+  $j2 = (Get-Content "$I\log_$($U)_digest2.json" -Raw | ConvertFrom-Json).digest
+  $mismatch = @()
+  foreach ($k in $j1.parts.PSObject.Properties.Name) { if ($j1.parts.$k -ne $j2.parts.$k) { $mismatch += $k } }
+  $T = $env:TEMP
+  $bd = & $VPY -P "$I\$($U)_bake_diff.py" "$T\$($U)_normal_main.npy" "$T\$($U)_normal_twin.npy" "$T\$($U)_ao_main.npy" "$T\$($U)_ao_twin.npy"
+  $bdok = ($LASTEXITCODE -eq 0)
+  $onlyBake = ($mismatch | Where-Object { $_ -notin @("bake_normal","bake_ao") }).Count -eq 0
+  if ($mismatch.Count -eq 0) {
+    $line = "DIGEST build=$($j1.combined) twin=$($j2.combined) identical=True | $($bd -join ' | ')"
+  } elseif ($onlyBake) {
+    $line = "DIGEST build=$($j1.combined) twin=$($j2.combined) identical=except-$($mismatch -join ',') | $($bd -join ' | ') gate=$(if ($bdok) { 'PASS' } else { 'FAIL' })"
+  } else {
+    $line = "DIGEST build=$($j1.combined) twin=$($j2.combined) identical=FALSE mismatched=$($mismatch -join ',') gate=FAIL"
   }
-  foreach ($x in $tw) { $x[2].WaitForExit(); "twin$($x[0]) exit=$($x[2].ExitCode)" }
-  "twins wall=$([math]::Round(((Get-Date)-$t1).TotalSeconds,1))s"
-  "MAIN  $d1"
-  $same = $true
-  foreach ($x in $tw) { $d = Digests $x[1]; "TWIN$($x[0]) $d"; $same = $same -and ($d -eq $d1) }
-  "DIGESTS identical (all but the normal bake)=$same"
-  $npys = @("$env:TEMP\duskmaw_normal_main.npy") + ($tw | % { "$env:TEMP\duskmaw_normal_duskmaw_twin$($_[0]).npy" })
-  $pd = Start-Process -FilePath $B -ArgumentList (@("--background","--factory-startup","--python-exit-code","1","--python","`"$I\duskmaw_bake_diff.py`"","--") + $npys) -WindowStyle Hidden -PassThru -RedirectStandardOutput "$I\log_duskmaw_bakediff.txt" -RedirectStandardError "$I\log_duskmaw_bakediff.err"
-  $null = $pd.Handle; $pd.WaitForExit(); (Get-Content "$I\log_duskmaw_bakediff.txt" | Select-String "^BAKE_DIFF").Line; "bake_diff exit=$($pd.ExitCode)"
+  $line; $line | Out-File -Encoding utf8 "$I\log_$($U)_digest.txt"
 }
-"ALL DONE wall=$([math]::Round(((Get-Date)-$t0).TotalSeconds,1))s"
+$RB = "`"$P\rigged\$U.blend`""
+$R = "`"$I\$($U)_render.py`""
+$vJobs = @(
+  @("check_improved", @("--background","`"$P\improved\$U.blend`"","--factory-startup","--python","`"$I\conquest_contract_check.py`"","--","`"$P\improved\check_$U.json`"")),
+  @("check_rigged",   @("--background",$RB,"--factory-startup","--python","`"$I\conquest_contract_check.py`"","--","`"$P\rigged\check_$U.json`"")),
+  @("render_views",   @("--background",$RB,"--factory-startup","--python",$R,"--","`"$OUT\$U`"","front,threequarter,side,back,tactical","--pose","idle:1")),
+  @("render_close",   @("--background",$RB,"--factory-startup","--python",$R,"--","`"$OUT\$U`"","focus")),
+  @("render_ortho",   @("--background",$RB,"--factory-startup","--python",$R,"--","`"$OUT\$U`"","ortho_front,ortho_back,ortho_side")),
+  @("clips_mp4",      @("--background",$RB,"--factory-startup","--python","`"$I\$($U)_clips.py`"","--","`"$OUT`"","768"))
+)
+foreach ($sk in (Get-ChildItem "$P\rigged\$($U)__*.blend" -ErrorAction SilentlyContinue)) {   # one front + ortho pair per extra skin
+  $s = $sk.BaseName.Substring($U.Length + 2)
+  $vJobs += ,@("render_skin_$s", @("--background","`"$($sk.FullName)`"","--factory-startup","--python",$R,"--","`"$OUT\$($U)_$s`"","front,ortho_front,ortho_back,ortho_side","--pose","idle:1"))
+}
+$vProcs = @()
+foreach ($j in $vJobs) {
+  $pr = Start-Process -FilePath $B -ArgumentList $j[1] -WindowStyle Hidden -PassThru -RedirectStandardOutput "$I\log_$($U)_$($j[0]).txt" -RedirectStandardError "$I\log_$($U)_$($j[0]).err"
+  $null = $pr.Handle; $vProcs += ,@($j[0], $pr)
+}
+foreach ($x in $vProcs) { $x[1].WaitForExit(); "$($x[0]) exit=$($x[1].ExitCode)" }
+& $VPY -P "$I\$($U)_compose.py" 2>&1 | Out-File -Encoding utf8 "$I\log_$($U)_compose.txt"
+"compose exit=$LASTEXITCODE"
+# the numeric sheet gate (compose: per ortho view IoU + row error vs the sheet, the proxy's IoU beside it, FLAG when a
+#   view is > 0.05 below the proxy) and the bake-reference check - the lane quotes these lines in its report
+(Get-Content "$I\log_$($U)_compose.txt" | Select-String "^GATE").Line | % { $_ }
+foreach ($c in @("check_improved","check_rigged")) { (Get-Content "$I\log_$($U)_$c.txt" | Select-String "checks, ").Line | % { "$c : $_" } }
+"ALL DONE total_wall_s=$([math]::Round(((Get-Date)-$T0).TotalSeconds,1))"

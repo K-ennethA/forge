@@ -1,0 +1,9 @@
+You are generating 3D-modelling REFERENCE images for a game character head (the "Vampire Warrior"). Attached: (1) the full character sheet, (2) the sheet's FACE close-up panel (front view), (3) a crop of the sheet's SIDE view head (small, the face points image-left).
+
+Generate these images with your image generation tool, in the SAME art style, colours and character design as the face panel (pale warm grey-mauve skin, dark red eyes, thick dark brows, faint dark lips with two small fangs under the upper lip, very long bone-white hair parted in the centre, a high black collar with dark-red lining):
+  A. head_side_left.png  - a strict ORTHOGRAPHIC LEFT PROFILE of the head and neck (face pointing image-left), the same head as the face panel, the hair swept back behind the ear and falling down the back, neutral pose, mouth as in the panel.
+  B. head_side_right.png - the same, strict RIGHT profile (face pointing image-right). Mirror-consistent with A.
+  C. head_back.png       - the head from directly BEHIND (hair cascade, collar).
+  D. head_front.png      - the head from directly in FRONT, matching the face panel but with the WHOLE head and hair silhouette visible (no crop at the edges), symmetric, neutral.
+Rules for all four: a plain flat mid-grey background (about RGB 128,128,128) with nothing else in the frame, the whole head + neck + top of the collar fully inside the frame with margin, the same scale and the same eye height in every image, even flat lighting (no dramatic shadows), no text, no labels.
+Save each image file into the current working directory with exactly those file names (copy them from wherever your tool writes them). Then print one line per file: its path and what it shows.

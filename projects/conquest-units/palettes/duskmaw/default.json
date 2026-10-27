@@ -1,23 +1,106 @@
 {
  "unit": "duskmaw",
  "skin": "default",
- "description": "Duskmaw v4 - the shadow lord (2026-09-26 v4: the maw carved into a curving slender trunk with a jagged upper lip line, floor tendrils, clawed wispy arms; colours unchanged from v3). v3 - the shadow figure (artist 2026-09-25 v2: Aku / Father (KND) / Darkrai; 2026-09-26 v3: 'the body mouth should look more like this (and colored red) with the inside just a different shade of yellow orange so we can tell its inside'). Near-black violet body; the eyes are the face's only feature (no mouth under them); a blood-red frame and red jagged teeth round the chest maw; the inside of the maw yellow-orange, hottest at the throat; the base's shadow tendrils darker still. v2's palette (dark-red inside, ember-orange teeth) is in git history.",
+ "description": "duskmaw (Shadow Abyss base form, v6.2: the clean v6 body + the v5.4 open proxy's maw grafted; rest = mouth OPEN) default look, LIGHT proxy finish: the proxy + graft textures baked onto the low, tinted by proxy_albedo (white); glow on the eyes and the fangs; the lid part carries the closed tear",
  "regions": {
-  "body":       {"rgb": [20, 17, 24],   "note": "near-black violet shadow body, hat, arms"},
-  "base":       {"rgb": [8, 6, 11],     "note": "v4: the floor tendrils curling out along the ground (+ the hem skin outside the base surface) - darker than the body; the build darkens everything below BASE_Z further toward the floor"},
-  "tips":       {"rgb": [96, 26, 20], "emission": [170, 40, 16], "emission_scale": 0.3,
-                 "note": "smouldering spike tips (claws, arm wisps, shoulder spikes, hat) - dim so the maw and eyes lead"},
-  "lip":        {"rgb": [176, 16, 24], "emission": [190, 18, 22], "emission_scale": 0.3,
-                 "note": "blood-red frame round the maw (the drawn red outline)"},
-  "teeth":      {"rgb": [214, 34, 34], "emission": [225, 30, 28], "emission_scale": 0.35,
-                 "note": "the jagged teeth - red like the frame, a shade brighter so each tooth edge reads"},
-  "maw_inner":  {"rgb": [240, 150, 38], "emission": [255, 150, 40], "emission_scale": 0.45,
-                 "note": "inside of the mouth: yellow-orange (cavity walls under the lips, the teeth's backs)"},
-  "maw_throat": {"rgb": [255, 200, 80], "emission": [255, 190, 70], "emission_scale": 1.0,
-                 "note": "the back of the mouth: hot yellow glow"},
-  "eyes":       {"rgb": [255, 214, 120], "emission": [255, 200, 80], "emission_scale": 2.0,
-                 "note": "Father-style hot glowing slit eyes - the face's only feature"},
-  "grin":       {"rgb": [20, 17, 24],   "note": "unused since v3 (no mouth under the eyes: the geometry has no grin region); kept so the old grin.json variant file still loads"}
+  "proxy_albedo": {
+   "rgb": [
+    255,
+    255,
+    255
+   ],
+   "note": "tint over the baked albedo (white = as baked)"
+  },
+  "eye_glow": {
+   "rgb": [
+    255,
+    255,
+    255
+   ],
+   "emission": [
+    254,
+    227,
+    156
+   ],
+   "emission_scale": 1.0,
+   "note": "the eyes (glow3d)"
+  },
+  "teeth_glow": {
+   "rgb": [
+    255,
+    255,
+    255
+   ],
+   "emission": [
+    253,
+    214,
+    128
+   ],
+   "emission_scale": 0.75,
+   "note": "the fangs' yellow tips (v5.x teeth_glow; baked albedo kept)"
+  },
+  "teeth_glow_edge": {
+   "rgb": [
+    255,
+    255,
+    255
+   ],
+   "emission": [
+    250,
+    128,
+    58
+   ],
+   "emission_scale": 0.45,
+   "note": "the fangs' orange middles (v5.x teeth_glow_edge)"
+  },
+  "tear_lid": {
+   "rgb": [
+    42,
+    40,
+    47
+   ],
+   "note": "the closed lid shield in the body tone"
+  },
+  "tear_rim": {
+   "rgb": [
+    170,
+    52,
+    57
+   ],
+   "note": "the closed tear's red rim (chip 170,52,57); NOT emissive"
+  },
+  "tear_core": {
+   "rgb": [
+    254,
+    136,
+    75
+   ],
+   "emission": [
+    254,
+    136,
+    75
+   ],
+   "emission_scale": 0.8,
+   "note": "the tear's orange zigzag"
+  },
+  "tear_hot": {
+   "rgb": [
+    253,
+    223,
+    149
+   ],
+   "emission": [
+    253,
+    223,
+    149
+   ],
+   "emission_scale": 1.0,
+   "note": "the tear's yellow core"
+  }
  },
- "material": {"roughness": 0.87, "emission_strength": 1.0}
+ "material": {
+  "roughness": 0.9,
+  "emission_strength": 1.0,
+  "alpha": 1.0
+ }
 }

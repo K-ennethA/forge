@@ -1,0 +1,17 @@
+Generate 3D-modelling REFERENCE images for a game character head (the "Vampire Warrior"), using your image generation tool. Attached: the character sheet, its face close-up panel, a crop of its side-view head, and your previous front + left-profile references (prev_*), which were good except for the issues below.
+
+Same character, art style and colours as the face panel and the previous references (pale warm grey-mauve skin, dark red eyes, thick dark brows, faint dark lips, very long bone-white hair parted in the centre, a high black collar with dark-red lining).
+
+FIX vs the previous set:
+- MOUTH: closed or only softly parted, calm, with exactly TWO small fangs just visible under the upper lip. No rows of teeth, no jagged mouth line.
+- HAIR: organised into a few large, clean, grouped locks with smooth surfaces and clear overlaps; NO thin stray wisps or loose strand-ends sticking out. Two larger locks fall in front of the shoulders framing the face; the rest sweeps behind the ears and down the back.
+- PROFILE: in the side views the face must be fully visible (hair tucked behind the ear), with a clear forehead-nose-lips-chin contour and a clean jaw line to the ear.
+
+Images (each its own file, saved in the current working directory with exactly these names):
+  A. head_front.png       - straight front.
+  B. head_q34_left.png    - three-quarter view, face turned 45 deg toward image-left.
+  C. head_side_left.png   - strict orthographic left profile, face pointing image-left.
+  D. head_side_right.png  - strict right profile, mirror-consistent with C.
+  E. head_back.png        - straight back view.
+Rules for all: plain flat mid-grey background (about RGB 128,128,128) and nothing else in the frame; the whole head + neck + top of the collar inside the frame with margin; the SAME scale and the SAME eye height in every image; even flat lighting; no text or labels.
+Then print one line per file: its path and what it shows.

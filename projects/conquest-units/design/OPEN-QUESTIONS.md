@@ -182,3 +182,14 @@ Movement intent + in-game height per unit (placeholder idle + walk until answere
 - N30 Spike Beak 3 (the tall one); N31 Spike Beak 2 (the rounder mature one, sheet file pending)
 - N32 Drakescale Cub (sheet 2026-10-17): movement + in-game height.
 - N31 Spike Beak 2 sheet received 2026-10-17: movement + in-game height.
+
+## Duskmaw (two forms) (sheets 2026-10-24)
+- D1 Movement: base form keeps the GLIDE (answered 2026-09-25)? The true form: glide too, or does it crawl / drag
+  itself on its tendrils? And the shift: base sinks into its tendrils and the true form rises out of them (placeholder)
+  - right feel, or something else (e.g. the body tears open from the torso abyss)?
+- D2 In-game height: base stays 1.80 m? The sheet's scale panel draws the true form ~2.5x a human (~4.5 m if the
+  human is 1.8 m) - use that, or a different size for the board?
+
+## Vampire Warrior re-run (sheet 2026-10-24)
+- V1 Movement: the old build shipped idle + walk (biped). Still a walking biped, or does she glide / float like a
+  vampire? Height stays 1.88 m in game?
