@@ -166,3 +166,28 @@ Two independent read-only reviews, both checked against the code:
 6. Hair module extraction (hairkit.py) -> hair pass.
 7. Body no-remesh bake-off.
 8. LOD / export profiles.
+
+## Bake-off result + approved rules (2026-10-27)
+
+Bake-off (scratch bakeoff/s2/bakeoff_sheet.png):
+- No config saves the head on the head_graft SDF path. Inflate / shell_u are load-bearing for its unreliable sign test
+  and close gaps < ~0.02 u; the eye opening is ~0.03, the lip slit ~0.003. G4 keeps 49 % of the eye opening.
+- (b) direct quadric decimation of the source (11k, own UVs, normal + albedo bake, cage 0.004) keeps 99-100 % of the
+  eye opening, the lip line and the fangs, with drift p50 0.0003. Best look, but no lid / mouth loops (blink folds).
+- (e) MPFB hm08 wrap: the right structure (eyeballs, mouth bag), but its blink collapses and its likeness drifts.
+- QuadriFlow and attribute-aware QEM were blocked (non-manifold input / not installed).
+- Codex: ship (b) as the provisional head; the master = a (b)-look + corrected (e)-topology hybrid. Even SOURCE has
+  narrower, more hooded eyes than the sheet (likeness to the sheet is a separate milestone).
+
+APPROVED RULES (artist, 2026-10-27):
+1. Heads / faces never go through the voxel remesh. A head is its own part: decimated directly (look-only) or
+   template-topology (animatable). It gets a per-part bake with a small cage and smooth shading + a normal map.
+2. The body stays on the remesh for now; a body no-remesh test comes later.
+3. Masters may be smooth-shaded. Each unit declares its shading mode; the contract checks every mesh and visible
+   holes.
+4. Budgets are guidance; quality wins; the artist decides exceptions.
+5. Checks: per-region drift to the source, eye opening >= 95 % of the source, a range-of-motion report, and a Codex
+   review before the artist.
+6. Test builds are capped / batched, using the fast flags.
+
+HEAD ROUTE (artist): the ANIMATABLE HYBRID first. (b) is the stand-in meanwhile.

@@ -3442,3 +3442,12 @@ patches), as a bald head for generation plus a with-hair target (separate clean 
 later hair pass. Face first stays: our watertight remesh fuses any close locks, so hair must be separate geometry
 anyway. POINTED EARS: introduced by the orchestrator's prompt (the sheet panel shows a human ear); the artist chose to
 keep them (a deliberate deviation from the sheet).
+
+## 2026-10-27 — Pipeline rules approved + head route (artist, multiple choice)
+"Approve rules" (heads off the voxel remesh as their own parts with per-part bake + smooth shading; body stays on
+the remesh for now; smooth-shaded masters allowed with a declared shading mode; budgets as guidance; measured
+checks) and head route "Animatable hybrid" (the head7 look baked onto a corrected template topology with eyelid / mouth
+loops, eyeballs, mouth interior, fangs, jaw weights, blink / talk shapes). Earlier, re: the kit estimate: "i dont
+believe your 2-4 day estimate why so long ... if it will improve our work why havent we started it"; the
+finish-independent kit items started in parallel (session kit-head-path). The kit speed-up branch was merged on
+the artist's "if its good why havent we merged it" (b151e0f).

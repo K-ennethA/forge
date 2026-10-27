@@ -1,4 +1,15 @@
-# vampwarrior STATE (v7.1 in place, 2026-10-26; awaiting the artist + the orchestrator's Codex review)
+# vampwarrior STATE (2026-10-27: the repo holds the FACE-PASS-2 review build "G4", not v7.1; see the handoff)
+
+- READ FIRST: design/handoff-2026-10-27-pipeline-and-vampwarrior.md.
+- The repo config / outputs are face pass 2: G4 = head7_s56_edit grafted whole, bald, low-bake test build, glb export
+  stale (the G4 export failed on a file lock). Its config: session 4f1944ab scratchpad
+  vampwarrior_lane2/facepass2_G4_cfg.json.
+- v7.1 (below) is restorable from vampwarrior_lane2/v71_final_cfg.json + v71_rigged.blend.
+- Direction (approved 2026-10-27): heads never through the voxel remesh. The head becomes its own part
+  (head_graft.mode "mesh", built on branch kit-head-path), and the head asset is the ANIMATABLE HYBRID being built into
+  design/reference/vampwarrior/head_graft/head7/hybrid/. Then hair as separate locks (hairkit), then a body / LOD pass.
+
+# vampwarrior STATE (v7.1, 2026-10-26; awaiting the artist + the orchestrator's Codex review)
 
 - v7.1 = v7 + the artist's two decisions after the Codex review of v7 (scratchpad codex_vamp7/review.md: body fixed, face /
   head hair not): (1) FACE-ONLY graft, (2) FULL sword posed in the clips; + cheap cleanups. Lane generator: session 4f1944ab
