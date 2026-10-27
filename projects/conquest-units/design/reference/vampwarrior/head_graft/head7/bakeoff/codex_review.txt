@@ -1,0 +1,14 @@
+1. **SOURCE fidelity and close-up quality: (b) > (a) > (e) > G4.**  
+   **(b)** best preserves the open eye shape, clean lip separation, and distinct fangs. **(a)** comes next, but its eyelids look heavier and its facial shading less clean. **(e)** has a reasonably clean base surface, but changes the eyes, cheeks, and mouth enough to weaken the likeness. **G4** loses the most definition, with nearly closed eyes and visibly degraded mouth and neck surfaces.
+
+2. **Animation readiness: (e) has the best topology premise, but none demonstrates finished deformation.**
+   - **(e):** Worth developing for facial animation, but the displayed blink collapses the lids and the open mouth becomes a narrow, tooth-barred slot. Wrapping a template has not produced finished eyelids or mouth mechanics.
+   - **(b):** Best-looking jaw opening here, but the blink produces angular, folded eyelid surfaces. Decimated geometry is a poor foundation for reliable facial deformation without inspecting and repairing its edge flow.
+   - **(a):** Jaw opening badly distorts the lip corners and upper mouth into a jagged shape; blink also folds the lids.
+   - **G4:** No corresponding posed examples are shown, so its animation readiness cannot be ranked confidently. Its neutral eyelid and mouth degradation already needs correction.
+
+3. **Ship (b) as the current visual reference / provisional render head; none qualifies as the final animatable master.** Keep SOURCE as the high-resolution shape and bake authority. A **(b)-look + corrected (e)-topology hybrid is worth pursuing**, provided you restore the source silhouette and facial landmarks first. It needs fitted eyelid loops around actual eyeballs, clean lip and mouth-corner loops, mouth interior, properly attached teeth/fangs, jaw weights, and corrective blink/talk shapes. Rebaking alone will not fix geometry or deformation.
+
+4. **Yes: (b)’s demonstrated blink blocks it as a finished animation master.** The sheet also cannot establish usable facial edge flow or mouth-interior construction. Its neutral appearance is the strongest, but that does not establish master-quality riggability.
+
+Against the artist’s face panel, even SOURCE has narrower, more hooded eyes and a more pinched, severe face. Matching SOURCE best is therefore a separate milestone from matching the artist’s intended expression and proportions.

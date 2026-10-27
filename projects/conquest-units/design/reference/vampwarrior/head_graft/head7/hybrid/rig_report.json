@@ -1,0 +1,239 @@
+{
+ "rest_lid_verts_pushed_out_of_ball": 176,
+ "jaw_weights": {
+  "verts_gt_0.5": 584,
+  "verts_gt_0.01": 861
+ },
+ "blink_l": {
+  "verts": 336,
+  "max_angle_deg": 22.6
+ },
+ "blink_r": {
+  "verts": 336,
+  "max_angle_deg": 22.3
+ },
+ "tests": {
+  "rest": {
+   "stretch_p99": 1.0,
+   "stretch_max": 1.0,
+   "compress_p1": 1.0,
+   "edges_over_1.5x": 0,
+   "flipped_tris": 0,
+   "self_intersections": 273,
+   "self_x_where": {
+    "eyes": 107,
+    "mouth": 108,
+    "ears": 56,
+    "nose": 0,
+    "other": 2
+   },
+   "lid_verts_inside_eyeball": 0
+  },
+  "blink_L": {
+   "stretch_p99": 1.262,
+   "stretch_max": 7.564,
+   "compress_p1": 0.953,
+   "edges_over_1.5x": 46,
+   "flipped_tris": 15,
+   "self_intersections": 379,
+   "self_x_where": {
+    "eyes": 213,
+    "mouth": 108,
+    "ears": 56,
+    "nose": 0,
+    "other": 2
+   },
+   "lid_verts_inside_eyeball": 0
+  },
+  "blink_R": {
+   "stretch_p99": 1.254,
+   "stretch_max": 4.347,
+   "compress_p1": 0.946,
+   "edges_over_1.5x": 49,
+   "flipped_tris": 12,
+   "self_intersections": 350,
+   "self_x_where": {
+    "eyes": 184,
+    "mouth": 108,
+    "ears": 56,
+    "nose": 0,
+    "other": 2
+   },
+   "lid_verts_inside_eyeball": 0
+  },
+  "jaw_open": {
+   "stretch_p99": 2.278,
+   "stretch_max": 20.612,
+   "compress_p1": 0.961,
+   "edges_over_1.5x": 126,
+   "flipped_tris": 37,
+   "self_intersections": 279,
+   "self_x_where": {
+    "eyes": 107,
+    "mouth": 32,
+    "ears": 56,
+    "nose": 0,
+    "other": 84
+   },
+   "lid_verts_inside_eyeball": 0
+  },
+  "viseme_A": {
+   "stretch_p99": 1.718,
+   "stretch_max": 12.563,
+   "compress_p1": 0.901,
+   "edges_over_1.5x": 96,
+   "flipped_tris": 31,
+   "self_intersections": 299,
+   "self_x_where": {
+    "eyes": 107,
+    "mouth": 134,
+    "ears": 56,
+    "nose": 0,
+    "other": 2
+   },
+   "lid_verts_inside_eyeball": 0
+  },
+  "viseme_O": {
+   "stretch_p99": 1.839,
+   "stretch_max": 7.882,
+   "compress_p1": 0.737,
+   "edges_over_1.5x": 128,
+   "flipped_tris": 28,
+   "self_intersections": 292,
+   "self_x_where": {
+    "eyes": 107,
+    "mouth": 127,
+    "ears": 56,
+    "nose": 0,
+    "other": 2
+   },
+   "lid_verts_inside_eyeball": 0
+  },
+  "viseme_M": {
+   "stretch_p99": 1.236,
+   "stretch_max": 4.783,
+   "compress_p1": 0.938,
+   "edges_over_1.5x": 21,
+   "flipped_tris": 3,
+   "self_intersections": 404,
+   "self_x_where": {
+    "eyes": 107,
+    "mouth": 239,
+    "ears": 56,
+    "nose": 0,
+    "other": 2
+   },
+   "lid_verts_inside_eyeball": 0
+  },
+  "brow_raise": {
+   "stretch_p99": 1.223,
+   "stretch_max": 1.353,
+   "compress_p1": 0.99,
+   "edges_over_1.5x": 0,
+   "flipped_tris": 0,
+   "self_intersections": 273,
+   "self_x_where": {
+    "eyes": 107,
+    "mouth": 108,
+    "ears": 56,
+    "nose": 0,
+    "other": 2
+   },
+   "lid_verts_inside_eyeball": 0
+  }
+ },
+ "info": {
+  "frame": "glTF +Y up, the SAME frame as head7_s56_edit.glb (Blender build frame f = (x, -z_glb, y_glb)); head height ~0.97 glb units; the kit's head_graft similarity (yaw 90, mid_z, scale 1.07, place) applies",
+  "bones": {
+   "head": {
+    "head": [
+     0.0,
+     0.03,
+     -0.4
+    ],
+    "tail": [
+     0.0,
+     0.03,
+     0.3
+    ],
+    "parent": null
+   },
+   "jaw": {
+    "head": [
+     0.0,
+     0.06,
+     -0.03
+    ],
+    "tail": [
+     0.0,
+     -0.21,
+     -0.24
+    ],
+    "parent": "head"
+   },
+   "eye.L": {
+    "head": [
+     0.1257,
+     -0.1337,
+     0.0931
+    ],
+    "tail": [
+     0.1257,
+     -0.1937,
+     0.0931
+    ],
+    "parent": "head"
+   },
+   "eye.R": {
+    "head": [
+     -0.1161,
+     -0.1314,
+     0.0905
+    ],
+    "tail": [
+     -0.1161,
+     -0.1914,
+     0.0905
+    ],
+    "parent": "head"
+   }
+  },
+  "weights": {
+   "head (mesh 'head')": "head = 1 - jaw; jaw = lower lip + chin + lower mouth bag, fade over cheeks / jaw back / throat; upper lip 0; mouth corners 0.5",
+   "eye.L / eye.R": "rigid, own bones (look-around)",
+   "teeth_upper, fang.L, fang.R": "head",
+   "teeth_lower, tongue": "jaw"
+  },
+  "shape_keys": [
+   "blink_L",
+   "blink_R",
+   "jaw_open",
+   "viseme_A",
+   "viseme_O",
+   "viseme_M",
+   "brow_raise"
+  ],
+  "shape_key_note": "head + teeth_lower + tongue carry the keys; jaw_open / viseme_A / viseme_O include the jaw rotation (18 / 11 / 7 deg), so use EITHER those keys OR the jaw bone, not both",
+  "parts": [
+   "eye.L",
+   "eye.R",
+   "fang.L",
+   "fang.R",
+   "head",
+   "teeth_lower",
+   "teeth_upper",
+   "tongue"
+  ],
+  "tris": {
+   "eye.L": 2304,
+   "eye.R": 2304,
+   "fang.L": 178,
+   "fang.R": 178,
+   "head": 8716,
+   "teeth_lower": 96,
+   "teeth_upper": 96,
+   "tongue": 448
+  },
+  "tris_total": 14320
+ }
+}

@@ -1,0 +1,161 @@
+{
+ "source": "s2/edit.npz",
+ "fold": false,
+ "eye_centres": [
+  [
+   -0.1156,
+   -0.1414,
+   0.0942
+  ],
+  [
+   0.1239,
+   -0.1448,
+   0.0936
+  ]
+ ],
+ "fang_faces": 1659,
+ "source_slit": {
+  "open_frac": 0.922,
+  "recess_mean": 0.0591
+ },
+ "source_eye_px": [
+  7454,
+  7683
+ ],
+ "cands": [
+  {
+   "name": "hyb_vis",
+   "tris": 12654,
+   "verts": 6624,
+   "foreign_verts": 0,
+   "drift": {
+    "face": {
+     "s2c_p50": 0.00329,
+     "s2c_p99": 0.03079,
+     "c2s_p50": 0.00104,
+     "c2s_p99": 0.01245
+    },
+    "eyes": {
+     "s2c_p50": 0.00351,
+     "s2c_p99": 0.02449,
+     "c2s_p50": 0.00155,
+     "c2s_p99": 0.0114
+    },
+    "mouth": {
+     "s2c_p50": 0.00405,
+     "s2c_p99": 0.0361,
+     "c2s_p50": 0.00017,
+     "c2s_p99": 0.0125
+    },
+    "jaw": {
+     "s2c_p50": 0.00231,
+     "s2c_p99": 0.01317,
+     "c2s_p50": 0.0,
+     "c2s_p99": 0.0
+    }
+   },
+   "eye_open": [
+    {
+     "px": 5845,
+     "src_px": 7454,
+     "pct": 78.4
+    },
+    {
+     "px": 5192,
+     "src_px": 7683,
+     "pct": 67.6
+    }
+   ],
+   "skin_offset": 0.0007,
+   "eye_open_pct_mean": 73.0,
+   "fang_px_pct": 82.8,
+   "slit": {
+    "open_frac": 0.939,
+    "recess_mean": 0.2358
+   },
+   "depth_L1": {
+    "eye0": 0.0079,
+    "eye1": 0.00759,
+    "mouth": 0.05818,
+    "forehead": 0.00489
+   },
+   "eye_recess_px": [
+    8763,
+    8077
+   ],
+   "eye_recess_pct": [
+    89.6,
+    97.5
+   ]
+  },
+  {
+   "name": "b2_low",
+   "tris": 11000,
+   "verts": 5084,
+   "foreign_verts": 0,
+   "drift": {
+    "face": {
+     "s2c_p50": 0.00033,
+     "s2c_p99": 0.02081,
+     "c2s_p50": 0.00017,
+     "c2s_p99": 0.00126
+    },
+    "eyes": {
+     "s2c_p50": 0.0006,
+     "s2c_p99": 0.02661,
+     "c2s_p50": 6e-05,
+     "c2s_p99": 0.00119
+    },
+    "mouth": {
+     "s2c_p50": 0.00031,
+     "s2c_p99": 0.00133,
+     "c2s_p50": 0.00028,
+     "c2s_p99": 0.00135
+    },
+    "jaw": {
+     "s2c_p50": 0.00026,
+     "s2c_p99": 0.00111,
+     "c2s_p50": 0.00037,
+     "c2s_p99": 0.00134
+    }
+   },
+   "eye_open": [
+    {
+     "px": 7399,
+     "src_px": 7454,
+     "pct": 99.3
+    },
+    {
+     "px": 7651,
+     "src_px": 7683,
+     "pct": 99.6
+    }
+   ],
+   "skin_offset": -0.00038,
+   "eye_open_pct_mean": 99.4,
+   "fang_px_pct": 98.4,
+   "slit": {
+    "open_frac": 0.9,
+    "recess_mean": 0.0567
+   },
+   "depth_L1": {
+    "eye0": 0.0006,
+    "eye1": 0.00047,
+    "mouth": 0.00059,
+    "forehead": 0.00044
+   },
+   "eye_recess_px": [
+    9706,
+    8330
+   ],
+   "eye_recess_pct": [
+    99.2,
+    100.5
+   ]
+  }
+ ],
+ "source_eye_recess_px": [
+  9782,
+  8287
+ ]
+}

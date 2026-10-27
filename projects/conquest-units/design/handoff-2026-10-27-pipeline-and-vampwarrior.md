@@ -55,14 +55,28 @@ The pipeline review is design/plan-review-2026-10-26.md:
    - 6: rig part weight modes rigid / chain / blend;
    - 7: a range-of-motion report.
    Gates: the 3 regression pins. When it reports, review the diff + evidence, then ask the artist about merging.
-2. **Hybrid head asset** (a subagent of session 4f1944ab; it cannot be messaged from a new session; check its
-   output). It builds the ANIMATABLE HYBRID: head7's look baked onto a corrected MPFB hm08 topology, with eyelid
-   loops over separate eyeballs, mouth loops + interior, attached fangs, jaw + lid bones / shape keys (blink L / R,
-   jaw open, visemes A / O / M, brow raise).
-   - Delivery: design/reference/vampwarrior/head_graft/head7/hybrid/.
-   - Its scratch: C:\Users\kenne\AppData\Local\Temp\claude\C--Users-kenne-OneDrive-Desktop-git-forge\4f1944ab-5e47-4e4d-a91a-e84f71edc340\scratchpad\bakeoff\
-     (bake-off sheet s2\bakeoff_sheet.png, metrics s1 / s2 *.json, scripts py\).
-   - If it never reported: look at hybrid/ and bakeoff/ for partial work and restart the task from this brief.
+2. **Hybrid head asset: CHECKPOINTED (stopped cleanly at wrap-up; committed with this handoff).**
+   design/reference/vampwarrior/head_graft/head7/hybrid/STATUS.md is enough to continue from alone.
+   - Contents: hybrid_head.glb (in the same frame as head7_s56_edit.glb; MPFB hm08 topology; separate eyeballs on
+     eye bones; fangs, teeth, tongue, mouth interior; bones head / jaw / eye.L / eye.R; shape keys blink_L / R,
+     jaw_open, viseme_A / O / M, brow_raise), rigged / unrigged blends, textures, hybrid_sheet.png, and all scripts
+     (scripts/chain.sh work 0.0065 rebuilds everything).
+   - Numbers (head ~0.97 glb units tall):
+     - face drift p50 / p99 0.0033 / 0.031, ~10x (b)'s;
+     - eye opening 99-108 % of the source;
+     - lip line open 94 %;
+     - 14.3k tris (head 8.7k).
+   - Open defects:
+     - grey / orange lid-crease bake patches;
+     - jaw_open corner stretch up to 20x with a box-shaped opening;
+     - viseme_M lips pass through each other;
+     - rough ears;
+     - over-dense eyeballs.
+   - Next: fix the lid crease, run the unrun LOD0 (scripts/hyb_lod0.py), jaw correctives, ear landmarks, slim the
+     eyeballs, final renders, Codex review, then test via head_graft.mode "mesh".
+   - Eyes can be opened toward the sheet with one parameter: chain.sh work 0.009.
+   - Bake-off evidence + scripts preserved in design/reference/vampwarrior/head_graft/head7/bakeoff/ (sheet,
+     step-1 grids, metrics, py/ scripts, Codex review).
 
 ## Next steps (in order)
 
@@ -129,8 +143,10 @@ The pipeline review is design/plan-review-2026-10-26.md:
   A stale heavy.lock beside it with a dead pid is taken over automatically.
 - **Runners:** powershell -NoProfile -File improve/<unit>_run.ps1. Use FORWARD slashes from bash; a backslash got
   eaten once.
-- **Raw-look renders:** the scratchpad rawlook\r.py (front / 3/4 / side) and r2.py (full length + head close-ups):
-  blender --background --python r.py -- <glb> <out_prefix>.
+- **Raw-look renders:** improve/rawlook_views.py (front / 3/4 / side) and improve/rawlook_closeups.py (full length +
+  head close-ups): blender --background --python <script> -- <glb> <out_prefix>.
+- **Heavy-job lock, repo copy:** improve/heavy_lock.py (lock file improve/heavy.lock, gitignored). Use it after the
+  kit-head-path session is done; until then use the scratch path above so both share one lock.
 - **Pixal3D multi-view:** see head_graft/head7_B_render/gen7.py (Pixal3DBackend, shared_frame, 4096 texture,
   views front / left / right(mirror) / back, seeds 56 + 11). ComfyUI must be up (localhost:8188).
   - Align the side view to the front on the pupil / mouth / chin rows first (polyfit), and mirror left -> right.

@@ -1,0 +1,111 @@
+{
+ "pocket_moved_behind_ball": 54,
+ "mouth_opening_faces": 158,
+ "head": {
+  "verts": 4407,
+  "quads": 4358,
+  "bag_faces": 280
+ },
+ "eyes": [
+  {
+   "centre": [
+    0.12574,
+    -0.13366,
+    0.0931
+   ],
+   "R": 0.06296
+  },
+  {
+   "centre": [
+    -0.1161,
+    -0.13142,
+    0.09051
+   ],
+   "R": 0.06296
+  }
+ ],
+ "teeth_upper": {
+  "verts": 68,
+  "quads": 48,
+  "bbox": [
+   [
+    -0.0938,
+    -0.2307,
+    -0.1118
+   ],
+   [
+    0.0982,
+    -0.0357,
+    -0.0921
+   ]
+  ]
+ },
+ "teeth_lower": {
+  "verts": 68,
+  "quads": 48,
+  "bbox": [
+   [
+    -0.0887,
+    -0.2307,
+    -0.1405
+   ],
+   [
+    0.0926,
+    -0.0412,
+    -0.1185
+   ]
+  ]
+ },
+ "tongue": {
+  "verts": 226,
+  "quads": 224,
+  "bbox": [
+   [
+    -0.0841,
+    -0.2127,
+    -0.2082
+   ],
+   [
+    0.0878,
+    0.0531,
+    -0.0874
+   ]
+  ]
+ },
+ "fang.L": {
+  "x": 0.052,
+  "width": 0.0105,
+  "root_z": -0.1041,
+  "tip_z": -0.133
+ },
+ "fang.R": {
+  "x": -0.0425,
+  "width": 0.011,
+  "root_z": -0.104,
+  "tip_z": -0.134
+ },
+ "pushed_inside": {
+  "teeth_upper": 17,
+  "teeth_lower": 10,
+  "tongue": 0,
+  "bag": 20
+ },
+ "dropped_iris_bits_on_lids": 768,
+ "dropped_mouth_plate": 2206,
+ "src_faces_flipped_to_match_head": 90659,
+ "bake_source": {
+  "faces": 181713,
+  "dropped_fang": 604,
+  "dropped_eyecover": 759,
+  "dropped_eyeball_shells": 14784
+ },
+ "normal_texels_capped": 195231,
+ "bake_normal": [
+  "FINISHED"
+ ],
+ "bake_albedo": [
+  "FINISHED"
+ ],
+ "head_cage_u": 0.01,
+ "albedo_black_frac": 0.5219
+}

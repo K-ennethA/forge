@@ -1,0 +1,96 @@
+{
+ "source": "s2/edit.npz",
+ "fold": true,
+ "eye_centres": [
+  [
+   0.1239,
+   -0.1448,
+   0.0936
+  ],
+  [
+   -0.1169,
+   -0.1448,
+   0.0936
+  ]
+ ],
+ "fang_faces": 1610,
+ "source_slit": {
+  "open_frac": 0.95,
+  "recess_mean": 0.0723
+ },
+ "source_eye_px": [
+  7683,
+  7683
+ ],
+ "cands": [
+  {
+   "name": "G4low",
+   "tris": 4101,
+   "verts": 2083,
+   "foreign_verts": 216,
+   "drift": {
+    "face": {
+     "s2c_p50": 0.00996,
+     "s2c_p99": 0.04695,
+     "c2s_p50": 0.00957,
+     "c2s_p99": 0.04021
+    },
+    "eyes": {
+     "s2c_p50": 0.01231,
+     "s2c_p99": 0.036,
+     "c2s_p50": 0.00956,
+     "c2s_p99": 0.01274
+    },
+    "mouth": {
+     "s2c_p50": 0.01164,
+     "s2c_p99": 0.02115,
+     "c2s_p50": 0.00978,
+     "c2s_p99": 0.01991
+    },
+    "jaw": {
+     "s2c_p50": 0.02496,
+     "s2c_p99": 0.05315,
+     "c2s_p50": 0.0234,
+     "c2s_p99": 0.0487
+    }
+   },
+   "eye_open": [
+    {
+     "px": 3753,
+     "src_px": 7683,
+     "pct": 48.8
+    },
+    {
+     "px": 3773,
+     "src_px": 7683,
+     "pct": 49.1
+    }
+   ],
+   "skin_offset": 0.009,
+   "eye_open_pct_mean": 49.0,
+   "fang_px_pct": 107.0,
+   "slit": {
+    "open_frac": 0.061,
+    "recess_mean": 0.0077
+   },
+   "depth_L1": {
+    "eye0": 0.0137,
+    "eye1": 0.01354,
+    "mouth": 0.01456,
+    "forehead": 0.01053
+   },
+   "eye_recess_px": [
+    7454,
+    7464
+   ],
+   "eye_recess_pct": [
+    89.9,
+    89.6
+   ]
+  }
+ ],
+ "source_eye_recess_px": [
+  8287,
+  8327
+ ]
+}

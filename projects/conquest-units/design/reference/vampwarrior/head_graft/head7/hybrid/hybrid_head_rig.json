@@ -1,0 +1,94 @@
+{
+ "frame": "glTF +Y up, the SAME frame as head7_s56_edit.glb (Blender build frame f = (x, -z_glb, y_glb)); head height ~0.97 glb units; the kit's head_graft similarity (yaw 90, mid_z, scale 1.07, place) applies",
+ "bones": {
+  "head": {
+   "head": [
+    0.0,
+    0.03,
+    -0.4
+   ],
+   "tail": [
+    0.0,
+    0.03,
+    0.3
+   ],
+   "parent": null
+  },
+  "jaw": {
+   "head": [
+    0.0,
+    0.06,
+    -0.03
+   ],
+   "tail": [
+    0.0,
+    -0.21,
+    -0.24
+   ],
+   "parent": "head"
+  },
+  "eye.L": {
+   "head": [
+    0.1257,
+    -0.1337,
+    0.0931
+   ],
+   "tail": [
+    0.1257,
+    -0.1937,
+    0.0931
+   ],
+   "parent": "head"
+  },
+  "eye.R": {
+   "head": [
+    -0.1161,
+    -0.1314,
+    0.0905
+   ],
+   "tail": [
+    -0.1161,
+    -0.1914,
+    0.0905
+   ],
+   "parent": "head"
+  }
+ },
+ "weights": {
+  "head (mesh 'head')": "head = 1 - jaw; jaw = lower lip + chin + lower mouth bag, fade over cheeks / jaw back / throat; upper lip 0; mouth corners 0.5",
+  "eye.L / eye.R": "rigid, own bones (look-around)",
+  "teeth_upper, fang.L, fang.R": "head",
+  "teeth_lower, tongue": "jaw"
+ },
+ "shape_keys": [
+  "blink_L",
+  "blink_R",
+  "jaw_open",
+  "viseme_A",
+  "viseme_O",
+  "viseme_M",
+  "brow_raise"
+ ],
+ "shape_key_note": "head + teeth_lower + tongue carry the keys; jaw_open / viseme_A / viseme_O include the jaw rotation (18 / 11 / 7 deg), so use EITHER those keys OR the jaw bone, not both",
+ "parts": [
+  "eye.L",
+  "eye.R",
+  "fang.L",
+  "fang.R",
+  "head",
+  "teeth_lower",
+  "teeth_upper",
+  "tongue"
+ ],
+ "tris": {
+  "eye.L": 2304,
+  "eye.R": 2304,
+  "fang.L": 178,
+  "fang.R": 178,
+  "head": 8716,
+  "teeth_lower": 96,
+  "teeth_upper": 96,
+  "tongue": 448
+ },
+ "tris_total": 14320
+}

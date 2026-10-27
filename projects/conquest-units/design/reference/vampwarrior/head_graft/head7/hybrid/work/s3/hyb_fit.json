@@ -1,0 +1,67 @@
+{
+ "rip": {
+  "contact_verts": 22,
+  "duplicated": 20,
+  "open_edges_after": 100
+ },
+ "lips": {
+  "upper_border_verts": 17,
+  "lower_border_verts": 5,
+  "bag_verts": 253,
+  "lip_line_verts": 22
+ },
+ "leye": {
+  "pocket": 27,
+  "margin_up": 28,
+  "margin_lo": 25
+ },
+ "reye": {
+  "pocket": 27,
+  "margin_up": 28,
+  "margin_lo": 25
+ },
+ "affine_scale": [
+  0.421,
+  0.3165,
+  0.2953
+ ],
+ "tps_landmarks": 31,
+ "soft_verts": 772,
+ "folded_faces_per_round": [
+  289,
+  145,
+  130,
+  126,
+  120,
+  120,
+  118,
+  123,
+  118,
+  119,
+  118,
+  118
+ ],
+ "fit_to_src_p50_p99_max": [
+  0.0,
+  0.00179,
+  0.02262
+ ],
+ "eyeballs": [
+  {
+   "centre": [
+    0.12574,
+    -0.13366,
+    0.0931
+   ],
+   "R": 0.06296
+  },
+  {
+   "centre": [
+    -0.1161,
+    -0.13142,
+    0.09051
+   ],
+   "R": 0.06296
+  }
+ ]
+}

@@ -1,0 +1,17 @@
+{
+ "jaw": {
+  "edges": 2080,
+  "stretch_p99": 32.74,
+  "stretch_max": 101.79,
+  "edges_over_2x": 119,
+  "tris_flipped": 1
+ },
+ "blink": {
+  "edges": 5624,
+  "stretch_p99": 2.14,
+  "stretch_max": 4.26,
+  "edges_over_2x": 86,
+  "tris_flipped": 277,
+  "verts_moved": 590
+ }
+}
