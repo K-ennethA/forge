@@ -1,0 +1,290 @@
+{
+ "matrix": [
+  [
+   0.8153339624404907,
+   0.0,
+   0.0,
+   9.218967898050323e-05
+  ],
+  [
+   0.0,
+   0.8153339624404907,
+   0.0,
+   0.11676456034183502
+  ],
+  [
+   0.0,
+   0.0,
+   0.8153339624404907,
+   -0.025146249681711197
+  ],
+  [
+   0.0,
+   0.0,
+   0.0,
+   1.0
+  ]
+ ],
+ "best": {
+  "s": 1.06,
+  "dy": 0.03,
+  "dz": 0.01,
+  "inside_quarter_sample": 472,
+  "min_signed_over_H": -0.006623554554146632
+ },
+ "grid": [
+  {
+   "s": 1.0,
+   "dy": 0.0,
+   "dz": -0.01,
+   "inside_quarter_sample": 790,
+   "min_signed_over_H": -0.007797676539067443
+  },
+  {
+   "s": 1.0,
+   "dy": 0.0,
+   "dz": 0.0,
+   "inside_quarter_sample": 803,
+   "min_signed_over_H": -0.004478621402373783
+  },
+  {
+   "s": 1.0,
+   "dy": 0.0,
+   "dz": 0.01,
+   "inside_quarter_sample": 824,
+   "min_signed_over_H": -0.005484508403858385
+  },
+  {
+   "s": 1.0,
+   "dy": 0.01,
+   "dz": -0.01,
+   "inside_quarter_sample": 861,
+   "min_signed_over_H": -0.005535756589176084
+  },
+  {
+   "s": 1.0,
+   "dy": 0.01,
+   "dz": 0.0,
+   "inside_quarter_sample": 899,
+   "min_signed_over_H": -0.003526456271589622
+  },
+  {
+   "s": 1.0,
+   "dy": 0.01,
+   "dz": 0.01,
+   "inside_quarter_sample": 780,
+   "min_signed_over_H": -0.004988285356862886
+  },
+  {
+   "s": 1.0,
+   "dy": 0.02,
+   "dz": -0.01,
+   "inside_quarter_sample": 617,
+   "min_signed_over_H": -0.004332986892770745
+  },
+  {
+   "s": 1.0,
+   "dy": 0.02,
+   "dz": 0.0,
+   "inside_quarter_sample": 649,
+   "min_signed_over_H": -0.004189346034295147
+  },
+  {
+   "s": 1.0,
+   "dy": 0.02,
+   "dz": 0.01,
+   "inside_quarter_sample": 562,
+   "min_signed_over_H": -0.0039985190659504516
+  },
+  {
+   "s": 1.0,
+   "dy": 0.03,
+   "dz": -0.01,
+   "inside_quarter_sample": 530,
+   "min_signed_over_H": -0.003492990185851077
+  },
+  {
+   "s": 1.0,
+   "dy": 0.03,
+   "dz": 0.0,
+   "inside_quarter_sample": 560,
+   "min_signed_over_H": -0.003388258650352927
+  },
+  {
+   "s": 1.0,
+   "dy": 0.03,
+   "dz": 0.01,
+   "inside_quarter_sample": 571,
+   "min_signed_over_H": -0.003106665388306954
+  },
+  {
+   "s": 1.03,
+   "dy": 0.0,
+   "dz": -0.01,
+   "inside_quarter_sample": 722,
+   "min_signed_over_H": -0.00849149249395843
+  },
+  {
+   "s": 1.03,
+   "dy": 0.0,
+   "dz": 0.0,
+   "inside_quarter_sample": 702,
+   "min_signed_over_H": -0.006234276620387789
+  },
+  {
+   "s": 1.03,
+   "dy": 0.0,
+   "dz": 0.01,
+   "inside_quarter_sample": 731,
+   "min_signed_over_H": -0.006800759597879818
+  },
+  {
+   "s": 1.03,
+   "dy": 0.01,
+   "dz": -0.01,
+   "inside_quarter_sample": 857,
+   "min_signed_over_H": -0.007073849753210317
+  },
+  {
+   "s": 1.03,
+   "dy": 0.01,
+   "dz": 0.0,
+   "inside_quarter_sample": 847,
+   "min_signed_over_H": -0.004264650106346875
+  },
+  {
+   "s": 1.03,
+   "dy": 0.01,
+   "dz": 0.01,
+   "inside_quarter_sample": 820,
+   "min_signed_over_H": -0.005383117329404816
+  },
+  {
+   "s": 1.03,
+   "dy": 0.02,
+   "dz": -0.01,
+   "inside_quarter_sample": 663,
+   "min_signed_over_H": -0.004632009510196458
+  },
+  {
+   "s": 1.03,
+   "dy": 0.02,
+   "dz": 0.0,
+   "inside_quarter_sample": 663,
+   "min_signed_over_H": -0.004384804894967273
+  },
+  {
+   "s": 1.03,
+   "dy": 0.02,
+   "dz": 0.01,
+   "inside_quarter_sample": 505,
+   "min_signed_over_H": -0.004126038248092267
+  },
+  {
+   "s": 1.03,
+   "dy": 0.03,
+   "dz": -0.01,
+   "inside_quarter_sample": 509,
+   "min_signed_over_H": -0.003932455717420685
+  },
+  {
+   "s": 1.03,
+   "dy": 0.03,
+   "dz": 0.0,
+   "inside_quarter_sample": 525,
+   "min_signed_over_H": -0.003843473545162283
+  },
+  {
+   "s": 1.03,
+   "dy": 0.03,
+   "dz": 0.01,
+   "inside_quarter_sample": 546,
+   "min_signed_over_H": -0.004674944210834135
+  },
+  {
+   "s": 1.06,
+   "dy": 0.0,
+   "dz": -0.01,
+   "inside_quarter_sample": 692,
+   "min_signed_over_H": -0.010279471028225901
+  },
+  {
+   "s": 1.06,
+   "dy": 0.0,
+   "dz": 0.0,
+   "inside_quarter_sample": 626,
+   "min_signed_over_H": -0.006925043580075065
+  },
+  {
+   "s": 1.06,
+   "dy": 0.0,
+   "dz": 0.01,
+   "inside_quarter_sample": 683,
+   "min_signed_over_H": -0.008481396475531025
+  },
+  {
+   "s": 1.06,
+   "dy": 0.01,
+   "dz": -0.01,
+   "inside_quarter_sample": 809,
+   "min_signed_over_H": -0.005209299218113596
+  },
+  {
+   "s": 1.06,
+   "dy": 0.01,
+   "dz": 0.0,
+   "inside_quarter_sample": 817,
+   "min_signed_over_H": -0.006506506863236297
+  },
+  {
+   "s": 1.06,
+   "dy": 0.01,
+   "dz": 0.01,
+   "inside_quarter_sample": 821,
+   "min_signed_over_H": -0.006485876814286559
+  },
+  {
+   "s": 1.06,
+   "dy": 0.02,
+   "dz": -0.01,
+   "inside_quarter_sample": 755,
+   "min_signed_over_H": -0.004012224867004376
+  },
+  {
+   "s": 1.06,
+   "dy": 0.02,
+   "dz": 0.0,
+   "inside_quarter_sample": 707,
+   "min_signed_over_H": -0.006051296580469039
+  },
+  {
+   "s": 1.06,
+   "dy": 0.02,
+   "dz": 0.01,
+   "inside_quarter_sample": 526,
+   "min_signed_over_H": -0.005740150783313004
+  },
+  {
+   "s": 1.06,
+   "dy": 0.03,
+   "dz": -0.01,
+   "inside_quarter_sample": 512,
+   "min_signed_over_H": -0.004572240141725487
+  },
+  {
+   "s": 1.06,
+   "dy": 0.03,
+   "dz": 0.0,
+   "inside_quarter_sample": 495,
+   "min_signed_over_H": -0.004233186350215385
+  },
+  {
+   "s": 1.06,
+   "dy": 0.03,
+   "dz": 0.01,
+   "inside_quarter_sample": 472,
+   "min_signed_over_H": -0.006623554554146632
+  }
+ ],
+ "base": "C:/Users/kenne/OneDrive/Desktop/git/forge/projects/conquest-units/design/reference/vampwarrior/parts_v1/meshes/cape_v1_s7_on_body_v1_s7.json"
+}

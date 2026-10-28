@@ -1,0 +1,18 @@
+Use your image generation tool (built-in image_gen) to EDIT three existing images. These are LOCAL EDITS: keep everything else pixel-identical (canvas 1024 x 1536, figure position, scale, pose, colours, style, grey background).
+
+Attached (working directory):
+- base_front.png, base_side_left.png, base_back.png: the BODY part sheet of the "Vampire Warrior" (bald, A-pose, no cape). THE BASE IMAGES.
+- ref_front.png, ref_side_left.png: approved redraw (with cape) showing the correct LONG front loin panel.
+- sheet.png: the original design.
+
+EDITS:
+1. edited_front.png (from base_front.png): make the burgundy front loin panel LONG like ref_front.png: the narrow pointed dark-red cloth panel that hangs from the belt between the legs must continue down between the thighs and knees to a jagged point at about row 1270 (between the boots, around the mid-shin), exactly the design in ref_front.png. Change nothing else.
+2. edited_side_left.png (from base_side_left.png): the same long loin panel seen in profile: the dark-red panel hangs straight down in front of the thighs from the belt to about row 1270, a thin strip in profile as in ref_side_left.png. Change nothing else.
+3. edited_back.png (from base_back.png): simplify the invented BACK armour so it does not copy the front:
+   a. upper back (around x 450-570, y 300-400): replace the two rounded breast-like plates with flat, plain back armour (a smooth black back plate with a simple central spine line and a little silver trim);
+   b. back of the hips (around x 440-580, y 540-620): remove the copied front rings and pointed pelvic plates; show a plain belt band across the back (the two side rings may stay only at the hip sides, around x 410 and x 610) and plain black seat armour;
+   c. backs of the knees (around x 380-450 and x 575-645, y 930-1010): replace the kneecap shields with plain joint breaks (simple horizontal segment lines on the boot);
+   d. below the crotch, between the thighs and knees, show the lower part of the long burgundy front loin panel hanging down behind the gap between the legs to about row 1270 (as seen from behind).
+   Keep the bald head, collar, shoulders, arms, gauntlets, legs, boots, pose and scale exactly.
+
+Save edited_front.png, edited_side_left.png and edited_back.png (1024 x 1536) in the current working directory, then print their paths and sizes.

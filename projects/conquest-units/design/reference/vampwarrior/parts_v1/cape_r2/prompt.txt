@@ -1,0 +1,15 @@
+Use your image generation tool (built-in image_gen) to EDIT three existing images of a CAPE (game character "Vampire Warrior"). Keep the canvas (1024 x 1536), the cape's position and scale, the black outer cloth, burgundy lining, folds, torn hem strips, style and the plain grey background. These are cape-ONLY images (no body) for a multi-view image-to-3D generator, so the cape must read as a HOLLOW garment with real volume that will sit around a body without touching it.
+
+Attached (working directory):
+- base_cape_front.png, base_cape_side_left.png, base_cape_back.png: THE BASE IMAGES (the cape alone).
+- worn_front.png, worn_side_left.png, worn_back.png: the same cape worn on the A-pose body (for reference: where the shoulders, collar and arms are).
+- ref_front.png, ref_side_left.png, ref_back.png, sheet.png: the approved design references.
+
+EDITS:
+1. edited_cape_front.png (from base_cape_front.png):
+   a. Define the UPPER OPENING: the cape rests on two cloth shoulder seats (rounded cloth over the shoulders, soft cloth, not angular armour plates). Between them, at the neck (around x 440-590, y 230-330), show a clear NECK / upper-back CUTOUT: the inner top edge of the back panel dips lower than the shoulders, and the grey background shows through above it where the neck and the body's collar would be.
+   b. The interior is OPEN and CONCAVE: keep the burgundy lining of the back panel visible inside, but its upper boundary must read as the inside of the back panel receding BEHIND the torso (shaded darker deeper inside), not a flat curtain bridging across the chest. The front edges hang straight down from the front of each shoulder seat with gravity (less flare than now), as in ref_front.png.
+2. edited_cape_side_left.png (from base_cape_side_left.png, profile facing image-LEFT): give the top real VOLUME: the cape passes OVER the shoulder: show the cloth from the front edge of the shoulder seat (around x 480) over the shoulder to the back (around x 600), i.e. the top of the cape is about as deep as the body's shoulders in worn_side_left.png, with the far shoulder edge visible behind; then it hangs down behind the body and flares back to the torn hem as now. The front edge hangs down from the front of the shoulder (it must leave space for the arm, which is in front of the cape). Burgundy lining visible along the front edge and in the tears.
+3. edited_cape_back.png (from base_cape_back.png): match the hem to the front view: the central lower hem points at the same rows as in the front view (the deepest central point at about row 1270), keep all the fold and tear detail; show the back of the two shoulder seats and the neck cutout at the top centre (the body's collar stands there).
+
+Save edited_cape_front.png, edited_cape_side_left.png and edited_cape_back.png (1024 x 1536) in the current working directory, then print their paths and sizes.

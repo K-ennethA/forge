@@ -1,0 +1,10 @@
+{"hypothesis": "part sheets (body A-pose, cape alone) as Pixal3D input keep s7's look without fusion",
+ "image_rounds": {"body": ["body_r1 (new A-pose draw)", "body_r2 (loin panel + plain back, composited)", "fallback_body_r3 (v6_bald refs, cape masked out)"], "cape": ["cape_r1 (worn + alone)", "cape_r2 (neck opening, side volume)", "cape_r3 (not 3D'd: side regressed)"]},
+ "pixal3d": {"body_v1": "body_r2, seeds 7/11/56, best 7", "cape_v1": "cape_r2, seeds 7/11/56, best 7", "body_fb": "fallback_body_r3, seeds 7/11/56, best 11"},
+ "codex_3d": {"body_v1_s7_vs_s7": {"collar": "EQUAL", "shoulders": "MORE", "chest": "EQUAL", "waist": "LESS", "hips": "LESS", "thighs": "LESS", "boots": "LESS", "gauntlets": "LESS"},
+              "cape_v1_s7_vs_s7_cape": {"folds": "MORE", "torn_hem": "LESS", "lining": "EQUAL", "shoulders": "LESS", "silhouette": "LESS", "verdict": "NO"},
+              "body_fb_s11_vs_s7": {"collar": "EQUAL", "shoulders": "LESS", "chest": "EQUAL", "waist": "LESS", "hips": "LESS", "thighs": "EQUAL", "boots": "LESS", "gauntlets": "LESS", "vs_old_s56": "better", "vs_body_v1_s7": "better"}},
+ "measure": {"body_v1_s7_arm_torso_gap_over_H": "0.023-0.083 for h 0.50-0.72, 0.006 at 0.74 (armpit); 1 island, 12 open edges",
+             "cape_v1_s7_on_body_v1_s7": "separate mesh, 3 islands, 8 open edges; 14196 intersecting face pairs; 3117 cape verts (3.2%) inside body: 2732 at shoulders (0.74-0.86 H), 385 in the arms, 0 torso; min signed -0.033 H; median clearance 0.070 H; rigid re-registration grid cannot get below ~2% inside",
+             "body_fb_s11_arm_gap_over_H": "0.010-0.032 for h 0.50-0.72"},
+ "files": {"comparison": "raw_comparison_parts_v1.png", "meshes": "meshes/", "reviews": "reviews/", "renders": "renders/", "measure": "measure/"}}
